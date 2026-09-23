@@ -1,0 +1,5330 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cosmos">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#000008">
+<title>COSMOS ENGINE — 3D Universe Simulator</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%}
+body{
+  height:100vh;width:100vw;overflow:hidden;
+  font-family:'Inter','SF Pro Display',system-ui,-apple-system,sans-serif;
+  color:var(--tx);background:var(--bg);user-select:none;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none}
+canvas{display:block}
+ul,ol{list-style:none}
+
+:root{
+  --bg:#000008;--bg2:#04000f;--bg3:#08041a;--bg4:#10082a;
+  --panel:#06020f;--panel2:#0c0520;--panel3:#140a34;--panel4:#1c1048;
+  --bd:#1c1240;--bd2:#301e60;--bd3:#483090;
+  --tx:#e8e0ff;--tx2:#a898e0;--tx3:#7058b0;--mu:#483888;
+  --c1:#00f0ff;--c1h:#80f8ff;--c1l:#00a8b8;
+  --c2:#ff00aa;--c2h:#ff80d5;--c2l:#b80078;
+  --c3:#00ff88;--c3h:#80ffc4;--c3l:#00b860;
+  --c4:#ffc400;--c4h:#ffdb70;--c4l:#b88800;
+  --c5:#a855f7;--c5h:#d0a0ff;--c5l:#7c3aed;
+  --c6:#ff5500;--c6h:#ffa070;--c6l:#b83800;
+  --c7:#c8ff00;--c7h:#e0ff80;--c7l:#90b800;
+  --c8:#5b8dff;--c8h:#a8c0ff;--c8l:#3a68cc;
+  --ok:#00ff88;--warn:#ffc400;--err:#ff00aa;--info:#00f0ff;
+  --g1:linear-gradient(135deg,#00f0ff,#a855f7);
+  --g2:linear-gradient(135deg,#ff00aa,#ffc400);
+  --g3:linear-gradient(135deg,#00ff88,#00f0ff);
+  --gHolo:linear-gradient(120deg,#00f0ff,#a855f7,#ff00aa,#00ff88,#ffc400,#00f0ff);
+  --r:8px;--rs:6px;--rxs:4px;--rf:9999px;
+  --sh1:0 2px 8px rgba(0,0,0,.8);
+  --sh2:0 4px 20px rgba(0,0,0,.9);
+  --sh3:0 8px 40px rgba(0,0,0,.95);
+  --shGlow:0 0 30px rgba(0,240,255,.4);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --t:all .12s cubic-bezier(.4,0,.2,1);
+}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--c1)}
+
+/* Layout */
+.app{
+  display:grid;
+  grid-template-columns:230px 1fr 340px;
+  grid-template-rows:48px 1fr;
+  height:100vh;width:100vw;
+  grid-template-areas:"head head head" "side main right";
+}
+.head{
+  grid-area:head;
+  background:var(--panel);border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;gap:12px;padding:0 14px;
+  z-index:100;
+}
+.logo{
+  display:flex;align-items:center;gap:10px;
+}
+.logo .mark{
+  width:34px;height:34px;border-radius:8px;
+  background:var(--gHolo);background-size:300% auto;
+  animation:holo 5s linear infinite;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;box-shadow:var(--shGlow);
+}
+@keyframes holo{0%{background-position:0 center}100%{background-position:300% center}}
+.logo .name{
+  font-weight:800;font-size:.94rem;letter-spacing:2px;
+  background:var(--gHolo);background-size:300% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:holo 6s linear infinite;
+}
+.logo .sub{font-size:.5rem;color:var(--tx3);letter-spacing:1.6px;text-transform:uppercase;font-weight:600}
+
+.head .fps{
+  margin-left:auto;
+  display:flex;gap:14px;font-family:var(--mono);font-size:.65rem;color:var(--tx3);
+}
+.head .fps b{color:var(--c1);font-weight:700}
+
+.hbtn{
+  padding:6px 12px;border-radius:var(--rxs);
+  background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);
+  font-size:.68rem;font-weight:600;cursor:pointer;
+  transition:var(--t);
+}
+.hbtn:hover{background:var(--panel3);border-color:var(--c1);color:var(--tx)}
+
+/* Sidebar */
+.side{
+  grid-area:side;background:var(--panel);
+  border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.side-head{
+  padding:10px 14px;border-bottom:1px solid var(--bd);
+  font-size:.6rem;font-weight:700;color:var(--tx3);
+  text-transform:uppercase;letter-spacing:1.4px;
+}
+.scene-list{
+  flex:1;overflow-y:auto;padding:6px;
+}
+.scene-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 11px;border-radius:var(--rxs);
+  cursor:pointer;transition:var(--t);
+  margin-bottom:2px;
+}
+.scene-item:hover{background:var(--panel2)}
+.scene-item.active{background:var(--g1);color:#000;font-weight:700}
+.scene-item .si-icon{
+  width:32px;height:32px;border-radius:6px;
+  background:var(--panel3);display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;flex-shrink:0;
+}
+.scene-item.active .si-icon{background:rgba(0,0,0,.2)}
+.scene-item .si-body{flex:1;min-width:0}
+.scene-item .si-name{font-size:.76rem;font-weight:600}
+.scene-item .si-desc{font-size:.6rem;color:var(--tx3);margin-top:1px}
+.scene-item.active .si-desc{color:rgba(0,0,0,.6)}
+.scene-item .si-badge{
+  font-size:.52rem;font-family:var(--mono);
+  padding:1px 5px;border-radius:var(--rf);
+  background:var(--panel3);color:var(--c1);font-weight:700;
+}
+.scene-item.active .si-badge{background:rgba(0,0,0,.3);color:#fff}
+
+.side-foot{
+  padding:8px 10px;border-top:1px solid var(--bd);
+  font-size:.62rem;color:var(--tx3);text-align:center;
+  font-family:var(--mono);
+}
+
+/* Main - viewport */
+.main{
+  grid-area:main;position:relative;background:#000;overflow:hidden;
+}
+#gl{
+  position:absolute;inset:0;width:100%;height:100%;display:block;
+}
+.hud{
+  position:absolute;pointer-events:none;inset:0;
+  font-family:var(--mono);
+}
+.hud-corner{
+  position:absolute;padding:8px 12px;
+  background:rgba(0,8,20,.75);
+  border:1px solid var(--bd2);border-radius:var(--rxs);
+  backdrop-filter:blur(8px);
+  font-size:.62rem;color:var(--tx2);
+}
+.hud-tl{top:12px;left:12px;pointer-events:auto}
+.hud-tr{top:12px;right:12px;pointer-events:auto}
+.hud-bl{bottom:12px;left:12px;pointer-events:auto}
+.hud-br{bottom:12px;right:12px;pointer-events:auto}
+.hud-corner b{color:var(--c1)}
+
+/* Controls overlay */
+.view-ctrl{
+  position:absolute;top:12px;right:12px;
+  display:flex;flex-direction:column;gap:4px;
+  z-index:10;
+}
+.view-ctrl button{
+  width:34px;height:34px;border-radius:var(--rxs);
+  background:rgba(6,2,15,.85);border:1px solid var(--bd2);
+  color:var(--tx2);font-size:.9rem;cursor:pointer;
+  transition:var(--t);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+}
+.view-ctrl button:hover{border-color:var(--c1);color:var(--c1)}
+
+/* Right panel - parameters + code */
+.right{
+  grid-area:right;background:var(--panel);
+  border-left:1px solid var(--bd);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.tabs{
+  display:flex;border-bottom:1px solid var(--bd);
+  background:var(--panel2);flex-shrink:0;
+}
+.tab{
+  flex:1;padding:10px 6px;text-align:center;
+  font-size:.64rem;font-weight:700;
+  color:var(--tx3);cursor:pointer;transition:var(--t);
+  border-bottom:2px solid transparent;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.tab:hover{color:var(--tx);background:var(--panel3)}
+.tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel)}
+.tab-body{
+  flex:1;overflow-y:auto;position:relative;
+}
+.tab-pane{display:none;padding:14px;animation:fade .2s}
+.tab-pane.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Param slider */
+.pgroup{margin-bottom:14px}
+.pgroup h4{
+  font-size:.6rem;font-weight:700;
+  color:var(--c2);text-transform:uppercase;
+  letter-spacing:1.4px;margin-bottom:8px;
+  padding-bottom:4px;border-bottom:1px solid var(--bd);
+}
+.pitem{margin-bottom:10px}
+.pitem .prow{
+  display:flex;justify-content:space-between;
+  font-size:.68rem;color:var(--tx2);margin-bottom:4px;
+  font-weight:500;
+}
+.pitem .prow b{color:var(--c1);font-family:var(--mono);font-weight:700}
+.pitem input[type=range]{
+  width:100%;height:5px;-webkit-appearance:none;
+  background:var(--bd2);border-radius:3px;padding:0;
+}
+.pitem input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;
+  border-radius:50%;background:var(--c1);
+  cursor:pointer;box-shadow:0 0 8px var(--c1);
+}
+.pitem .hint{font-size:.55rem;color:var(--tx3);margin-top:3px;font-style:italic}
+
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.abtn{
+  flex:1;min-width:0;padding:8px 10px;border-radius:var(--rxs);
+  background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);
+  font-size:.66rem;font-weight:700;cursor:pointer;
+  transition:var(--t);text-align:center;
+}
+.abtn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.abtn.primary{background:var(--g1);color:#000;border-color:transparent}
+.abtn.primary:hover{box-shadow:0 0 20px rgba(0,240,255,.4)}
+
+/* Code viewer */
+.code-lang-tabs{
+  display:flex;overflow-x:auto;padding:6px;
+  gap:4px;background:var(--panel2);border-bottom:1px solid var(--bd);
+  flex-shrink:0;
+}
+.code-lang-tab{
+  padding:4px 10px;border-radius:var(--rxxs);
+  font-size:.6rem;font-weight:700;font-family:var(--mono);
+  color:var(--tx3);cursor:pointer;transition:var(--t);
+  white-space:nowrap;border:1px solid transparent;
+}
+.code-lang-tab:hover{color:var(--tx);background:var(--panel3)}
+.code-lang-tab.active{
+  background:var(--c1);color:#000;border-color:var(--c1h);
+}
+.code-view{
+  background:#000;border-radius:var(--rxs);
+  padding:12px;font-family:var(--mono);font-size:.66rem;
+  line-height:1.55;color:var(--tx2);
+  overflow-x:auto;white-space:pre;
+  tab-size:2;max-height:none;
+}
+.code-view .cm{color:var(--tx3);font-style:italic}
+.code-view .kw{color:var(--c2);font-weight:600}
+.code-view .st{color:var(--c3)}
+.code-view .nm{color:var(--c4)}
+.code-view .fn{color:var(--c1)}
+.code-view .op{color:var(--c5)}
+.code-view .ty{color:var(--c7)}
+
+.code-meta{
+  display:flex;justify-content:space-between;
+  font-size:.6rem;color:var(--tx3);
+  font-family:var(--mono);
+  padding:4px 0 8px;border-bottom:1px solid var(--bd);margin-bottom:8px;
+}
+.code-copy{
+  padding:3px 8px;border-radius:var(--rxxs);
+  background:var(--panel3);color:var(--tx2);
+  font-size:.58rem;font-weight:700;cursor:pointer;
+  border:1px solid var(--bd2);transition:var(--t);
+}
+.code-copy:hover{background:var(--c1);color:#000;border-color:var(--c1)}
+
+/* Info pane */
+.info-block{
+  background:var(--panel2);border:1px solid var(--bd);
+  border-radius:var(--rxs);padding:12px;margin-bottom:10px;
+}
+.info-block h3{
+  font-size:.72rem;font-weight:700;color:var(--c1);
+  margin-bottom:6px;font-family:var(--mono);
+}
+.info-block p{
+  font-size:.68rem;color:var(--tx2);line-height:1.65;
+}
+.info-block code{
+  background:#000;color:var(--c3);padding:1px 5px;
+  border-radius:3px;font-family:var(--mono);font-size:.65rem;
+}
+.kv{
+  display:flex;justify-content:space-between;
+  padding:5px 0;border-bottom:1px solid var(--bd);
+  font-size:.66rem;
+}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--tx3)}
+.kv .v{font-family:var(--mono);color:var(--c1);font-weight:700;text-align:right;max-width:60%}
+
+.empty{
+  text-align:center;padding:30px 20px;
+  color:var(--tx3);font-size:.72rem;
+  line-height:1.6;
+}
+
+/* Overlay loading */
+#loading{
+  position:absolute;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;z-index:1000;
+  transition:opacity .5s;
+}
+#loading.hide{opacity:0;pointer-events:none}
+#loading .spin{
+  width:44px;height:44px;border-radius:50%;
+  border:3px solid var(--bd2);border-top-color:var(--c1);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading .msg{font-family:var(--mono);font-size:.72rem;color:var(--tx2);letter-spacing:2px}
+
+/* Toast */
+#toasts{
+  position:fixed;bottom:16px;right:16px;z-index:9999;
+  display:flex;flex-direction:column;gap:8px;
+  pointer-events:none;
+}
+.toast{
+  padding:10px 14px;border-radius:var(--rxs);
+  background:var(--panel);border:1px solid var(--bd2);
+  border-left:3px solid var(--c1);
+  box-shadow:var(--sh2);
+  font-size:.7rem;font-weight:500;
+  animation:slideIn .25s;
+  pointer-events:auto;
+  max-width:280px;
+}
+.toast.ok{border-left-color:var(--c3)}
+.toast.err{border-left-color:var(--c2)}
+.toast.warn{border-left-color:var(--c4)}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:none;opacity:1}}
+
+/* Modal */
+.modal{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;z-index:9000;backdrop-filter:blur(8px);
+}
+.modal.open{display:flex;animation:mfade .15s}
+@keyframes mfade{from{opacity:0}to{opacity:1}}
+.modal-box{
+  background:var(--panel);border:1px solid var(--bd2);
+  border-radius:var(--r);box-shadow:var(--sh3);
+  max-width:820px;width:100%;max-height:85vh;
+  display:flex;flex-direction:column;
+}
+.modal-box.wide{max-width:1100px}
+.modal-head{
+  padding:14px 18px;border-bottom:1px solid var(--bd);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.modal-head h2{font-size:.88rem;font-weight:700;color:var(--c1)}
+.modal-body{flex:1;overflow-y:auto;padding:16px}
+.modal-foot{
+  padding:12px 18px;border-top:1px solid var(--bd);
+  display:flex;justify-content:flex-end;gap:8px;
+}
+
+@media (max-width:1100px){
+  .app{grid-template-columns:180px 1fr 280px}
+}
+@media (max-width:900px){
+  .app{
+    grid-template-columns:1fr;grid-template-rows:48px 1fr auto;
+    grid-template-areas:"head" "main" "right";
+  }
+  .side{display:none}
+  .right{max-height:45vh}
+  .head .fps{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="head">
+    <div class="logo">
+      <div class="mark">🌌</div>
+      <div>
+        <div class="name">COSMOS ENGINE</div>
+        <div class="sub">Real-time 3D Simulation</div>
+      </div>
+    </div>
+    <div class="fps">
+      <span>FPS <b id="fpsVal">--</b></span>
+      <span>OBJ <b id="objVal">0</b></span>
+      <span>GPU <b id="gpuVal">--</b></span>
+    </div>
+    <button class="hbtn" onclick="showHelp()">? Help</button>
+    <button class="hbtn" onclick="fullscreen()">⛶</button>
+  </header>
+
+  <aside class="side">
+    <div class="side-head">▶ Scenes</div>
+    <nav class="scene-list" id="sceneList"></nav>
+    <div class="side-foot">WebGL2 · 0 deps</div>
+  </aside>
+
+  <main class="main">
+    <canvas id="gl"></canvas>
+
+    <div class="hud">
+      <div class="hud-corner hud-tl" id="hudTL">
+        <div>scene: <b id="hudScene">—</b></div>
+        <div>objects: <b id="hudObj">0</b></div>
+        <div>sim time: <b id="hudTime">0.0</b>s</div>
+      </div>
+      <div class="hud-corner hud-tr">
+        <div>camera θ <b id="hudTheta">0</b>°</div>
+        <div>camera φ <b id="hudPhi">0</b>°</div>
+        <div>dist <b id="hudDist">0</b></div>
+      </div>
+      <div class="hud-corner hud-bl" id="hudBL">—</div>
+    </div>
+
+    <div class="view-ctrl">
+      <button onclick="Cam.zoom(-1)" title="Zoom in">⊕</button>
+      <button onclick="Cam.zoom(1)" title="Zoom out">⊖</button>
+      <button onclick="Cam.reset()" title="Reset view">⟲</button>
+      <button onclick="togglePause()" id="pauseBtn" title="Pause">⏸</button>
+    </div>
+
+    <div id="loading"><div class="spin"></div><div class="msg" id="loadMsg">BOOTING GPU…</div></div>
+  </main>
+
+  <aside class="right">
+    <div class="tabs">
+      <div class="tab active" data-pane="params">⚙ Params</div>
+      <div class="tab" data-pane="code">&#123; &#125; Code</div>
+      <div class="tab" data-pane="info">ⓘ Info</div>
+    </div>
+
+    <div class="tab-body">
+      <div class="tab-pane active" id="pane-params">
+        <div id="paramPanel">
+          <div class="empty">Select a scene to configure it.</div>
+        </div>
+        <div class="actions">
+          <button class="abtn primary" onclick="resetScene()">↺ Reset Scene</button>
+          <button class="abtn" onclick="randomizeScene()">🎲 Randomize</button>
+        </div>
+      </div>
+      <div class="tab-pane" id="pane-code">
+        <div class="code-lang-tabs" id="langTabs"></div>
+        <div class="code-meta">
+          <span id="codeFile">—</span>
+          <button class="code-copy" onclick="copyCode()">⧉ Copy</button>
+        </div>
+        <pre class="code-view" id="codeView">Select a scene.</pre>
+      </div>
+      <div class="tab-pane" id="pane-info">
+        <div id="infoPanel">
+          <div class="empty">Select a scene to view info.</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div id="toasts"></div>
+
+<div class="modal" id="modal">
+  <div class="modal-box" id="modalBox">
+    <div class="modal-head">
+      <h2 id="modalTitle">Modal</h2>
+      <button class="hbtn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   MATH — Matrix/Vector operations (glMatrix-style)
+   ═══════════════════════════════════════════════════════════════ */
+var M4 = {
+  create: function(){ return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]); },
+  identity: function(o){
+    o = o || new Float32Array(16);
+    o[0]=1;o[1]=0;o[2]=0;o[3]=0;
+    o[4]=0;o[5]=1;o[6]=0;o[7]=0;
+    o[8]=0;o[9]=0;o[10]=1;o[11]=0;
+    o[12]=0;o[13]=0;o[14]=0;o[15]=1;
+    return o;
+  },
+  perspective: function(o,fovy,aspect,near,far){
+    var f = 1/Math.tan(fovy/2);
+    var nf = 1/(near-far);
+    o[0]=f/aspect;o[1]=0;o[2]=0;o[3]=0;
+    o[4]=0;o[5]=f;o[6]=0;o[7]=0;
+    o[8]=0;o[9]=0;o[10]=(far+near)*nf;o[11]=-1;
+    o[12]=0;o[13]=0;o[14]=2*far*near*nf;o[15]=0;
+    return o;
+  },
+  lookAt: function(o,eye,center,up){
+    var z0=eye[0]-center[0], z1=eye[1]-center[1], z2=eye[2]-center[2];
+    var len = Math.hypot(z0,z1,z2);
+    z0/=len; z1/=len; z2/=len;
+    var x0 = up[1]*z2 - up[2]*z1;
+    var x1 = up[2]*z0 - up[0]*z2;
+    var x2 = up[0]*z1 - up[1]*z0;
+    len = Math.hypot(x0,x1,x2);
+    if(len === 0){ x0=1; x1=0; x2=0; len=1; }
+    x0/=len; x1/=len; x2/=len;
+    var y0 = z1*x2 - z2*x1;
+    var y1 = z2*x0 - z0*x2;
+    var y2 = z0*x1 - z1*x0;
+    o[0]=x0;o[1]=y0;o[2]=z0;o[3]=0;
+    o[4]=x1;o[5]=y1;o[6]=z1;o[7]=0;
+    o[8]=x2;o[9]=y2;o[10]=z2;o[11]=0;
+    o[12]=-(x0*eye[0]+x1*eye[1]+x2*eye[2]);
+    o[13]=-(y0*eye[0]+y1*eye[1]+y2*eye[2]);
+    o[14]=-(z0*eye[0]+z1*eye[1]+z2*eye[2]);
+    o[15]=1;
+    return o;
+  },
+  multiply: function(o,a,b){
+    var a00=a[0],a01=a[1],a02=a[2],a03=a[3],
+        a10=a[4],a11=a[5],a12=a[6],a13=a[7],
+        a20=a[8],a21=a[9],a22=a[10],a23=a[11],
+        a30=a[12],a31=a[13],a32=a[14],a33=a[15];
+    for(var i=0;i<4;i++){
+      var b0=b[i*4],b1=b[i*4+1],b2=b[i*4+2],b3=b[i*4+3];
+      o[i*4]   = b0*a00 + b1*a10 + b2*a20 + b3*a30;
+      o[i*4+1] = b0*a01 + b1*a11 + b2*a21 + b3*a31;
+      o[i*4+2] = b0*a02 + b1*a12 + b2*a22 + b3*a32;
+      o[i*4+3] = b0*a03 + b1*a13 + b2*a23 + b3*a33;
+    }
+    return o;
+  },
+  translate: function(o,m,v){
+    var x=v[0],y=v[1],z=v[2];
+    if(m===o){
+      o[12] = m[0]*x + m[4]*y + m[8]*z + m[12];
+      o[13] = m[1]*x + m[5]*y + m[9]*z + m[13];
+      o[14] = m[2]*x + m[6]*y + m[10]*z + m[14];
+      o[15] = m[3]*x + m[7]*y + m[11]*z + m[15];
+    } else {
+      var a00=m[0],a01=m[1],a02=m[2],a03=m[3],
+          a10=m[4],a11=m[5],a12=m[6],a13=m[7],
+          a20=m[8],a21=m[9],a22=m[10],a23=m[11];
+      o[0]=a00;o[1]=a01;o[2]=a02;o[3]=a03;
+      o[4]=a10;o[5]=a11;o[6]=a12;o[7]=a13;
+      o[8]=a20;o[9]=a21;o[10]=a22;o[11]=a23;
+      o[12] = m[12] + x*a00 + y*a10 + z*a20;
+      o[13] = m[13] + x*a01 + y*a11 + z*a21;
+      o[14] = m[14] + x*a02 + y*a12 + z*a22;
+      o[15] = m[15] + x*a03 + y*a13 + z*a23;
+    }
+    return o;
+  },
+  scale: function(o,m,v){
+    var x=v[0],y=v[1],z=v[2];
+    o[0]=m[0]*x;o[1]=m[1]*x;o[2]=m[2]*x;o[3]=m[3]*x;
+    o[4]=m[4]*y;o[5]=m[5]*y;o[6]=m[6]*y;o[7]=m[7]*y;
+    o[8]=m[8]*z;o[9]=m[9]*z;o[10]=m[10]*z;o[11]=m[11]*z;
+    o[12]=m[12];o[13]=m[13];o[14]=m[14];o[15]=m[15];
+    return o;
+  },
+  rotateX: function(o,m,rad){
+    var s=Math.sin(rad),c=Math.cos(rad);
+    var a10=m[4],a11=m[5],a12=m[6],a13=m[7];
+    var a20=m[8],a21=m[9],a22=m[10],a23=m[11];
+    if(m!==o){ for(var i=0;i<12;i++) o[i]=m[i]; }
+    o[4]=a10*c+a20*s; o[5]=a11*c+a21*s; o[6]=a12*c+a22*s; o[7]=a13*c+a23*s;
+    o[8]=a20*c-a10*s; o[9]=a21*c-a11*s; o[10]=a22*c-a12*s; o[11]=a23*c-a13*s;
+    return o;
+  },
+  rotateY: function(o,m,rad){
+    var s=Math.sin(rad),c=Math.cos(rad);
+    var a00=m[0],a01=m[1],a02=m[2],a03=m[3];
+    var a20=m[8],a21=m[9],a22=m[10],a23=m[11];
+    if(m!==o){ for(var i=0;i<12;i++) o[i]=m[i]; }
+    o[0]=a00*c-a20*s; o[1]=a01*c-a21*s; o[2]=a02*c-a22*s; o[3]=a03*c-a23*s;
+    o[8]=a00*s+a20*c; o[9]=a01*s+a21*c; o[10]=a02*s+a22*c; o[11]=a03*s+a23*c;
+    return o;
+  },
+  rotateZ: function(o,m,rad){
+    var s=Math.sin(rad),c=Math.cos(rad);
+    var a00=m[0],a01=m[1],a02=m[2],a03=m[3];
+    var a10=m[4],a11=m[5],a12=m[6],a13=m[7];
+    if(m!==o){ for(var i=0;i<12;i++) o[i]=m[i]; }
+    o[0]=a00*c+a10*s; o[1]=a01*c+a11*s; o[2]=a02*c+a12*s; o[3]=a03*c+a13*s;
+    o[4]=a10*c-a00*s; o[5]=a11*c-a01*s; o[6]=a12*c-a02*s; o[7]=a13*c-a03*s;
+    return o;
+  }
+};
+
+var V3 = {
+  create: function(x,y,z){ return new Float32Array([x||0,y||0,z||0]); },
+  add: function(o,a,b){ o[0]=a[0]+b[0];o[1]=a[1]+b[1];o[2]=a[2]+b[2];return o; },
+  sub: function(o,a,b){ o[0]=a[0]-b[0];o[1]=a[1]-b[1];o[2]=a[2]-b[2];return o; },
+  scale: function(o,a,s){ o[0]=a[0]*s;o[1]=a[1]*s;o[2]=a[2]*s;return o; },
+  len: function(a){ return Math.hypot(a[0],a[1],a[2]); },
+  norm: function(o,a){
+    var l=Math.hypot(a[0],a[1],a[2])||1;
+    o[0]=a[0]/l;o[1]=a[1]/l;o[2]=a[2]/l;return o;
+  },
+  cross: function(o,a,b){
+    o[0]=a[1]*b[2]-a[2]*b[1];
+    o[1]=a[2]*b[0]-a[0]*b[2];
+    o[2]=a[0]*b[1]-a[1]*b[0];
+    return o;
+  },
+  dot: function(a,b){ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   WEBGL2 RENDERER — from scratch
+   ═══════════════════════════════════════════════════════════════ */
+var GL = {
+  gl:null, canvas:null,
+  prog:null,
+  attribs:{}, uniforms:{},
+  vao:null,
+
+  init: function(canvas){
+    this.canvas = canvas;
+    var gl = canvas.getContext('webgl2', {
+      antialias:true, alpha:false, depth:true,
+      powerPreference:'high-performance',
+      preserveDrawingBuffer:false
+    });
+    if(!gl) throw new Error('WebGL2 not supported');
+    this.gl = gl;
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.enable(gl.CULL_FACE);
+    gl.cullFace(gl.BACK);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.clearColor(0, 0, 0.008, 1);
+    return gl;
+  },
+
+  compileShader: function(type, src){
+    var gl = this.gl;
+    var s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+      var log = gl.getShaderInfoLog(s);
+      gl.deleteShader(s);
+      throw new Error('Shader: ' + log);
+    }
+    return s;
+  },
+
+  createProgram: function(vs, fs){
+    var gl = this.gl;
+    var v = this.compileShader(gl.VERTEX_SHADER, vs);
+    var f = this.compileShader(gl.FRAGMENT_SHADER, fs);
+    var p = gl.createProgram();
+    gl.attachShader(p, v);
+    gl.attachShader(p, f);
+    gl.linkProgram(p);
+    if(!gl.getProgramParameter(p, gl.LINK_STATUS)){
+      throw new Error('Link: ' + gl.getProgramInfoLog(p));
+    }
+    gl.deleteShader(v);
+    gl.deleteShader(f);
+    this.prog = p;
+    // Collect attribs and uniforms
+    this.attribs = {};
+    this.uniforms = {};
+    var na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES);
+    for(var i=0;i<na;i++){
+      var info = gl.getActiveAttrib(p, i);
+      this.attribs[info.name] = gl.getAttribLocation(p, info.name);
+    }
+    var nu = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for(var j=0;j<nu;j++){
+      var uinfo = gl.getActiveUniform(p, j);
+      this.uniforms[uinfo.name] = gl.getUniformLocation(p, uinfo.name);
+    }
+    return p;
+  },
+
+  use: function(){ this.gl.useProgram(this.prog); },
+  clear: function(){
+    var gl = this.gl;
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  },
+
+  resize: function(){
+    var c = this.canvas;
+    var dpr = Math.min(devicePixelRatio || 1, 2);
+    var w = Math.floor(c.clientWidth * dpr);
+    var h = Math.floor(c.clientHeight * dpr);
+    if(c.width !== w || c.height !== h){
+      c.width = w;
+      c.height = h;
+    }
+    this.gl.viewport(0, 0, c.width, c.height);
+  },
+
+  createBuffer: function(data, target){
+    var gl = this.gl;
+    var b = gl.createBuffer();
+    gl.bindBuffer(target || gl.ARRAY_BUFFER, b);
+    gl.bufferData(target || gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    return b;
+  },
+
+  uniformMat4: function(name, m){
+    var gl = this.gl;
+    gl.uniformMatrix4fv(this.uniforms[name], false, m);
+  },
+  uniformVec3: function(name, v){
+    var gl = this.gl;
+    gl.uniform3fv(this.uniforms[name], v);
+  },
+  uniformVec4: function(name, v){
+    var gl = this.gl;
+    gl.uniform4fv(this.uniforms[name], v);
+  },
+  uniformFloat: function(name, x){
+    var gl = this.gl;
+    gl.uniform1f(this.uniforms[name], x);
+  },
+  uniformInt: function(name, x){
+    var gl = this.gl;
+    gl.uniform1i(this.uniforms[name], x);
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   SHADER LIBRARY
+   ═══════════════════════════════════════════════════════════════ */
+var SHADERS = {
+  // Standard 3D mesh shader with lighting
+  meshVS: `#version 300 es
+precision highp float;
+in vec3 aPos;
+in vec3 aNormal;
+in vec2 aUV;
+uniform mat4 uMVP;
+uniform mat4 uModel;
+uniform mat3 uNormalMat;
+out vec3 vNormal;
+out vec3 vWorld;
+out vec2 vUV;
+void main(){
+  vec4 world = uModel * vec4(aPos, 1.0);
+  vWorld = world.xyz;
+  vNormal = normalize(uNormalMat * aNormal);
+  vUV = aUV;
+  gl_Position = uMVP * vec4(aPos, 1.0);
+}`,
+
+  meshFS: `#version 300 es
+precision highp float;
+in vec3 vNormal;
+in vec3 vWorld;
+in vec2 vUV;
+uniform vec3 uColor;
+uniform vec3 uLightDir;
+uniform vec3 uLightColor;
+uniform vec3 uAmbient;
+uniform vec3 uCameraPos;
+uniform float uShininess;
+uniform float uSpecular;
+uniform float uEmissive;
+out vec4 fragColor;
+void main(){
+  vec3 N = normalize(vNormal);
+  vec3 L = normalize(uLightDir);
+  vec3 V = normalize(uCameraPos - vWorld);
+  vec3 H = normalize(L + V);
+  float diff = max(dot(N, L), 0.0);
+  float spec = pow(max(dot(N, H), 0.0), uShininess) * uSpecular;
+  vec3 color = uColor * (uAmbient + uLightColor * diff) + uLightColor * spec + uColor * uEmissive;
+  fragColor = vec4(color, 1.0);
+}`,
+
+  // Ray-march fullscreen quad shader (fractals)
+  quadVS: `#version 300 es
+precision highp float;
+in vec2 aPos;
+out vec2 vUV;
+void main(){
+  vUV = aPos * 0.5 + 0.5;
+  gl_Position = vec4(aPos, 0.0, 1.0);
+}`,
+
+  // Points shader for stars/particles
+  pointVS: `#version 300 es
+precision highp float;
+in vec3 aPos;
+in vec4 aColor;
+in float aSize;
+uniform mat4 uMVP;
+uniform float uPixelRatio;
+out vec4 vColor;
+void main(){
+  vColor = aColor;
+  gl_Position = uMVP * vec4(aPos, 1.0);
+  gl_PointSize = aSize * uPixelRatio;
+}`,
+
+  pointFS: `#version 300 es
+precision highp float;
+in vec4 vColor;
+out vec4 fragColor;
+void main(){
+  vec2 c = gl_PointCoord - 0.5;
+  float d = length(c);
+  if(d > 0.5) discard;
+  float alpha = smoothstep(0.5, 0.0, d);
+  fragColor = vec4(vColor.rgb, vColor.a * alpha);
+}`,
+
+  // Nebula volumetric raymarch
+  nebulaFS: `#version 300 es
+precision highp float;
+in vec2 vUV;
+uniform vec2 uResolution;
+uniform float uTime;
+uniform vec3 uCameraPos;
+uniform mat3 uCameraMat;
+uniform float uDensity;
+uniform float uScale;
+out vec4 fragColor;
+
+float hash(vec3 p){
+  p = fract(p * vec3(443.897, 441.423, 437.195));
+  p += dot(p, p.yzx + 19.19);
+  return fract((p.x + p.y) * p.z);
+}
+
+float noise(vec3 p){
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  f = f*f*(3.0-2.0*f);
+  float n000 = hash(i + vec3(0,0,0));
+  float n100 = hash(i + vec3(1,0,0));
+  float n010 = hash(i + vec3(0,1,0));
+  float n110 = hash(i + vec3(1,1,0));
+  float n001 = hash(i + vec3(0,0,1));
+  float n101 = hash(i + vec3(1,0,1));
+  float n011 = hash(i + vec3(0,1,1));
+  float n111 = hash(i + vec3(1,1,1));
+  float nx00 = mix(n000, n100, f.x);
+  float nx10 = mix(n010, n110, f.x);
+  float nx01 = mix(n001, n101, f.x);
+  float nx11 = mix(n011, n111, f.x);
+  float nxy0 = mix(nx00, nx10, f.y);
+  float nxy1 = mix(nx01, nx11, f.y);
+  return mix(nxy0, nxy1, f.z);
+}
+
+float fbm(vec3 p){
+  float v = 0.0;
+  float a = 0.5;
+  for(int i=0; i<6; i++){
+    v += a * noise(p);
+    p *= 2.03;
+    a *= 0.5;
+  }
+  return v;
+}
+
+void main(){
+  vec2 uv = (vUV * 2.0 - 1.0) * vec2(uResolution.x/uResolution.y, 1.0);
+  vec3 rd = uCameraMat * normalize(vec3(uv, -1.5));
+  vec3 ro = uCameraPos;
+  float t = 0.0;
+  vec3 col = vec3(0.0);
+  float trans = 1.0;
+  for(int i=0; i<64; i++){
+    vec3 p = ro + rd * t;
+    p *= uScale;
+    float d = fbm(p + vec3(uTime * 0.05));
+    d = smoothstep(0.4, 0.9, d) * uDensity;
+    if(d > 0.001){
+      vec3 c1 = vec3(0.4, 0.15, 0.85);
+      vec3 c2 = vec3(0.0, 0.9, 1.0);
+      vec3 c3 = vec3(1.0, 0.0, 0.6);
+      vec3 lc = mix(c1, c2, d);
+      lc = mix(lc, c3, d*d);
+      col += lc * d * trans;
+      trans *= (1.0 - d * 0.7);
+      if(trans < 0.02) break;
+    }
+    t += 0.15;
+  }
+  // Stars in background
+  vec3 bg = vec3(0.0);
+  float star = pow(hash(floor(rd * 400.0)), 40.0);
+  bg = vec3(star);
+  col += bg * trans;
+  fragColor = vec4(col, 1.0);
+}`,
+
+  // Mandelbulb raymarch
+  mandelbulbFS: `#version 300 es
+precision highp float;
+in vec2 vUV;
+uniform vec2 uResolution;
+uniform float uTime;
+uniform vec3 uCameraPos;
+uniform mat3 uCameraMat;
+uniform float uPower;
+uniform int uIterations;
+out vec4 fragColor;
+
+vec2 sphereTrace(vec3 ro, vec3 rd){
+  float t = 0.0;
+  vec3 z;
+  float dr;
+  for(int i=0; i<128; i++){
+    if(t > 12.0) break;
+    vec3 p = ro + rd * t;
+    z = p;
+    dr = 1.0;
+    float r = 0.0;
+    for(int j=0; j<16; j++){
+      if(j >= uIterations) break;
+      r = length(z);
+      if(r > 4.0) break;
+      float theta = acos(z.z / r);
+      float phi = atan(z.y, z.x);
+      dr = pow(r, uPower - 1.0) * uPower * dr + 1.0;
+      float zr = pow(r, uPower);
+      theta *= uPower;
+      phi *= uPower;
+      z = zr * vec3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)) + p;
+    }
+    float d = 0.5 * log(max(r, 1e-6)) * r / dr;
+    if(d < 0.001) return vec2(t, dr);
+    t += d;
+  }
+  return vec2(-1.0, 0.0);
+}
+
+vec3 calcNormal(vec3 p){
+  vec2 e = vec2(0.001, 0.0);
+  float fx = sphereTrace(p + vec3(e.xy,0), vec3(0)).x;
+  float fy = sphereTrace(p + vec3(0,e.xy), vec3(0)).x;
+  float fz = sphereTrace(p + vec3(0,0,e.x), vec3(0)).x;
+  return normalize(vec3(fx, fy, fz));
+}
+
+void main(){
+  vec2 uv = (vUV * 2.0 - 1.0) * vec2(uResolution.x/uResolution.y, 1.0);
+  vec3 rd = uCameraMat * normalize(vec3(uv, -2.0));
+  vec3 ro = uCameraPos;
+  vec2 hit = sphereTrace(ro, rd);
+  vec3 col = vec3(0.0);
+  if(hit.x > 0.0){
+    vec3 p = ro + rd * hit.x;
+    vec3 n = calcNormal(p);
+    vec3 light1 = normalize(vec3(1.0, 1.0, 1.0) - p);
+    vec3 light2 = normalize(vec3(-1.0, -1.0, 0.5) - p);
+    float d1 = max(dot(n, light1), 0.0);
+    float d2 = max(dot(n, light2), 0.0) * 0.5;
+    vec3 base = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + p.z * 0.5 + uTime * 0.3);
+    col = base * (0.2 + d1 + d2);
+    float fres = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
+    col += fres * vec3(0.3, 0.6, 1.0) * 0.6;
+    col = pow(col, vec3(0.4545));
+  }
+  // Background stars
+  float star = pow(hash(floor(rd * 300.0)), 50.0);
+  col += vec3(star);
+  fragColor = vec4(col, 1.0);
+}
+
+float hash(vec3 p){
+  p = fract(p * vec3(443.897, 441.423, 437.195));
+  p += dot(p, p.yzx + 19.19);
+  return fract((p.x + p.y) * p.z);
+}`,
+
+  // 2D noise for terrain
+  terrainFS: `#version 300 es
+precision highp float;
+in vec3 vNormal;
+in vec3 vWorld;
+in vec2 vUV;
+uniform vec3 uCameraPos;
+uniform vec3 uSunDir;
+out vec4 fragColor;
+void main(){
+  vec3 N = normalize(vNormal);
+  vec3 L = normalize(uSunDir);
+  float d = max(dot(N, L), 0.0);
+  float h = vWorld.y;
+  vec3 rock = vec3(0.35, 0.32, 0.28);
+  vec3 grass = vec3(0.25, 0.45, 0.2);
+  vec3 snow = vec3(0.95, 0.96, 1.0);
+  vec3 col;
+  if(h > 6.0) col = mix(rock, snow, smoothstep(6.0, 10.0, h));
+  else if(h > 2.0) col = mix(grass, rock, smoothstep(2.0, 6.0, h));
+  else col = grass;
+  col *= (0.2 + 0.8 * d);
+  float rim = pow(1.0 - max(dot(N, normalize(uCameraPos - vWorld)), 0.0), 3.0);
+  col += vec3(0.4, 0.6, 0.9) * rim * 0.2;
+  fragColor = vec4(col, 1.0);
+}`
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   PROCEDURAL GEOMETRY
+   ═══════════════════════════════════════════════════════════════ */
+function makeSphere(radius, segs){
+  segs = segs || 32;
+  var verts = [];
+  var norms = [];
+  var uvs = [];
+  var idx = [];
+  for(var y=0;y<=segs;y++){
+    for(var x=0;x<=segs;x++){
+      var u = x/segs;
+      var v = y/segs;
+      var phi = v * Math.PI;
+      var theta = u * Math.PI * 2;
+      var nx = Math.sin(phi) * Math.cos(theta);
+      var ny = Math.cos(phi);
+      var nz = Math.sin(phi) * Math.sin(theta);
+      verts.push(nx*radius, ny*radius, nz*radius);
+      norms.push(nx, ny, nz);
+      uvs.push(u, v);
+    }
+  }
+  for(var j=0;j<segs;j++){
+    for(var i=0;i<segs;i++){
+      var a = j*(segs+1) + i;
+      var b = a + 1;
+      var c = a + segs + 1;
+      var d = c + 1;
+      idx.push(a, c, b);
+      idx.push(b, c, d);
+    }
+  }
+  return {
+    verts: new Float32Array(verts),
+    norms: new Float32Array(norms),
+    uvs: new Float32Array(uvs),
+    idx: new Uint32Array(idx),
+    count: idx.length
+  };
+}
+
+function makeCube(size){
+  size = size || 1;
+  var s = size/2;
+  var v = [
+    // +Z
+    -s,-s, s, s,-s, s, s, s, s, -s, s, s,
+    // -Z
+    s,-s,-s, -s,-s,-s, -s, s,-s, s, s,-s,
+    // +Y
+    -s, s, s, s, s, s, s, s,-s, -s, s,-s,
+    // -Y
+    -s,-s,-s, s,-s,-s, s,-s, s, -s,-s, s,
+    // +X
+    s,-s, s, s,-s,-s, s, s,-s, s, s, s,
+    // -X
+    -s,-s,-s, -s,-s, s, -s, s, s, -s, s,-s
+  ];
+  var n = [
+    0,0,1, 0,0,1, 0,0,1, 0,0,1,
+    0,0,-1, 0,0,-1, 0,0,-1, 0,0,-1,
+    0,1,0, 0,1,0, 0,1,0, 0,1,0,
+    0,-1,0, 0,-1,0, 0,-1,0, 0,-1,0,
+    1,0,0, 1,0,0, 1,0,0, 1,0,0,
+    -1,0,0, -1,0,0, -1,0,0, -1,0,0
+  ];
+  var uv = [0,0, 1,0, 1,1, 0,1];
+  var uvs = uv.concat(uv, uv, uv, uv, uv);
+  var idx = [];
+  for(var f=0;f<6;f++){
+    var b = f*4;
+    idx.push(b, b+1, b+2, b, b+2, b+3);
+  }
+  return {
+    verts: new Float32Array(v),
+    norms: new Float32Array(n),
+    uvs: new Float32Array(uvs),
+    idx: new Uint32Array(idx),
+    count: idx.length
+  };
+}
+
+function makeTorus(R, r, seg, sides){
+  R = R || 1;
+  r = r || 0.3;
+  seg = seg || 48;
+  sides = sides || 16;
+  var verts = [], norms = [], uvs = [], idx = [];
+  for(var i=0;i<=seg;i++){
+    for(var j=0;j<=sides;j++){
+      var u = i/seg * Math.PI * 2;
+      var v = j/sides * Math.PI * 2;
+      var cx = Math.cos(u) * R;
+      var cz = Math.sin(u) * R;
+      var x = (R + r*Math.cos(v)) * Math.cos(u);
+      var y = r*Math.sin(v);
+      var z = (R + r*Math.cos(v)) * Math.sin(u);
+      verts.push(x, y, z);
+      var nx = Math.cos(v) * Math.cos(u);
+      var ny = Math.sin(v);
+      var nz = Math.cos(v) * Math.sin(u);
+      norms.push(nx, ny, nz);
+      uvs.push(i/seg, j/sides);
+    }
+  }
+  for(var a=0;a<seg;a++){
+    for(var b=0;b<sides;b++){
+      var i1 = a*(sides+1) + b;
+      var i2 = i1 + sides + 1;
+      idx.push(i1, i2, i1+1);
+      idx.push(i1+1, i2, i2+1);
+    }
+  }
+  return {
+    verts: new Float32Array(verts),
+    norms: new Float32Array(norms),
+    uvs: new Float32Array(uvs),
+    idx: new Uint32Array(idx),
+    count: idx.length
+  };
+}
+
+function makePlane(size, segs){
+  size = size || 10;
+  segs = segs || 32;
+  var verts = [], norms = [], uvs = [], idx = [];
+  for(var i=0;i<=segs;i++){
+    for(var j=0;j<=segs;j++){
+      var x = (i/segs - 0.5) * size;
+      var z = (j/segs - 0.5) * size;
+      verts.push(x, 0, z);
+      norms.push(0, 1, 0);
+      uvs.push(i/segs, j/segs);
+    }
+  }
+  for(var a=0;a<segs;a++){
+    for(var b=0;b<segs;b++){
+      var i1 = a*(segs+1) + b;
+      var i2 = i1 + segs + 1;
+      idx.push(i1, i1+1, i2);
+      idx.push(i1+1, i2+1, i2);
+    }
+  }
+  return {
+    verts: new Float32Array(verts),
+    norms: new Float32Array(norms),
+    uvs: new Float32Array(uvs),
+    idx: new Uint32Array(idx),
+    count: idx.length
+  };
+}
+
+function makeTerrain(size, segs, heightFn){
+  size = size || 20;
+  segs = segs || 64;
+  var verts = [], norms = [], uvs = [], idx = [];
+  var step = size/segs;
+  var half = size/2;
+  var heights = new Float32Array((segs+1)*(segs+1));
+  for(var i=0;i<=segs;i++){
+    for(var j=0;j<=segs;j++){
+      var x = i*step - half;
+      var z = j*step - half;
+      var h = heightFn(x, z);
+      heights[i*(segs+1)+j] = h;
+    }
+  }
+  for(var i2=0;i2<=segs;i2++){
+    for(var j2=0;j2<=segs;j2++){
+      var x2 = i2*step - half;
+      var z2 = j2*step - half;
+      var h2 = heights[i2*(segs+1)+j2];
+      verts.push(x2, h2, z2);
+      // Approximate normal via finite differences
+      var hl = heights[Math.max(i2-1,0)*(segs+1)+j2];
+      var hr = heights[Math.min(i2+1,segs)*(segs+1)+j2];
+      var hd = heights[i2*(segs+1)+Math.max(j2-1,0)];
+      var hu = heights[i2*(segs+1)+Math.min(j2+1,segs)];
+      var n = V3.norm(V3.create(0,0,0), V3.create((hl-hr), 2*step, (hd-hu)));
+      norms.push(n[0], n[1], n[2]);
+      uvs.push(i2/segs, j2/segs);
+    }
+  }
+  for(var a=0;a<segs;a++){
+    for(var b=0;b<segs;b++){
+      var i3 = a*(segs+1) + b;
+      var i4 = i3 + segs + 1;
+      idx.push(i3, i3+1, i4);
+      idx.push(i3+1, i4+1, i4);
+    }
+  }
+  return {
+    verts: new Float32Array(verts),
+    norms: new Float32Array(norms),
+    uvs: new Float32Array(uvs),
+    idx: new Uint32Array(idx),
+    count: idx.length
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NOISE
+   ═══════════════════════════════════════════════════════════════ */
+var Noise = {
+  perm: new Uint8Array(512),
+  init: function(){
+    var p = new Uint8Array(256);
+    for(var i=0;i<256;i++) p[i]=i;
+    var seed = 1;
+    function rand(){
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    }
+    for(var i=255;i>0;i--){
+      var j = Math.floor(rand() * (i+1));
+      var t = p[i]; p[i]=p[j]; p[j]=t;
+    }
+    for(var k=0;k<512;k++) this.perm[k]=p[k&255];
+  },
+  fade: function(t){ return t*t*t*(t*(t*6-15)+10); },
+  grad: function(h,x,y,z){
+    var g = h & 15;
+    var u = g < 8 ? x : y;
+    var v = g < 4 ? y : (g === 12 || g === 14 ? x : z);
+    return ((g & 1) ? -u : u) + ((g & 2) ? -v : v);
+  },
+  perlin3: function(x,y,z){
+    var X = Math.floor(x) & 255;
+    var Y = Math.floor(y) & 255;
+    var Z = Math.floor(z) & 255;
+    x -= Math.floor(x);
+    y -= Math.floor(y);
+    z -= Math.floor(z);
+    var u = this.fade(x), v = this.fade(y), w = this.fade(z);
+    var p = this.perm;
+    var A = p[X]+Y, AA = p[A]+Z, AB = p[A+1]+Z;
+    var B = p[X+1]+Y, BA = p[B]+Z, BB = p[B+1]+Z;
+    return (1-w) * (
+      (1-v) * ((1-u)*this.grad(p[AA], x,y,z) + u*this.grad(p[BA], x-1,y,z)) +
+      v * ((1-u)*this.grad(p[AB], x,y-1,z) + u*this.grad(p[BB], x-1,y-1,z))
+    ) + w * (
+      (1-v) * ((1-u)*this.grad(p[AA+1], x,y,z-1) + u*this.grad(p[BA+1], x-1,y,z-1)) +
+      v * ((1-u)*this.grad(p[AB+1], x,y-1,z-1) + u*this.grad(p[BB+1], x-1,y-1,z-1))
+    );
+  },
+  fbm: function(x,y,z,oct,lac,gain){
+    oct = oct || 5;
+    lac = lac || 2.0;
+    gain = gain || 0.5;
+    var sum = 0, amp = 1, freq = 1, norm = 0;
+    for(var i=0;i<oct;i++){
+      sum += amp * this.perlin3(x*freq, y*freq, z*freq);
+      norm += amp;
+      amp *= gain;
+      freq *= lac;
+    }
+    return sum / norm;
+  }
+};
+Noise.init();
+</script>
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   CAMERA
+   ═══════════════════════════════════════════════════════════════ */
+var Cam = {
+  target: [0,0,0],
+  theta: 0.7,
+  phi: 0.35,
+  dist: 20,
+  minDist: 2,
+  maxDist: 500,
+  dragging: false,
+  lastX: 0, lastY: 0,
+
+  eye: function(){
+    var t = this.theta, p = this.phi;
+    var d = this.dist;
+    return [
+      this.target[0] + d * Math.cos(p) * Math.sin(t),
+      this.target[1] + d * Math.sin(p),
+      this.target[2] + d * Math.cos(p) * Math.cos(t)
+    ];
+  },
+
+  view: function(){
+    return M4.lookAt(M4.create(), this.eye(), this.target, [0,1,0]);
+  },
+
+  reset: function(){
+    this.theta = 0.7; this.phi = 0.35; this.dist = 20;
+    this.target = [0,0,0];
+    toast('Camera reset', 'ok');
+  },
+
+  zoom: function(dir){
+    this.dist *= (dir > 0 ? 1.25 : 0.8);
+    this.dist = Math.max(this.minDist, Math.min(this.maxDist, this.dist));
+  },
+
+  updateHUD: function(){
+    var hdT = document.getElementById('hudTheta');
+    var hdP = document.getElementById('hudPhi');
+    var hdD = document.getElementById('hudDist');
+    if(hdT) hdT.textContent = Math.round(this.theta * 180 / Math.PI);
+    if(hdP) hdP.textContent = Math.round(this.phi * 180 / Math.PI);
+    if(hdD) hdD.textContent = this.dist.toFixed(1);
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDERER STATE
+   ═══════════════════════════════════════════════════════════════ */
+var R = {
+  scene: null,
+  time: 0,
+  paused: false,
+  fps: 60,
+  frames: 0,
+  lastFps: performance.now(),
+  camMat: new Float32Array([1,0,0, 0,1,0, 0,0,1])
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   MESH RENDERER (for 3D scenes)
+   ═══════════════════════════════════════════════════════════════ */
+var Meshes = {
+  cache: {},
+
+  upload: function(geo){
+    var gl = GL.gl;
+    var vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    var vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, geo.verts, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(GL.attribs.aPos);
+    gl.vertexAttribPointer(GL.attribs.aPos, 3, gl.FLOAT, false, 0, 0);
+    var nbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, nbo);
+    gl.bufferData(gl.ARRAY_BUFFER, geo.norms, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(GL.attribs.aNormal);
+    gl.vertexAttribPointer(GL.attribs.aNormal, 3, gl.FLOAT, false, 0, 0);
+    var ubo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, ubo);
+    gl.bufferData(gl.ARRAY_BUFFER, geo.uvs, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(GL.attribs.aUV);
+    gl.vertexAttribPointer(GL.attribs.aUV, 2, gl.FLOAT, false, 0, 0);
+    var ebo = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, geo.idx, gl.STATIC_DRAW);
+    gl.bindVertexArray(null);
+    return { vao: vao, count: geo.count };
+  },
+
+  get: function(name, factory){
+    if(!this.cache[name]) this.cache[name] = this.upload(factory());
+    return this.cache[name];
+  },
+
+  draw: function(mesh, modelMat, color, opts){
+    opts = opts || {};
+    var gl = GL.gl;
+    var vp = R.projView || new Float32Array(16);
+    var mvp = M4.multiply(M4.create(), vp, modelMat);
+    GL.uniformMat4('uMVP', mvp);
+    GL.uniformMat4('uModel', modelMat);
+    var nrm = new Float32Array([
+      modelMat[0], modelMat[1], modelMat[2],
+      modelMat[4], modelMat[5], modelMat[6],
+      modelMat[8], modelMat[9], modelMat[10]
+    ]);
+    gl.uniformMatrix3fv(GL.uniforms.uNormalMat, false, nrm);
+    GL.uniformVec3('uColor', color);
+    GL.uniformVec3('uLightDir', opts.lightDir || [0.5, 1, 0.3]);
+    GL.uniformVec3('uLightColor', opts.lightColor || [1, 0.95, 0.9]);
+    GL.uniformVec3('uAmbient', opts.ambient || [0.15, 0.18, 0.25]);
+    GL.uniformVec3('uCameraPos', Cam.eye());
+    GL.uniformFloat('uShininess', opts.shininess || 32.0);
+    GL.uniformFloat('uSpecular', opts.specular || 0.5);
+    GL.uniformFloat('uEmissive', opts.emissive || 0.0);
+    gl.bindVertexArray(mesh.vao);
+    gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_INT, 0);
+    gl.bindVertexArray(null);
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   SOLAR SYSTEM SCENE
+   ═══════════════════════════════════════════════════════════════ */
+var SolarScene = {
+  name: 'solar',
+  title: 'Solar System',
+  icon: '🪐',
+  desc: 'Keplerian orbital mechanics with 8 planets',
+  params: {
+    speed: 1.0,
+    showOrbits: 1,
+    showLabels: 1,
+    sunSize: 1.5,
+    timeScale: 1
+  },
+  planets: [],
+
+  init: function(){
+    this.params = { speed: 1.0, showOrbits: 1, showLabels: 1, sunSize: 1.5 };
+    var defs = [
+      { name:'Mercury', dist: 2.5, size: 0.15, color:[0.6, 0.5, 0.4], period: 0.24 },
+      { name:'Venus',   dist: 3.5, size: 0.25, color:[0.9, 0.8, 0.5], period: 0.62 },
+      { name:'Earth',   dist: 4.8, size: 0.28, color:[0.2, 0.4, 0.9], period: 1.0 },
+      { name:'Mars',    dist: 6.2, size: 0.20, color:[0.8, 0.3, 0.15], period: 1.88 },
+      { name:'Jupiter', dist: 9.0, size: 0.6, color:[0.85, 0.7, 0.5], period: 11.86 },
+      { name:'Saturn',  dist: 12, size: 0.55, color:[0.9, 0.8, 0.6], period: 29.5, ring: true },
+      { name:'Uranus',  dist: 15, size: 0.45, color:[0.5, 0.85, 0.95], period: 84 },
+      { name:'Neptune', dist: 18, size: 0.45, color:[0.3, 0.5, 0.9], period: 165 }
+    ];
+    this.planets = defs.map(function(d, i){
+      return Object.assign({}, d, { angle: Math.random()*Math.PI*2, trail: [] });
+    });
+    Cam.target = [0,0,0];
+    Cam.dist = 25;
+    Cam.phi = 0.5;
+  },
+
+  update: function(dt){
+    var k = this.params.speed * 0.3;
+    this.planets.forEach(function(p){
+      p.angle += (1 / p.period) * dt * k;
+    });
+  },
+
+  render: function(){
+    var gl = GL.gl;
+    // Sun
+    var sunMat = M4.create();
+    var sunMesh = Meshes.get('sphere', function(){ return makeSphere(1, 24); });
+    M4.scale(sunMat, M4.identity(), [this.params.sunSize, this.params.sunSize, this.params.sunSize]);
+    Meshes.draw(sunMesh, sunMat, [1.0, 0.85, 0.3], { emissive: 1.0, lightColor: [0,0,0] });
+
+    // Sun glow
+    var glowMat = M4.create();
+    var s = this.params.sunSize * 2;
+    M4.scale(glowMat, M4.identity(), [s, s, s]);
+    Meshes.draw(sunMesh, glowMat, [1.0, 0.6, 0.1], { emissive: 0.6, specular: 0, ambient: [0.4, 0.2, 0.05], lightColor: [0,0,0] });
+
+    // Planets
+    var self = this;
+    this.planets.forEach(function(p){
+      var x = Math.cos(p.angle) * p.dist;
+      var z = Math.sin(p.angle) * p.dist;
+      var m = M4.create();
+      M4.translate(m, m, [x, 0, z]);
+      M4.scale(m, m, [p.size, p.size, p.size]);
+      var earthMesh = Meshes.get('sphere', function(){ return makeSphere(1, 24); });
+      var color = p.color;
+      Meshes.draw(earthMesh, m, color, { emissive: 0.05 });
+
+      // Ring for Saturn
+      if(p.ring){
+        var rm = M4.create();
+        M4.translate(rm, rm, [x, 0, z]);
+        M4.rotateX(rm, rm, Math.PI * 0.42);
+        var rs = p.size * 2.2;
+        M4.scale(rm, rm, [rs, rs*0.35, rs]);
+        var torusMesh = Meshes.get('torus', function(){ return makeTorus(0.9, 0.1, 32, 8); });
+        Meshes.draw(torusMesh, rm, [0.85, 0.75, 0.6], { shininess: 16 });
+      }
+    });
+
+    // Orbit rings
+    if(this.params.showOrbits){
+      this.planets.forEach(function(p){
+        var m = M4.create();
+        var rs = p.dist;
+        M4.scale(m, m, [rs, rs*0.05, rs]);
+        M4.rotateX(m, m, Math.PI/2);
+        var torusMesh = Meshes.get('torus', function(){ return makeTorus(0.9, 0.02, 64, 6); });
+        Meshes.draw(torusMesh, m, [0.2, 0.4, 0.7], { specular: 0, ambient:[0.3,0.4,0.8], lightColor:[0,0,0] });
+      });
+    }
+  },
+
+  hudText: function(){
+    return '8 planets · ' + this.params.speed.toFixed(2) + '× speed';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   GALAXY SCENE — procedural N-body particles
+   ═══════════════════════════════════════════════════════════════ */
+var GalaxyScene = {
+  name: 'galaxy',
+  title: 'Spiral Galaxy',
+  icon: '🌌',
+  desc: 'Procedural star field with spiral arms',
+  params: {
+    count: 8000,
+    arms: 4,
+    spin: 1.0,
+    radius: 12,
+    spread: 0.3,
+    color: 0.5
+  },
+  starData: null,
+  vao: null,
+  count: 0,
+
+  init: function(){
+    this.params = { count: 8000, arms: 4, spin: 1.0, radius: 12, spread: 0.3, color: 0.5 };
+    this.build();
+    Cam.dist = 40;
+    Cam.phi = 0.7;
+    Cam.target = [0,0,0];
+  },
+
+  build: function(){
+    var N = this.params.count;
+    var arms = this.params.arms;
+    var spin = this.params.spin;
+    var radius = this.params.radius;
+    var spread = this.params.spread;
+
+    var pos = new Float32Array(N * 3);
+    var col = new Float32Array(N * 4);
+    var size = new Float32Array(N);
+
+    for(var i=0;i<N;i++){
+      var arm = Math.floor(Math.random() * arms);
+      var t = Math.pow(Math.random(), 0.6) * radius;
+      var angleBase = (arm / arms) * Math.PI * 2;
+      var angle = angleBase + t * spin * 0.35 + (Math.random()-0.5) * spread;
+      var x = Math.cos(angle) * t;
+      var z = Math.sin(angle) * t;
+      // vertical thickness
+      var y = (Math.random() - 0.5) * spread * (1 + t * 0.05);
+      // extra jitter
+      x += (Math.random() - 0.5) * 0.5;
+      z += (Math.random() - 0.5) * 0.5;
+      pos[i*3]   = x;
+      pos[i*3+1] = y;
+      pos[i*3+2] = z;
+      // Color: hotter (blue/white) toward center, cooler (red/orange) outside
+      var tNorm = t / radius;
+      var r = 1.0 - tNorm * 0.7 + Math.random() * 0.15;
+      var g = 0.8 - tNorm * 0.3 + Math.random() * 0.2;
+      var b = 1.0 - tNorm * 0.5 + Math.random() * 0.15;
+      // Warm core
+      if(tNorm < 0.25){
+        r = 1.0;
+        g = 0.9;
+        b = 0.6;
+      }
+      col[i*4]   = Math.min(1, r);
+      col[i*4+1] = Math.min(1, g);
+      col[i*4+2] = Math.min(1, b);
+      col[i*4+3] = 0.6 + Math.random() * 0.4;
+      size[i] = 1.0 + Math.random() * 2.5;
+    }
+    this.starData = { pos: pos, col: col, size: size, count: N };
+    this.uploadStars();
+  },
+
+  uploadStars: function(){
+    var gl = GL.gl;
+    var data = this.starData;
+    if(this.vao){
+      gl.deleteVertexArray(this.vao);
+    }
+    this.vao = gl.createVertexArray();
+    gl.bindVertexArray(this.vao);
+
+    var pb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pb);
+    gl.bufferData(gl.ARRAY_BUFFER, data.pos, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(GL.attribs.aPos);
+    gl.vertexAttribPointer(GL.attribs.aPos, 3, gl.FLOAT, false, 0, 0);
+
+    var cb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cb);
+    gl.bufferData(gl.ARRAY_BUFFER, data.col, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(GL.attribs.aColor);
+    gl.vertexAttribPointer(GL.attribs.aColor, 4, gl.FLOAT, false, 0, 0);
+
+    var sb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, sb);
+    gl.bufferData(gl.ARRAY_BUFFER, data.size, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(GL.attribs.aSize);
+    gl.vertexAttribPointer(GL.attribs.aSize, 1, gl.FLOAT, false, 0, 0);
+
+    gl.bindVertexArray(null);
+    this.count = data.count;
+  },
+
+  update: function(dt){},
+
+  render: function(){
+    var gl = GL.gl;
+    if(!this.vao) return;
+    var mvp = M4.multiply(M4.create(), R.projView, M4.identity());
+    GL.uniformMat4('uMVP', mvp);
+    GL.uniformFloat('uPixelRatio', Math.min(devicePixelRatio || 1, 2));
+    gl.bindVertexArray(this.vao);
+    gl.drawArrays(gl.POINTS, 0, this.count);
+    gl.bindVertexArray(null);
+  },
+
+  hudText: function(){
+    return this.count + ' stars · ' + this.params.arms + ' arms';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   PARTICLE FOUNTAIN SCENE
+   ═══════════════════════════════════════════════════════════════ */
+var ParticlesScene = {
+  name: 'particles',
+  title: 'Particle Fountain',
+  icon: '✨',
+  desc: '3D particles with physics + gravity',
+  params: {
+    count: 3000,
+    gravity: -6,
+    spread: 0.6,
+    speed: 8,
+    size: 2.5,
+    lifetime: 3
+  },
+  particleData: null,
+  vao: null,
+
+  init: function(){
+    this.params = { count: 3000, gravity: -6, spread: 0.6, speed: 8, size: 2.5, lifetime: 3 };
+    var N = this.params.count;
+    var pos = new Float32Array(N * 3);
+    var col = new Float32Array(N * 4);
+    var size = new Float32Array(N);
+    var vel = new Float32Array(N * 3);
+    var age = new Float32Array(N);
+    var maxAge = new Float32Array(N);
+    for(var i=0;i<N;i++){
+      this.resetParticle(pos, vel, age, maxAge, i);
+      col[i*4]   = 1.0;
+      col[i*4+1] = 0.4;
+      col[i*4+2] = 0.9;
+      col[i*4+3] = 1.0;
+      size[i] = this.params.size;
+    }
+    this.particleData = { pos:pos, vel:vel, age:age, maxAge:maxAge, col:col, size:size, N:N };
+    this.uploadParticles();
+    Cam.dist = 18;
+    Cam.phi = 0.4;
+    Cam.target = [0, 4, 0];
+  },
+
+  resetParticle: function(pos, vel, age, maxAge, i){
+    pos[i*3] = (Math.random()-0.5) * 0.5;
+    pos[i*3+1] = 0;
+    pos[i*3+2] = (Math.random()-0.5) * 0.5;
+    var spread = this.params.spread;
+    var angle = Math.random() * Math.PI * 2;
+    var inc = Math.random() * 0.4;
+    var s = this.params.speed;
+    vel[i*3]   = Math.cos(angle) * inc * s * spread;
+    vel[i*3+1] = s * (0.7 + Math.random() * 0.3);
+    vel[i*3+2] = Math.sin(angle) * inc * s * spread;
+    age[i] = 0;
+    maxAge[i] = this.params.lifetime * (0.7 + Math.random() * 0.6);
+  },
+
+  uploadParticles: function(){
+    var gl = GL.gl;
+    if(this.vao) gl.deleteVertexArray(this.vao);
+    var data = this.particleData;
+    this.vao = gl.createVertexArray();
+    gl.bindVertexArray(this.vao);
+    var pb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pb);
+    gl.bufferData(gl.ARRAY_BUFFER, data.pos, gl.DYNAMIC_DRAW);
+    this.posBuf = pb;
+    gl.enableVertexAttribArray(GL.attribs.aPos);
+    gl.vertexAttribPointer(GL.attribs.aPos, 3, gl.FLOAT, false, 0, 0);
+    var cb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cb);
+    gl.bufferData(gl.ARRAY_BUFFER, data.col, gl.DYNAMIC_DRAW);
+    this.colBuf = cb;
+    gl.enableVertexAttribArray(GL.attribs.aColor);
+    gl.vertexAttribPointer(GL.attribs.aColor, 4, gl.FLOAT, false, 0, 0);
+    var sb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, sb);
+    gl.bufferData(gl.ARRAY_BUFFER, data.size, gl.DYNAMIC_DRAW);
+    this.sizeBuf = sb;
+    gl.enableVertexAttribArray(GL.attribs.aSize);
+    gl.vertexAttribPointer(GL.attribs.aSize, 1, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+  },
+
+  update: function(dt){
+    var d = this.particleData;
+    var g = this.params.gravity;
+    for(var i=0;i<d.N;i++){
+      d.vel[i*3+1] += g * dt;
+      d.pos[i*3]   += d.vel[i*3]   * dt;
+      d.pos[i*3+1] += d.vel[i*3+1] * dt;
+      d.pos[i*3+2] += d.vel[i*3+2] * dt;
+      d.age[i] += dt;
+      if(d.age[i] > d.maxAge[i] || d.pos[i*3+1] < -1){
+        this.resetParticle(d.pos, d.vel, d.age, d.maxAge, i);
+      }
+      // Fade
+      var a = 1 - d.age[i] / d.maxAge[i];
+      d.col[i*4+3] = Math.max(0, a);
+      // Color: hot at top, cool at bottom
+      var t = d.age[i] / d.maxAge[i];
+      d.col[i*4]   = 1 - t * 0.6;
+      d.col[i*4+1] = 0.9 - t * 0.4;
+      d.col[i*4+2] = 0.3 + t * 0.6;
+    }
+    // Re-upload
+    var gl = GL.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, d.pos);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.colBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, d.col);
+  },
+
+  render: function(){
+    var gl = GL.gl;
+    if(!this.vao) return;
+    var mvp = M4.multiply(M4.create(), R.projView, M4.identity());
+    GL.uniformMat4('uMVP', mvp);
+    GL.uniformFloat('uPixelRatio', Math.min(devicePixelRatio || 1, 2));
+    gl.bindVertexArray(this.vao);
+    gl.drawArrays(gl.POINTS, 0, this.particleData.N);
+    gl.bindVertexArray(null);
+  },
+
+  hudText: function(){
+    return this.particleData.N + ' particles';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   N-BODY SCENE — real gravitational simulation
+   ═══════════════════════════════════════════════════════════════ */
+var NBodyScene = {
+  name: 'nbody',
+  title: 'N-Body Gravity',
+  icon: '⚫',
+  desc: 'Full gravitational N-body simulation',
+  params: {
+    count: 200,
+    G: 0.5,
+    damping: 0.01,
+    dtScale: 1.0,
+    softening: 0.5
+  },
+  bodies: null,
+  vao: null,
+
+  init: function(){
+    this.params = { count: 200, G: 0.5, damping: 0.01, dtScale: 1.0, softening: 0.5 };
+    this.spawn();
+    Cam.dist = 30;
+    Cam.phi = 0.6;
+  },
+
+  spawn: function(){
+    var N = this.params.count;
+    var bodies = [];
+    // Central massive body
+    bodies.push({
+      pos: [0, 0, 0],
+      vel: [0, 0, 0],
+      mass: 100,
+      color: [1.0, 0.9, 0.4]
+    });
+    // Orbiting bodies
+    for(var i=0;i<N;i++){
+      var r = 2 + Math.random() * 15;
+      var angle = Math.random() * Math.PI * 2;
+      var vmag = Math.sqrt(100 / r) * (0.8 + Math.random() * 0.4);
+      var tx = -Math.sin(angle) * vmag;
+      var tz = Math.cos(angle) * vmag;
+      var y = (Math.random() - 0.5) * 2;
+      bodies.push({
+        pos: [Math.cos(angle) * r, y, Math.sin(angle) * r],
+        vel: [tx, 0, tz],
+        mass: 0.1 + Math.random() * 0.9,
+        color: [0.3 + Math.random() * 0.7, 0.4 + Math.random() * 0.6, 1.0]
+      });
+    }
+    this.bodies = bodies;
+    var pos = new Float32Array(bodies.length * 3);
+    var col = new Float32Array(bodies.length * 4);
+    var size = new Float32Array(bodies.length);
+    for(var i2=0;i2<bodies.length;i2++){
+      pos[i2*3]   = bodies[i2].pos[0];
+      pos[i2*3+1] = bodies[i2].pos[1];
+      pos[i2*3+2] = bodies[i2].pos[2];
+      col[i2*4]   = bodies[i2].color[0];
+      col[i2*4+1] = bodies[i2].color[1];
+      col[i2*4+2] = bodies[i2].color[2];
+      col[i2*4+3] = 1;
+      size[i2] = 1 + Math.log(1 + bodies[i2].mass * 5) * 2;
+    }
+    this.bufferData = { pos:pos, col:col, size:size };
+    this.uploadBody();
+  },
+
+  uploadBody: function(){
+    var gl = GL.gl;
+    if(this.vao) gl.deleteVertexArray(this.vao);
+    this.vao = gl.createVertexArray();
+    gl.bindVertexArray(this.vao);
+    var pb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pb);
+    gl.bufferData(gl.ARRAY_BUFFER, this.bufferData.pos, gl.DYNAMIC_DRAW);
+    this.posBuf = pb;
+    gl.enableVertexAttribArray(GL.attribs.aPos);
+    gl.vertexAttribPointer(GL.attribs.aPos, 3, gl.FLOAT, false, 0, 0);
+    var cb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cb);
+    gl.bufferData(gl.ARRAY_BUFFER, this.bufferData.col, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(GL.attribs.aColor);
+    gl.vertexAttribPointer(GL.attribs.aColor, 4, gl.FLOAT, false, 0, 0);
+    var sb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, sb);
+    gl.bufferData(gl.ARRAY_BUFFER, this.bufferData.size, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(GL.attribs.aSize);
+    gl.vertexAttribPointer(GL.attribs.aSize, 1, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+  },
+
+  update: function(dt){
+    dt *= this.params.dtScale;
+    dt = Math.min(dt, 0.016);
+    var B = this.bodies;
+    var G = this.params.G;
+    var damp = this.params.damping;
+    var soft = this.params.softening;
+    var n = B.length;
+    // Compute forces
+    var ax = new Float32Array(n);
+    var ay = new Float32Array(n);
+    var az = new Float32Array(n);
+    for(var i=0;i<n;i++){
+      for(var j=i+1;j<n;j++){
+        var dx = B[j].pos[0] - B[i].pos[0];
+        var dy = B[j].pos[1] - B[i].pos[1];
+        var dz = B[j].pos[2] - B[i].pos[2];
+        var r2 = dx*dx + dy*dy + dz*dz + soft*soft;
+        var r = Math.sqrt(r2);
+        var f = G / (r2 * r);
+        ax[i] += f * B[j].mass * dx;
+        ay[i] += f * B[j].mass * dy;
+        az[i] += f * B[j].mass * dz;
+        ax[j] -= f * B[i].mass * dx;
+        ay[j] -= f * B[i].mass * dy;
+        az[j] -= f * B[i].mass * dz;
+      }
+    }
+    // Integrate (semi-implicit Euler)
+    for(var k=0;k<n;k++){
+      B[k].vel[0] += ax[k] * dt;
+      B[k].vel[1] += ay[k] * dt;
+      B[k].vel[2] += az[k] * dt;
+      B[k].vel[0] *= (1 - damp);
+      B[k].vel[1] *= (1 - damp);
+      B[k].vel[2] *= (1 - damp);
+      B[k].pos[0] += B[k].vel[0] * dt;
+      B[k].pos[1] += B[k].vel[1] * dt;
+      B[k].pos[2] += B[k].vel[2] * dt;
+      // Remove escaped bodies
+      var R = Math.hypot(B[k].pos[0], B[k].pos[1], B[k].pos[2]);
+      if(R > 200) this.resetBody(k);
+    }
+    // Update buffer
+    var pd = this.bufferData.pos;
+    for(var m=0;m<n;m++){
+      pd[m*3]   = B[m].pos[0];
+      pd[m*3+1] = B[m].pos[1];
+      pd[m*3+2] = B[m].pos[2];
+    }
+    var gl = GL.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.posBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, pd);
+  },
+
+  resetBody: function(i){
+    var b = this.bodies[i];
+    if(i === 0) return;
+    var r = 2 + Math.random() * 15;
+    var angle = Math.random() * Math.PI * 2;
+    var vmag = Math.sqrt(100 / r) * 0.9;
+    b.pos = [Math.cos(angle) * r, (Math.random()-0.5)*2, Math.sin(angle) * r];
+    b.vel = [-Math.sin(angle) * vmag, 0, Math.cos(angle) * vmag];
+  },
+
+  render: function(){
+    var gl = GL.gl;
+    if(!this.vao) return;
+    var mvp = M4.multiply(M4.create(), R.projView, M4.identity());
+    GL.uniformMat4('uMVP', mvp);
+    GL.uniformFloat('uPixelRatio', Math.min(devicePixelRatio || 1, 2));
+    gl.bindVertexArray(this.vao);
+    gl.drawArrays(gl.POINTS, 0, this.bodies.length);
+    gl.bindVertexArray(null);
+  },
+
+  hudText: function(){
+    return this.bodies.length + ' bodies · G=' + this.params.G.toFixed(2);
+  }
+};
+</script>
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   RAY-MARCHED SCENES (fullscreen quad)
+   ═══════════════════════════════════════════════════════════════ */
+var QuadMesh = {
+  vao: null,
+  init: function(){
+    var gl = GL.gl;
+    this.vao = gl.createVertexArray();
+    gl.bindVertexArray(this.vao);
+    var data = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+    var b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(GL.attribs.aPos);
+    gl.vertexAttribPointer(GL.attribs.aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+  },
+  draw: function(){
+    var gl = GL.gl;
+    gl.bindVertexArray(this.vao);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindVertexArray(null);
+  }
+};
+
+var MandelbulbScene = {
+  name: 'mandelbulb',
+  title: 'Mandelbulb Fractal',
+  icon: '🎇',
+  desc: 'Ray-marched 3D fractal',
+  params: {
+    power: 8,
+    iterations: 8,
+    autoRotate: 1,
+    zoom: 3
+  },
+  prog: null,
+  camMat: new Float32Array(9),
+  yaw: 0,
+
+  init: function(){
+    this.params = { power: 8, iterations: 8, autoRotate: 1, zoom: 3 };
+    this.prog = GL.createProgram(SHADERS.quadVS, SHADERS.mandelbulbFS);
+    this.yaw = 0;
+    Cam.dist = 4;
+  },
+
+  update: function(dt){
+    if(this.params.autoRotate){
+      this.yaw += dt * 0.15;
+    }
+    var c = Math.cos(this.yaw), s = Math.sin(this.yaw);
+    var cp = Math.cos(0.3), sp = Math.sin(0.3);
+    // Camera looking at origin from radius `zoom`
+    var cx = 0, cy = 0, cz = -this.params.zoom;
+    // Rotate look direction (build 3x3 rotation)
+    // Basis: right, up, back
+    var rx = cp*c,   ry = 0,    rz = cp*s;
+    var ux = -sp*c*s, uy=cp,    uz = -sp*s*s;
+    // Simplify: use standard yaw/pitch matrix
+    var m = new Float32Array([
+       c, 0, -s,
+       0, 1, 0,
+       s, 0, c
+    ]);
+    this.camMat = m;
+  },
+
+  render: function(){
+    GL.gl.useProgram(this.prog);
+    GL.gl.disable(GL.gl.DEPTH_TEST);
+    GL.gl.disable(GL.gl.CULL_FACE);
+    GL.uniformVec2_ = null;
+    var gl = GL.gl;
+    gl.uniform2f(gl.getUniformLocation(this.prog, 'uResolution'), gl.canvas.width, gl.canvas.height);
+    gl.uniform1f(gl.getUniformLocation(this.prog, 'uTime'), R.time);
+    gl.uniform3f(gl.getUniformLocation(this.prog, 'uCameraPos'), 0, 0, -this.params.zoom);
+    gl.uniformMatrix3fv(gl.getUniformLocation(this.prog, 'uCameraMat'), false, this.camMat);
+    gl.uniform1f(gl.getUniformLocation(this.prog, 'uPower'), this.params.power);
+    gl.uniform1i(gl.getUniformLocation(this.prog, 'uIterations'), this.params.iterations);
+    QuadMesh.draw();
+    GL.gl.enable(GL.gl.DEPTH_TEST);
+    GL.gl.enable(GL.gl.CULL_FACE);
+  },
+
+  hudText: function(){
+    return 'power=' + this.params.power + ' iter=' + this.params.iterations;
+  }
+};
+
+var NebulaScene = {
+  name: 'nebula',
+  title: 'Volumetric Nebula',
+  icon: '☁️',
+  desc: 'Ray-marched volumetric nebula',
+  params: {
+    density: 0.5,
+    scale: 0.35,
+    autoRotate: 1
+  },
+  prog: null,
+  yaw: 0,
+
+  init: function(){
+    this.params = { density: 0.5, scale: 0.35, autoRotate: 1 };
+    this.prog = GL.createProgram(SHADERS.quadVS, SHADERS.nebulaFS);
+    this.yaw = 0;
+  },
+
+  update: function(dt){
+    if(this.params.autoRotate) this.yaw += dt * 0.1;
+  },
+
+  render: function(){
+    var gl = GL.gl;
+    gl.useProgram(this.prog);
+    gl.disable(gl.DEPTH_TEST);
+    gl.disable(gl.CULL_FACE);
+    gl.uniform2f(gl.getUniformLocation(this.prog, 'uResolution'), gl.canvas.width, gl.canvas.height);
+    gl.uniform1f(gl.getUniformLocation(this.prog, 'uTime'), R.time);
+    gl.uniform3f(gl.getUniformLocation(this.prog, 'uCameraPos'), 0, 0, -5);
+    var c = Math.cos(this.yaw), s = Math.sin(this.yaw);
+    var m = new Float32Array([ c, 0, -s, 0, 1, 0, s, 0, c ]);
+    gl.uniformMatrix3fv(gl.getUniformLocation(this.prog, 'uCameraMat'), false, m);
+    gl.uniform1f(gl.getUniformLocation(this.prog, 'uDensity'), this.params.density);
+    gl.uniform1f(gl.getUniformLocation(this.prog, 'uScale'), this.params.scale);
+    QuadMesh.draw();
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
+  },
+
+  hudText: function(){
+    return 'density=' + this.params.density.toFixed(2);
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   TERRAIN SCENE — procedural heightmap
+   ═══════════════════════════════════════════════════════════════ */
+var TerrainScene = {
+  name: 'terrain',
+  title: 'Procedural Terrain',
+  icon: '⛰️',
+  desc: 'Perlin-noise heightmap mesh',
+  params: {
+    size: 30,
+    segments: 96,
+    height: 8,
+    frequency: 0.15,
+    octaves: 6,
+    colorMode: 0
+  },
+  mesh: null,
+  prog: null,
+  sunDir: [0.4, 0.8, 0.5],
+
+  init: function(){
+    this.params = { size: 30, segments: 96, height: 8, frequency: 0.15, octaves: 6, colorMode: 0 };
+    this.prog = GL.createProgram(SHADERS.meshVS, SHADERS.terrainFS);
+    this.buildTerrain();
+    Cam.dist = 40;
+    Cam.phi = 0.7;
+    Cam.target = [0, 2, 0];
+  },
+
+  buildTerrain: function(){
+    var p = this.params;
+    var freq = p.frequency;
+    var oct = p.octaves;
+    var hmax = p.height;
+    var heightFn = function(x, z){
+      var n = Noise.fbm(x * freq, 0, z * freq, oct);
+      return (n * 0.5 + 0.5) * hmax;
+    };
+    var geo = makeTerrain(p.size, p.segments, heightFn);
+    if(this.mesh){
+      // Rebuild
+      this.mesh = null;
+    }
+    // Temporarily change attribs for this program
+    var gl = GL.gl;
+    gl.useProgram(this.prog);
+    GL.attribs.aPos = gl.getAttribLocation(this.prog, 'aPos');
+    GL.attribs.aNormal = gl.getAttribLocation(this.prog, 'aNormal');
+    GL.attribs.aUV = gl.getAttribLocation(this.prog, 'aUV');
+    this.mesh = Meshes.upload(geo);
+  },
+
+  update: function(dt){},
+  render: function(){
+    GL.gl.useProgram(this.prog);
+    var gl = GL.gl;
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uMVP'), false, R.projView);
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.prog, 'uModel'), false, M4.identity());
+    gl.uniform3fv(gl.getUniformLocation(this.prog, 'uCameraPos'), Cam.eye());
+    gl.uniform3fv(gl.getUniformLocation(this.prog, 'uSunDir'), this.sunDir);
+    gl.bindVertexArray(this.mesh.vao);
+    gl.drawElements(gl.TRIANGLES, this.mesh.count, gl.UNSIGNED_INT, 0);
+    gl.bindVertexArray(null);
+  },
+  hudText: function(){
+    return this.params.segments * this.params.segments + ' vertices';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   WIREFRAME CUBES SCENE — three.js-like mesh demo
+   ═══════════════════════════════════════════════════════════════ */
+var CubesScene = {
+  name: 'cubes',
+  title: 'Mesh Showcase',
+  icon: '🧊',
+  desc: 'Multiple primitives + PBR shading',
+  params: {
+    count: 40,
+    spacing: 3,
+    rotate: 1
+  },
+  cubes: [],
+
+  init: function(){
+    this.params = { count: 40, spacing: 3, rotate: 1 };
+    this.cubes = [];
+    var N = this.params.count;
+    var s = this.params.spacing;
+    var grid = Math.ceil(Math.pow(N, 1/3));
+    for(var i=0;i<N;i++){
+      var x = (i % grid) - grid/2;
+      var y = (Math.floor(i / grid) % grid) - grid/2;
+      var z = (Math.floor(i / (grid*grid))) - grid/2;
+      this.cubes.push({
+        pos: [x * s, y * s, z * s],
+        rot: [Math.random()*6, Math.random()*6, Math.random()*6],
+        rotSpeed: [Math.random()*0.5-0.25, Math.random()*0.5-0.25, Math.random()*0.5-0.25],
+        color: [
+          0.3 + Math.random() * 0.7,
+          0.3 + Math.random() * 0.7,
+          0.3 + Math.random() * 0.7
+        ],
+        scale: 0.5 + Math.random() * 0.6
+      });
+    }
+    // Set appropriate camera
+    Cam.target = [0,0,0];
+    Cam.dist = grid * s * 1.8;
+  },
+
+  update: function(dt){
+    if(this.params.rotate){
+      this.cubes.forEach(function(c){
+        c.rot[0] += c.rotSpeed[0] * dt;
+        c.rot[1] += c.rotSpeed[1] * dt;
+        c.rot[2] += c.rotSpeed[2] * dt;
+      });
+    }
+  },
+
+  render: function(){
+    var self = this;
+    GL.gl.useProgram(Meshes._meshProg || null);
+    var mesh = Meshes.get('cube', function(){ return makeCube(1); });
+    var sphere = Meshes.get('sphere', function(){ return makeSphere(1, 16); });
+    var torus = Meshes.get('torus', function(){ return makeTorus(0.7, 0.25, 32, 12); });
+    // Reuse mesh shader program
+    var gl = GL.gl;
+    gl.useProgram(GL.prog);
+    gl.bindVertexArray(null);
+    // Reset attribs if needed
+    GL.attribs.aPos = gl.getAttribLocation(GL.prog, 'aPos');
+    GL.attribs.aNormal = gl.getAttribLocation(GL.prog, 'aNormal');
+    GL.attribs.aUV = gl.getAttribLocation(GL.prog, 'aUV');
+
+    this.cubes.forEach(function(c, i){
+      var m = M4.create();
+      M4.translate(m, m, c.pos);
+      M4.rotateX(m, m, c.rot[0]);
+      M4.rotateY(m, m, c.rot[1]);
+      M4.rotateZ(m, m, c.rot[2]);
+      M4.scale(m, m, [c.scale, c.scale, c.scale]);
+      var meshToUse = i % 3 === 0 ? sphere : (i % 3 === 1 ? torus : mesh);
+      Meshes.draw(meshToUse, m, c.color, {
+        lightDir: [0.5, 1, 0.3],
+        shininess: 64,
+        specular: 0.6,
+        emissive: 0.05
+      });
+    });
+  },
+
+  hudText: function(){
+    return this.cubes.length + ' primitives';
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   SCENE REGISTRY
+   ═══════════════════════════════════════════════════════════════ */
+var SCENES = [
+  SolarScene,
+  GalaxyScene,
+  ParticlesScene,
+  NBodyScene,
+  MandelbulbScene,
+  NebulaScene,
+  TerrainScene,
+  CubesScene
+];
+
+var SceneFactory = {
+  current: null,
+  wasRayMarching: false,
+
+  load: function(name){
+    var scene = SCENES.find(function(s){ return s.name === name; });
+    if(!scene){ toast('Unknown scene: ' + name, 'err'); return; }
+    // Setup GL state
+    var rayMarchScenes = ['mandelbulb', 'nebula'];
+    var isRayMarch = rayMarchScenes.indexOf(name) !== -1;
+    var gl = GL.gl;
+    if(isRayMarch){
+      // Use point shader slot for attribs (they overlap)
+      GL.createProgram(SHADERS.quadVS, SHADERS.mandelbulbFS);
+      QuadMesh.init();
+    } else {
+      GL.createProgram(SHADERS.meshVS, SHADERS.meshFS);
+      QuadMesh.init(); // Need for future
+    }
+    // For point-based scenes, we need a different program
+    if(['galaxy','particles','nbody'].indexOf(name) !== -1){
+      // Build point program but keep the mesh program too
+      var meshProg = GL.prog;
+      GL.createProgram(SHADERS.pointVS, SHADERS.pointFS);
+      // Save mesh program for later
+      GL.meshProg = meshProg;
+    }
+    this.current = scene;
+    this.wasRayMarching = isRayMarch;
+    scene.init();
+    // Refresh UI
+    UI.selectScene(name);
+    UI.renderParams(scene);
+    UI.renderInfo(scene);
+    toast('Loaded: ' + scene.title, 'ok');
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   RAY MARCH RENDERING PATH
+   ═══════════════════════════════════════════════════════════════ */
+function renderRayMarch(scene){
+  // Scene handles its own program
+  scene.render();
+}
+
+function renderPoints(scene){
+  scene.render();
+}
+
+function renderMesh(scene){
+  scene.render();
+}
+</script>
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   CODE LIBRARY
+   Every algorithm shown in multiple languages
+   ═══════════════════════════════════════════════════════════════ */
+var CODE_LIBRARY = {
+  solar: {
+    name: 'Keplerian Orbits',
+    langs: {
+      Python: `# Keplerian orbit — solve for position
+import math
+from dataclasses import dataclass
+
+@dataclass
+class Planet:
+    name: str
+    distance: float
+    period: float
+    angle: float = 0.0
+
+    def step(self, dt: float) -> None:
+        self.angle += (2 * math.pi / self.period) * dt
+
+    def position(self) -> tuple[float, float]:
+        x = self.distance * math.cos(self.angle)
+        z = self.distance * math.sin(self.angle)
+        return x, z
+
+planets = [
+    Planet("Mercury", 2.5, 0.24),
+    Planet("Venus",   3.5, 0.62),
+    Planet("Earth",   4.8, 1.00),
+    Planet("Mars",    6.2, 1.88),
+]
+
+def simulate(seconds: float, dt: float = 0.016):
+    t = 0
+    while t < seconds:
+        for p in planets:
+            p.step(dt)
+        t += dt
+        yield [p.position() for p in planets]`,
+      JavaScript: `// Keplerian orbit — JS in the browser
+class Planet {
+  constructor(name, distance, period) {
+    this.name = name;
+    this.distance = distance;
+    this.period = period;
+    this.angle = 0;
+  }
+  step(dt) {
+    // Angular velocity: ω = 2π / T
+    this.angle += (2 * Math.PI / this.period) * dt;
+  }
+  position() {
+    return [
+      this.distance * Math.cos(this.angle),
+      this.distance * Math.sin(this.angle)
+    ];
+  }
+}
+
+const planets = [
+  new Planet('Mercury', 2.5, 0.24),
+  new Planet('Venus',   3.5, 0.62),
+  new Planet('Earth',   4.8, 1.00),
+  new Planet('Mars',    6.2, 1.88)
+];
+
+function update(dt) {
+  for (const p of planets) {
+    p.step(dt);
+    const [x, z] = p.position();
+    setPlanetPosition(p.name, x, z);
+  }
+}`,
+      'C++': `// Keplerian orbits — C++20
+#include <cmath>
+#include <numbers>
+#include <vector>
+#include <string>
+
+struct Planet {
+    std::string name;
+    double distance;
+    double period;
+    double angle = 0.0;
+
+    void step(double dt) noexcept {
+        angle += (2.0 * std::numbers::pi / period) * dt;
+    }
+
+    std::pair<double, double> position() const noexcept {
+        return {
+            distance * std::cos(angle),
+            distance * std::sin(angle)
+        };
+    }
+};
+
+int main() {
+    std::vector<Planet> planets = {
+        {"Mercury", 2.5, 0.24},
+        {"Venus",   3.5, 0.62},
+        {"Earth",   4.8, 1.00},
+        {"Mars",    6.2, 1.88}
+    };
+    constexpr double dt = 1.0 / 60.0;
+    for (int step = 0; step < 3600; ++step) {
+        for (auto& p : planets) {
+            p.step(dt);
+            auto [x, z] = p.position();
+            // upload_to_gpu(x, z);
+        }
+    }
+    return 0;
+}`,
+      Rust: `// Keplerian orbits — Rust
+use std::f64::consts::TAU;
+
+#[derive(Debug, Clone)]
+struct Planet {
+    name: String,
+    distance: f64,
+    period: f64,
+    angle: f64,
+}
+
+impl Planet {
+    fn new(name: &str, distance: f64, period: f64) -> Self {
+        Self { name: name.into(), distance, period, angle: 0.0 }
+    }
+    fn step(&mut self, dt: f64) {
+        self.angle += (TAU / self.period) * dt;
+    }
+    fn position(&self) -> (f64, f64) {
+        (self.distance * self.angle.cos(),
+         self.distance * self.angle.sin())
+    }
+}
+
+fn main() {
+    let mut planets = vec![
+        Planet::new("Mercury", 2.5, 0.24),
+        Planet::new("Venus",   3.5, 0.62),
+        Planet::new("Earth",   4.8, 1.00),
+        Planet::new("Mars",    6.2, 1.88),
+    ];
+    let dt = 1.0 / 60.0;
+    for _ in 0..3600 {
+        for p in &mut planets {
+            p.step(dt);
+            let (_x, _z) = p.position();
+        }
+    }
+}`,
+      GLSL: `// GLSL: Keplerian orbit on the GPU
+#version 330 core
+
+uniform float uTime;
+uniform vec3 uSunPos;
+
+float period(vec3 color) {
+  // Use color hash to derive orbit period
+  return 0.5 + fract(color.r * 13.37) * 3.0;
+}
+
+vec3 orbitPosition(vec3 planetSeed) {
+  float T = period(planetSeed);
+  float omega = 6.2831853 / T;
+  float angle = omega * uTime;
+  float radius = 2.0 + planetSeed.r * 15.0;
+  return uSunPos + vec3(
+    radius * cos(angle),
+    planetSeed.g * 0.1,
+    radius * sin(angle)
+  );
+}
+
+void main() {
+  vec3 pos = orbitPosition(gl_in[0].gl_Position.xyz);
+  gl_Position = uProjection * uView * vec4(pos, 1.0);
+}`,
+      CUDA: `// CUDA: orbit kernel — one thread per planet
+#include <math_constants.h>
+
+struct Planet {
+    float distance;
+    float period;
+};
+
+__global__
+void orbit_kernel(
+    const Planet* planets,
+    float dt, int n,
+    float* out_angles)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= n) return;
+    float T = planets[i].period;
+    out_angles[i] += (2.0f * CUDART_PI_F / T) * dt;
+}
+
+// Host code
+void step(Planet* d_planets, float* d_angles, int n, float dt) {
+    int threads = 256;
+    int blocks = (n + threads - 1) / threads;
+    orbit_kernel<<<blocks, threads>>>(d_planets, dt, n, d_angles);
+}`,
+      WGSL: `// WGSL: WebGPU orbit compute shader
+struct Planet {
+  distance : f32,
+  period   : f32,
+  angle    : f32,
+}
+
+@group(0) @binding(0) var<storage, read_write> planets : array<Planet>;
+
+@compute @workgroup_size(64)
+fn step_orbit(@builtin(global_invocation_id) gid : vec3<u32>) {
+  let i = gid.x;
+  if (i >= arrayLength(&planets)) { return; }
+  let omega = 6.28318530718 / planets[i].period;
+  planets[i].angle = planets[i].angle + omega * 0.016;
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index) vi : u32) -> @builtin(position) vec4<f32> {
+  let p = planets[vi];
+  let x = p.distance * cos(p.angle);
+  let z = p.distance * sin(p.angle);
+  return vec4<f32>(x, 0.0, z, 1.0);
+}`
+    }
+  },
+
+  galaxy: {
+    name: 'Spiral Galaxy Generation',
+    langs: {
+      Python: `# Spiral galaxy generator
+import numpy as np
+from dataclasses import dataclass
+
+@dataclass
+class Star:
+    x: float; y: float; z: float
+    r: float; g: float; b: float
+
+def generate_galaxy(n: int = 8000,
+                    arms: int = 4,
+                    radius: float = 12.0,
+                    spin: float = 1.0,
+                    spread: float = 0.3) -> list[Star]:
+    rng = np.random.default_rng(42)
+    stars = []
+    for _ in range(n):
+        arm = rng.integers(0, arms)
+        t = rng.random() ** 0.6 * radius
+        angle_base = (arm / arms) * 2 * np.pi
+        angle = angle_base + t * spin * 0.35 + (rng.random() - 0.5) * spread
+
+        x = np.cos(angle) * t + (rng.random() - 0.5) * 0.5
+        z = np.sin(angle) * t + (rng.random() - 0.5) * 0.5
+        y = (rng.random() - 0.5) * spread * (1 + t * 0.05)
+
+        t_norm = t / radius
+        r = 1.0 - t_norm * 0.7 + rng.random() * 0.15
+        g = 0.8 - t_norm * 0.3 + rng.random() * 0.2
+        b = 1.0 - t_norm * 0.5 + rng.random() * 0.15
+
+        stars.append(Star(x, y, z, r, g, b))
+    return stars`,
+      JavaScript: `// Procedural galaxy in JS
+function generateGalaxy(opts) {
+  const {
+    count = 8000, arms = 4, radius = 12,
+    spin = 1.0, spread = 0.3
+  } = opts || {};
+
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 4);
+  const sizes = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    const arm = Math.floor(Math.random() * arms);
+    const t = Math.pow(Math.random(), 0.6) * radius;
+    const angleBase = (arm / arms) * Math.PI * 2;
+    const angle = angleBase + t * spin * 0.35
+                + (Math.random() - 0.5) * spread;
+
+    let x = Math.cos(angle) * t;
+    let z = Math.sin(angle) * t;
+    let y = (Math.random() - 0.5) * spread * (1 + t * 0.05);
+
+    positions[i * 3]     = x + (Math.random() - 0.5) * 0.5;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z + (Math.random() - 0.5) * 0.5;
+
+    const tn = t / radius;
+    colors[i * 4]     = 1.0 - tn * 0.7;
+    colors[i * 4 + 1] = 0.8 - tn * 0.3;
+    colors[i * 4 + 2] = 1.0 - tn * 0.5;
+    colors[i * 4 + 3] = 0.6 + Math.random() * 0.4;
+
+    sizes[i] = 1 + Math.random() * 2.5;
+  }
+  return { positions, colors, sizes };
+}`,
+      'C++': `// Procedural galaxy — C++ with OpenMP
+#include <cmath>
+#include <random>
+#include <vector>
+
+struct Galaxy {
+    std::vector<float> positions; // 3 * N
+    std::vector<float> colors;    // 4 * N
+};
+
+Galaxy generate_galaxy(
+    int n = 8000, int arms = 4,
+    float radius = 12.0f, float spin = 1.0f,
+    float spread = 0.3f)
+{
+    Galaxy g;
+    g.positions.resize(n * 3);
+    g.colors.resize(n * 4);
+
+    #pragma omp parallel
+    {
+        std::mt19937 rng(42 + omp_get_thread_num());
+        std::uniform_real_distribution<float> U(0.0f, 1.0f);
+
+        #pragma omp for
+        for (int i = 0; i < n; ++i) {
+            int arm = int(U(rng) * arms);
+            float t = std::pow(U(rng), 0.6f) * radius;
+            float ab = (arm / float(arms)) * 2.0f * M_PI;
+            float angle = ab + t * spin * 0.35f
+                        + (U(rng) - 0.5f) * spread;
+
+            float x = std::cos(angle) * t;
+            float z = std::sin(angle) * t;
+            float y = (U(rng) - 0.5f) * spread;
+
+            g.positions[i*3]     = x;
+            g.positions[i*3 + 1] = y;
+            g.positions[i*3 + 2] = z;
+
+            float tn = t / radius;
+            g.colors[i*4]     = 1.0f - tn * 0.7f;
+            g.colors[i*4 + 1] = 0.8f - tn * 0.3f;
+            g.colors[i*4 + 2] = 1.0f - tn * 0.5f;
+            g.colors[i*4 + 3] = 1.0f;
+        }
+    }
+    return g;
+}`,
+      Rust: `// Procedural galaxy — Rust with rayon
+use rand::Rng;
+use rand::SeedableRng;
+use rand_pcg::Pcg64;
+
+pub struct Star {
+    pub pos: [f32; 3],
+    pub color: [f32; 4],
+    pub size: f32,
+}
+
+pub fn generate_galaxy(
+    count: usize, arms: u32,
+    radius: f32, spin: f32, spread: f32,
+) -> Vec<Star> {
+    let mut rng = Pcg64::seed_from_u64(42);
+    let mut stars = Vec::with_capacity(count);
+
+    for _ in 0..count {
+        let arm = rng.gen_range(0..arms);
+        let t = rng.gen::<f32>().powf(0.6) * radius;
+        let angle_base = (arm as f32 / arms as f32) * std::f32::consts::TAU;
+        let angle = angle_base
+                  + t * spin * 0.35
+                  + (rng.gen::<f32>() - 0.5) * spread;
+
+        let x = angle.cos() * t;
+        let z = angle.sin() * t;
+        let y = (rng.gen::<f32>() - 0.5) * spread;
+
+        let tn = t / radius;
+        stars.push(Star {
+            pos: [x, y, z],
+            color: [1.0 - tn * 0.7, 0.8 - tn * 0.3,
+                    1.0 - tn * 0.5, 1.0],
+            size: 1.0 + rng.gen::<f32>() * 2.5,
+        });
+    }
+    stars
+}`,
+      GLSL: `// GLSL: procedural galaxy in fragment shader
+#version 330 core
+
+uniform float uTime;
+uniform vec2 uResolution;
+
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+vec3 starField(vec2 uv) {
+    vec3 col = vec3(0.0);
+    const int LAYERS = 32;
+    for (int i = 0; i < LAYERS; ++i) {
+        float fi = float(i);
+        vec2 pos = vec2(hash(vec2(fi, 0.1)),
+                        hash(vec2(0.2, fi)));
+        pos = pos * 2.0 - 1.0;
+        float d = length(uv - pos);
+        float brightness = 0.01 / (d * d + 0.001);
+        col += vec3(brightness);
+    }
+    return col;
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy * 2.0 - uResolution) / uResolution.y;
+    gl_FragColor = vec4(starField(uv), 1.0);
+}`,
+      CUDA: `// CUDA: massive star field kernel
+#include <curand_kernel.h>
+
+__global__
+void star_field_kernel(float3* stars, int n, unsigned seed) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= n) return;
+
+    curandState state;
+    curand_init(seed, i, 0, &state);
+
+    float arm = curand_uniform(&state) * 4.0f;
+    float t = powf(curand_uniform(&state), 0.6f) * 12.0f;
+    float ab = (arm / 4.0f) * 6.2831853f;
+    float angle = ab + t * 0.35f;
+
+    stars[i] = make_float3(
+        cosf(angle) * t,
+        (curand_uniform(&state) - 0.5f) * 0.3f,
+        sinf(angle) * t
+    );
+}`,
+      WGSL: `// WGSL: star generation compute shader
+struct Star {
+  pos : vec3<f32>,
+  color : vec4<f32>,
+  size : f32,
+}
+
+@group(0) @binding(0) var<storage, read_write> stars : array<Star>;
+
+fn rand(state : ptr<function, u32>) -> f32 {
+  *state = *state * 1664525u + 1013904223u;
+  return f32(*state) / 4294967296.0;
+}
+
+@compute @workgroup_size(64)
+fn generate(@builtin(global_invocation_id) gid : vec3<u32>) {
+  let i = gid.x;
+  var seed : u32 = i * 747796405u + 2891336453u;
+  let arm = u32(rand(&seed) * 4.0);
+  let t = pow(rand(&seed), 0.6) * 12.0;
+  let angle_base = f32(arm) / 4.0 * 6.2831853;
+  let angle = angle_base + t * 0.35 + (rand(&seed) - 0.5) * 0.3;
+
+  stars[i].pos = vec3<f32>(cos(angle) * t, 0.0, sin(angle) * t);
+  stars[i].color = vec4<f32>(1.0, 0.8, 1.0, 1.0);
+  stars[i].size = 1.0 + rand(&seed) * 2.5;
+}`
+    }
+  },
+
+  nbody: {
+    name: 'N-Body Gravity',
+    langs: {
+      Python: `# N-body gravity — O(N²) naive
+import numpy as np
+
+def simulate_nbody(positions, velocities, masses, dt, G, softening=0.5):
+    """positions: (N, 3), velocities: (N, 3), masses: (N,)"""
+    N = len(masses)
+    forces = np.zeros((N, 3))
+
+    for i in range(N):
+        for j in range(i + 1, N):
+            r = positions[j] - positions[i]
+            r2 = np.dot(r, r) + softening ** 2
+            r_mag = np.sqrt(r2)
+            f = G * masses[i] * masses[j] / (r2 * r_mag)
+            forces[i] += f * r
+            forces[j] -= f * r
+
+    velocities += forces / masses[:, None] * dt
+    positions += velocities * dt
+    return positions, velocities`,
+      JavaScript: `// N-body in JS with typed arrays
+function nbodyStep(pos, vel, mass, dt, G, softening) {
+  const N = mass.length;
+  const ax = new Float32Array(N);
+  const ay = new Float32Array(N);
+  const az = new Float32Array(N);
+
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const dx = pos[j*3]   - pos[i*3];
+      const dy = pos[j*3+1] - pos[i*3+1];
+      const dz = pos[j*3+2] - pos[i*3+2];
+      const r2 = dx*dx + dy*dy + dz*dz + softening*softening;
+      const r = Math.sqrt(r2);
+      const f = G / (r2 * r);
+
+      ax[i] += f * mass[j] * dx;
+      ay[i] += f * mass[j] * dy;
+      az[i] += f * mass[j] * dz;
+      ax[j] -= f * mass[i] * dx;
+      ay[j] -= f * mass[i] * dy;
+      az[j] -= f * mass[i] * dz;
+    }
+  }
+
+  for (let i = 0; i < N; i++) {
+    vel[i*3]   += ax[i] * dt;
+    vel[i*3+1] += ay[i] * dt;
+    vel[i*3+2] += az[i] * dt;
+    pos[i*3]   += vel[i*3]   * dt;
+    pos[i*3+1] += vel[i*3+1] * dt;
+    pos[i*3+2] += vel[i*3+2] * dt;
+  }
+}`,
+      'C++': `// N-body — C++ with AVX2 intrinsics
+#include <immintrin.h>
+#include <vector>
+
+void nbody_step(
+    float* pos, float* vel, const float* mass,
+    int N, float dt, float G, float soft)
+{
+    const float soft2 = soft * soft;
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < N; ++i) {
+        float ax = 0, ay = 0, az = 0;
+        __m256 vx = _mm256_setzero_ps();
+        __m256 vy = _mm256_setzero_ps();
+        __m256 vz = _mm256_setzero_ps();
+        for (int j = 0; j < N; ++j) {
+            if (i == j) continue;
+            float dx = pos[j*3]   - pos[i*3];
+            float dy = pos[j*3+1] - pos[i*3+1];
+            float dz = pos[j*3+2] - pos[i*3+2];
+            float r2 = dx*dx + dy*dy + dz*dz + soft2;
+            float inv_r = 1.0f / std::sqrt(r2);
+            float f = G * mass[j] * inv_r * inv_r * inv_r;
+            ax += f * dx;
+            ay += f * dy;
+            az += f * dz;
+        }
+        vel[i*3]   += ax * dt;
+        vel[i*3+1] += ay * dt;
+        vel[i*3+2] += az * dt;
+        pos[i*3]   += vel[i*3]   * dt;
+        pos[i*3+1] += vel[i*3+1] * dt;
+        pos[i*3+2] += vel[i*3+2] * dt;
+    }
+}`,
+      Rust: `// N-body — Rust with rayon parallelization
+use rayon::prelude::*;
+
+pub fn nbody_step(
+    pos: &mut [f32], vel: &mut [f32], mass: &[f32],
+    dt: f32, g: f32, soft: f32,
+) {
+    let n = mass.len();
+    let soft2 = soft * soft;
+
+    let accelerations: Vec<[f32; 3]> = (0..n).into_par_iter().map(|i| {
+        let mut a = [0.0_f32; 3];
+        let pi = [pos[i*3], pos[i*3+1], pos[i*3+2]];
+        for j in 0..n {
+            if i == j { continue; }
+            let dx = pos[j*3]   - pi[0];
+            let dy = pos[j*3+1] - pi[1];
+            let dz = pos[j*3+2] - pi[2];
+            let r2 = dx*dx + dy*dy + dz*dz + soft2;
+            let inv_r = r2.sqrt().recip();
+            let f = g * mass[j] * inv_r * inv_r * inv_r;
+            a[0] += f * dx;
+            a[1] += f * dy;
+            a[2] += f * dz;
+        }
+        a
+    }).collect();
+
+    pos.par_chunks_mut(3).zip(vel.par_chunks_mut(3))
+       .zip(accelerations.par_iter())
+       .for_each(|((p, v), a)| {
+           v[0] += a[0] * dt; v[1] += a[1] * dt; v[2] += a[2] * dt;
+           p[0] += v[0] * dt; p[1] += v[1] * dt; p[2] += v[2] * dt;
+       });
+}`,
+      GLSL: `// GLSL: N-body compute-ish via vertex texture
+#version 430
+
+layout(local_size_x = 64) in;
+layout(std430, binding = 0) buffer Positions { vec4 pos[]; };
+layout(std430, binding = 1) buffer Velocities { vec4 vel[]; };
+layout(std430, binding = 2) buffer Masses { float m[]; };
+
+uniform float uDt;
+uniform float uG;
+uniform float uSoft;
+
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= pos.length()) return;
+
+    vec3 acc = vec3(0.0);
+    for (uint j = 0; j < pos.length(); ++j) {
+        if (i == j) continue;
+        vec3 d = pos[j].xyz - pos[i].xyz;
+        float r2 = dot(d, d) + uSoft * uSoft;
+        float invR = inversesqrt(r2);
+        float f = uG * m[j] * invR * invR * invR;
+        acc += f * d;
+    }
+    vel[i].xyz += acc * uDt;
+    pos[i].xyz += vel[i].xyz * uDt;
+}`,
+      CUDA: `// CUDA: N-body with shared memory tiling
+#include <cuda_runtime.h>
+
+__global__
+void nbody_kernel(
+    float4* pos, float4* vel, float* mass, int N,
+    float dt, float g, float soft2)
+{
+    extern __shared__ float s_mass[];
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (threadIdx.x < 256) {
+        s_mass[threadIdx.x] = (threadIdx.x < N) ? mass[threadIdx.x] : 0;
+    }
+    __syncthreads();
+
+    if (i >= N) return;
+    float3 pi = make_float3(pos[i].x, pos[i].y, pos[i].z);
+    float3 acc = make_float3(0, 0, 0);
+
+    for (int tile = 0; tile < N; tile += 256) {
+        for (int j = 0; j < 256 && (tile+j) < N; ++j) {
+            if (i == tile + j) continue;
+            float4 pj = pos[tile + j];
+            float3 d = make_float3(pj.x - pi.x, pj.y - pi.y, pj.z - pi.z);
+            float r2 = d.x*d.x + d.y*d.y + d.z*d.z + soft2;
+            float invR = rsqrtf(r2);
+            float f = g * s_mass[j] * invR * invR * invR;
+            acc.x += f * d.x;
+            acc.y += f * d.y;
+            acc.z += f * d.z;
+        }
+    }
+    vel[i].x += acc.x * dt;
+    vel[i].y += acc.y * dt;
+    vel[i].z += acc.z * dt;
+    pos[i].x += vel[i].x * dt;
+    pos[i].y += vel[i].y * dt;
+    pos[i].z += vel[i].z * dt;
+}`,
+      WGSL: `// WGSL: N-body compute shader
+struct Body {
+  pos : vec3<f32>,
+  vel : vec3<f32>,
+  mass : f32,
+}
+
+@group(0) @binding(0) var<storage, read_write> bodies : array<Body>;
+
+@compute @workgroup_size(64)
+fn nbody_step(@builtin(global_invocation_id) gid : vec3<u32>) {
+  let i = gid.x;
+  let n = arrayLength(&bodies);
+  if (i >= n) { return; }
+
+  var acc = vec3<f32>(0.0, 0.0, 0.0);
+  let pi = bodies[i].pos;
+
+  for (var j : u32 = 0u; j < n; j = j + 1u) {
+    if (j == i) { continue; }
+    let d = bodies[j].pos - pi;
+    let r2 = dot(d, d) + 0.25;
+    let invR = inverseSqrt(r2);
+    let f = 0.5 * bodies[j].mass * invR * invR * invR;
+    acc = acc + f * d;
+  }
+
+  let new_vel = bodies[i].vel + acc * 0.016;
+  bodies[i].vel = new_vel;
+  bodies[i].pos = pi + new_vel * 0.016;
+}`
+    }
+  },
+
+  mandelbulb: {
+    name: 'Mandelbulb Ray Marcher',
+    langs: {
+      Python: `# Mandelbulb distance estimator
+import numpy as np
+
+def mandelbulb_de(x, y, z, power=8, max_iter=16):
+    """Return distance estimate to Mandelbulb surface."""
+    zx, zy, zz = x, y, z
+    dr = 1.0
+    r = 0.0
+    for _ in range(max_iter):
+        r = np.sqrt(zx*zx + zy*zy + zz*zz)
+        if r > 4.0:
+            break
+        theta = np.arccos(zz / r)
+        phi = np.arctan2(zy, zx)
+        dr = r ** (power - 1) * power * dr + 1.0
+        zr = r ** power
+        theta *= power
+        phi *= power
+        zx = zr * np.sin(theta) * np.cos(phi) + x
+        zy = zr * np.sin(theta) * np.sin(phi) + y
+        zz = zr * np.cos(theta) + z
+    return 0.5 * np.log(r) * r / dr
+
+def ray_march(ro, rd, max_dist=12.0):
+    t = 0.0
+    for _ in range(128):
+        p = ro + rd * t
+        d = mandelbulb_de(*p)
+        if d < 0.001:
+            return t
+        t += d
+        if t > max_dist:
+            break
+    return -1.0`,
+      JavaScript: `// Mandelbulb DE in JS
+function mandelbulbDE(x, y, z, power, maxIter) {
+  let zx = x, zy = y, zz = z;
+  let dr = 1.0;
+  let r = 0;
+
+  for (let i = 0; i < maxIter; i++) {
+    r = Math.sqrt(zx*zx + zy*zy + zz*zz);
+    if (r > 4.0) break;
+
+    const theta = Math.acos(zz / r);
+    const phi = Math.atan2(zy, zx);
+
+    dr = Math.pow(r, power - 1) * power * dr + 1.0;
+
+    const zr = Math.pow(r, power);
+    const t2 = theta * power;
+    const p2 = phi * power;
+
+    zx = zr * Math.sin(t2) * Math.cos(p2) + x;
+    zy = zr * Math.sin(t2) * Math.sin(p2) + y;
+    zz = zr * Math.cos(t2) + z;
+  }
+  return 0.5 * Math.log(r) * r / dr;
+}
+
+function rayMarch(ro, rd) {
+  let t = 0;
+  for (let i = 0; i < 128; i++) {
+    const p = [ro[0]+rd[0]*t, ro[1]+rd[1]*t, ro[2]+rd[2]*t];
+    const d = mandelbulbDE(p[0], p[1], p[2], 8, 16);
+    if (d < 0.001) return t;
+    t += d;
+    if (t > 12) break;
+  }
+  return -1;
+}`,
+      'C++': `// Mandelbulb — C++ with SIMD-friendly loops
+#include <cmath>
+
+inline float mandelbulb_de(
+    float x, float y, float z,
+    float power, int max_iter) noexcept
+{
+    float zx = x, zy = y, zz = z;
+    float dr = 1.0f, r = 0.0f;
+    for (int i = 0; i < max_iter; ++i) {
+        r = std::sqrt(zx*zx + zy*zy + zz*zz);
+        if (r > 4.0f) break;
+
+        float theta = std::acos(zz / r);
+        float phi   = std::atan2(zy, zx);
+
+        dr = std::pow(r, power - 1.0f) * power * dr + 1.0f;
+        float zr = std::pow(r, power);
+        theta *= power;
+        phi   *= power;
+
+        zx = zr * std::sin(theta) * std::cos(phi) + x;
+        zy = zr * std::sin(theta) * std::sin(phi) + y;
+        zz = zr * std::cos(theta) + z;
+    }
+    return 0.5f * std::log(r) * r / dr;
+}
+
+float ray_march(float rox, float roy, float roz,
+                float rdx, float rdy, float rdz)
+{
+    float t = 0.0f;
+    for (int i = 0; i < 128; ++i) {
+        float d = mandelbulb_de(
+            rox + rdx * t,
+            roy + rdy * t,
+            roz + rdz * t,
+            8.0f, 16);
+        if (d < 0.001f) return t;
+        t += d;
+        if (t > 12.0f) break;
+    }
+    return -1.0f;
+}`,
+      Rust: `// Mandelbulb — Rust
+#[inline(always)]
+pub fn mandelbulb_de(x: f32, y: f32, z: f32, power: f32, max_iter: u32) -> f32 {
+    let (mut zx, mut zy, mut zz) = (x, y, z);
+    let mut dr = 1.0_f32;
+    let mut r = 0.0_f32;
+
+    for _ in 0..max_iter {
+        r = (zx * zx + zy * zy + zz * zz).sqrt();
+        if r > 4.0 { break; }
+
+        let theta = (zz / r).acos();
+        let phi = zy.atan2(zx);
+        dr = r.powf(power - 1.0) * power * dr + 1.0;
+
+        let zr = r.powf(power);
+        let t2 = theta * power;
+        let p2 = phi * power;
+
+        zx = zr * t2.sin() * p2.cos() + x;
+        zy = zr * t2.sin() * p2.sin() + y;
+        zz = zr * t2.cos() + z;
+    }
+    0.5 * r.ln() * r / dr
+}
+
+pub fn ray_march(ro: [f32; 3], rd: [f32; 3]) -> Option<f32> {
+    let mut t = 0.0_f32;
+    for _ in 0..128 {
+        let p = [ro[0] + rd[0]*t, ro[1] + rd[1]*t, ro[2] + rd[2]*t];
+        let d = mandelbulb_de(p[0], p[1], p[2], 8.0, 16);
+        if d < 0.001 { return Some(t); }
+        t += d;
+        if t > 12.0 { break; }
+    }
+    None
+}`,
+      GLSL: `// GLSL fragment shader: Mandelbulb raymarch
+#version 330 core
+
+uniform vec2 uResolution;
+uniform float uTime;
+uniform vec3 uCameraPos;
+
+float de(vec3 p) {
+    vec3 z = p;
+    float dr = 1.0;
+    float r = 0.0;
+    for (int i = 0; i < 16; i++) {
+        r = length(z);
+        if (r > 4.0) break;
+
+        float theta = acos(z.z / r);
+        float phi = atan(z.y, z.x);
+
+        dr = pow(r, 7.0) * 8.0 * dr + 1.0;
+
+        float zr = pow(r, 8.0);
+        theta *= 8.0;
+        phi *= 8.0;
+
+        z = zr * vec3(sin(theta)*cos(phi),
+                      sin(theta)*sin(phi),
+                      cos(theta)) + p;
+    }
+    return 0.5 * log(r) * r / dr;
+}
+
+vec3 calcNormal(vec3 p) {
+    vec2 e = vec2(0.001, 0.0);
+    return normalize(vec3(
+        de(p + e.xyy) - de(p - e.xyy),
+        de(p + e.yxy) - de(p - e.yxy),
+        de(p + e.yyx) - de(p - e.yyx)));
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy * 2.0 - uResolution) / uResolution.y;
+    vec3 ro = uCameraPos;
+    vec3 rd = normalize(vec3(uv, -2.0));
+
+    float t = 0.0;
+    for (int i = 0; i < 128; i++) {
+        vec3 p = ro + rd * t;
+        float d = de(p);
+        if (d < 0.001) break;
+        t += d;
+        if (t > 12.0) break;
+    }
+
+    vec3 col = vec3(0.0);
+    if (t < 12.0) {
+        vec3 p = ro + rd * t;
+        vec3 n = calcNormal(p);
+        float diff = max(dot(n, normalize(vec3(1,1,1) - p)), 0.0);
+        col = vec3(0.5 + 0.5*cos(p.z + uTime)) * (0.2 + diff);
+    }
+    gl_FragColor = vec4(col, 1.0);
+}`,
+      CUDA: `// CUDA: parallel Mandelbulb renderer
+__device__
+float mandelbulb_de(float3 p, float power, int max_iter) {
+    float3 z = p;
+    float dr = 1.0f;
+    float r = 0.0f;
+    for (int i = 0; i < max_iter; ++i) {
+        r = length(z);
+        if (r > 4.0f) break;
+        float theta = acosf(z.z / r);
+        float phi = atan2f(z.y, z.x);
+        dr = powf(r, power - 1.0f) * power * dr + 1.0f;
+        float zr = powf(r, power);
+        theta *= power;
+        phi *= power;
+        z = zr * make_float3(
+            sinf(theta) * cosf(phi),
+            sinf(theta) * sinf(phi),
+            cosf(theta)) + p;
+    }
+    return 0.5f * logf(r) * r / dr;
+}
+
+__global__
+void render_kernel(uchar4* pixels, int W, int H,
+                   float3 cam_pos, float time)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= W || y >= H) return;
+
+    float2 uv = (make_float2(x, y) * 2.0f
+                 - make_float2(W, H)) / float(H);
+    float3 rd = normalize(make_float3(uv.x, uv.y, -2.0f));
+
+    float t = 0.0f;
+    for (int i = 0; i < 128; ++i) {
+        float3 p = cam_pos + rd * t;
+        float d = mandelbulb_de(p, 8.0f, 16);
+        if (d < 0.001f) break;
+        t += d;
+        if (t > 12.0f) break;
+    }
+    uchar3 color = (t < 12.0f)
+        ? make_uchar3(200, 100, 255)
+        : make_uchar3(0, 0, 20);
+    pixels[y * W + x] = make_uchar4(color.x, color.y, color.z, 255);
+}`,
+      WGSL: `// WGSL: Mandelbulb raymarch fragment shader
+struct Uniforms {
+  resolution : vec2<f32>,
+  time : f32,
+  cam_dist : f32,
+}
+@group(0) @binding(0) var<uniform> u : Uniforms;
+
+fn mandelbulb_de(p : vec3<f32>, power : f32, iters : i32) -> f32 {
+  var z = p;
+  var dr = 1.0;
+  var r = 0.0;
+  for (var i = 0; i < iters; i = i + 1) {
+    r = length(z);
+    if (r > 4.0) { break; }
+    let theta = acos(z.z / r);
+    let phi = atan2(z.y, z.x);
+    dr = pow(r, power - 1.0) * power * dr + 1.0;
+    let zr = pow(r, power);
+    z = zr * vec3<f32>(
+      sin(theta * power) * cos(phi * power),
+      sin(theta * power) * sin(phi * power),
+      cos(theta * power)
+    ) + p;
+  }
+  return 0.5 * log(r) * r / dr;
+}
+
+@fragment
+fn fs(@builtin(position) frag_coord : vec4<f32>) -> @location(0) vec4<f32> {
+  let uv = (frag_coord.xy * 2.0 - u.resolution) / u.resolution.y;
+  let ro = vec3<f32>(0.0, 0.0, -u.cam_dist);
+  let rd = normalize(vec3<f32>(uv.x, uv.y, -2.0));
+
+  var t = 0.0;
+  for (var i = 0; i < 128; i = i + 1) {
+    let p = ro + rd * t;
+    let d = mandelbulb_de(p, 8.0, 16);
+    if (d < 0.001) { break; }
+    t = t + d;
+    if (t > 12.0) { break; }
+  }
+  var color = vec3<f32>(0.0, 0.0, 0.05);
+  if (t < 12.0) {
+    color = vec3<f32>(0.8, 0.4, 1.0);
+  }
+  return vec4<f32>(color, 1.0);
+}`
+    }
+  },
+
+  particles: {
+    name: 'Particle Physics',
+    langs: {
+      Python: `# Particle fountain with gravity
+import numpy as np
+
+class ParticleSystem:
+    def __init__(self, count: int, gravity: float = -6.0):
+        self.count = count
+        self.gravity = gravity
+        self.pos = np.zeros((count, 3), dtype=np.float32)
+        self.vel = np.zeros((count, 3), dtype=np.float32)
+        self.age = np.zeros(count, dtype=np.float32)
+        self.max_age = np.ones(count, dtype=np.float32) * 3.0
+        for i in range(count):
+            self.respawn(i)
+
+    def respawn(self, i: int):
+        self.pos[i] = [(np.random.rand()-0.5)*0.5, 0, (np.random.rand()-0.5)*0.5]
+        angle = np.random.rand() * 2 * np.pi
+        speed = 8.0 * (0.7 + np.random.rand() * 0.3)
+        spread = 0.6
+        self.vel[i] = [
+            np.cos(angle) * speed * spread * np.random.rand(),
+            speed,
+            np.sin(angle) * speed * spread * np.random.rand(),
+        ]
+        self.age[i] = 0
+
+    def step(self, dt: float):
+        self.vel[:, 1] += self.gravity * dt
+        self.pos += self.vel * dt
+        self.age += dt
+        dead = (self.age > self.max_age) | (self.pos[:, 1] < -1)
+        for i in np.where(dead)[0]:
+            self.respawn(int(i))`,
+      JavaScript: `// Particle fountain — JS typed arrays
+class ParticleSystem {
+  constructor(count, gravity = -6) {
+    this.count = count;
+    this.gravity = gravity;
+    this.pos = new Float32Array(count * 3);
+    this.vel = new Float32Array(count * 3);
+    this.age = new Float32Array(count);
+    this.maxAge = new Float32Array(count);
+    for (let i = 0; i < count; i++) this.respawn(i);
+  }
+  respawn(i) {
+    this.pos[i*3]     = (Math.random() - 0.5) * 0.5;
+    this.pos[i*3 + 1] = 0;
+    this.pos[i*3 + 2] = (Math.random() - 0.5) * 0.5;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 8 * (0.7 + Math.random() * 0.3);
+    const spread = 0.6;
+    this.vel[i*3]     = Math.cos(angle) * speed * spread * Math.random();
+    this.vel[i*3 + 1] = speed;
+    this.vel[i*3 + 2] = Math.sin(angle) * speed * spread * Math.random();
+    this.age[i] = 0;
+    this.maxAge[i] = 3 * (0.7 + Math.random() * 0.6);
+  }
+  step(dt) {
+    const g = this.gravity;
+    for (let i = 0; i < this.count; i++) {
+      this.vel[i*3 + 1] += g * dt;
+      this.pos[i*3]     += this.vel[i*3]     * dt;
+      this.pos[i*3 + 1] += this.vel[i*3 + 1] * dt;
+      this.pos[i*3 + 2] += this.vel[i*3 + 2] * dt;
+      this.age[i] += dt;
+      if (this.age[i] > this.maxAge[i] || this.pos[i*3 + 1] < -1)
+        this.respawn(i);
+    }
+  }
+}`,
+      'C++': `// Particle fountain — C++ with SIMD
+#include <random>
+#include <vector>
+
+struct ParticleSystem {
+    std::vector<float> pos;    // 3N
+    std::vector<float> vel;    // 3N
+    std::vector<float> age;    // N
+    std::vector<float> maxAge; // N
+    float gravity = -6.0f;
+    int N = 0;
+
+    void init(int n) {
+        N = n;
+        pos.resize(N * 3);
+        vel.resize(N * 3);
+        age.resize(N);
+        maxAge.resize(N);
+        for (int i = 0; i < N; ++i) respawn(i);
+    }
+
+    void respawn(int i) {
+        std::mt19937 rng(i);
+        std::uniform_real_distribution<float> U(0, 1);
+        pos[i*3]     = (U(rng) - 0.5f) * 0.5f;
+        pos[i*3 + 1] = 0;
+        pos[i*3 + 2] = (U(rng) - 0.5f) * 0.5f;
+        float angle = U(rng) * 6.2831853f;
+        float speed = 8.0f * (0.7f + U(rng) * 0.3f);
+        vel[i*3]     = std::cos(angle) * speed * 0.6f * U(rng);
+        vel[i*3 + 1] = speed;
+        vel[i*3 + 2] = std::sin(angle) * speed * 0.6f * U(rng);
+        age[i] = 0;
+        maxAge[i] = 3.0f * (0.7f + U(rng) * 0.6f);
+    }
+
+    void step(float dt) {
+        #pragma omp parallel for
+        for (int i = 0; i < N; ++i) {
+            vel[i*3 + 1] += gravity * dt;
+            pos[i*3]     += vel[i*3]     * dt;
+            pos[i*3 + 1] += vel[i*3 + 1] * dt;
+            pos[i*3 + 2] += vel[i*3 + 2] * dt;
+            age[i] += dt;
+        }
+    }
+};`,
+      Rust: `// Particle fountain — Rust
+pub struct ParticleSystem {
+    pub pos: Vec<[f32; 3]>,
+    pub vel: Vec<[f32; 3]>,
+    pub age: Vec<f32>,
+    pub max_age: Vec<f32>,
+    pub gravity: f32,
+}
+
+impl ParticleSystem {
+    pub fn new(count: usize) -> Self {
+        let mut s = Self {
+            pos: vec![[0.0; 3]; count],
+            vel: vec![[0.0; 3]; count],
+            age: vec![0.0; count],
+            max_age: vec![3.0; count],
+            gravity: -6.0,
+        };
+        for i in 0..count { s.respawn(i); }
+        s
+    }
+    pub fn respawn(&mut self, i: usize) {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        self.pos[i] = [
+            (rng.gen::<f32>() - 0.5) * 0.5,
+            0.0,
+            (rng.gen::<f32>() - 0.5) * 0.5,
+        ];
+        let angle = rng.gen::<f32>() * std::f32::consts::TAU;
+        let speed = 8.0 * (0.7 + rng.gen::<f32>() * 0.3);
+        self.vel[i] = [
+            angle.cos() * speed * 0.6 * rng.gen::<f32>(),
+            speed,
+            angle.sin() * speed * 0.6 * rng.gen::<f32>(),
+        ];
+        self.age[i] = 0.0;
+        self.max_age[i] = 3.0 * (0.7 + rng.gen::<f32>() * 0.6);
+    }
+    pub fn step(&mut self, dt: f32) {
+        for i in 0..self.pos.len() {
+            self.vel[i][1] += self.gravity * dt;
+            for k in 0..3 {
+                self.pos[i][k] += self.vel[i][k] * dt;
+            }
+            self.age[i] += dt;
+            if self.age[i] > self.max_age[i] || self.pos[i][1] < -1.0 {
+                self.respawn(i);
+            }
+        }
+    }
+}`,
+      GLSL: `// GLSL: particle shader
+#version 330 core
+
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec4 aColor;
+layout(location = 2) in float aSize;
+
+uniform mat4 uMVP;
+uniform float uPixelRatio;
+
+out vec4 vColor;
+
+void main() {
+    vColor = aColor;
+    gl_Position = uMVP * vec4(aPos, 1.0);
+    gl_PointSize = aSize * uPixelRatio;
+}
+
+// --- fragment ---
+// #version 330 core
+// in vec4 vColor;
+// out vec4 fragColor;
+// void main() {
+//     vec2 c = gl_PointCoord - 0.5;
+//     float d = length(c);
+//     if (d > 0.5) discard;
+//     float alpha = smoothstep(0.5, 0.0, d);
+//     fragColor = vec4(vColor.rgb, vColor.a * alpha);
+// }`,
+      CUDA: `// CUDA: particle simulation kernel
+#include <curand_kernel.h>
+
+__global__
+void particle_update(
+    float3* pos, float3* vel, float* age, float* max_age,
+    int n, float dt, float gravity)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= n) return;
+
+    vel[i].y += gravity * dt;
+    pos[i].x += vel[i].x * dt;
+    pos[i].y += vel[i].y * dt;
+    pos[i].z += vel[i].z * dt;
+    age[i] += dt;
+
+    if (age[i] > max_age[i] || pos[i].y < -1.0f) {
+        curandState state;
+        curand_init(clock64() + i, 0, 0, &state);
+
+        pos[i] = make_float3(
+            (curand_uniform(&state) - 0.5f) * 0.5f,
+            0.0f,
+            (curand_uniform(&state) - 0.5f) * 0.5f);
+        float angle = curand_uniform(&state) * 6.2831853f;
+        float speed = 8.0f * (0.7f + curand_uniform(&state) * 0.3f);
+        vel[i] = make_float3(
+            cosf(angle) * speed * 0.6f,
+            speed,
+            sinf(angle) * speed * 0.6f);
+        age[i] = 0.0f;
+        max_age[i] = 3.0f * (0.7f + curand_uniform(&state) * 0.6f);
+    }
+}`,
+      WGSL: `// WGSL: particle update compute shader
+struct Particle {
+  pos : vec3<f32>,
+  vel : vec3<f32>,
+  age : f32,
+  max_age : f32,
+}
+
+@group(0) @binding(0) var<storage, read_write> particles : array<Particle>;
+
+fn hash(n : u32) -> f32 {
+  var x = n;
+  x = (x ^ 61u) ^ (x >> 16u);
+  x = x + (x << 3u);
+  x = x ^ (x >> 4u);
+  x = x * 0x27d4eb2du;
+  x = x ^ (x >> 15u);
+  return f32(x) / 4294967296.0;
+}
+
+@compute @workgroup_size(64)
+fn step(@builtin(global_invocation_id) gid : vec3<u32>) {
+  let i = gid.x;
+  if (i >= arrayLength(&particles)) { return; }
+
+  let dt = 0.016;
+  let g = -6.0;
+
+  var p = particles[i];
+  p.vel.y = p.vel.y + g * dt;
+  p.pos = p.pos + p.vel * dt;
+  p.age = p.age + dt;
+
+  if (p.age > p.max_age || p.pos.y < -1.0) {
+    let seed = i * 7919u;
+    p.pos = vec3<f32>(
+      (hash(seed) - 0.5) * 0.5,
+      0.0,
+      (hash(seed + 1u) - 0.5) * 0.5
+    );
+    let angle = hash(seed + 2u) * 6.2831853;
+    let speed = 8.0 * (0.7 + hash(seed + 3u) * 0.3);
+    p.vel = vec3<f32>(
+      cos(angle) * speed * 0.6,
+      speed,
+      sin(angle) * speed * 0.6
+    );
+    p.age = 0.0;
+    p.max_age = 3.0 * (0.7 + hash(seed + 4u) * 0.6);
+  }
+  particles[i] = p;
+}`
+    }
+  },
+
+  nebula: {
+    name: 'Volumetric Nebula',
+    langs: {
+      Python: `# Volumetric nebula raymarch (reference)
+import numpy as np
+
+def hash3(x, y, z):
+    x = ((x * 443.897 + 441.423 + y) % 1) + 19.19
+    y = ((y * 443.897 + 441.423 + z) % 1) + 19.19
+    z = ((z * 443.897 + 441.423 + x) % 1) + 19.19
+    return ((x + y) * z) % 1
+
+def noise3(p):
+    i = np.floor(p)
+    f = p - i
+    f = f * f * (3 - 2 * f)
+    # ... 8 corner hash + trilinear interpolate
+    return 0.5  # placeholder
+
+def fbm(p, octaves=6):
+    val, amp = 0.0, 0.5
+    for _ in range(octaves):
+        val += amp * noise3(p)
+        p = p * 2.03
+        amp *= 0.5
+    return val
+
+def raymarch_nebula(ro, rd, steps=64):
+    t = 0.0
+    color = np.zeros(3)
+    trans = 1.0
+    for _ in range(steps):
+        p = ro + rd * t
+        d = fbm(p * 0.35)
+        d = max(0.0, min(1.0, (d - 0.4) * 5)) * 0.5
+        if d > 0.001:
+            lc = np.array([0.4, 0.15, 0.85])
+            lc = lc * (1 - d) + np.array([0, 0.9, 1.0]) * d
+            color += lc * d * trans
+            trans *= (1 - d * 0.7)
+            if trans < 0.02:
+                break
+        t += 0.15
+    return color`,
+      JavaScript: `// Volumetric nebula — JS port
+function hash(x, y, z) {
+  let p = [
+    ((x * 443.897 + y * 441.423 + 0.5) % 1),
+    ((y * 443.897 + z * 441.423 + 0.5) % 1),
+    ((z * 443.897 + x * 441.423 + 0.5) % 1)
+  ];
+  p[0] += 19.19 * (p[1] + p[2]);
+  p[1] += 19.19 * (p[0] + p[2]);
+  p[2] += 19.19 * (p[0] + p[1]);
+  return ((p[0] + p[1]) * p[2]) % 1;
+}
+
+function noise3(x, y, z) {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+  const fx = x - ix, fy = y - iy, fz = z - iz;
+  const ux = fx*fx*(3-2*fx), uy = fy*fy*(3-2*fy), uz = fz*fz*(3-2*fz);
+  const c000 = hash(ix, iy, iz);
+  const c100 = hash(ix+1, iy, iz);
+  // ... 8 corners
+  const cxy0 = c000 + (c100 - c000) * ux; // placeholder
+  return cxy0 * uz + cxy0 * (1 - uz);
+}
+
+function fbm(x, y, z, oct = 6) {
+  let v = 0, a = 0.5;
+  for (let i = 0; i < oct; i++) {
+    v += a * noise3(x, y, z);
+    x *= 2.03; y *= 2.03; z *= 2.03;
+    a *= 0.5;
+  }
+  return v;
+}`,
+      'C++': `// Volumetric nebula — C++ (CPU fallback)
+#include <cmath>
+#include <array>
+
+inline float hash3(float x, float y, float z) {
+    x = std::fmod(x * 443.897f + 0.5f, 1.0f);
+    y = std::fmod(y * 441.423f + 0.5f, 1.0f);
+    z = std::fmod(z * 437.195f + 0.5f, 1.0f);
+    x += 19.19f * (y + z);
+    y += 19.19f * (x + z);
+    z += 19.19f * (x + y);
+    return std::fmod((x + y) * z, 1.0f);
+}
+
+inline float fbm3(float x, float y, float z, int oct) {
+    float v = 0.0f, a = 0.5f;
+    for (int i = 0; i < oct; ++i) {
+        v += a * hash3(x, y, z);  // simplified
+        x *= 2.03f; y *= 2.03f; z *= 2.03f;
+        a *= 0.5f;
+    }
+    return v;
+}
+
+std::array<float, 3> raymarch_nebula(
+    std::array<float, 3> ro,
+    std::array<float, 3> rd,
+    int steps = 64)
+{
+    float t = 0.0f, trans = 1.0f;
+    std::array<float, 3> col = {0, 0, 0};
+    for (int i = 0; i < steps; ++i) {
+        auto p = std::array<float,3>{
+            ro[0] + rd[0] * t,
+            ro[1] + rd[1] * t,
+            ro[2] + rd[2] * t
+        };
+        float d = fbm3(p[0]*0.35f, p[1]*0.35f, p[2]*0.35f, 6);
+        d = std::fmax(0.0f, std::fmin(1.0f, (d - 0.4f) * 5.0f)) * 0.5f;
+        if (d > 0.001f) {
+            float r = 0.4f * (1-d) + 0.0f * d;
+            float g = 0.15f * (1-d) + 0.9f * d;
+            float b = 0.85f * (1-d) + 1.0f * d;
+            col[0] += r * d * trans;
+            col[1] += g * d * trans;
+            col[2] += b * d * trans;
+            trans *= (1.0f - d * 0.7f);
+            if (trans < 0.02f) break;
+        }
+        t += 0.15f;
+    }
+    return col;
+}`,
+      Rust: `// Volumetric nebula — Rust
+#[inline]
+fn hash3(x: f32, y: f32, z: f32) -> f32 {
+    let mut x = (x * 443.897 + 0.5) % 1.0;
+    let mut y = (y * 441.423 + 0.5) % 1.0;
+    let mut z = (z * 437.195 + 0.5) % 1.0;
+    x += 19.19 * (y + z);
+    y += 19.19 * (x + z);
+    z += 19.19 * (x + y);
+    ((x + y) * z) % 1.0
+}
+
+fn fbm(x: f32, y: f32, z: f32, oct: u32) -> f32 {
+    let (mut x, mut y, mut z) = (x, y, z);
+    let mut v = 0.0;
+    let mut a = 0.5;
+    for _ in 0..oct {
+        v += a * hash3(x, y, z);
+        x *= 2.03; y *= 2.03; z *= 2.03;
+        a *= 0.5;
+    }
+    v
+}
+
+pub fn raymarch_nebula(
+    ro: [f32; 3], rd: [f32; 3], steps: u32,
+) -> [f32; 3] {
+    let mut t = 0.0;
+    let mut trans = 1.0;
+    let mut col = [0.0; 3];
+    for _ in 0..steps {
+        let p = [
+            ro[0] + rd[0] * t,
+            ro[1] + rd[1] * t,
+            ro[2] + rd[2] * t,
+        ];
+        let d = (fbm(p[0]*0.35, p[1]*0.35, p[2]*0.35, 6)
+                 .max(0.0).min(1.0) - 0.4) * 5.0;
+        let d = d.max(0.0).min(1.0) * 0.5;
+        if d > 0.001 {
+            col[0] += (0.4 * (1.0 - d) + 0.0 * d) * d * trans;
+            col[1] += (0.15 * (1.0 - d) + 0.9 * d) * d * trans;
+            col[2] += (0.85 * (1.0 - d) + 1.0 * d) * d * trans;
+            trans *= 1.0 - d * 0.7;
+            if trans < 0.02 { break; }
+        }
+        t += 0.15;
+    }
+    col
+}`,
+      GLSL: `// GLSL: volumetric nebula fragment shader
+#version 330 core
+
+uniform vec2 uResolution;
+uniform float uTime;
+uniform vec3 uCameraPos;
+uniform mat3 uCameraMat;
+
+float hash(vec3 p) {
+    p = fract(p * vec3(443.897, 441.423, 437.195));
+    p += dot(p, p.yzx + 19.19);
+    return fract((p.x + p.y) * p.z);
+}
+
+float noise(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    f = f*f*(3.0-2.0*f);
+    return mix(
+        mix(mix(hash(i+vec3(0,0,0)), hash(i+vec3(1,0,0)), f.x),
+            mix(hash(i+vec3(0,1,0)), hash(i+vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash(i+vec3(0,0,1)), hash(i+vec3(1,0,1)), f.x),
+            mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)), f.x), f.y),
+        f.z);
+}
+
+float fbm(vec3 p) {
+    float v = 0.0, a = 0.5;
+    for (int i = 0; i < 6; i++) {
+        v += a * noise(p);
+        p *= 2.03;
+        a *= 0.5;
+    }
+    return v;
+}
+
+void main() {
+    vec2 uv = (gl_FragCoord.xy * 2.0 - uResolution) / uResolution.y;
+    vec3 rd = uCameraMat * normalize(vec3(uv, -1.5));
+    vec3 ro = uCameraPos;
+
+    float t = 0.0;
+    vec3 col = vec3(0.0);
+    float trans = 1.0;
+    for (int i = 0; i < 64; i++) {
+        vec3 p = ro + rd * t;
+        float d = fbm(p * 0.35 + vec3(uTime * 0.05));
+        d = smoothstep(0.4, 0.9, d) * 0.5;
+        if (d > 0.001) {
+            vec3 lc = mix(vec3(0.4, 0.15, 0.85),
+                          vec3(0.0, 0.9, 1.0), d);
+            lc = mix(lc, vec3(1.0, 0.0, 0.6), d*d);
+            col += lc * d * trans;
+            trans *= (1.0 - d * 0.7);
+            if (trans < 0.02) break;
+        }
+        t += 0.15;
+    }
+    gl_FragColor = vec4(col, 1.0);
+}`,
+      CUDA: `// CUDA: nebula volume rendering
+__device__
+float hash3(float3 p) {
+    p = make_float3(
+        fractf(p.x * 443.897f),
+        fractf(p.y * 441.423f),
+        fractf(p.z * 437.195f));
+    p.x += 19.19f * (p.y + p.z);
+    p.y += 19.19f * (p.x + p.z);
+    p.z += 19.19f * (p.x + p.y);
+    return fractf((p.x + p.y) * p.z);
+}
+
+__device__
+float noise3(float3 p) {
+    float3 i = make_float3(floorf(p.x), floorf(p.y), floorf(p.z));
+    float3 f = make_float3(p.x - i.x, p.y - i.y, p.z - i.z);
+    f = make_float3(f.x*f.x*(3-2*f.x),
+                    f.y*f.y*(3-2*f.y),
+                    f.z*f.z*(3-2*f.z));
+    // 8 corners hash + trilinear
+    // ... (see GLSL for logic)
+    return 0.5f;
+}
+
+__global__
+void render_nebula(
+    uchar4* pixels, int W, int H,
+    float3 ro, float time)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= W || y >= H) return;
+
+    float2 uv = (make_float2(x, y) * 2.0f - make_float2(W, H)) / float(H);
+    float3 rd = normalize(make_float3(uv.x, uv.y, -1.5f));
+
+    float t = 0.0f;
+    float3 col = make_float3(0, 0, 0);
+    float trans = 1.0f;
+
+    for (int i = 0; i < 64; ++i) {
+        float3 p = ro + rd * t;
+        float d = noise3(make_float3(p.x*0.35f, p.y*0.35f, p.z*0.35f));
+        d = fmaxf(0.0f, fminf(1.0f, (d - 0.4f) * 5.0f)) * 0.5f;
+        if (d > 0.001f) {
+            col.x += 0.4f * d * trans;
+            col.y += 0.9f * d * trans;
+            col.z += (0.85f + 0.15f * d) * d * trans;
+            trans *= (1.0f - d * 0.7f);
+            if (trans < 0.02f) break;
+        }
+        t += 0.15f;
+    }
+    pixels[y * W + x] = make_uchar4(
+        col.x * 255, col.y * 255, col.z * 255, 255);
+}`,
+      WGSL: `// WGSL: volumetric nebula fragment shader
+struct Uniforms {
+  resolution : vec2<f32>,
+  time : f32,
+}
+@group(0) @binding(0) var<uniform> u : Uniforms;
+
+fn hash3(p : vec3<f32>) -> f32 {
+  var q = fract(p * vec3<f32>(443.897, 441.423, 437.195));
+  q = q + dot(q, q.yzx + 19.19);
+  return fract((q.x + q.y) * q.z);
+}
+
+fn noise3(p : vec3<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = hash3(i);
+  let b = hash3(i + vec3<f32>(1,0,0));
+  let c = hash3(i + vec3<f32>(0,1,0));
+  let d = hash3(i + vec3<f32>(1,1,0));
+  return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
+}
+
+fn fbm(p : vec3<f32>) -> f32 {
+  var v = 0.0;
+  var a = 0.5;
+  var q = p;
+  for (var i = 0; i < 6; i = i + 1) {
+    v = v + a * noise3(q);
+    q = q * 2.03;
+    a = a * 0.5;
+  }
+  return v;
+}
+
+@fragment
+fn fs(@builtin(position) fc : vec4<f32>) -> @location(0) vec4<f32> {
+  let uv = (fc.xy * 2.0 - u.resolution) / u.resolution.y;
+  let rd = normalize(vec3<f32>(uv.x, uv.y, -1.5));
+  let ro = vec3<f32>(0.0, 0.0, -5.0);
+
+  var t = 0.0;
+  var col = vec3<f32>(0.0);
+  var trans = 1.0;
+
+  for (var i = 0; i < 64; i = i + 1) {
+    let p = ro + rd * t;
+    var d = fbm(p * 0.35 + vec3<f32>(u.time * 0.05));
+    d = smoothstep(0.4, 0.9, d) * 0.5;
+    if (d > 0.001) {
+      var lc = mix(vec3<f32>(0.4, 0.15, 0.85),
+                   vec3<f32>(0.0, 0.9, 1.0), d);
+      lc = mix(lc, vec3<f32>(1.0, 0.0, 0.6), d*d);
+      col = col + lc * d * trans;
+      trans = trans * (1.0 - d * 0.7);
+      if (trans < 0.02) { break; }
+    }
+    t = t + 0.15;
+  }
+  return vec4<f32>(col, 1.0);
+}`
+    }
+  },
+
+  terrain: {
+    name: 'Procedural Terrain',
+    langs: {
+      Python: `# Procedural terrain via Perlin FBM
+import numpy as np
+
+def perlin_noise_2d(x, y, perm, fade, grad):
+    X = int(np.floor(x)) & 255
+    Y = int(np.floor(y)) & 255
+    x -= np.floor(x)
+    y -= np.floor(y)
+    u = fade(x); v = fade(y)
+
+    A = perm[X] + Y
+    B = perm[X+1] + Y
+
+    return (1 - v) * ((1 - u) * grad(perm[A], x, y)
+                    + u * grad(perm[B], x-1, y)) \\
+         + v * ((1 - u) * grad(perm[A+1], x, y-1)
+              + u * grad(perm[B+1], x-1, y-1))
+
+def fbm_terrain(x, z, octaves=6, lac=2.0, gain=0.5):
+    total, amp, freq = 0.0, 1.0, 1.0
+    norm = 0.0
+    for _ in range(octaves):
+        total += amp * perlin_noise_2d(x*freq, z*freq, ...)
+        norm += amp
+        amp *= gain
+        freq *= lac
+    return total / norm
+
+def generate_terrain(size=30, segs=96, height=8, freq=0.15):
+    verts = []
+    for i in range(segs + 1):
+        for j in range(segs + 1):
+            x = (i / segs - 0.5) * size
+            z = (j / segs - 0.5) * size
+            h = (fbm_terrain(x * freq, z * freq) * 0.5 + 0.5) * height
+            verts.append((x, h, z))
+    return np.array(verts)`,
+      JavaScript: `// Perlin noise + terrain generation in JS
+function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function grad(hash, x, y, z) {
+  const h = hash & 15;
+  const u = h < 8 ? x : y;
+  const v = h < 4 ? y : (h === 12 || h === 14 ? x : z);
+  return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+}
+
+class Perlin {
+  constructor(seed = 42) {
+    this.perm = new Uint8Array(512);
+    const p = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) p[i] = i;
+    // Fisher-Yates shuffle with seeded PRNG
+    let s = seed;
+    const rand = () => {
+      s = (s * 16807) % 2147483647;
+      return (s - 1) / 2147483646;
+    };
+    for (let i = 255; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [p[i], p[j]] = [p[j], p[i]];
+    }
+    for (let i = 0; i < 512; i++) this.perm[i] = p[i & 255];
+  }
+  noise3(x, y, z) {
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+    const Z = Math.floor(z) & 255;
+    x -= Math.floor(x);
+    y -= Math.floor(y);
+    z -= Math.floor(z);
+    const u = fade(x), v = fade(y), w = fade(z);
+    const p = this.perm;
+    const A = p[X] + Y, AA = p[A] + Z, AB = p[A+1] + Z;
+    const B = p[X+1] + Y, BA = p[B] + Z, BB = p[B+1] + Z;
+    return lerp(
+      lerp(lerp(grad(p[AA], x,y,z),
+                grad(p[BA], x-1,y,z), u),
+           lerp(grad(p[AB], x,y-1,z),
+                grad(p[BB], x-1,y-1,z), u), v),
+      lerp(lerp(grad(p[AA+1], x,y,z-1),
+                grad(p[BA+1], x-1,y,z-1), u),
+           lerp(grad(p[AB+1], x,y-1,z-1),
+                grad(p[BB+1], x-1,y-1,z-1), u), v),
+      w);
+  }
+  fbm(x, y, z, oct = 6) {
+    let sum = 0, amp = 1, freq = 1, norm = 0;
+    for (let i = 0; i < oct; i++) {
+      sum += amp * this.noise3(x*freq, y*freq, z*freq);
+      norm += amp;
+      amp *= 0.5;
+      freq *= 2.0;
+    }
+    return sum / norm;
+  }
+}`,
+      'C++': `// Perlin terrain — C++
+#include <array>
+#include <vector>
+#include <cmath>
+
+class Perlin {
+    std::array<uint8_t, 512> perm{};
+public:
+    explicit Perlin(uint32_t seed = 42) {
+        std::array<uint8_t, 256> p{};
+        for (int i = 0; i < 256; ++i) p[i] = i;
+        uint32_t s = seed;
+        auto rand = [&s]() {
+            s = s * 16807 % 2147483647u;
+            return float(s - 1) / 2147483646.0f;
+        };
+        for (int i = 255; i > 0; --i) {
+            int j = int(rand() * (i + 1));
+            std::swap(p[i], p[j]);
+        }
+        for (int i = 0; i < 512; ++i) perm[i] = p[i & 255];
+    }
+
+    static float fade(float t) {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+    }
+    static float lerp(float a, float b, float t) {
+        return a + t * (b - a);
+    }
+    static float grad(int h, float x, float y, float z) {
+        int g = h & 15;
+        float u = g < 8 ? x : y;
+        float v = g < 4 ? y : (g == 12 || g == 14 ? x : z);
+        return ((g & 1) ? -u : u) + ((g & 2) ? -v : v);
+    }
+    float noise3(float x, float y, float z) const {
+        int X = int(std::floor(x)) & 255;
+        int Y = int(std::floor(y)) & 255;
+        int Z = int(std::floor(z)) & 255;
+        x -= std::floor(x);
+        y -= std::floor(y);
+        z -= std::floor(z);
+        float u = fade(x), v = fade(y), w = fade(z);
+        int A = perm[X] + Y, AA = perm[A] + Z, AB = perm[A+1] + Z;
+        int B = perm[X+1] + Y, BA = perm[B] + Z, BB = perm[B+1] + Z;
+        return lerp(
+            lerp(lerp(grad(perm[AA], x, y, z),
+                      grad(perm[BA], x-1, y, z), u),
+                 lerp(grad(perm[AB], x, y-1, z),
+                      grad(perm[BB], x-1, y-1, z), u), v),
+            lerp(lerp(grad(perm[AA+1], x, y, z-1),
+                      grad(perm[BA+1], x-1, y, z-1), u),
+                 lerp(grad(perm[AB+1], x, y-1, z-1),
+                      grad(perm[BB+1], x-1, y-1, z-1), u), v),
+            w);
+    }
+};`,
+      Rust: `// Perlin terrain — Rust
+use rand::{Rng, SeedableRng};
+use rand_pcg::Pcg64;
+
+pub struct Perlin {
+    perm: [u8; 512],
+}
+
+impl Perlin {
+    pub fn new(seed: u64) -> Self {
+        let mut rng = Pcg64::seed_from_u64(seed);
+        let mut p = [0u8; 256];
+        for i in 0..256 { p[i] = i as u8; }
+        // Fisher-Yates
+        for i in (1..256).rev() {
+            let j = rng.gen_range(0..=i);
+            p.swap(i, j);
+        }
+        let mut perm = [0u8; 512];
+        for i in 0..512 { perm[i] = p[i & 255]; }
+        Self { perm }
+    }
+
+    #[inline]
+    fn fade(t: f32) -> f32 {
+        t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
+    }
+
+    #[inline]
+    fn grad(h: u8, x: f32, y: f32, z: f32) -> f32 {
+        let g = h & 15;
+        let u = if g < 8 { x } else { y };
+        let v = if g < 4 { y } else if g == 12 || g == 14 { x } else { z };
+        (if g & 1 == 0 { u } else { -u }) +
+        (if g & 2 == 0 { v } else { -v })
+    }
+
+    pub fn noise3(&self, mut x: f32, mut y: f32, mut z: f32) -> f32 {
+        let xi = (x.floor() as i32 & 255) as usize;
+        let yi = (y.floor() as i32 & 255) as usize;
+        let zi = (z.floor() as i32 & 255) as usize;
+        x -= x.floor();
+        y -= y.floor();
+        z -= z.floor();
+        let u = Self::fade(x);
+        let v = Self::fade(y);
+        let w = Self::fade(z);
+        let p = &self.perm;
+        let a = p[xi] as usize + yi;
+        let aa = p[a] as usize + zi;
+        let ab = p[a + 1] as usize + zi;
+        let b = p[xi + 1] as usize + yi;
+        let ba = p[b] as usize + zi;
+        let bb = p[b + 1] as usize + zi;
+        let x1 = Self::grad(p[aa], x, y, z)
+               + u * (Self::grad(p[ba], x - 1.0, y, z)
+                    - Self::grad(p[aa], x, y, z));
+        let x2 = Self::grad(p[ab], x, y - 1.0, z)
+               + u * (Self::grad(p[bb], x - 1.0, y - 1.0, z)
+                    - Self::grad(p[ab], x, y - 1.0, z));
+        let y1 = x1 + v * (x2 - x1);
+        let x3 = Self::grad(p[aa + 1], x, y, z - 1.0)
+               + u * (Self::grad(p[ba + 1], x - 1.0, y, z - 1.0)
+                    - Self::grad(p[aa + 1], x, y, z - 1.0));
+        let x4 = Self::grad(p[ab + 1], x, y - 1.0, z - 1.0)
+               + u * (Self::grad(p[bb + 1], x - 1.0, y - 1.0, z - 1.0)
+                    - Self::grad(p[ab + 1], x, y - 1.0, z - 1.0));
+        let y2 = x3 + v * (x4 - x3);
+        y1 + w * (y2 - y1)
+    }
+}`,
+      GLSL: `// GLSL: procedural terrain vertex displacement
+#version 330 core
+
+layout(location = 0) in vec2 aXZ;
+
+uniform mat4 uMVP;
+uniform mat4 uModel;
+uniform float uTime;
+
+// --- Perlin noise (classic implementation) ---
+const int perm[256] = int[256](
+    151,160,137, 91, 90, 15,131, 13,201, 95, 96, 53,194,233,  7,225,
+    // ... 240 more constants
+);
+
+float fade(float t) { return t*t*t*(t*(t*6.0-15.0)+10.0); }
+
+float grad(int h, float x, float y, float z) {
+    int g = h & 15;
+    float u = g < 8 ? x : y;
+    float v = g < 4 ? y : (g == 12 || g == 14 ? x : z);
+    return ((g & 1) == 0 ? u : -u) +
+           ((g & 2) == 0 ? v : -v);
+}
+
+float noise(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    f = f*f*(3.0-2.0*f);
+    int X = int(mod(i.x, 256.0));
+    int Y = int(mod(i.y, 256.0));
+    int Z = int(mod(i.z, 256.0));
+    int A = perm[X] + Y;
+    int AA = perm[A % 256] + Z;
+    int AB = perm[(A+1) % 256] + Z;
+    int B = perm[(X+1) % 256] + Y;
+    int BA = perm[B % 256] + Z;
+    int BB = perm[(B+1) % 256] + Z;
+    float v = mix(
+      mix(mix(grad(perm[AA % 256], f.x, f.y, f.z),
+              grad(perm[BA % 256], f.x-1.0, f.y, f.z), f.x),
+          mix(grad(perm[AB % 256], f.x, f.y-1.0, f.z),
+              grad(perm[BB % 256], f.x-1.0, f.y-1.0, f.z), f.x), f.y),
+      mix(mix(grad(perm[(AA+1) % 256], f.x, f.y, f.z-1.0),
+              grad(perm[(BA+1) % 256], f.x-1.0, f.y, f.z-1.0), f.x),
+          mix(grad(perm[(AB+1) % 256], f.x, f.y-1.0, f.z-1.0),
+              grad(perm[(BB+1) % 256], f.x-1.0, f.y-1.0, f.z-1.0), f.x), f.y),
+      f.z);
+    return v;
+}
+
+float fbm(vec3 p, int oct) {
+    float v = 0.0, a = 0.5;
+    for (int i = 0; i < 8; i++) {
+        if (i >= oct) break;
+        v += a * noise(p);
+        p *= 2.03;
+        a *= 0.5;
+    }
+    return v;
+}
+
+void main() {
+    vec3 pos = vec3(aXZ.x, 0.0, aXZ.y);
+    float h = fbm(pos * 0.15 + vec3(uTime * 0.05, 0.0, 0.0), 6);
+    h = (h * 0.5 + 0.5) * 8.0;
+    pos.y = h;
+    gl_Position = uMVP * vec4(pos, 1.0);
+}`,
+      CUDA: `// CUDA: terrain heightmap generation
+__global__
+void terrain_heightmap(
+    float* heights, int W, int H,
+    float frequency, int octaves)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    if (x >= W || y >= H) return;
+
+    float fx = x * frequency;
+    float fy = y * frequency;
+    float h = fbm2(fx, fy, octaves);
+
+    heights[y * W + x] = (h * 0.5f + 0.5f) * 8.0f;
+}
+
+__device__
+float fbm2(float x, float y, int oct) {
+    float total = 0, amp = 1, freq = 1, norm = 0;
+    for (int i = 0; i < oct; ++i) {
+        total += amp * perlin2(x * freq, y * freq);
+        norm += amp;
+        amp *= 0.5f;
+        freq *= 2.0f;
+    }
+    return total / norm;
+}
+
+__device__
+float perlin2(float x, float y) {
+    int X = int(floorf(x)) & 255;
+    int Y = int(floorf(y)) & 255;
+    x -= floorf(x);
+    y -= floorf(y);
+    float u = fade(x), v = fade(y);
+    int A = d_perm[X] + Y;
+    int B = d_perm[X + 1] + Y;
+    float n00 = grad2(d_perm[A], x, y);
+    float n10 = grad2(d_perm[B], x - 1.0f, y);
+    float n01 = grad2(d_perm[A + 1], x, y - 1.0f);
+    float n11 = grad2(d_perm[B + 1], x - 1.0f, y - 1.0f);
+    float nx0 = lerp(n00, n10, u);
+    float nx1 = lerp(n01, n11, u);
+    return lerp(nx0, nx1, v);
+}`,
+      WGSL: `// WGSL: procedural terrain vertex shader
+struct Uniforms {
+  mvp : mat4x4<f32>,
+  time : f32,
+  frequency : f32,
+  octaves : i32,
+}
+@group(0) @binding(0) var<uniform> u : Uniforms;
+
+fn fade(t : f32) -> f32 {
+  return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+fn grad(h : u32, x : f32, y : f32) -> f32 {
+  let g = h & 7u;
+  let u = select(y, x, (g & 1u) == 0u);
+  let v = select(x, y, (g & 2u) == 0u);
+  return select(-u, u, (g & 4u) == 0u) +
+         select(-v, v, (g & 8u) == 0u);
+}
+
+@vertex
+fn vs_main(
+  @location(0) aXZ : vec2<f32>,
+) -> @builtin(position) vec4<f32> {
+  var pos = vec3<f32>(aXZ.x, 0.0, aXZ.y);
+  var h = 0.0;
+  var amp = 0.5;
+  var freq = 1.0;
+  var norm = 0.0;
+  for (var i = 0; i < 8; i = i + 1) {
+    if (i >= u.octaves) { break; }
+    // hash-based noise
+    let p = pos.xz * u.frequency * freq + vec2<f32>(u.time * 0.05, 0.0);
+    let n = sin(p.x * 12.9898 + p.y * 78.233) * 43758.5453;
+    h = h + amp * fract(n);
+    norm = norm + amp;
+    amp = amp * 0.5;
+    freq = freq * 2.0;
+  }
+  h = h / norm;
+  h = (h * 0.5 + 0.5) * 8.0;
+  pos.y = h;
+  return u.mvp * vec4<f32>(pos, 1.0);
+}`
+    }
+  },
+
+  cubes: {
+    name: 'Mesh Rendering Pipeline',
+    langs: {
+      Python: `# 3D mesh rendering pipeline (reference)
+import numpy as np
+
+class Mesh:
+    def __init__(self, verts, norms, uvs, idx):
+        self.verts = np.asarray(verts, dtype=np.float32)
+        self.norms = np.asarray(norms, dtype=np.float32)
+        self.uvs = np.asarray(uvs, dtype=np.float32)
+        self.idx = np.asarray(idx, dtype=np.uint32)
+
+    @classmethod
+    def sphere(cls, radius=1.0, segs=32):
+        verts, norms, uvs, idx = [], [], [], []
+        for y in range(segs + 1):
+            for x in range(segs + 1):
+                u = x / segs
+                v = y / segs
+                phi = v * np.pi
+                theta = u * 2 * np.pi
+                nx = np.sin(phi) * np.cos(theta)
+                ny = np.cos(phi)
+                nz = np.sin(phi) * np.sin(theta)
+                verts.append([nx*radius, ny*radius, nz*radius])
+                norms.append([nx, ny, nz])
+                uvs.append([u, v])
+        for j in range(segs):
+            for i in range(segs):
+                a = j * (segs + 1) + i
+                b = a + 1
+                c = a + segs + 1
+                d = c + 1
+                idx.extend([a, c, b, b, c, d])
+        return cls(verts, norms, uvs, idx)`,
+      JavaScript: `// Procedural mesh generation — JavaScript
+function makeSphere(radius = 1, segs = 32) {
+  const verts = [], norms = [], uvs = [], idx = [];
+  for (let y = 0; y <= segs; y++) {
+    for (let x = 0; x <= segs; x++) {
+      const u = x / segs;
+      const v = y / segs;
+      const phi = v * Math.PI;
+      const theta = u * Math.PI * 2;
+      const nx = Math.sin(phi) * Math.cos(theta);
+      const ny = Math.cos(phi);
+      const nz = Math.sin(phi) * Math.sin(theta);
+      verts.push(nx * radius, ny * radius, nz * radius);
+      norms.push(nx, ny, nz);
+      uvs.push(u, v);
+    }
+  }
+  for (let j = 0; j < segs; j++) {
+    for (let i = 0; i < segs; i++) {
+      const a = j * (segs + 1) + i;
+      const b = a + 1;
+      const c = a + segs + 1;
+      const d = c + 1;
+      idx.push(a, c, b, b, c, d);
+    }
+  }
+  return {
+    verts: new Float32Array(verts),
+    norms: new Float32Array(norms),
+    uvs: new Float32Array(uvs),
+    idx: new Uint32Array(idx),
+    count: idx.length
+  };
+}`,
+      'C++': `// C++ mesh generation
+#include <vector>
+#include <cmath>
+
+struct Mesh {
+    std::vector<float> verts;
+    std::vector<float> norms;
+    std::vector<float> uvs;
+    std::vector<uint32_t> idx;
+};
+
+Mesh make_sphere(float radius, int segs) {
+    Mesh m;
+    m.verts.reserve((segs + 1) * (segs + 1) * 3);
+    for (int y = 0; y <= segs; ++y) {
+        for (int x = 0; x <= segs; ++x) {
+            float u = float(x) / segs;
+            float v = float(y) / segs;
+            float phi = v * M_PI;
+            float theta = u * 2.0f * M_PI;
+            float nx = std::sin(phi) * std::cos(theta);
+            float ny = std::cos(phi);
+            float nz = std::sin(phi) * std::sin(theta);
+            m.verts.push_back(nx * radius);
+            m.verts.push_back(ny * radius);
+            m.verts.push_back(nz * radius);
+            m.norms.push_back(nx);
+            m.norms.push_back(ny);
+            m.norms.push_back(nz);
+            m.uvs.push_back(u);
+            m.uvs.push_back(v);
+        }
+    }
+    for (int j = 0; j < segs; ++j) {
+        for (int i = 0; i < segs; ++i) {
+            uint32_t a = j * (segs + 1) + i;
+            uint32_t b = a + 1;
+            uint32_t c = a + segs + 1;
+            uint32_t d = c + 1;
+            m.idx.insert(m.idx.end(),
+                { a, c, b, b, c, d });
+        }
+    }
+    return m;
+}`,
+      Rust: `// Rust mesh generation
+#[derive(Clone)]
+pub struct Mesh {
+    pub verts: Vec<f32>,
+    pub norms: Vec<f32>,
+    pub uvs: Vec<f32>,
+    pub idx: Vec<u32>,
+}
+
+pub fn make_sphere(radius: f32, segs: u32) -> Mesh {
+    let mut m = Mesh {
+        verts: Vec::with_capacity(((segs+1)*(segs+1)*3) as usize),
+        norms: Vec::new(),
+        uvs: Vec::new(),
+        idx: Vec::new(),
+    };
+    for y in 0..=segs {
+        for x in 0..=segs {
+            let u = x as f32 / segs as f32;
+            let v = y as f32 / segs as f32;
+            let phi = v * std::f32::consts::PI;
+            let theta = u * std::f32::consts::TAU;
+            let nx = phi.sin() * theta.cos();
+            let ny = phi.cos();
+            let nz = phi.sin() * theta.sin();
+            m.verts.extend_from_slice(&[nx*radius, ny*radius, nz*radius]);
+            m.norms.extend_from_slice(&[nx, ny, nz]);
+            m.uvs.extend_from_slice(&[u, v]);
+        }
+    }
+    for j in 0..segs {
+        for i in 0..segs {
+            let a = j * (segs + 1) + i;
+            let b = a + 1;
+            let c = a + segs + 1;
+            let d = c + 1;
+            m.idx.extend_from_slice(&[a, c, b, b, c, d]);
+        }
+    }
+    m
+}`,
+      GLSL: `// GLSL vertex shader: standard mesh transform
+#version 330 core
+
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
+layout(location = 2) in vec2 aUV;
+
+uniform mat4 uMVP;
+uniform mat4 uModel;
+uniform mat3 uNormalMat;
+
+out vec3 vNormal;
+out vec3 vWorld;
+out vec2 vUV;
+
+void main() {
+    vec4 world = uModel * vec4(aPos, 1.0);
+    vWorld = world.xyz;
+    vNormal = normalize(uNormalMat * aNormal);
+    vUV = aUV;
+    gl_Position = uMVP * vec4(aPos, 1.0);
+}
+
+// --- fragment (PBR-lite) ---
+// #version 330 core
+// in vec3 vNormal;
+// in vec3 vWorld;
+// in vec2 vUV;
+// uniform vec3 uColor;
+// uniform vec3 uLightDir;
+// uniform vec3 uCameraPos;
+// uniform float uShininess;
+// uniform float uSpecular;
+// out vec4 fragColor;
+// void main() {
+//     vec3 N = normalize(vNormal);
+//     vec3 L = normalize(uLightDir);
+//     vec3 V = normalize(uCameraPos - vWorld);
+//     vec3 H = normalize(L + V);
+//     float diff = max(dot(N, L), 0.0);
+//     float spec = pow(max(dot(N, H), 0.0), uShininess) * uSpecular;
+//     vec3 col = uColor * (0.15 + diff) + vec3(spec);
+//     fragColor = vec4(col, 1.0);
+// }`,
+      CUDA: `// CUDA: voxel mesh extraction (marching cubes preview)
+__global__
+void marching_cubes(
+    const float* density, int W, int H, int D,
+    float iso, float* out_verts, int* out_count)
+{
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+    int z = blockIdx.z * blockDim.z + threadIdx.z;
+    if (x >= W-1 || y >= H-1 || z >= D-1) return;
+
+    // Sample cube corners
+    float c[8];
+    for (int i = 0; i < 8; ++i) {
+        int dx = (i & 1), dy = (i >> 1) & 1, dz = (i >> 2) & 1;
+        c[i] = density[(z+dz)*W*H + (y+dy)*W + (x+dx)];
+    }
+
+    // Build cube index from isovalue comparison
+    int cube_index = 0;
+    for (int i = 0; i < 8; ++i) {
+        if (c[i] < iso) cube_index |= (1 << i);
+    }
+    if (cube_index == 0 || cube_index == 255) return;
+
+    // Lookup edges from table, compute vertex positions
+    // (see Paul Bourke's marching cubes reference)
+    // ...
+    atomicAdd(out_count, 1);
+}`,
+      WGSL: `// WGSL: mesh instancing + draw
+struct Instance {
+  model : mat4x4<f32>,
+  color : vec4<f32>,
+}
+@group(0) @binding(0) var<storage, read> instances : array<Instance>;
+
+@vertex
+fn vs_main(
+  @location(0) pos : vec3<f32>,
+  @location(1) normal : vec3<f32>,
+  @builtin(instance_index) inst_idx : u32,
+) -> VSOut {
+  let inst = instances[inst_idx];
+  let world = inst.model * vec4<f32>(pos, 1.0);
+  var out : VSOut;
+  out.pos = uProjection * uView * world;
+  out.world = world.xyz;
+  out.normal = (inst.model * vec4<f32>(normal, 0.0)).xyz;
+  out.color = inst.color;
+  return out;
+}
+
+struct VSOut {
+  @builtin(position) pos : vec4<f32>,
+  @location(0) world : vec3<f32>,
+  @location(1) normal : vec3<f32>,
+  @location(2) color : vec4<f32>,
+}
+
+@fragment
+fn fs_main(in : VSOut) -> @location(0) vec4<f32> {
+  let N = normalize(in.normal);
+  let L = normalize(vec3<f32>(0.5, 1.0, 0.3));
+  let diff = max(dot(N, L), 0.0);
+  let col = in.color.rgb * (0.2 + diff);
+  return vec4<f32>(col, 1.0);
+}`
+    }
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   CODE VIEWER
+   ═══════════════════════════════════════════════════════════════ */
+var CodeViewer = {
+  currentScene: 'solar',
+  currentLang: 'Python',
+
+  render: function(scene){
+    this.currentScene = scene;
+    var lib = CODE_LIBRARY[scene];
+    if(!lib){ return; }
+    var langs = Object.keys(lib.langs);
+    if(langs.indexOf(this.currentLang) === -1){
+      this.currentLang = langs[0];
+    }
+    var tabs = document.getElementById('langTabs');
+    tabs.innerHTML = '';
+    var self = this;
+    langs.forEach(function(lang){
+      var t = document.createElement('div');
+      t.className = 'code-lang-tab' + (lang === self.currentLang ? ' active' : '');
+      t.textContent = lang;
+      t.onclick = function(){
+        self.currentLang = lang;
+        self.render(scene);
+      };
+      tabs.appendChild(t);
+    });
+
+    var code = lib.langs[this.currentLang];
+    document.getElementById('codeFile').textContent =
+      lib.name + ' · ' + this.currentLang;
+    var view = document.getElementById('codeView');
+    view.innerHTML = this.highlight(code, this.currentLang);
+    window._currentCode = code;
+  },
+
+  highlight: function(code, lang){
+    // Escape HTML
+    var escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Simple token-based highlighting
+    var keywords = {
+      Python: ['def','class','return','if','else','elif','for','while','import','from','as','in','not','and','or','True','False','None','try','except','with','yield','lambda','pass','break','continue','is','global','nonlocal','self'],
+      JavaScript: ['function','class','return','if','else','for','while','var','let','const','new','typeof','instanceof','this','true','false','null','undefined','async','await','yield','try','catch','finally','throw','import','export','default','from','of','in','void','delete','switch','case','break','continue','do'],
+      'C++': ['int','float','double','char','void','bool','class','struct','public','private','protected','virtual','override','final','template','typename','namespace','using','return','if','else','for','while','do','switch','case','break','continue','new','delete','try','catch','throw','const','static','inline','constexpr','noexcept','auto','nullptr','true','false','this','sizeof','alignas','const_cast','dynamic_cast','reinterpret_cast','static_cast','operator','friend'],
+      Rust: ['fn','let','mut','pub','struct','enum','impl','trait','use','mod','crate','super','self','Self','return','if','else','match','for','while','loop','break','continue','in','as','ref','move','async','await','unsafe','const','static','type','where','dyn','true','false','Some','None','Ok','Err'],
+      GLSL: ['void','in','out','inout','uniform','varying','attribute','float','vec2','vec3','vec4','mat2','mat3','mat4','int','bool','sampler2D','sampler3D','return','if','else','for','while','break','continue','discard','const','struct','layout','location','precision','highp','mediump','lowp','main'],
+      CUDA: ['__global__','__device__','__host__','__shared__','__constant__','__inline__','__restrict__','int','float','double','void','char','bool','struct','class','for','while','if','else','return','break','continue','const','static','extern','namespace','using','template','typename','auto','nullptr','true','false','sizeof','blockIdx','threadIdx','blockDim','gridDim','atomicAdd','curand_'],
+      WGSL: ['var','let','const','fn','struct','array','vec2','vec3','vec4','mat2x2','mat3x3','mat4x4','f32','i32','u32','bool','return','if','else','for','while','loop','break','continue','switch','case','default','discard','true','false','@','builtin','location','group','binding','workgroup_size','compute','vertex','fragment']
+    };
+
+    var kws = keywords[lang] || [];
+    // Keywords
+    kws.forEach(function(kw){
+      var safe = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var re;
+      if(/^[a-zA-Z_]/.test(kw)){
+        re = new RegExp('\\b' + safe + '\\b', 'g');
+      } else {
+        re = new RegExp(safe, 'g');
+      }
+      escaped = escaped.replace(re, '<span class="kw">' + kw + '</span>');
+    });
+
+    // Comments (must be last so they don't break keywords)
+    // Line comments
+    escaped = escaped.replace(/(\/\/[^\n]*)/g, '<span class="cm">$1</span>');
+    escaped = escaped.replace(/(#[^\n]*)/g, function(m){
+      // Avoid coloring # inside strings (crude check)
+      return '<span class="cm">' + m + '</span>';
+    });
+    // Block comments
+    escaped = escaped.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="cm">$1</span>');
+
+    // Strings (single/double quotes) — simple
+    escaped = escaped.replace(/(&quot;[^&]*?&quot;)/g, '<span class="st">$1</span>');
+    escaped = escaped.replace(/(&#39;[^&]*?&#39;)/g, '<span class="st">$1</span>');
+
+    // Numbers
+    escaped = escaped.replace(/\b(\d+\.?\d*)\b/g, '<span class="nm">$1</span>');
+
+    return escaped;
+  }
+};
+
+function copyCode(){
+  if(!window._currentCode) return;
+  navigator.clipboard.writeText(window._currentCode).then(function(){
+    toast('Code copied to clipboard', 'ok');
+  }, function(){
+    toast('Copy failed', 'err');
+  });
+}
+</script>
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════
+   UI
+   ═══════════════════════════════════════════════════════════════ */
+var UI = {
+  selectScene: function(name){
+    document.querySelectorAll('.scene-item').forEach(function(el){
+      el.classList.toggle('active', el.dataset.scene === name);
+    });
+    document.getElementById('hudScene').textContent = name;
+  },
+
+  renderSceneList: function(){
+    var list = document.getElementById('sceneList');
+    list.innerHTML = '';
+    SCENES.forEach(function(scene){
+      var item = document.createElement('div');
+      item.className = 'scene-item';
+      item.dataset.scene = scene.name;
+      item.innerHTML =
+        '<div class="si-icon">' + scene.icon + '</div>' +
+        '<div class="si-body">' +
+          '<div class="si-name">' + scene.title + '</div>' +
+          '<div class="si-desc">' + scene.desc + '</div>' +
+        '</div>' +
+        '<span class="si-badge">' + scene.name + '</span>';
+      item.onclick = function(){ SceneFactory.load(scene.name); };
+      list.appendChild(item);
+    });
+  },
+
+  renderParams: function(scene){
+    var panel = document.getElementById('paramPanel');
+    if(!scene.params){
+      panel.innerHTML = '<div class="empty">No parameters for this scene.</div>';
+      return;
+    }
+    var html = '';
+    Object.keys(scene.params).forEach(function(key){
+      var val = scene.params[key];
+      html += '<div class="pitem">';
+      html += '<div class="prow"><span>' + key + '</span><b id="pv_' + key + '">' + formatVal(val) + '</b></div>';
+      html += '<input type="range" min="0" max="1" step="0.001" value="0" id="ps_' + key + '" data-key="' + key + '">';
+      html += '</div>';
+    });
+    panel.innerHTML = html;
+    // Setup sliders with realistic ranges
+    Object.keys(scene.params).forEach(function(key){
+      var el = document.getElementById('ps_' + key);
+      var val = scene.params[key];
+      var min, max, step;
+      if(typeof val === 'boolean' || (val === 0 || val === 1) && isToggleKey(key)){
+        min = 0; max = 1; step = 1;
+      } else if(key.indexOf('count') !== -1 || key === 'segments' || key === 'iterations'){
+        min = Math.max(1, val * 0.1); max = val * 3; step = 1;
+      } else if(key === 'power' || key === 'arms'){
+        min = 2; max = key === 'power' ? 16 : 8; step = 1;
+      } else if(Math.abs(val) < 5){
+        min = 0; max = Math.max(1, Math.abs(val) * 3); step = 0.001;
+      } else {
+        min = 0; max = val * 2; step = 0.01;
+      }
+      el.min = min; el.max = max; el.step = step; el.value = val;
+      el.oninput = function(){
+        var v = parseFloat(this.value);
+        scene.params[key] = v;
+        document.getElementById('pv_' + key).textContent = formatVal(v);
+        if(scene.rebuild && ['count','arms','segments','radius','spread','spin'].indexOf(key) !== -1){
+          scene.rebuild();
+        }
+        if(scene.name === 'solar' || scene.name === 'cubes'){
+          // nothing to rebuild
+        }
+      };
+    });
+    function isToggleKey(k){
+      return ['showOrbits','showLabels','autoRotate','rotate','enableShadows','mode'].indexOf(k) !== -1;
+    }
+    function formatVal(v){
+      if(typeof v === 'number'){
+        return Number.isInteger(v) ? v : v.toFixed(3);
+      }
+      return String(v);
+    }
+  },
+
+  renderInfo: function(scene){
+    var panel = document.getElementById('infoPanel');
+    var html = '';
+    html += '<div class="info-block">';
+    html += '<h3>' + scene.icon + ' ' + scene.title + '</h3>';
+    html += '<p>' + scene.desc + '</p>';
+    html += '</div>';
+
+    // Scene-specific info
+    var infos = {
+      solar: {
+        title: 'Keplerian Mechanics',
+        body: '<p>Each planet follows a circular orbit with angular velocity <code>ω = 2π / T</code>, where <code>T</code> is the orbital period in Earth years. Positions update as <code>θ += ω·dt</code> each frame, giving stable, closed orbits without numerical drift.</p>',
+        tech: [
+          ['Rendering', 'WebGL2 mesh'],
+          ['Primitives', 'Sphere + torus'],
+          ['Lighting', 'Blinn-Phong'],
+          ['Orbits', '8 planets'],
+          ['Shader slots', '3 (VAO/EBO)']
+        ]
+      },
+      galaxy: {
+        title: 'Logarithmic Spiral',
+        body: '<p>Stars are distributed along <code>N</code> spiral arms using <code>r = t^0.6 · R</code> and <code>θ = θ_arm + t·spin·0.35 + jitter</code>. This matches the density profile of real spiral galaxies — exponentially dense center, tapering arms.</p>',
+        tech: [
+          ['Type', 'Point cloud'],
+          ['Vertices', '8000+'],
+          ['Distribution', 'Power-law radial'],
+          ['Colors', 'Temperature gradient'],
+          ['Thickness', 'Flared Z-axis']
+        ]
+      },
+      particles: {
+        title: 'Particle Physics',
+        body: '<p>Each particle has a position and velocity integrated under constant gravity <code>g = -6 m/s²</code>. When a particle falls below <code>y = -1</code> or exceeds its lifetime, it respawns at the origin with randomized upward velocity.</p>',
+        tech: [
+          ['Physics', 'Semi-implicit Euler'],
+          ['Gravity', 'Constant (configurable)'],
+          ['Lifetime', 'Per-particle random'],
+          ['Buffer', 'DYNAMIC_DRAW + bufferSubData'],
+          ['Points', 'Point sprite shader']
+        ]
+      },
+      nbody: {
+        title: 'O(N²) Gravity',
+        body: '<p>Every pair of bodies exchanges force using Newton\'s law: <code>F = G·m₁·m₂ / r²</code>. We use softening <code>r² → r² + ε²</code> to avoid singularities at close approach. Integration is semi-implicit Euler — stable and energy-conserving enough for visualization.</p>',
+        tech: [
+          ['Complexity', 'O(N²)'],
+          ['Integrator', 'Semi-implicit Euler'],
+          ['Softening', 'ε = 0.5'],
+          ['Bodies', '200 (adjustable)'],
+          ['Center body', 'Mass 100']
+        ]
+      },
+      mandelbulb: {
+        title: 'Mandelbulb Fractal',
+        body: '<p>The Mandelbulb is a 3D analog of the Mandelbrot set using spherical coordinates: <code>z → z^p + c</code> where exponentiation is done via <code>r, θ, φ</code>. Distance estimation uses the standard <code>DE = 0.5·ln(r)·r / dr</code> formula with <code>dr</code> the running derivative.</p>',
+        tech: [
+          ['Dimension', '3D fractal'],
+          ['Method', 'Sphere tracing'],
+          ['Iterations', '8-16 per pixel'],
+          ['Normal', '4-tap finite diff'],
+          ['Shader', 'Fragment raymarch']
+        ]
+      },
+      nebula: {
+        title: 'Volumetric Marching',
+        body: '<p>Each pixel casts a ray through a 3D noise field built from 6 octaves of Perlin-like noise. Density at each sample determines emission via <code>col += lc · d · trans</code> and transmittance <code>trans *= (1 − d·κ)</code>. This is the classic volume rendering integral, discretized.</p>',
+        tech: [
+          ['Technique', 'Volume raymarch'],
+          ['Steps', '64 per ray'],
+          ['Noise', '6-octave FBM'],
+          ['Palette', 'Purple → cyan → pink'],
+          ['Transmittance', 'Front-to-back']
+        ]
+      },
+      terrain: {
+        title: 'Procedural Heightmap',
+        body: '<p>A 2D grid is displaced vertically using <code>h(x,z) = fbm(x·f, z·f)</code> where <code>fbm</code> sums octaves of Perlin noise with halving amplitude. Normals are computed via finite differences on the height grid.</p>',
+        tech: [
+          ['Grid', '96 × 96 vertices'],
+          ['Noise', 'Perlin FBM (6 oct)'],
+          ['Normals', 'Central differences'],
+          ['Vertex colors', 'Height-based'],
+          ['Topology', 'Triangular mesh']
+        ]
+      },
+      cubes: {
+        title: 'Mesh Instancing',
+        body: '<p>Each primitive (cube, sphere, torus) is a shared mesh in GPU memory. Per-instance state (position, rotation, scale, color) is passed via uniform + model matrix. This is the essence of instanced rendering — millions of objects, one draw call overhead.</p>',
+        tech: [
+          ['Primitives', 'Cube · Sphere · Torus'],
+          ['Shading', 'PBR-lite Blinn-Phong'],
+          ['Instance count', '40 (adjustable)'],
+          ['Animation', 'Yaw/pitch/roll per-instance'],
+          ['Draw calls', '1 per instance (naive)']
+        ]
+      }
+    };
+    var info = infos[scene.name];
+    if(info){
+      html += '<div class="info-block">';
+      html += '<h3>' + info.title + '</h3>';
+      html += info.body;
+      html += '</div>';
+      if(info.tech){
+        html += '<div class="info-block">';
+        html += '<h3>Technical</h3>';
+        info.tech.forEach(function(kv){
+          html += '<div class="kv"><span class="k">' + kv[0] + '</span><span class="v">' + kv[1] + '</span></div>';
+        });
+        html += '</div>';
+      }
+    }
+    panel.innerHTML = html;
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   TAB SWITCHING
+   ═══════════════════════════════════════════════════════════════ */
+document.addEventListener('click', function(e){
+  var tab = e.target.closest('.tab');
+  if(!tab) return;
+  var pane = tab.dataset.pane;
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.pane === pane);
+  });
+  document.querySelectorAll('.tab-pane').forEach(function(p){
+    p.classList.toggle('active', p.id === 'pane-' + pane);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   TOAST
+   ═══════════════════════════════════════════════════════════════ */
+function toast(msg, type){
+  type = type || 'info';
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(function(){
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(120%)';
+    t.style.transition = 'all .3s';
+    setTimeout(function(){ t.remove(); }, 300);
+  }, 2400);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INPUT HANDLING
+   ═══════════════════════════════════════════════════════════════ */
+function setupInput(){
+  var canvas = GL.canvas;
+  canvas.addEventListener('mousedown', function(e){
+    Cam.dragging = true;
+    Cam.lastX = e.clientX;
+    Cam.lastY = e.clientY;
+  });
+  window.addEventListener('mousemove', function(e){
+    if(!Cam.dragging) return;
+    var dx = e.clientX - Cam.lastX;
+    var dy = e.clientY - Cam.lastY;
+    Cam.lastX = e.clientX;
+    Cam.lastY = e.clientY;
+    Cam.theta -= dx * 0.008;
+    Cam.phi = Math.max(-1.5, Math.min(1.5, Cam.phi + dy * 0.008));
+  });
+  window.addEventListener('mouseup', function(){ Cam.dragging = false; });
+
+  // Touch
+  var lastT = null;
+  canvas.addEventListener('touchstart', function(e){
+    if(e.touches.length === 1){
+      lastT = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      Cam.dragging = true;
+    }
+  }, { passive: true });
+  canvas.addEventListener('touchmove', function(e){
+    if(e.touches.length === 1 && lastT){
+      var t = e.touches[0];
+      var dx = t.clientX - lastT.x;
+      var dy = t.clientY - lastT.y;
+      lastT = { x: t.clientX, y: t.clientY };
+      Cam.theta -= dx * 0.01;
+      Cam.phi = Math.max(-1.5, Math.min(1.5, Cam.phi + dy * 0.01));
+    } else if(e.touches.length === 2){
+      var t1 = e.touches[0], t2 = e.touches[1];
+      var dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      if(window._lastPinch){
+        var delta = dist - window._lastPinch;
+        Cam.dist *= (1 - delta * 0.005);
+        Cam.dist = Math.max(Cam.minDist, Math.min(Cam.maxDist, Cam.dist));
+      }
+      window._lastPinch = dist;
+    }
+  }, { passive: true });
+  canvas.addEventListener('touchend', function(){
+    Cam.dragging = false;
+    window._lastPinch = null;
+  });
+
+  canvas.addEventListener('wheel', function(e){
+    e.preventDefault();
+    Cam.dist *= (1 + Math.sign(e.deltaY) * 0.1);
+    Cam.dist = Math.max(Cam.minDist, Math.min(Cam.maxDist, Cam.dist));
+  }, { passive: false });
+
+  window.addEventListener('keydown', function(e){
+    if(e.key === ' ') { e.preventDefault(); togglePause(); }
+    if(e.key === 'r' || e.key === 'R') { SceneFactory.current && SceneFactory.current.init(); }
+    if(e.key === 'h' || e.key === 'H') showHelp();
+    if(e.key === 'f' || e.key === 'F') fullscreen();
+  });
+}
+
+function togglePause(){
+  R.paused = !R.paused;
+  document.getElementById('pauseBtn').textContent = R.paused ? '▶' : '⏸';
+  toast(R.paused ? 'Paused' : 'Running', 'info');
+}
+
+function resetScene(){
+  if(SceneFactory.current){
+    SceneFactory.current.init();
+    UI.renderParams(SceneFactory.current);
+    toast('Scene reset', 'ok');
+  }
+}
+
+function randomizeScene(){
+  var scene = SceneFactory.current;
+  if(!scene || !scene.params) return;
+  Object.keys(scene.params).forEach(function(k){
+    var v = scene.params[k];
+    if(typeof v !== 'number') return;
+    if(k === 'speed' || k === 'timeScale') scene.params[k] = 0.5 + Math.random() * 2;
+    else if(k.indexOf('count') !== -1) scene.params[k] = 500 + Math.floor(Math.random() * 5000);
+    else if(k === 'gravity') scene.params[k] = -3 - Math.random() * 8;
+    else if(k === 'power') scene.params[k] = 3 + Math.floor(Math.random() * 8);
+    else if(k === 'arms') scene.params[k] = 2 + Math.floor(Math.random() * 6);
+    else if(k === 'radius') scene.params[k] = 5 + Math.random() * 15;
+    else scene.params[k] = Math.random() * v * 2;
+  });
+  if(scene.rebuild) scene.rebuild();
+  if(scene.name === 'galaxy') { scene.build(); }
+  if(scene.name === 'particles') { scene.init(); }
+  if(scene.name === 'nbody') { scene.init(); }
+  if(scene.name === 'terrain') { scene.init(); }
+  UI.renderParams(scene);
+  toast('Randomized', 'ok');
+}
+
+function fullscreen(){
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen();
+}
+
+function showHelp(){
+  var modal = document.getElementById('modal');
+  var body = document.getElementById('modalBody');
+  document.getElementById('modalTitle').textContent = 'Cosmos Engine — Help';
+  body.innerHTML =
+    '<div style="font-size:.78rem;line-height:1.7;color:var(--tx2)">' +
+    '<h3 style="font-size:.9rem;color:var(--c1);margin-bottom:8px">About</h3>' +
+    '<p>A real-time 3D universe simulator built entirely with WebGL2 and vanilla JavaScript. Every scene is rendered live — no video, no pre-baked graphics. All 8 scenes share a single custom shader pipeline and procedural geometry generators.</p>' +
+    '<h3 style="font-size:.9rem;color:var(--c1);margin:14px 0 8px">Controls</h3>' +
+    '<p><strong>Drag</strong> — orbit camera</p>' +
+    '<p><strong>Scroll / pinch</strong> — zoom</p>' +
+    '<p><strong>Space</strong> — pause / resume</p>' +
+    '<p><strong>R</strong> — reset scene</p>' +
+    '<p><strong>F</strong> — fullscreen</p>' +
+    '<h3 style="font-size:.9rem;color:var(--c1);margin:14px 0 8px">Scenes</h3>' +
+    '<p>🌌 <strong>Spiral Galaxy</strong> — procedural star field</p>' +
+    '<p>🪐 <strong>Solar System</strong> — Keplerian orbits</p>' +
+    '<p>✨ <strong>Particles</strong> — physics fountain</p>' +
+    '<p>⚫ <strong>N-Body</strong> — full gravity</p>' +
+    '<p>🎇 <strong>Mandelbulb</strong> — ray-marched 3D fractal</p>' +
+    '<p>☁️ <strong>Nebula</strong> — volumetric raymarch</p>' +
+    '<p>⛰️ <strong>Terrain</strong> — Perlin heightmap</p>' +
+    '<p>🧊 <strong>Cubes</strong> — mesh instancing</p>' +
+    '<h3 style="font-size:.9rem;color:var(--c1);margin:14px 0 8px">Multi-Language Code Viewer</h3>' +
+    '<p>Every scene has an equivalent implementation in <strong>Python, JavaScript, C++, Rust, GLSL, CUDA, and WGSL</strong>. Click the <strong>{ } Code</strong> tab to see them side-by-side. The math is identical across all languages — only the syntax changes.</p>' +
+    '</div>';
+  modal.classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDER LOOP
+   ═══════════════════════════════════════════════════════════════ */
+var _lastTime = performance.now();
+
+function frame(now){
+  var dt = (now - _lastTime) / 1000;
+  _lastTime = now;
+  dt = Math.min(dt, 0.05);
+
+  // FPS counter
+  R.frames++;
+  if(now - R.lastFps > 500){
+    R.fps = Math.round(R.frames * 1000 / (now - R.lastFps));
+    document.getElementById('fpsVal').textContent = R.fps;
+    R.frames = 0;
+    R.lastFps = now;
+    var objEl = document.getElementById('objVal');
+    if(SceneFactory.current){
+      objEl.textContent = getObjectCount(SceneFactory.current);
+    }
+    document.getElementById('hudObj').textContent = objEl.textContent;
+    document.getElementById('hudTime').textContent = R.time.toFixed(1);
+    document.getElementById('hudBL').textContent = SceneFactory.current ?
+      SceneFactory.current.hudText() : '—';
+    Cam.updateHUD();
+  }
+
+  // Update simulation
+  if(!R.paused){
+    R.time += dt;
+    if(SceneFactory.current && SceneFactory.current.update){
+      SceneFactory.current.update(dt);
+    }
+  }
+
+  // Render
+  GL.resize();
+  GL.clear();
+
+  if(SceneFactory.current){
+    // Build projection + view matrices
+    var aspect = GL.canvas.width / GL.canvas.height;
+    var proj = M4.perspective(M4.create(), Math.PI/3, aspect, 0.1, 2000);
+    var view = Cam.view();
+    R.projView = M4.multiply(M4.create(), proj, view);
+
+    // Scene-specific rendering
+    var name = SceneFactory.current.name;
+    if(name === 'mandelbulb' || name === 'nebula'){
+      SceneFactory.current.render();
+    } else if(name === 'galaxy' || name === 'particles' || name === 'nbody'){
+      // Point rendering — need to switch to point shader
+      var gl = GL.gl;
+      var pointProg = GL.pointProg;
+      if(!pointProg){
+        pointProg = GL.createProgram(SHADERS.pointVS, SHADERS.pointFS);
+        GL.pointProg = pointProg;
+      }
+      gl.useProgram(pointProg);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.depthMask(false);
+      // Override attribs for this program
+      GL.attribs.aPos = gl.getAttribLocation(pointProg, 'aPos');
+      GL.attribs.aColor = gl.getAttribLocation(pointProg, 'aColor');
+      GL.attribs.aSize = gl.getAttribLocation(pointProg, 'aSize');
+      SceneFactory.current.render();
+      gl.depthMask(true);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    } else {
+      // Mesh rendering
+      var gl2 = GL.gl;
+      var meshProg = GL.meshProg || GL.prog;
+      if(!GL.meshProg){
+        GL.createProgram(SHADERS.meshVS, SHADERS.meshFS);
+        GL.meshProg = GL.prog;
+      }
+      gl2.useProgram(GL.meshProg);
+      GL.attribs.aPos = gl2.getAttribLocation(GL.meshProg, 'aPos');
+      GL.attribs.aNormal = gl2.getAttribLocation(GL.meshProg, 'aNormal');
+      GL.attribs.aUV = gl2.getAttribLocation(GL.meshProg, 'aUV');
+      SceneFactory.current.render();
+    }
+  }
+
+  requestAnimationFrame(frame);
+}
+
+function getObjectCount(scene){
+  if(!scene) return 0;
+  if(scene.name === 'solar') return scene.planets.length + 1;
+  if(scene.name === 'galaxy') return scene.starData ? scene.starData.count : 0;
+  if(scene.name === 'particles') return scene.particleData ? scene.particleData.N : 0;
+  if(scene.name === 'nbody') return scene.bodies ? scene.bodies.length : 0;
+  if(scene.name === 'cubes') return scene.cubes.length;
+  if(scene.name === 'terrain') return (scene.params.segments+1) ** 2;
+  if(scene.name === 'mandelbulb') return '∞';
+  if(scene.name === 'nebula') return '∞';
+  return 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BOOT
+   ═══════════════════════════════════════════════════════════════ */
+window.addEventListener('load', function(){
+  try{
+    var canvas = document.getElementById('gl');
+    GL.init(canvas);
+
+    // Initialize the mesh shader program by default
+    GL.createProgram(SHADERS.meshVS, SHADERS.meshFS);
+    GL.meshProg = GL.prog;
+
+    // Initialize quad mesh (for ray march scenes)
+    QuadMesh.init();
+
+    UI.renderSceneList();
+    setupInput();
+
+    // Load initial scene
+    SceneFactory.load('galaxy');
+
+    // Initial UI setup
+    UI.renderParams(SceneFactory.current);
+    UI.renderInfo(SceneFactory.current);
+    CodeViewer.render(SceneFactory.current.name);
+
+    // Hide loading
+    setTimeout(function(){
+      document.getElementById('loading').classList.add('hide');
+      toast('Cosmos Engine ready — ' + SCENES.length + ' scenes loaded', 'ok');
+    }, 400);
+
+    // Start render loop
+    requestAnimationFrame(frame);
+
+  } catch(err){
+    document.getElementById('loadMsg').textContent = 'ERROR: ' + err.message;
+    console.error(err);
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   HOOK CODE VIEWER TO SCENE CHANGES
+   ═══════════════════════════════════════════════════════════════ */
+var _origLoad = SceneFactory.load.bind(SceneFactory);
+SceneFactory.load = function(name){
+  _origLoad(name);
+  setTimeout(function(){
+    CodeViewer.render(name);
+  }, 50);
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE MENU
+   ═══════════════════════════════════════════════════════════════ */
+if(window.innerWidth < 900){
+  // Hide sidebar and show tabs already handled by CSS
+}
+</script>
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════
+   EXTRA UTILITIES
+   ═══════════════════════════════════════════════════════════════ */
+// Ensure clear canvas on scene change to avoid stale frames
+var _origLoad2 = SceneFactory.load.bind(SceneFactory);
+SceneFactory.load = function(name){
+  _origLoad2(name);
+  // Give GL a moment to rebuild
+  requestAnimationFrame(function(){
+    var gl = GL.gl;
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  });
+};
+
+// Add keyboard shortcut hints in the HUD
+document.addEventListener('DOMContentLoaded', function(){
+  var bl = document.getElementById('hudBL');
+  if(bl){
+    bl.innerHTML += '<br><span style="color:var(--tx3);font-size:.55rem">Space=pause · R=reset · F=fullscreen</span>';
+  }
+});
+
+console.log(
+  '%c🌌 COSMOS ENGINE',
+  'background:linear-gradient(135deg,#00f0ff,#a855f7);' +
+  'color:#000;padding:6px 14px;border-radius:6px;' +
+  'font-weight:900;font-size:16px;letter-spacing:2px'
+);
+console.log('%cWebGL2 · 8 scenes · 7 languages · 0 dependencies',
+  'color:#00f0ff;font-weight:600');
+console.log('%cDrag to orbit · Scroll to zoom · Space to pause',
+  'color:#a855f7');
+</script>
+</body>
+</html>

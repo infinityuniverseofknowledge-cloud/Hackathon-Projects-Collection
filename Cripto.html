@@ -1,0 +1,2756 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="matrix">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>CRIPTO — Cryptography Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+
+:root{
+  --bg:#050d08;--bg2:#071410;--bg3:#0c1e16;--bg4:#102820;
+  --panel:#071410;--panel2:#0c1e16;--panel3:#102820;--panel4:#183828;
+  --bd:#1a3028;--bd2:#2a5040;--bd3:#3a7058;
+  --tx:#c8f0d8;--tx2:#80b898;--tx3:#507868;--mu:#305040;
+  --c1:#00ff88;--c1h:#80ffc0;--c1l:#00c060;
+  --c2:#00e0ff;--c2h:#80f0ff;--c2l:#0090c0;
+  --c3:#ffe040;--c3h:#fff080;--c3l:#c0a020;
+  --c4:#ff3060;--c4h:#ff80a0;--c4l:#c02040;
+  --c5:#ff8040;--c5h:#ffb080;--c5l:#c06020;
+  --c6:#c060ff;--c6h:#d0a0ff;--c6l:#8030c0;
+  --c7:#40a0ff;--c7h:#80c0ff;--c7l:#2060c0;
+  --c8:#ff40ff;--c8h:#ff80ff;--c8l:#c020c0;
+  --ok:#00ff88;--warn:#ffe040;--err:#ff3060;--info:#00e0ff;
+  --g1:linear-gradient(135deg,#00ff88,#00e0ff);
+  --g2:linear-gradient(135deg,#ffe040,#ff8040);
+  --gHolo:linear-gradient(120deg,#00ff88,#00e0ff,#ffe040,#ff8040,#00ff88);
+  --r:10px;--rs:7px;--rxs:5px;--rf:9999px;
+  --sh:0 8px 32px rgba(0,0,0,.75);
+  --sh2:0 16px 48px rgba(0,0,0,.95);
+  --mono:'JetBrains Mono','Fira Code','Courier New',monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide','Courier New',monospace;
+  --t1:all .14s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="paper"]{--bg:#f5f0e0;--bg2:#ede4d0;--bg3:#dcd0b8;--panel:#fff;--panel2:#f5f0e0;--panel3:#ede4d0;--panel4:#dcd0b8;
+  --bd:#c8b8a0;--bd2:#a09080;--tx:#1a1810;--tx2:#504840;--tx3:#807060;
+  --c1:#008040;--c2:#0060c0;--c3:#a06000;--c4:#c00040;
+  --g1:linear-gradient(135deg,#008040,#0060c0)}
+[data-theme="neon"]{--bg:#0a0018;--bg2:#140028;--bg3:#200040;--panel:#140028;--panel2:#200040;
+  --bd:#400080;--bd2:#6000c0;--tx:#e0c0ff;--tx2:#a080d0;--tx3:#604090;
+  --c1:#00ffff;--c2:#ff00ff;--c3:#ffff00;--c4:#ff0080;
+  --g1:linear-gradient(135deg,#00ffff,#ff00ff)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* BOOT */
+#boot{position:fixed;inset:0;background:#050d08;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px}
+#boot.hidden{opacity:0;pointer-events:none}
+.boot-lock{width:140px;height:140px;margin-bottom:24px}
+.boot-lock svg{width:100%;height:100%}
+.boot-lock path,.boot-lock rect,.boot-lock circle{stroke:#00ff88;fill:none;stroke-width:3;filter:drop-shadow(0 0 8px #00ff88)}
+.boot-lock .shackle{animation:unlock 2s ease-in-out infinite}
+.boot-lock .keyhole{fill:#00ff88}
+@keyframes unlock{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
+.boot-logo{font-family:var(--disp);font-size:3.2rem;font-weight:900;letter-spacing:16px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:8px}
+.boot-sub{font-size:.7rem;color:#00ff88;letter-spacing:10px;margin-bottom:32px;opacity:.75}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#102820;border-radius:2px;overflow:hidden;margin-bottom:12px}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #00ff88}
+.boot-pct{font-size:.7rem;color:#00ff88;margin-bottom:16px}
+.boot-log{font-size:.6rem;color:#507868;text-align:left;width:min(460px,90vw);height:120px;overflow:hidden;line-height:1.7}
+.boot-log .ok{color:#00ff88}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+/* TOPBAR */
+#topbar{height:50px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:6px;font-size:1rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:32px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#050d08;box-shadow:0 0 14px rgba(0,255,136,.4)}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.tb-btn{width:32px;height:32px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-status{font-family:var(--mono);font-size:.62rem;padding:4px 10px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tb-status .dot{width:8px;height:8px;border-radius:50%;background:#102820;transition:var(--t1)}
+.tb-status .dot.on{background:var(--c1);box-shadow:0 0 10px var(--c1);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:300px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.6rem;text-transform:uppercase;letter-spacing:1.6px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#020a06;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.co-badge{background:rgba(7,20,16,.9);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 10px;font-family:var(--mono);font-size:.62rem;color:var(--c1);pointer-events:auto;max-width:360px}
+.co-badge.stats{color:var(--c2);display:flex;flex-direction:column;gap:3px;align-items:flex-end;text-align:right;line-height:1.5}
+
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:32px}
+.rp-tab{flex:1;padding:6px;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+#statusbar{height:28px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;font-family:var(--mono);font-size:.62rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}.sb-val.c5{color:var(--c5)}
+
+.sec{margin-bottom:14px}
+.sec h4{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);margin-bottom:8px;font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.6rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);text-transform:none;letter-spacing:0}
+.ctrl{margin-bottom:10px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=number],.ctrl select,.ctrl textarea,.ctrl input[type=text]{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 9px;color:var(--tx);font-size:.68rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(0,255,136,.15)}
+.ctrl textarea{resize:vertical;min-height:80px;line-height:1.5;font-size:.65rem}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1h)}
+.btn.primary{background:var(--g1);color:#050d08;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 16px rgba(0,255,136,.5)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:4px 8px;font-size:.6rem}
+
+.chip-row{display:flex;gap:4px;flex-wrap:wrap}
+.chip{padding:4px 9px;background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rf);cursor:pointer;font-size:.6rem;font-family:var(--mono);transition:var(--t1);color:var(--tx2)}
+.chip:hover{border-color:var(--c1);color:var(--c1)}
+.chip.active{background:var(--g1);color:#050d08;border-color:transparent;font-weight:700}
+
+.kv{font-family:var(--mono);font-size:.62rem;line-height:1.75}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3);white-space:nowrap}
+.kv .v{color:var(--c1);text-align:right;word-break:break-all;font-size:.58rem}
+
+.empty{text-align:center;padding:30px 20px;color:var(--tx3);font-size:.7rem;font-family:var(--mono)}
+
+.data-table{width:100%;font-family:var(--mono);font-size:.62rem;border-collapse:collapse}
+.data-table th{text-align:left;padding:5px 8px;background:var(--panel3);font-size:.55rem;text-transform:uppercase;letter-spacing:.9px;color:var(--tx3);font-weight:700;border-bottom:1px solid var(--bd)}
+.data-table td{padding:4px 8px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+.data-table td.c1{color:var(--c1)}.data-table td.c2{color:var(--c2)}.data-table td.c3{color:var(--c3)}
+
+/* CIPHER TEXT AREA */
+.cipher-box{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:10px;font-family:var(--mono);font-size:.7rem;line-height:1.7;color:var(--c1);word-break:break-all;max-height:120px;overflow-y:auto;margin-bottom:8px;user-select:text;letter-spacing:.5px}
+.cipher-box.label{color:var(--tx3);font-size:.58rem;padding:3px 0;max-height:none;border:none}
+
+/* FREQ BARS */
+.freq-bars{display:flex;align-items:flex-end;gap:1px;height:100px;background:var(--bg);padding:6px;border-radius:var(--rxs);border:1px solid var(--bd);margin-bottom:10px;overflow-x:auto}
+.freq-bar{flex:1;min-width:6px;background:var(--g1);border-radius:1px 1px 0 0;position:relative;transition:height .3s}
+.freq-bar.english{background:rgba(0,224,255,.3)}
+.freq-bar .fb-label{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.5rem;color:var(--tx3)}
+
+/* ENIGMA VISUAL */
+.enigma-rotor{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--panel3);padding:10px;border-radius:var(--rxs);border:1px solid var(--bd);min-width:120px}
+.enigma-rotor .er-name{font-family:var(--mono);font-size:.6rem;color:var(--c2);letter-spacing:1px}
+.enigma-rotor .er-window{background:var(--bg);border:2px solid var(--c1);border-radius:var(--rxs);padding:6px 12px;font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--c1);min-width:40px;text-align:center;margin:6px 0}
+.enigma-rotor .er-pos{font-family:var(--mono);font-size:.55rem;color:var(--tx3)}
+.rotor-row{display:flex;gap:10px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+
+/* AES STATE */
+.aes-state{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:220px;margin:0 auto 10px}
+.aes-cell{background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:8px 2px;text-align:center;font-family:var(--mono);font-size:.65rem;color:var(--c1);transition:var(--t1)}
+.aes-cell.highlight{background:var(--g1);color:#050d08;font-weight:700}
+.aes-cell.changed{box-shadow:inset 0 0 8px var(--c3)}
+
+/* HASH IDENTICON */
+.identicon{width:200px;height:200px;margin:10px auto;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:2px;border-radius:var(--rs);overflow:hidden;border:2px solid var(--bd)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.9rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:20px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:26px;height:26px;border-radius:var(--rxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+#toasts{position:fixed;bottom:44px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:10px 16px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.7rem;font-weight:500;max-width:340px;min-width:180px;animation:tin .3s;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c1)}.toast.warn{border-left-color:var(--c3)}.toast.error{border-left-color:var(--c4)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:1000px){#leftPanel{width:250px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel{width:0;overflow:hidden}#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-lock">
+    <svg viewBox="0 0 140 140">
+      <rect x="30" y="60" width="80" height="65" rx="8"/>
+      <path class="shackle" d="M45,60 V40 a25,25 0 0 1 50,0 V60"/>
+      <circle class="keyhole" cx="70" cy="88" r="6"/>
+      <rect class="keyhole" x="67" y="92" width="6" height="20" rx="2"/>
+    </svg>
+  </div>
+  <div class="boot-logo">CRIPTO</div>
+  <div class="boot-sub">CRYPTOGRAPHY STUDIO</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('classical')">CRIPTO</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus">
+      <span class="dot" id="tbDot"></span>
+      <span id="tbText">ready</span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" onclick="exportState()" title="Export">⬇</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div id="canvasOverlay">
+          <div class="co-badge" id="coBadge">Ready</div>
+          <div class="co-badge stats" id="coStats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+        <div class="rp-tab" data-tab="help" onclick="switchRp('help',this)">ℹ️<span>Info</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpState"></div>
+        <div class="rp-pane" id="rpMath"></div>
+        <div class="rp-pane" id="rpLogs"></div>
+        <div class="rp-pane" id="rpHelp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">Classical</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Bits</span><span class="sb-val c2" id="sbBits">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Ops</span><span class="sb-val c3" id="sbOps">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Status</span><span class="sb-val c4" id="sbStatus">—</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Security</span><span class="sb-val c5" id="sbSec">—</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n))return '—';return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2400;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:1rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   CLASSICAL CIPHERS
+   ================================================================ */
+var ALPHA='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+function caesar(text,shift,decrypt){
+  if(decrypt)shift=-shift;
+  var out='';
+  for(var i=0;i<text.length;i++){
+    var c=text[i].toUpperCase();
+    var idx=ALPHA.indexOf(c);
+    if(idx<0){out+=text[i];continue;}
+    out+=ALPHA[(idx+shift+2600)%26];
+  }
+  return out;
+}
+
+function vigenere(text,key,decrypt){
+  key=key.toUpperCase().replace(/[^A-Z]/g,'');
+  if(!key.length)return text;
+  var out='';
+  var ki=0;
+  for(var i=0;i<text.length;i++){
+    var c=text[i].toUpperCase();
+    var idx=ALPHA.indexOf(c);
+    if(idx<0){out+=text[i];continue;}
+    var k=ALPHA.indexOf(key[ki%key.length]);
+    if(decrypt)k=-k;
+    out+=ALPHA[(idx+k+26)%26];
+    ki++;
+  }
+  return out;
+}
+
+function atbash(text){
+  var out='';
+  for(var i=0;i<text.length;i++){
+    var c=text[i].toUpperCase();
+    var idx=ALPHA.indexOf(c);
+    if(idx<0){out+=text[i];continue;}
+    out+=ALPHA[25-idx];
+  }
+  return out;
+}
+
+function rot13(text){return caesar(text,13,false)}
+
+/* Playfair cipher */
+function playfairKey(key){
+  key=key.toUpperCase().replace(/[^A-Z]/g,'').replace(/J/g,'I');
+  var used={};
+  var sq=[];
+  for(var i=0;i<key.length;i++){
+    if(!used[key[i]]){used[key[i]]=1;sq.push(key[i]);}
+  }
+  for(var j=0;j<26;j++){
+    var c=ALPHA[j];
+    if(c==='J')continue;
+    if(!used[c]){used[c]=1;sq.push(c);}
+  }
+  return sq; /* 25 letters in 5x5 */
+}
+function playfairPrep(text){
+  var t=text.toUpperCase().replace(/[^A-Z]/g,'').replace(/J/g,'I');
+  var pairs=[];
+  var i=0;
+  while(i<t.length){
+    var a=t[i];
+    var b=(i+1<t.length)?t[i+1]:'X';
+    if(a===b){pairs.push([a,'X']);i++;continue;}
+    pairs.push([a,b]);i+=2;
+  }
+  return pairs;
+}
+function playfairEncrypt(text,key,decrypt){
+  var sq=playfairKey(key);
+  var pairs=playfairPrep(text);
+  var out='';
+  pairs.forEach(function(p){
+    var a=p[0],b=p[1];
+    var ai=sq.indexOf(a),bi=sq.indexOf(b);
+    var ar=Math.floor(ai/5),ac=ai%5;
+    var br=Math.floor(bi/5),bc=bi%5;
+    if(ar===br){
+      if(!decrypt){out+=sq[ar*5+(ac+1)%5]+sq[br*5+(bc+1)%5];}
+      else{out+=sq[ar*5+(ac+4)%5]+sq[br*5+(bc+4)%5];}
+    } else if(ac===bc){
+      if(!decrypt){out+=sq[((ar+1)%5)*5+ac]+sq[((br+1)%5)*5+bc];}
+      else{out+=sq[((ar+4)%5)*5+ac]+sq[((br+4)%5)*5+bc];}
+    } else {
+      out+=sq[ar*5+bc]+sq[br*5+ac];
+    }
+  });
+  return out;
+}
+
+/* ================================================================
+   ENIGMA (3-rotor, simplified but real)
+   ================================================================ */
+var ENIGMA_ROTORS={
+  I:{wiring:'EKMFLGDQVZNTOWYHXUSPAIBRCJ',notch:'Q'},
+  II:{wiring:'AJDKSIRUXBLHWTMCQGZNPYFVOE',notch:'E'},
+  III:{wiring:'BDFHJLCPRTXVZNYEIWGAKMUSQO',notch:'V'},
+  IV:{wiring:'ESOVPZJAYQUIRHXLNFTGKDCMWB',notch:'J'},
+  V:{wiring:'VZBRGITYUPSDNHLXAWMJQOFECK',notch:'Z'}
+};
+var REFLECTOR_B='YRUHQSLDPXNGOKMIEBFZCWVJAT';
+var REFLECTOR_C='FVPJIAOYEDRZXWGCTKUQSBNMHL';
+
+function Enigma(leftRotor,middleRotor,rightRotor,leftPos,middlePos,rightPos,reflector,plugboard){
+  this.rotors=[leftRotor,middleRotor,rightRotor];
+  this.positions=[leftPos,middlePos,rightPos];
+  this.reflector=reflector||REFLECTOR_B;
+  this.plugboard=plugboard||{};  /* {A:B, B:A} */
+  this.trace=[];
+}
+Enigma.prototype.step=function(){
+  /* Right rotor steps every key. Middle when right at notch. Left when middle at notch. */
+  var right=this.rotors[2];
+  var middle=this.rotors[1];
+  var left=this.rotors[0];
+  var rightNotch=ENIGMA_ROTORS[right].notch;
+  var middleNotch=ENIGMA_ROTORS[middle].notch;
+  var stepMiddle=(ALPHA[this.positions[2]]===rightNotch);
+  var stepLeft=(ALPHA[this.positions[1]]===middleNotch);
+  this.positions[2]=(this.positions[2]+1)%26;
+  if(stepMiddle)this.positions[1]=(this.positions[1]+1)%26;
+  if(stepLeft)this.positions[0]=(this.positions[0]+1)%26;
+};
+Enigma.prototype.encode=function(letter){
+  var c=letter.toUpperCase();
+  if(ALPHA.indexOf(c)<0)return c;
+  this.step();
+  this.trace=[];
+  /* Plugboard */
+  var ch=this.plugboard[c]||c;
+  this.trace.push({stage:'plug-in',input:c,output:ch});
+  /* Forward through rotors: right → middle → left */
+  for(var i=2;i>=0;i--){
+    var wire=ENIGMA_ROTORS[this.rotors[i]].wiring;
+    var pos=this.positions[i];
+    var idx=ALPHA.indexOf(ch);
+    var shifted=(idx+pos)%26;
+    var mapped=(ALPHA.indexOf(wire[shifted])-pos+26)%26;
+    ch=ALPHA[mapped];
+    this.trace.push({stage:'rotor-'+(3-i),input:ALPHA[idx],output:ch});
+  }
+  /* Reflector */
+  var refIdx=ALPHA.indexOf(this.reflector[ALPHA.indexOf(ch)]);
+  ch=ALPHA[refIdx];
+  this.trace.push({stage:'reflector',input:ch,output:ch});
+  /* Backward through rotors: left → middle → right */
+  for(var j=0;j<3;j++){
+    var wire2=ENIGMA_ROTORS[this.rotors[j]].wiring;
+    var pos2=this.positions[j];
+    var idx2=ALPHA.indexOf(ch);
+    var shifted2=(idx2+pos2)%26;
+    var mappedIdx=wire2.indexOf(ALPHA[shifted2]);
+    var finalIdx=(mappedIdx-pos2+26)%26;
+    ch=ALPHA[finalIdx];
+    this.trace.push({stage:'back-'+(j+1),input:ALPHA[idx2],output:ch});
+  }
+  /* Plugboard out */
+  var ch2=this.plugboard[ch]||ch;
+  this.trace.push({stage:'plug-out',input:ch,output:ch2});
+  return ch2;
+};
+Enigma.prototype.encodeString=function(text){
+  var out='';
+  for(var i=0;i<text.length;i++){
+    var c=text[i].toUpperCase();
+    if(ALPHA.indexOf(c)<0){out+=text[i];continue;}
+    out+=this.encode(c);
+  }
+  return out;
+};
+
+/* ================================================================
+   CRYPTANALYSIS — Frequency analysis & Index of Coincidence
+   ================================================================ */
+function letterFrequency(text){
+  var freq=new Array(26).fill(0);
+  var total=0;
+  for(var i=0;i<text.length;i++){
+    var c=text[i].toUpperCase();
+    var idx=ALPHA.indexOf(c);
+    if(idx>=0){freq[idx]++;total++;}
+  }
+  return {freq:freq,total:total,probs:freq.map(function(f){return total>0?f/total:0})};
+}
+var ENGLISH_FREQ=[8.167,1.492,2.782,4.253,12.702,2.228,2.015,6.094,6.966,0.153,0.772,4.025,2.406,6.749,7.507,1.929,0.095,5.987,6.327,9.056,2.758,0.978,2.360,0.150,1.974,0.074];
+function indexOfCoincidence(text){
+  var f=letterFrequency(text);
+  if(f.total<2)return 0;
+  var ic=0;
+  for(var i=0;i<26;i++)ic+=f.freq[i]*(f.freq[i]-1);
+  return ic/(f.total*(f.total-1));
+}
+/* Find key length via Kasiski / IC method */
+function findKeyLength(cipher,maxLen){
+  var best=1,bestIC=0;
+  for(var L=1;L<=maxLen;L++){
+    var groups=[];
+    for(var i=0;i<L;i++)groups.push('');
+    for(var j=0;j<cipher.length;j++){
+      var c=cipher[j].toUpperCase();
+      if(ALPHA.indexOf(c)<0)continue;
+      groups[j%L]+=c;
+    }
+    var avgIC=0;
+    groups.forEach(function(g){avgIC+=indexOfCoincidence(g)});
+    avgIC/=L;
+    if(avgIC>bestIC){bestIC=avgIC;best=L;}
+  }
+  return {length:best,ic:bestIC};
+}
+/* Break Vigenère via chi-squared + per-column frequency */
+function breakVigenere(cipher){
+  var clean='';
+  for(var i=0;i<cipher.length;i++){
+    var c=cipher[i].toUpperCase();
+    if(ALPHA.indexOf(c)>=0)clean+=c;
+  }
+  if(clean.length<20)return null;
+  var kl=findKeyLength(clean,Math.min(20,Math.floor(clean.length/10)));
+  var keyLen=kl.length;
+  var key='';
+  for(var col=0;col<keyLen;col++){
+    var colText='';
+    for(var j=col;j<clean.length;j+=keyLen)colText+=clean[j];
+    var f=letterFrequency(colText);
+    var bestShift=0,bestScore=Infinity;
+    for(var shift=0;shift<26;shift++){
+      var score=0;
+      for(var k=0;k<26;k++){
+        var shifted=((k+shift)%26);
+        var expected=ENGLISH_FREQ[shifted]/100;
+        var observed=f.probs[k];
+        var diff=observed-expected;
+        score+=diff*diff/expected;
+      }
+      if(score<bestScore){bestScore=score;bestShift=shift;}
+    }
+    key+=ALPHA[(26-bestShift)%26];
+  }
+  var plaintext=vigenere(clean,key,true);
+  return {key:key,keyLength:keyLen,plaintext:plaintext,ic:kl.ic,clean:clean};
+}
+
+/* ================================================================
+   NUMBER THEORY (for RSA)
+   ================================================================ */
+function gcd(a,b){while(b){var t=b;b=a%b;a=t;}return a}
+function modInv(a,m){
+  /* Extended Euclidean */
+  var old_r=a, r=m;
+  var old_s=1, s=0;
+  while(r!==0){
+    var q=Math.floor(old_r/r);
+    var tmp=old_r-q*r; old_r=r; r=tmp;
+    var tmp2=old_s-q*s; old_s=s; s=tmp2;
+  }
+  return ((old_s%m)+m)%m;
+}
+/* Modular exponentiation (square-and-multiply) with BigInt */
+function modPow(base,exp,mod){
+  base=BigInt(base);exp=BigInt(exp);mod=BigInt(mod);
+  var result=1n;
+  base=base%mod;
+  while(exp>0n){
+    if(exp&1n)result=(result*base)%mod;
+    exp>>=1n;
+    base=(base*base)%mod;
+  }
+  return result;
+}
+/* Miller-Rabin primality test */
+function isProbablePrime(n,k){
+  n=BigInt(n);k=k||10;
+  if(n<2n)return false;
+  if(n===2n||n===3n)return true;
+  if(n%2n===0n)return false;
+  /* Write n-1 = 2^r * d */
+  var d=n-1n,r=0n;
+  while(d%2n===0n){d/=2n;r++;}
+  for(var i=0;i<k;i++){
+    var a=BigInt(2+Math.floor(Math.random()*Number(n-3n)));
+    if(a>=n-1n)a=n-2n;
+    var x=modPow(a,d,n);
+    if(x===1n||x===n-1n)continue;
+    var cont=false;
+    for(var j=0n;j<r-1n;j++){
+      x=(x*x)%n;
+      if(x===n-1n){cont=true;break;}
+    }
+    if(!cont)return false;
+  }
+  return true;
+}
+function randomPrime(bits){
+  var min=1n<<BigInt(bits-1);
+  var max=1n<<BigInt(bits);
+  while(true){
+    var candidate=min+(BigInt(Math.floor(Math.random()*Number(max-min))));
+    candidate|=1n;
+    if(isProbablePrime(candidate))return candidate;
+  }
+}
+
+/* ================================================================
+   AES (real implementation, 128-bit)
+   ================================================================ */
+var AES_SBOX=new Uint8Array(256);
+var AES_INV_SBOX=new Uint8Array(256);
+(function(){
+  var p=1,q=1;
+  do{
+    p=p^((p<<1)&0xFF)^(p&0x80?0x1B:0);
+    q^=q<<1;q^=q<<2;q^=q<<4;
+    q&=0xFF;
+    if(q&0x80)q^=0x09;
+    var x=q^((q<<1)|(q>>7))^((q<<2)|(q>>6))^((q<<3)|(q>>5))^((q<<4)|(q>>4));
+    AES_SBOX[p]=x^0x63;
+  }while(p!==1);
+  for(var i=0;i<256;i++)AES_INV_SBOX[AES_SBOX[i]]=i;
+})();
+function gfMul(a,b){
+  var p=0;
+  for(var i=0;i<8;i++){
+    if(b&1)p^=a;
+    var hi=a&0x80;
+    a=(a<<1)&0xFF;
+    if(hi)a^=0x1B;
+    b>>=1;
+  }
+  return p;
+}
+function aesKeyExpansion(key){
+  /* key: 16 bytes */
+  var w=new Array(44);
+  for(var i=0;i<4;i++)w[i]=key.slice(i*4,i*4+4);
+  var rcon=[0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36];
+  for(var i2=4;i2<44;i2++){
+    var temp=w[i2-1].slice();
+    if(i2%4===0){
+      temp=[temp[1],temp[2],temp[3],temp[0]];
+      for(var j=0;j<4;j++)temp[j]=AES_SBOX[temp[j]];
+      temp[0]^=rcon[(i2/4)-1];
+    }
+    w[i2]=[w[i2-4][0]^temp[0],w[i2-4][1]^temp[1],w[i2-4][2]^temp[2],w[i2-4][3]^temp[3]];
+  }
+  return w;
+}
+function aesEncryptBlock(block,w){
+  /* block: 16 bytes */
+  var state=block.slice();
+  /* AddRoundKey initial */
+  addRoundKey(state,w,0);
+  for(var round=1;round<=10;round++){
+    subBytes(state);
+    shiftRows(state);
+    if(round!==10)mixColumns(state);
+    addRoundKey(state,w,round);
+  }
+  return state;
+}
+function addRoundKey(state,w,round){
+  for(var i=0;i<4;i++){
+    var word=w[round*4+i];
+    for(var j=0;j<4;j++)state[i*4+j]^=word[j];
+  }
+}
+function subBytes(state){for(var i=0;i<16;i++)state[i]=AES_SBOX[state[i]]}
+function shiftRows(state){
+  var tmp=state.slice();
+  for(var r=1;r<4;r++){
+    for(var c=0;c<4;c++){
+      state[r*4+c]=tmp[r*4+((c+r)%4)];
+    }
+  }
+}
+function mixColumns(state){
+  for(var c=0;c<4;c++){
+    var a=[state[c],state[4+c],state[8+c],state[12+c]];
+    state[c]=gfMul(a[0],2)^gfMul(a[1],3)^a[2]^a[3];
+    state[4+c]=a[0]^gfMul(a[1],2)^gfMul(a[2],3)^a[3];
+    state[8+c]=a[0]^a[1]^gfMul(a[2],2)^gfMul(a[3],3);
+    state[12+c]=gfMul(a[0],3)^a[1]^a[2]^gfMul(a[3],2);
+  }
+}
+function hexByte(b){return ('0'+b.toString(16)).slice(-2).toUpperCase()}
+
+/* ================================================================
+   SHA-256 (real implementation)
+   ================================================================ */
+var SHA_K=[
+  0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+  0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+  0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+  0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+  0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+];
+var SHA_H0=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+function rotr(x,n){return ((x>>>n)|(x<<(32-n)))>>>0}
+function sha256(message){
+  /* Convert string to bytes (UTF-8) */
+  var bytes=[];
+  for(var i=0;i<message.length;i++){
+    var code=message.charCodeAt(i);
+    if(code<128)bytes.push(code);
+    else if(code<2048){
+      bytes.push(0xC0|(code>>6));
+      bytes.push(0x80|(code&0x3F));
+    } else {
+      bytes.push(0xE0|(code>>12));
+      bytes.push(0x80|((code>>6)&0x3F));
+      bytes.push(0x80|(code&0x3F));
+    }
+  }
+  var bitLen=bytes.length*8;
+  /* Padding */
+  bytes.push(0x80);
+  while(bytes.length%64!==56)bytes.push(0);
+  /* Length as 64-bit big-endian */
+  for(var i2=7;i2>=0;i2--){
+    bytes.push((bitLen/Math.pow(2,i2*8))&0xFF);
+  }
+  /* Process each 512-bit block */
+  var h=SHA_H0.slice();
+  var rounds=[];  /* Store state for visualization */
+  for(var blockIdx=0;blockIdx<bytes.length/64;blockIdx++){
+    var w=new Array(64);
+    for(var i3=0;i3<16;i3++){
+      w[i3]=(bytes[blockIdx*64+i3*4]<<24)|(bytes[blockIdx*64+i3*4+1]<<16)|
+            (bytes[blockIdx*64+i3*4+2]<<8)|(bytes[blockIdx*64+i3*4+3]);
+      w[i3]=w[i3]>>>0;
+    }
+    for(var i4=16;i4<64;i4++){
+      var s0=rotr(w[i4-15],7)^rotr(w[i4-15],18)^(w[i4-15]>>>3);
+      var s1=rotr(w[i4-2],17)^rotr(w[i4-2],19)^(w[i4-2]>>>10);
+      w[i4]=(w[i4-16]+s0+w[i4-7]+s1)>>>0;
+    }
+    var a=h[0],b=h[1],c=h[2],d=h[3],e=h[4],f=h[5],g=h[6],hVal=h[7];
+    for(var i5=0;i5<64;i5++){
+      var S1=rotr(e,6)^rotr(e,11)^rotr(e,25);
+      var ch=(e&f)^((~e)&g);
+      var temp1=(hVal+S1+ch+SHA_K[i5]+w[i5])>>>0;
+      var S0=rotr(a,2)^rotr(a,13)^rotr(a,22);
+      var maj=(a&b)^(a&c)^(b&c);
+      var temp2=(S0+maj)>>>0;
+      hVal=g;g=f;f=e;e=(d+temp1)>>>0;
+      d=c;c=b;b=a;a=(temp1+temp2)>>>0;
+    }
+    h[0]=(h[0]+a)>>>0;h[1]=(h[1]+b)>>>0;h[2]=(h[2]+c)>>>0;h[3]=(h[3]+d)>>>0;
+    h[4]=(h[4]+e)>>>0;h[5]=(h[5]+f)>>>0;h[6]=(h[6]+g)>>>0;h[7]=(h[7]+hVal)>>>0;
+    rounds.push(h.slice());
+  }
+  var hex='';
+  for(var i6=0;i6<8;i6++)hex+=('00000000'+h[i6].toString(16)).slice(-8);
+  return {hex:hex,bytes:bytes,rounds:rounds,h0:SHA_H0};
+}
+function sha256Hex(str){return sha256(str).hex}
+
+/* ================================================================
+   HMAC
+   ================================================================ */
+function hmacSHA256(key,message){
+  /* Simplified: use sha256 over concatenations (real HMAC would use proper padding) */
+  var blockSize=64;
+  var k=key;
+  if(k.length>blockSize)k=sha256Hex(k);
+  while(k.length<blockSize)k+='\x00';
+  var oKeyPad='';
+  var iKeyPad='';
+  for(var i=0;i<blockSize;i++){
+    var kc=k.charCodeAt(i)||0;
+    oKeyPad+=String.fromCharCode(kc^0x5c);
+    iKeyPad+=String.fromCharCode(kc^0x36);
+  }
+  return sha256Hex(oKeyPad+sha256Hex(iKeyPad+message));
+}
+
+/* ================================================================
+   LOG
+   ================================================================ */
+var LOG=[];
+function logMsg(msg,type){
+  type=type||'info';
+  LOG.push({t:Date.now(),msg:msg,type:type});
+  if(LOG.length>200)LOG.shift();
+  if(STATE.currentRp==='logs')renderLogs();
+}
+</script>
+<script>
+/* ================================================================
+   APPLICATION STATE
+   ================================================================ */
+var STATE={
+  currentTab:'classical',
+  currentRp:'state',
+  theme:'matrix',
+  time:0,
+  /* Classical */
+  classical:{
+    cipher:'caesar',
+    text:'THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG',
+    shift:3,
+    key:'SECRET',
+    output:'',
+    mode:'encrypt'
+  },
+  /* Enigma */
+  enigma:{
+    rotors:['I','II','III'],
+    positions:[0,0,0],   /* 'A'=0 */
+    reflector:'B',
+    plugboardPairs:[],
+    text:'HELLO WORLD',
+    output:'',
+    trace:[],
+    currentIdx:0,
+    animate:false
+  },
+  /* Cryptanalysis */
+  cryptanalysis:{
+    ciphertext:'',
+    analyze:null,
+    sampleText:'',
+    tab:'frequency'
+  },
+  /* RSA */
+  rsa:{
+    p:null,q:null,n:null,e:65537,
+    phi:null,d:null,
+    message:'HELLO',
+    ciphertext:[],
+    decrypted:'',
+    bits:32,
+    generating:false,
+    steps:[]
+  },
+  /* Diffie-Hellman */
+  dh:{
+    p:23,g:5,
+    alicePrivate:6,bobPrivate:15,
+    alicePublic:null,bobPublic:null,
+    aliceSecret:null,bobSecret:null,
+    isPrime:true,
+    step:0
+  },
+  /* AES */
+  aes:{
+    plaintext:'HELLO AES WORLD!',
+    key:'0123456789ABCDEF',
+    ciphertext:'',
+    rounds:null,
+    step:0,
+    state:null
+  },
+  /* Hash */
+  hash:{
+    input:'Hello World',
+    hash:'',
+    avalancheInput:'Hello World',
+    avalanche:'',
+    sample:null,
+    identicon:null
+  }
+};
+
+/* ================================================================
+   CANVAS
+   ================================================================ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');
+  CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){
+  var wrap=CANV.canvas.parentElement;
+  CANV.dpr=window.devicePixelRatio||1;
+  CANV.W=wrap.clientWidth;CANV.H=wrap.clientHeight;
+  CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);
+  CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);
+  CANV.canvas.style.width=CANV.W+'px';
+  CANV.canvas.style.height=CANV.H+'px';
+  CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0);
+}
+var INPUT={down:false,lastX:0,lastY:0};
+function canvasPos(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=canvasPos(e);INPUT.down=true;INPUT.lastX=p.x;INPUT.lastY=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p,e);}
+function onMove(e){var p=canvasPos(e);var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,e);}
+function onUp(e){INPUT.down=false;var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp(e);}
+function onTouchStart(e){if(e.touches.length===1){var t=e.touches[0];onDown({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchMove(e){if(e.touches.length===1){var t=e.touches[0];onMove({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchEnd(e){onUp({});e.preventDefault();}
+
+var MODULES={};
+function registerModule(key,def){def.key=key;MODULES[key]=def;}
+
+function setStatsHTML(h){var e=$('coStats');if(e)e.innerHTML=h}
+function updateBadge(t){var e=$('coBadge');if(e)e.textContent=t}
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;
+  };
+}
+
+/* ================================================================
+   MODULE: CLASSICAL CIPHERS
+   ================================================================ */
+registerModule('classical',{
+  title:'Classical Ciphers',
+  icon:'📜',
+  desc:'Caesar, Vigenère, Atbash, ROT13, and Playfair ciphers. Type text and see instant encryption.',
+  init:function(){
+    this.update();
+  },
+  update:function(){
+    var c=STATE.classical;
+    var txt=c.text;
+    var out='';
+    if(c.cipher==='caesar')out=caesar(txt,c.shift,c.mode==='decrypt');
+    else if(c.cipher==='vigenere')out=vigenere(txt,c.key,c.mode==='decrypt');
+    else if(c.cipher==='atbash')out=atbash(txt);
+    else if(c.cipher==='rot13')out=rot13(txt);
+    else if(c.cipher==='playfair')out=playfairEncrypt(txt,c.key,c.mode==='decrypt');
+    c.output=out;
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020a06';
+    ctx.fillRect(0,0,W,H);
+    var c=STATE.classical;
+    var pad=40;
+    /* Two boxes: input and output */
+    var boxW=W-pad*2;
+    var boxH=(H-pad*5)/3;
+    /* Title */
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 20px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('📜 '+c.cipher.toUpperCase()+' CIPHER',pad,pad);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#507868';
+    ctx.fillText('Mode: '+c.mode.toUpperCase()+(c.cipher==='caesar'?' | Shift '+c.shift:c.cipher==='vigenere'||c.cipher==='playfair'?' | Key: '+c.key:''),pad,pad+18);
+    /* Input box */
+    var y1=pad+40;
+    ctx.fillStyle='rgba(12,30,22,.5)';
+    ctx.strokeStyle='rgba(0,224,255,.4)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(pad,y1,boxW,boxH,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00e0ff';
+    ctx.font='bold 10px monospace';
+    ctx.fillText('INPUT — PLAINTEXT',pad+10,y1+16);
+    /* Text wrapped */
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='bold 16px monospace';
+    var lines=this.wrapText(ctx,c.text,boxW-20);
+    lines.slice(0,6).forEach(function(line,i){
+      ctx.fillText(line,pad+10,y1+40+i*22);
+    });
+    /* Arrow */
+    var arrowY=y1+boxH+30;
+    ctx.strokeStyle='#00ff88';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(W/2,arrowY);ctx.lineTo(W/2,arrowY+30);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(W/2-8,arrowY+22);ctx.lineTo(W/2,arrowY+30);ctx.lineTo(W/2+8,arrowY+22);
+    ctx.stroke();
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 10px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(c.mode==='encrypt'?'ENCRYPT':'DECRYPT',W/2+60,arrowY+20);
+    ctx.textAlign='left';
+    /* Output box */
+    var y2=arrowY+40;
+    ctx.fillStyle='rgba(12,30,22,.5)';
+    ctx.strokeStyle='rgba(0,255,136,.4)';
+    ctx.beginPath();ctx.roundRect(pad,y2,boxW,boxH,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 10px monospace';
+    ctx.fillText('OUTPUT — '+(c.mode==='encrypt'?'CIPHERTEXT':'PLAINTEXT'),pad+10,y2+16);
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 16px monospace';
+    var lines2=this.wrapText(ctx,c.output||'(empty)',boxW-20);
+    lines2.slice(0,6).forEach(function(line,i){
+      ctx.fillText(line,pad+10,y2+40+i*22);
+    });
+    /* Caesar wheel visualization */
+    if(c.cipher==='caesar'){
+      var cy3=y2+boxH+50;
+      if(cy3+80<H){
+        this.drawCaesarWheel(ctx,W/2,cy3+40,70,c.shift);
+      }
+    }
+    setStatsHTML(
+      '<div>Input: '+c.text.length+' chars</div>'+
+      '<div>Output: '+c.output.length+' chars</div>'+
+      '<div>'+c.cipher.toUpperCase()+'</div>'
+    );
+    updateBadge('📜 Classical Ciphers · '+c.cipher);
+    $('sbMode').textContent='Classical';
+    $('sbSec').textContent=c.cipher==='caesar'?'trivial':(c.cipher==='vigenere'||c.cipher==='playfair'?'broken (see Cryptanalysis)':'trivial');
+  },
+  wrapText:function(ctx,text,maxW){
+    var words=text.split(/(\s+)/);
+    var lines=[];
+    var cur='';
+    words.forEach(function(w){
+      var test=cur+w;
+      if(ctx.measureText(test).width>maxW&&cur.length>0){
+        lines.push(cur);
+        cur=w;
+      } else cur=test;
+    });
+    if(cur.length)lines.push(cur);
+    return lines;
+  },
+  drawCaesarWheel:function(ctx,cx,cy,R,shift){
+    /* Inner wheel (plaintext) */
+    ctx.font='bold 9px monospace';
+    ctx.textAlign='center';
+    for(var i=0;i<26;i++){
+      var angle1=i/26*Math.PI*2-Math.PI/2;
+      var x1=cx+Math.cos(angle1)*R;
+      var y1=cy+Math.sin(angle1)*R;
+      ctx.fillStyle='#00e0ff';
+      ctx.fillText(ALPHA[i],x1,y1+3);
+      /* Outer (cipher) */
+      var angle2=(i+shift)/26*Math.PI*2-Math.PI/2;
+      var x2=cx+Math.cos(angle2)*(R+30);
+      var y2=cy+Math.sin(angle2)*(R+30);
+      ctx.fillStyle='#00ff88';
+      ctx.fillText(ALPHA[i],x2,y2+3);
+    }
+    ctx.strokeStyle='rgba(0,255,136,.3)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,R+30,0,Math.PI*2);ctx.stroke();
+    /* Arrow showing shift */
+    ctx.strokeStyle='#ffe040';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,cy,R+15,-Math.PI/2,-Math.PI/2+shift/26*Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 10px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('shift = '+shift,cx,cy+R+55);
+  },
+  onDown:function(){},
+  controls:function(){
+    var c=STATE.classical;
+    var html='';
+    html+='<div class="sec"><h4>Cipher</h4>';
+    html+='<div class="chip-row">';
+    [['caesar','Caesar'],['vigenere','Vigenère'],['atbash','Atbash'],['rot13','ROT13'],['playfair','Playfair']].forEach(function(t){
+      html+='<div class="chip '+(c.cipher===t[0]?'active':'')+'" onclick="STATE.classical.cipher=\''+t[0]+'\';MODULES.classical.update();renderLeftPanel()">'+t[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Mode</h4>';
+    html+='<div class="chip-row">';
+    html+='<div class="chip '+(c.mode==='encrypt'?'active':'')+'" onclick="STATE.classical.mode=\'encrypt\';MODULES.classical.update();renderLeftPanel()">Encrypt</div>';
+    html+='<div class="chip '+(c.mode==='decrypt'?'active':'')+'" onclick="STATE.classical.mode=\'decrypt\';MODULES.classical.update();renderLeftPanel()">Decrypt</div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Text</h4>';
+    html+='<div class="ctrl"><textarea oninput="STATE.classical.text=this.value;MODULES.classical.update()">'+esc(c.text)+'</textarea></div>';
+    html+='</div>';
+    if(c.cipher==='caesar'||c.cipher==='rot13'){
+      html+='<div class="sec"><h4>Shift</h4>';
+      html+='<div class="ctrl"><div class="lbl"><span>Shift</span><span>'+c.shift+'</span></div>';
+      html+='<input type="range" min="0" max="25" step="1" value="'+c.shift+'"'+(c.cipher==='rot13'?' disabled':'')+' oninput="STATE.classical.shift=parseInt(this.value);MODULES.classical.update();renderLeftPanel()"></div>';
+      html+='</div>';
+    }
+    if(c.cipher==='vigenere'||c.cipher==='playfair'){
+      html+='<div class="sec"><h4>Key</h4>';
+      html+='<div class="ctrl"><input type="text" value="'+esc(c.key)+'" oninput="STATE.classical.key=this.value.toUpperCase();MODULES.classical.update()"></div>';
+      html+='</div>';
+    }
+    html+='<div class="sec"><h4>Presets</h4>';
+    html+='<button class="btn full sm" onclick="STATE.classical.text=\'THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG\';MODULES.classical.update();renderLeftPanel()">Pangram</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.classical.text=\'ATTACK AT DAWN\';MODULES.classical.update();renderLeftPanel()">Military</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.classical.text=randomMessage();MODULES.classical.update();renderLeftPanel()">🎲 Random</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var c=STATE.classical;
+    var html='<div class="sec"><h4>Algorithm</h4>';
+    var formulas={
+      'caesar':'C = (P + k) mod 26<br>P = (C − k) mod 26<br><br>Key space: 25 (trivial to brute-force)',
+      'vigenere':'Cᵢ = (Pᵢ + Kᵢ) mod 26<br>Pᵢ = (Cᵢ − Kᵢ) mod 26<br><br>Key repeats cyclically. Key space: 26^|key|. Vulnerable to Kasiski + frequency analysis.',
+      'atbash':'Cᵢ = 25 − Pᵢ  (A↔Z, B↔Y, ...)<br><br>Fixed substitution, no key.',
+      'rot13':'Cᵢ = (Pᵢ + 13) mod 26<br><br>Self-inverse: encrypt = decrypt. Caesar with shift 13.',
+      'playfair':'Digraph substitution on 5×5 grid (I=J).<br>Rules: same row → shift right; same column → shift down; else rectangle swap.<br><br>Key space: 25! ≈ 1.5×10²⁵'
+    };
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+(formulas[c.cipher]||'')+'</div>';
+    html+='</div>';
+    if(c.cipher==='vigenere'&&c.key){
+      html+='<div class="sec"><h4>Key expansion</h4>';
+      html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.6;color:var(--tx2)">';
+      var exp='';
+      for(var i=0;i<Math.min(c.text.replace(/\s/g,'').length,c.key.length*2);i++)exp+=c.key[i%c.key.length];
+      html+=esc(exp)+'...';
+      html+='</div></div>';
+    }
+    return html;
+  }
+});
+function randomMessage(){
+  var words=['ATTACK','AT','DAWN','SECRET','MESSAGE','HELLO','WORLD','MEET','ME','MIDNIGHT','GOLD','HIDDEN','THE','QUICK','BROWN','FOX'];
+  var n=rnd(3,6);
+  var arr=[];
+  for(var i=0;i<n;i++)arr.push(words[rnd(0,words.length-1)]);
+  return arr.join(' ');
+}
+
+/* ================================================================
+   MODULE: ENIGMA
+   ================================================================ */
+registerModule('enigma',{
+  title:'Enigma Machine',
+  icon:'⚙️',
+  desc:'Real 3-rotor Enigma simulator with plugboard and reflector. Watch the rotors step and trace the signal path.',
+  init:function(){
+    this.run();
+  },
+  run:function(){
+    var e=STATE.enigma;
+    var pb={};
+    e.plugboardPairs.forEach(function(p){
+      pb[p[0]]=p[1];
+      pb[p[1]]=p[0];
+    });
+    var m=new Enigma(e.rotors[0],e.rotors[1],e.rotors[2],
+                     e.positions[0],e.positions[1],e.positions[2],
+                     e.reflector==='B'?REFLECTOR_B:REFLECTOR_C,pb);
+    var out=m.encodeString(e.text);
+    e.output=out;
+    /* Reset for tracing */
+    var m2=new Enigma(e.rotors[0],e.rotors[1],e.rotors[2],
+                      e.positions[0],e.positions[1],e.positions[2],
+                      e.reflector==='B'?REFLECTOR_B:REFLECTOR_C,pb);
+    e.traces=[];
+    for(var i=0;i<e.text.length;i++){
+      var c=e.text[i].toUpperCase();
+      if(ALPHA.indexOf(c)<0)continue;
+      m2.encode(c);
+      e.traces.push({input:c,output:m2.trace[m2.trace.length-1].output,trace:m2.trace.slice(),positions:m2.positions.slice()});
+    }
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020a06';
+    ctx.fillRect(0,0,W,H);
+    var e=STATE.enigma;
+    /* Header */
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 18px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('⚙️ ENIGMA MACHINE — M3',40,40);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#507868';
+    ctx.fillText('Rotors: '+e.rotors.join(' / ')+' | Reflector: UKW-'+e.reflector+' | Plugboard pairs: '+e.plugboardPairs.length,40,60);
+    /* Rotors visualization */
+    var rotorY=100;
+    var rotorW=180;
+    var rotorGap=30;
+    var totalW=rotorW*3+rotorGap*2;
+    var startX=(W-totalW)/2;
+    for(var i=0;i<3;i++){
+      var x=startX+i*(rotorW+rotorGap);
+      /* Rotor box */
+      ctx.fillStyle='rgba(12,30,22,.6)';
+      ctx.strokeStyle='rgba(0,224,255,.4)';
+      ctx.lineWidth=1;
+      ctx.beginPath();ctx.roundRect(x,rotorY,rotorW,100,8);ctx.fill();ctx.stroke();
+      /* Rotor name */
+      ctx.fillStyle='#00e0ff';
+      ctx.font='bold 12px monospace';
+      ctx.textAlign='center';
+      ctx.fillText('ROTOR '+(i+1)+' ('+e.rotors[i]+')',x+rotorW/2,rotorY+20);
+      /* Current position letters — show 3 letters around window */
+      var pos=e.positions[i];
+      for(var off=-2;off<=2;off++){
+        var p=(pos+off+26)%26;
+        var lx=x+rotorW/2+off*28;
+        var ly=rotorY+55;
+        var isCenter=off===0;
+        ctx.fillStyle=isCenter?'#00ff88':'rgba(80,120,104,.5)';
+        ctx.font=(isCenter?'bold 20px':'12px')+' monospace';
+        ctx.fillText(ALPHA[p],lx,ly);
+      }
+      /* Notch indicator */
+      var notch=ENIGMA_ROTORS[e.rotors[i]].notch;
+      ctx.fillStyle=(ALPHA[pos]===notch)?'#ffe040':'rgba(255,224,64,.3)';
+      ctx.font='9px monospace';
+      ctx.fillText('notch '+notch,x+rotorW/2,rotorY+90);
+      /* Arrow between rotors */
+      if(i<2){
+        var arrowX=x+rotorW+rotorGap/2;
+        ctx.fillStyle='rgba(0,255,136,.5)';
+        ctx.font='20px monospace';
+        ctx.fillText('→',arrowX,rotorY+55);
+      }
+    }
+    /* Signal trace */
+    var traceY=rotorY+130;
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('SIGNAL TRACE — letter by letter',40,traceY);
+    if(e.traces){
+      /* Show letter flow */
+      var inputText=e.text.toUpperCase();
+      var outputText=e.output;
+      var chars=[];
+      var idx=0;
+      for(var ci=0;ci<inputText.length;ci++){
+        var c=inputText[ci];
+        if(ALPHA.indexOf(c)<0){chars.push({in:' ',out:' '});continue;}
+        chars.push({in:c,out:outputText[idx++]});
+      }
+      /* Display flow with arrows */
+      var flowY=traceY+40;
+      var cellW=24;
+      var maxCells=Math.floor((W-80)/cellW);
+      var row=0;
+      for(var k=0;k<chars.length;k++){
+        var col=k%maxCells;
+        if(k>0&&col===0)row++;
+        var fx=40+col*cellW;
+        var fy=flowY+row*60;
+        if(fy>H-80)break;
+        ctx.fillStyle='rgba(0,224,255,.8)';
+        ctx.font='bold 16px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(chars[k].in,fx+cellW/2,fy);
+        ctx.fillStyle='rgba(255,224,64,.5)';
+        ctx.font='10px monospace';
+        ctx.fillText('↓',fx+cellW/2,fy+16);
+        ctx.fillStyle='rgba(0,255,136,.9)';
+        ctx.font='bold 16px monospace';
+        ctx.fillText(chars[k].out,fx+cellW/2,fy+34);
+      }
+      /* Show detailed trace of first letter */
+      if(e.traces[0]&&e.traces[0].trace){
+        var detailY=H-180;
+        ctx.fillStyle='#00e0ff';
+        ctx.font='bold 11px monospace';
+        ctx.textAlign='left';
+        ctx.fillText('DETAILED TRACE — first letter "'+e.traces[0].input+'"',40,detailY);
+        var stages=e.traces[0].trace;
+        var stageY=detailY+22;
+        for(var s=0;s<Math.min(stages.length,8);s++){
+          ctx.fillStyle='rgba(80,120,104,.7)';
+          ctx.font='9px monospace';
+          ctx.textAlign='left';
+          ctx.fillText(stages[s].stage.padEnd(10),40,stageY+s*16);
+          ctx.fillStyle='#00e0ff';
+          ctx.fillText(stages[s].input,160,stageY+s*16);
+          ctx.fillStyle='rgba(80,120,104,.7)';
+          ctx.fillText('→',180,stageY+s*16);
+          ctx.fillStyle='#00ff88';
+          ctx.fillText(stages[s].output,200,stageY+s*16);
+        }
+      }
+    }
+    setStatsHTML(
+      '<div>Input: '+e.text.length+' chars</div>'+
+      '<div>Rotor pos: '+e.positions.map(function(p){return ALPHA[p]}).join('')+'</div>'+
+      '<div>Plugboard: '+e.plugboardPairs.length+'</div>'
+    );
+    updateBadge('⚙️ Enigma Machine · Rotors '+e.rotors.join(''));
+    $('sbMode').textContent='Enigma';
+    $('sbSec').textContent='broken (Bletchley 1940)';
+  },
+  onDown:function(){},
+  controls:function(){
+    var e=STATE.enigma;
+    var html='';
+    html+='<div class="sec"><h4>Rotors (left → right)</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Left (slowest)</span></div>';
+    html+='<select onchange="STATE.enigma.rotors[0]=this.value;MODULES.enigma.run();renderLeftPanel()">';
+    ['I','II','III','IV','V'].forEach(function(r){
+      html+='<option'+(e.rotors[0]===r?' selected':'')+'>'+r+'</option>';
+    });
+    html+='</select></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Middle</span></div>';
+    html+='<select onchange="STATE.enigma.rotors[1]=this.value;MODULES.enigma.run();renderLeftPanel()">';
+    ['I','II','III','IV','V'].forEach(function(r){
+      html+='<option'+(e.rotors[1]===r?' selected':'')+'>'+r+'</option>';
+    });
+    html+='</select></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Right (fastest)</span></div>';
+    html+='<select onchange="STATE.enigma.rotors[2]=this.value;MODULES.enigma.run();renderLeftPanel()">';
+    ['I','II','III','IV','V'].forEach(function(r){
+      html+='<option'+(e.rotors[2]===r?' selected':'')+'>'+r+'</option>';
+    });
+    html+='</select></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Rotor Positions</h4>';
+    ['Left','Middle','Right'].forEach(function(name,i){
+      html+='<div class="ctrl"><div class="lbl"><span>'+name+'</span><span>'+ALPHA[e.positions[i]]+'</span></div>';
+      html+='<input type="range" min="0" max="25" step="1" value="'+e.positions[i]+'" oninput="STATE.enigma.positions['+i+']=parseInt(this.value);MODULES.enigma.run();renderLeftPanel()"></div>';
+    });
+    html+='</div>';
+    html+='<div class="sec"><h4>Reflector</h4>';
+    html+='<div class="chip-row">';
+    html+='<div class="chip '+(e.reflector==='B'?'active':'')+'" onclick="STATE.enigma.reflector=\'B\';MODULES.enigma.run();renderLeftPanel()">UKW-B</div>';
+    html+='<div class="chip '+(e.reflector==='C'?'active':'')+'" onclick="STATE.enigma.reflector=\'C\';MODULES.enigma.run();renderLeftPanel()">UKW-C</div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Plugboard</h4>';
+    if(!e.plugboardPairs.length)html+='<div class="text-xs text-dim" style="font-family:var(--mono);margin-bottom:6px">No pairs connected.</div>';
+    e.plugboardPairs.forEach(function(p,i){
+      html+='<div style="background:var(--panel3);padding:4px 8px;border-radius:var(--rxs);margin-bottom:3px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:.65rem">';
+      html+='<span style="color:var(--c1)">'+p[0]+' ↔ '+p[1]+'</span>';
+      html+='<button class="btn sm danger" onclick="STATE.enigma.plugboardPairs.splice('+i+',1);MODULES.enigma.run();renderLeftPanel()">✕</button>';
+      html+='</div>';
+    });
+    html+='<button class="btn full sm" onclick="addPlugPair()">+ Add pair</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Message</h4>';
+    html+='<div class="ctrl"><textarea oninput="STATE.enigma.text=this.value;MODULES.enigma.run()">'+esc(e.text)+'</textarea></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Preset</h4>';
+    html+='<button class="btn full sm" onclick="enigmaPreset(\'historical\')">Historical daily key</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.enigma.positions=[0,0,0];STATE.enigma.plugboardPairs=[];MODULES.enigma.run();renderLeftPanel()">Reset</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    return '<div class="sec"><h4>Enigma Operation</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '1. Key press: right rotor steps by 1<br>'+
+      '2. Plugboard: substitute letter<br>'+
+      '3. Forward: R → M → L (each rotor substitutes)<br>'+
+      '4. Reflector: no letter maps to itself<br>'+
+      '5. Backward: L → M → R (inverse substitution)<br>'+
+      '6. Plugboard again<br><br>'+
+      'Encryption = Decryption (involution)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Key Space</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Rotor order: 5×4×3 = 60<br>'+
+      'Rotor positions: 26³ = 17,576<br>'+
+      'Plugboard pairs: ~150,738,274,937,250<br><br>'+
+      '<b class="text-c1">Total: ~10²³</b> configurations<br><br>'+
+      'This is why brute-force was impossible — Bletchley Park used cryptanalysis, not enumeration.'+
+      '</div></div>';
+  }
+});
+function addPlugPair(){
+  var used={};
+  STATE.enigma.plugboardPairs.forEach(function(p){used[p[0]]=1;used[p[1]]=1;});
+  var available=ALPHA.split('').filter(function(c){return !used[c]});
+  if(available.length<2){toast('All letters used','warn');return;}
+  var i1=rnd(0,available.length-1);
+  var a=available[i1];
+  available.splice(i1,1);
+  var b=available[rnd(0,available.length-1)];
+  STATE.enigma.plugboardPairs.push([a,b]);
+  MODULES.enigma.run();
+  renderLeftPanel();
+}
+function enigmaPreset(name){
+  STATE.enigma.rotors=['I','II','III'];
+  STATE.enigma.positions=[16,4,21]; /* Q E V — often used in period */
+  STATE.enigma.plugboardPairs=[['A','M'],['F','I'],['N','V'],['P','S'],['T','U'],['W','Z']];
+  STATE.enigma.text='HELLO WORLD THIS IS A SECRET MESSAGE';
+  MODULES.enigma.run();
+  renderLeftPanel();
+}
+
+/* ================================================================
+   MODULE: CRYPTANALYSIS
+   ================================================================ */
+registerModule('cryptanalysis',{
+  title:'Cryptanalysis',
+  icon:'🔍',
+  desc:'Frequency analysis, Index of Coincidence, and automatic Vigenère cracking.',
+  init:function(){
+    var c=STATE.cryptanalysis;
+    if(!c.sampleText){
+      c.sampleText='THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG';
+    }
+    if(!c.ciphertext){
+      /* Generate a sample Vigenère ciphertext to crack */
+      var pt='ATTACKATDAWNTONIGHTMEETMEATMIDNIGHTBRINGGOLDHELPWENEEDBACKUP';
+      c.ciphertext=vigenere(pt,'SECRET',false);
+    }
+  },
+  analyze:function(){
+    var c=STATE.cryptanalysis;
+    if(!c.ciphertext)return;
+    var result=breakVigenere(c.ciphertext);
+    if(result){
+      c.result=result;
+      logMsg('Cryptanalysis: found key "'+result.key+'" (len '+result.keyLength+')','success');
+    }
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020a06';
+    ctx.fillRect(0,0,W,H);
+    var c=STATE.cryptanalysis;
+    /* Header */
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 16px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('🔍 CRYPTANALYSIS — Frequency Analysis',40,40);
+    /* Histogram area */
+    var histY=80;
+    var histH=200;
+    var histW=W-80;
+    var freq=letterFrequency(c.sampleText||'');
+    var maxFreq=Math.max.apply(null,freq.freq)||1;
+    var barW=histW/26;
+    for(var i=0;i<26;i++){
+      var x=40+i*barW;
+      var hObserved=histH*(freq.freq[i]/maxFreq);
+      var hExpected=histH*(ENGLISH_FREQ[i]/maxFreq);
+      /* English expected (behind) */
+      ctx.fillStyle='rgba(0,224,255,.2)';
+      ctx.fillRect(x+3,histY+histH-hExpected,barW-6,hExpected);
+      /* Observed (in front) */
+      var grad=ctx.createLinearGradient(x,histY,x,histY+histH);
+      grad.addColorStop(0,'#ffe040');
+      grad.addColorStop(1,'#00ff88');
+      ctx.fillStyle=grad;
+      ctx.fillRect(x+3,histY+histH-hObserved,barW-6,hObserved);
+      /* Letter label */
+      ctx.fillStyle='#c8f0d8';
+      ctx.font='bold 11px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(ALPHA[i],x+barW/2,histY+histH+14);
+      /* Frequency value */
+      if(freq.freq[i]>0){
+        ctx.fillStyle='#00ff88';
+        ctx.font='8px monospace';
+        ctx.fillText(fmt(freq.probs[i]*100,1),x+barW/2,histY+histH-hObserved-4);
+      }
+    }
+    /* Legend */
+    ctx.textAlign='left';
+    ctx.fillStyle='#ffe040';
+    ctx.font='10px monospace';
+    ctx.fillText('■ Observed',W-260,histY+15);
+    ctx.fillStyle='#00e0ff';
+    ctx.fillText('■ English reference',W-260,histY+30);
+    /* Info panel */
+    var infoY=histY+histH+50;
+    ctx.fillStyle='rgba(12,30,22,.5)';
+    ctx.strokeStyle='rgba(0,224,255,.4)';
+    ctx.beginPath();ctx.roundRect(40,infoY,W-80,180,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00e0ff';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('STATISTICAL MEASURES',52,infoY+22);
+    var ic=indexOfCoincidence(c.sampleText||'');
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('Index of Coincidence (IC):',52,infoY+48);
+    ctx.fillStyle=ic>0.06?'#00ff88':(ic>0.045?'#ffe040':'#ff3060');
+    ctx.font='bold 14px monospace';
+    ctx.fillText(fmt(ic,4),270,infoY+48);
+    ctx.fillStyle='#507868';
+    ctx.font='10px monospace';
+    ctx.fillText('English: ~0.0667 | Random: ~0.0385',450,infoY+48);
+    /* Entropy */
+    var entropy=0;
+    for(var k=0;k<26;k++){
+      if(freq.probs[k]>0)entropy-=freq.probs[k]*Math.log2(freq.probs[k]);
+    }
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('Shannon entropy:',52,infoY+74);
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 14px monospace';
+    ctx.fillText(fmt(entropy,3)+' bits/char',200,infoY+74);
+    ctx.fillStyle='#507868';
+    ctx.font='10px monospace';
+    ctx.fillText('Max: 4.70 | English: ~4.14',450,infoY+74);
+    /* Vigenère crack result */
+    if(c.result){
+      ctx.fillStyle='#00ff88';
+      ctx.font='bold 12px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('VIGENÈRE CRACK',52,infoY+108);
+      ctx.fillStyle='#ffe040';
+      ctx.font='bold 14px monospace';
+      ctx.fillText('Key: "'+c.result.key+'"  (length '+c.result.keyLength+', IC='+fmt(c.result.ic,4)+')',52,infoY+132);
+      ctx.fillStyle='#00e0ff';
+      ctx.font='11px monospace';
+      ctx.fillText('Recovered plaintext:',52,infoY+158);
+      ctx.fillStyle='#00ff88';
+      ctx.font='bold 12px monospace';
+      ctx.fillText(c.result.plaintext.substring(0,Math.floor((W-120)/7)),260,infoY+158);
+    }
+    setStatsHTML(
+      '<div>Length: '+(c.sampleText||'').length+'</div>'+
+      '<div>IC: '+fmt(ic,4)+'</div>'+
+      '<div>Entropy: '+fmt(entropy,3)+'</div>'
+    );
+    updateBadge('🔍 Cryptanalysis · IC='+fmt(ic,4));
+    $('sbMode').textContent='Cryptanalysis';
+  },
+  onDown:function(){},
+  controls:function(){
+    var c=STATE.cryptanalysis;
+    var html='';
+    html+='<div class="sec"><h4>Sample Text</h4>';
+    html+='<div class="ctrl"><textarea oninput="STATE.cryptanalysis.sampleText=this.value">'+esc(c.sampleText)+'</textarea></div>';
+    html+='<button class="btn full sm" onclick="STATE.cryptanalysis.sampleText=\'THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG\';renderLeftPanel()">English sample</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.cryptanalysis.sampleText=randomCipher();renderLeftPanel()">🎲 Random sample</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Vigenère Cracking</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Ciphertext</span></div>';
+    html+='<textarea oninput="STATE.cryptanalysis.ciphertext=this.value">'+esc(c.ciphertext)+'</textarea></div>';
+    html+='<button class="btn primary full" onclick="MODULES.cryptanalysis.analyze()">🔓 Auto-crack</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.cryptanalysis.ciphertext=vigenere(\'ATTACKATDAWNMEETMEATMIDNIGHT\',\'SECRET\',false);MODULES.cryptanalysis.analyze();renderLeftPanel()">Load test case</button>';
+    html+='</div>';
+    html+='<div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.5">Uses IC-based key length detection + chi-squared frequency matching per column.</div>';
+    return html;
+  },
+  mathPanel:function(){
+    return '<div class="sec"><h4>Index of Coincidence</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'IC = Σᵢ nᵢ(nᵢ−1) / [N(N−1)]<br><br>'+
+      'Measures the probability that two randomly chosen letters are equal.'+
+      '<br><br>English ≈ 0.0667 | Uniform random = 1/26 ≈ 0.0385'+
+      '</div></div>'+
+      '<div class="sec"><h4>Chi-squared attack</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'For each shift k in a column:<br>'+
+      'χ²(k) = Σᵢ (Oᵢ − Eᵢ)² / Eᵢ<br><br>'+
+      'Where Oᵢ = observed frequency of letter i (shifted)<br>'+
+      'Eᵢ = expected English frequency<br><br>'+
+      'The shift with minimum χ² is the key letter.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Shannon Entropy</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'H = −Σ pᵢ·log₂(pᵢ)<br><br>'+
+      'Measures information content. English text ≈ 4.14 bits/char (with structure). Uniform random = 4.70 (max).'+
+      '</div></div>';
+  }
+});
+function randomCipher(){
+  var letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  var out='';
+  var len=rnd(40,80);
+  for(var i=0;i<len;i++)out+=letters[rnd(0,25)];
+  return out;
+}
+</script>
+<script>
+/* ================================================================
+   MODULE: RSA
+   ================================================================ */
+registerModule('rsa',{
+  title:'RSA Encryption',
+  icon:'🔐',
+  desc:'Generate real RSA keypairs with Miller-Rabin prime testing. Encrypt/decrypt with modular exponentiation.',
+  init:function(){
+    this.generate();
+  },
+  generate:function(){
+    var r=STATE.rsa;
+    r.generating=true;
+    /* Use setTimeout to allow UI to show generating state */
+    var bits=Math.max(16,r.bits);
+    r.steps=[];
+    r.steps.push({t:'Generating p...'});
+    var p=randomPrime(bits);
+    r.steps.push({t:'p = '+p});
+    r.steps.push({t:'Generating q...'});
+    var q=randomPrime(bits);
+    while(q===p)q=randomPrime(bits);
+    r.steps.push({t:'q = '+q});
+    var n=p*q;
+    r.steps.push({t:'n = p·q = '+n});
+    var phi=(p-1n)*(q-1n);
+    r.steps.push({t:'φ(n) = (p−1)(q−1) = '+phi});
+    var e=BigInt(r.e);
+    while(gcd(Number(e),Number(phi))!==1)e+=2n;
+    r.e=Number(e);
+    r.steps.push({t:'e = '+e+' (public)'});
+    var d=modInv(e,phi);
+    r.steps.push({t:'d = e⁻¹ mod φ(n) = '+d+' (private)'});
+    r.p=p;r.q=q;r.n=n;r.phi=phi;r.d=d;
+    r.generating=false;
+    this.encrypt();
+    logMsg('RSA keys generated: '+bits+'-bit primes','success');
+  },
+  encrypt:function(){
+    var r=STATE.rsa;
+    if(!r.n)return;
+    var msg=r.message;
+    r.ciphertext=[];
+    r.decrypted='';
+    /* Encrypt each byte (must be < n) */
+    var nBits=r.bits*2;
+    if(nBits<16){toast('Modulus too small','warn');return;}
+    for(var i=0;i<msg.length;i++){
+      var m=BigInt(msg.charCodeAt(i));
+      if(m>=r.n){toast('Message too large for modulus','warn');return;}
+      var c=modPow(m,BigInt(r.e),r.n);
+      r.ciphertext.push(c);
+    }
+    /* Decrypt back to verify */
+    var dec='';
+    for(var j=0;j<r.ciphertext.length;j++){
+      var d=modPow(r.ciphertext[j],r.d,r.n);
+      dec+=String.fromCharCode(Number(d));
+    }
+    r.decrypted=dec;
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020a06';
+    ctx.fillRect(0,0,W,H);
+    var r=STATE.rsa;
+    /* Header */
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 16px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('🔐 RSA PUBLIC-KEY CRYPTOGRAPHY',40,40);
+    if(!r.n){
+      ctx.fillStyle='#507868';
+      ctx.font='14px monospace';
+      ctx.fillText('Generating keys...',40,80);
+      return;
+    }
+    /* Key pair boxes */
+    var boxY=70;
+    var boxW=(W-100)/2;
+    var boxH=180;
+    /* Public key */
+    ctx.fillStyle='rgba(0,224,255,.1)';
+    ctx.strokeStyle='rgba(0,224,255,.5)';
+    ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(40,boxY,boxW,boxH,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00e0ff';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('🔓 PUBLIC KEY (share freely)',52,boxY+20);
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('e = '+r.e,52,boxY+48);
+    var nStr=r.n.toString();
+    ctx.fillText('n = '+(nStr.length>30?nStr.substring(0,15)+'...'+nStr.substring(nStr.length-12):nStr),52,boxY+68);
+    ctx.fillStyle='#507868';
+    ctx.font='9px monospace';
+    ctx.fillText('('+nStr.length+' digits)',52,boxY+86);
+    /* Private key */
+    ctx.fillStyle='rgba(255,48,96,.1)';
+    ctx.strokeStyle='rgba(255,48,96,.5)';
+    ctx.beginPath();ctx.roundRect(60+boxW,boxY,boxW,boxH,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ff3060';
+    ctx.font='bold 12px monospace';
+    ctx.fillText('🔒 PRIVATE KEY (keep secret)',72+boxW,boxY+20);
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('p = '+r.p,72+boxW,boxY+48);
+    ctx.fillText('q = '+r.q,72+boxW,boxY+66);
+    var dStr=r.d.toString();
+    ctx.fillText('d = '+(dStr.length>30?dStr.substring(0,15)+'...':dStr),72+boxW,boxY+86);
+    ctx.fillStyle='#507868';
+    ctx.font='9px monospace';
+    ctx.fillText('φ(n) has '+(r.phi.toString().length)+' digits',72+boxW,boxY+108);
+    /* Encryption flow */
+    var flowY=boxY+boxH+30;
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 12px monospace';
+    ctx.fillText('ENCRYPT / DECRYPT',40,flowY);
+    /* Message → cipher → decrypted */
+    var mY=flowY+30;
+    var mW=(W-140)/3;
+    /* Original message */
+    ctx.fillStyle='rgba(12,30,22,.6)';
+    ctx.strokeStyle='rgba(0,224,255,.4)';
+    ctx.beginPath();ctx.roundRect(40,mY,mW,90,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00e0ff';
+    ctx.font='10px monospace';
+    ctx.fillText('PLAINTEXT m',48,mY+14);
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='bold 16px monospace';
+    var lines=wrapSimple(ctx,r.message,mW-16);
+    lines.slice(0,3).forEach(function(l,i){ctx.fillText(l,48,mY+38+i*20)});
+    /* Arrow + formula */
+    var aX=40+mW;
+    ctx.strokeStyle='#00ff88';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(aX+10,mY+45);ctx.lineTo(aX+mW/2-10-20,mY+45);ctx.stroke();
+    ctx.fillStyle='#00ff88';
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('c = mᵉ',aX+mW/4,mY+38);
+    ctx.fillText('mod n',aX+mW/4,mY+50);
+    ctx.textAlign='left';
+    /* Ciphertext */
+    ctx.fillStyle='rgba(12,30,22,.6)';
+    ctx.strokeStyle='rgba(255,224,64,.4)';
+    ctx.beginPath();ctx.roundRect(40+mW+40,mY,mW,90,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffe040';
+    ctx.font='10px monospace';
+    ctx.fillText('CIPHERTEXT c',48+mW+40,mY+14);
+    ctx.font='10px monospace';
+    ctx.fillStyle='#c8f0d8';
+    r.ciphertext.slice(0,4).forEach(function(c,i){
+      var cs=c.toString();
+      ctx.fillText('['+i+'] '+cs.substring(0,20)+(cs.length>20?'...':''),48+mW+40,mY+38+i*16);
+    });
+    /* Arrow + formula */
+    aX=40+2*mW+40;
+    ctx.strokeStyle='#ff3060';
+    ctx.beginPath();ctx.moveTo(aX+10,mY+45);ctx.lineTo(aX+mW/2-10-20,mY+45);ctx.stroke();
+    ctx.fillStyle='#ff3060';
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('m = cᵈ',aX+mW/4,mY+38);
+    ctx.fillText('mod n',aX+mW/4,mY+50);
+    ctx.textAlign='left';
+    /* Decrypted */
+    ctx.fillStyle='rgba(12,30,22,.6)';
+    ctx.strokeStyle='rgba(0,255,136,.4)';
+    ctx.beginPath();ctx.roundRect(40+2*mW+80,mY,mW,90,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00ff88';
+    ctx.font='10px monospace';
+    ctx.fillText('DECRYPTED m',48+2*mW+80,mY+14);
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='bold 16px monospace';
+    var lines2=wrapSimple(ctx,r.decrypted,mW-16);
+    lines2.slice(0,3).forEach(function(l,i){ctx.fillText(l,48+2*mW+80,mY+38+i*20)});
+    /* Match indicator */
+    var matches=r.message===r.decrypted;
+    ctx.fillStyle=matches?'#00ff88':'#ff3060';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(matches?'✓ CORRECT':'✗ MISMATCH',W-40-mW/2,mY+80);
+    /* Generation steps */
+    if(r.steps.length){
+      var sy=mY+120;
+      ctx.textAlign='left';
+      ctx.fillStyle='#ffe040';
+      ctx.font='bold 11px monospace';
+      ctx.fillText('KEY GENERATION STEPS',40,sy);
+      ctx.font='10px monospace';
+      r.steps.slice(-7).forEach(function(s,i){
+        ctx.fillStyle='#507868';
+        ctx.fillText('▸',40,sy+22+i*14);
+        ctx.fillStyle='#c8f0d8';
+        var text=s.t;
+        if(text.length>80)text=text.substring(0,77)+'...';
+        ctx.fillText(text,52,sy+22+i*14);
+      });
+    }
+    setStatsHTML(
+      '<div>Modulus: '+r.n.toString().length+' digits</div>'+
+      '<div>Bits per prime: '+r.bits+'</div>'+
+      '<div>e: '+r.e+'</div>'+
+      '<div>Security: '+((r.n.toString().length-1)*3.32).toFixed(0)+' bits</div>'
+    );
+    updateBadge('🔐 RSA · '+r.bits+'-bit primes');
+    $('sbMode').textContent='RSA';
+    $('sbSec').textContent='factoring hard ('+((r.n.toString().length-1)*3.32).toFixed(0)+'-bit modulus)';
+  },
+  onDown:function(){},
+  controls:function(){
+    var r=STATE.rsa;
+    var html='';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.rsa.generate()" '+(r.generating?'disabled':'')+'>🔑 Generate new keys</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Prime bits</span><span>'+r.bits+'</span></div>';
+    html+='<input type="range" min="16" max="64" step="4" value="'+r.bits+'" oninput="STATE.rsa.bits=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Public exponent e</span><span>'+r.e+'</span></div>';
+    html+='<input type="number" value="'+r.e+'" onchange="STATE.rsa.e=parseInt(this.value);MODULES.rsa.generate()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Message</h4>';
+    html+='<div class="ctrl"><input type="text" value="'+esc(r.message)+'" oninput="STATE.rsa.message=this.value;MODULES.rsa.encrypt()"></div>';
+    html+='</div>';
+    html+='<div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.5">Note: real RSA uses 2048-4096 bit primes. These are toy primes for speed.</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var r=STATE.rsa;
+    var html='<div class="sec"><h4>RSA Algorithm</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '<b class="text-c1">Key generation:</b><br>'+
+      '1. Pick primes p, q<br>'+
+      '2. Compute n = p·q<br>'+
+      '3. Compute φ(n) = (p−1)(q−1)<br>'+
+      '4. Choose e coprime to φ(n)<br>'+
+      '5. Compute d = e⁻¹ mod φ(n)<br><br>'+
+      '<b class="text-c1">Encrypt:</b> c = mᵉ mod n<br>'+
+      '<b class="text-c1">Decrypt:</b> m = cᵈ mod n'+
+      '</div></div>';
+    if(r.n){
+      html+='<div class="sec"><h4>Current Values</h4><div class="kv">';
+      html+='<div class="row"><span class="k">p</span><span class="v">'+r.p+'</span></div>';
+      html+='<div class="row"><span class="k">q</span><span class="v">'+r.q+'</span></div>';
+      html+='<div class="row"><span class="k">n</span><span class="v">'+r.n+'</span></div>';
+      html+='<div class="row"><span class="k">φ(n)</span><span class="v">'+r.phi+'</span></div>';
+      html+='<div class="row"><span class="k">e</span><span class="v">'+r.e+'</span></div>';
+      html+='<div class="row"><span class="k">d</span><span class="v">'+r.d+'</span></div>';
+      html+='</div></div>';
+    }
+    html+='<div class="sec"><h4>Why it works</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      'By Euler\'s theorem: m<sup>φ(n)</sup> ≡ 1 (mod n) for gcd(m,n)=1.<br><br>'+
+      'Since ed ≡ 1 (mod φ(n)):<br>'+
+      '(mᵉ)ᵈ = m^(ed) = m^(1+k·φ(n)) = m·(m^φ(n))ᵏ ≡ m (mod n)'+
+      '</div></div>';
+    return html;
+  }
+});
+function wrapSimple(ctx,text,maxW){
+  var out=[];
+  var cur='';
+  for(var i=0;i<text.length;i++){
+    var test=cur+text[i];
+    if(ctx.measureText(test).width>maxW){
+      out.push(cur);cur=text[i];
+    } else cur=test;
+  }
+  if(cur)out.push(cur);
+  return out;
+}
+
+/* ================================================================
+   MODULE: DIFFIE-HELLMAN
+   ================================================================ */
+registerModule('dh',{
+  title:'Diffie-Hellman',
+  icon:'🤝',
+  desc:'Animated key exchange. Watch Alice and Bob derive a shared secret without ever sending it.',
+  init:function(){
+    this.compute();
+  },
+  compute:function(){
+    var d=STATE.dh;
+    d.alicePublic=Number(modPow(BigInt(d.g),BigInt(d.alicePrivate),BigInt(d.p)));
+    d.bobPublic=Number(modPow(BigInt(d.g),BigInt(d.bobPrivate),BigInt(d.p)));
+    d.aliceSecret=Number(modPow(BigInt(d.bobPublic),BigInt(d.alicePrivate),BigInt(d.p)));
+    d.bobSecret=Number(modPow(BigInt(d.alicePublic),BigInt(d.bobPrivate),BigInt(d.p)));
+    d.isPrime=isProbablePrime(BigInt(d.p),5);
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var d=STATE.dh;
+    if(d.animating){
+      d.step+=dt*0.5;
+      if(d.step>5)d.step=0;
+    }
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020a06';
+    ctx.fillRect(0,0,W,H);
+    var d=STATE.dh;
+    /* Header */
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 16px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('🤝 DIFFIE-HELLMAN KEY EXCHANGE',40,40);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#507868';
+    ctx.fillText('Public: p='+d.p+' (prime: '+(d.isPrime?'yes':'NO')+'), g='+d.g,40,60);
+    /* Alice and Bob boxes */
+    var colW=(W-120)/3;
+    var bobY=110;
+    var aliceX=40;
+    var middleX=40+colW+40;
+    var bobX=40+2*colW+80;
+    var boxH=H-200;
+    /* Alice */
+    ctx.fillStyle='rgba(0,224,255,.08)';
+    ctx.strokeStyle='rgba(0,224,255,.5)';
+    ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.roundRect(aliceX,bobY,colW,boxH,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00e0ff';
+    ctx.font='bold 14px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('ALICE',aliceX+colW/2,bobY+24);
+    ctx.textAlign='left';
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('Private key a = '+d.alicePrivate,aliceX+15,bobY+55);
+    /* Highlight private */
+    ctx.fillStyle='rgba(255,48,96,.15)';
+    ctx.fillRect(aliceX+10,bobY+45,colW-20,20);
+    ctx.fillStyle='#ff3060';
+    ctx.font='bold 10px monospace';
+    ctx.fillText('(secret, never shared)',aliceX+15,bobY+80);
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('Compute:',aliceX+15,bobY+110);
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 13px monospace';
+    ctx.fillText('A = g^a mod p',aliceX+15,bobY+130);
+    ctx.fillText('A = '+d.alicePublic,aliceX+15,bobY+152);
+    /* Arrow A → Bob */
+    ctx.strokeStyle='#ffe040';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(aliceX+colW,bobY+140);ctx.lineTo(bobX,bobY+140);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(bobX-10,bobY+135);ctx.lineTo(bobX,bobY+140);ctx.lineTo(bobX-10,bobY+145);
+    ctx.stroke();
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('A = '+d.alicePublic,(aliceX+colW+bobX)/2,bobY+128);
+    /* Bob */
+    ctx.fillStyle='rgba(0,255,136,.08)';
+    ctx.strokeStyle='rgba(0,255,136,.5)';
+    ctx.beginPath();ctx.roundRect(bobX,bobY,colW,boxH,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 14px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('BOB',bobX+colW/2,bobY+24);
+    ctx.textAlign='left';
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('Private key b = '+d.bobPrivate,bobX+15,bobY+55);
+    ctx.fillStyle='rgba(255,48,96,.15)';
+    ctx.fillRect(bobX+10,bobY+45,colW-20,20);
+    ctx.fillStyle='#ff3060';
+    ctx.font='bold 10px monospace';
+    ctx.fillText('(secret, never shared)',bobX+15,bobY+80);
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('Compute:',bobX+15,bobY+110);
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 13px monospace';
+    ctx.fillText('B = g^b mod p',bobX+15,bobY+130);
+    ctx.fillText('B = '+d.bobPublic,bobX+15,bobY+152);
+    /* Arrow B → Alice */
+    ctx.strokeStyle='#ffe040';
+    ctx.beginPath();
+    ctx.moveTo(bobX,bobY+190);ctx.lineTo(aliceX+colW,bobY+190);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(aliceX+colW+10,bobY+185);ctx.lineTo(aliceX+colW,bobY+190);ctx.lineTo(aliceX+colW+10,bobY+195);
+    ctx.stroke();
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('B = '+d.bobPublic,(aliceX+colW+bobX)/2,bobY+178);
+    /* Shared secret computation */
+    ctx.textAlign='left';
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('Compute secret:',aliceX+15,bobY+220);
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 13px monospace';
+    ctx.fillText('S = B^a mod p',aliceX+15,bobY+240);
+    ctx.fillText('S = '+d.aliceSecret,aliceX+15,bobY+262);
+    ctx.fillText('Compute secret:',bobX+15,bobY+220);
+    ctx.fillText('S = A^b mod p',bobX+15,bobY+240);
+    ctx.fillText('S = '+d.bobSecret,bobX+15,bobY+262);
+    /* Shared secret box */
+    var secY=bobY+boxH+20;
+    var match=d.aliceSecret===d.bobSecret;
+    ctx.fillStyle=match?'rgba(0,255,136,.15)':'rgba(255,48,96,.15)';
+    ctx.strokeStyle=match?'#00ff88':'#ff3060';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(W/2-200,secY,400,60,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle=match?'#00ff88':'#ff3060';
+    ctx.font='bold 14px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('SHARED SECRET',W/2,secY+22);
+    ctx.font='bold 22px monospace';
+    ctx.fillText(match?d.aliceSecret:'MISMATCH!',W/2,secY+50);
+    /* Middle: what an attacker sees */
+    ctx.fillStyle='rgba(255,48,96,.08)';
+    ctx.strokeStyle='rgba(255,48,96,.4)';
+    ctx.beginPath();ctx.roundRect(middleX,bobY,colW,boxH,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ff3060';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('EAVESDROPPER',middleX+colW/2,bobY+24);
+    ctx.textAlign='left';
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='10px monospace';
+    ctx.fillText('Sees:',middleX+15,bobY+55);
+    ctx.fillStyle='#ffe040';
+    ctx.fillText('p = '+d.p,middleX+15,bobY+80);
+    ctx.fillText('g = '+d.g,middleX+15,bobY+96);
+    ctx.fillText('A = '+d.alicePublic,middleX+15,bobY+112);
+    ctx.fillText('B = '+d.bobPublic,middleX+15,bobY+128);
+    ctx.fillStyle='#ff3060';
+    ctx.fillText('Computing:',middleX+15,bobY+160);
+    ctx.fillText('Discrete log:',middleX+15,bobY+180);
+    ctx.fillText('a = log_g A mod p',middleX+15,bobY+196);
+    ctx.fillText('(intractable!)',middleX+15,bobY+212);
+    setStatsHTML(
+      '<div>p: '+d.p+'</div>'+
+      '<div>g: '+d.g+'</div>'+
+      '<div>Secret: '+d.aliceSecret+'</div>'+
+      '<div>Match: '+(d.aliceSecret===d.bobSecret?'YES':'NO')+'</div>'
+    );
+    updateBadge('🤝 Diffie-Hellman · shared secret = '+d.aliceSecret);
+    $('sbMode').textContent='Diffie-Hellman';
+    $('sbSec').textContent='discrete log hard';
+  },
+  onDown:function(){},
+  controls:function(){
+    var d=STATE.dh;
+    var html='';
+    html+='<div class="sec"><h4>Public Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Prime p</span><span>'+d.p+'</span></div>';
+    html+='<input type="range" min="5" max="997" step="1" value="'+d.p+'" oninput="STATE.dh.p=parseInt(this.value);MODULES.dh.compute();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Generator g</span><span>'+d.g+'</span></div>';
+    html+='<input type="range" min="2" max="'+(d.p-1)+'" step="1" value="'+d.g+'" oninput="STATE.dh.g=parseInt(this.value);MODULES.dh.compute();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Private Keys</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Alice (a)</span><span>'+d.alicePrivate+'</span></div>';
+    html+='<input type="range" min="2" max="'+(d.p-2)+'" step="1" value="'+d.alicePrivate+'" oninput="STATE.dh.alicePrivate=parseInt(this.value);MODULES.dh.compute();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Bob (b)</span><span>'+d.bobPrivate+'</span></div>';
+    html+='<input type="range" min="2" max="'+(d.p-2)+'" step="1" value="'+d.bobPrivate+'" oninput="STATE.dh.bobPrivate=parseInt(this.value);MODULES.dh.compute();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4>';
+    html+='<button class="btn full sm" onclick="STATE.dh.p=23;STATE.dh.g=5;STATE.dh.alicePrivate=6;STATE.dh.bobPrivate=15;MODULES.dh.compute();renderLeftPanel()">Classic (p=23, g=5)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.dh.p=101;STATE.dh.g=2;STATE.dh.alicePrivate='+rnd(2,50)+';STATE.dh.bobPrivate='+rnd(2,50)+';MODULES.dh.compute();renderLeftPanel()">Larger (p=101)</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var d=STATE.dh;
+    return '<div class="sec"><h4>Protocol</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '1. Agree on public prime p and generator g<br>'+
+      '2. Alice picks secret a, sends A = g^a mod p<br>'+
+      '3. Bob picks secret b, sends B = g^b mod p<br>'+
+      '4. Alice computes S = B^a mod p<br>'+
+      '5. Bob computes S = A^b mod p<br><br>'+
+      'Both compute S = g^(ab) mod p'+
+      '</div></div>'+
+      '<div class="sec"><h4>Security</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Breaking DH requires solving the <b>discrete logarithm</b>: find a from g^a mod p.<br><br>'+
+      'Best known classical algorithm: index calculus, sub-exponential.<br><br>'+
+      'With p = '+d.p+', it\'s trivially breakable. Real DH uses 2048+ bit primes.'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE: AES
+   ================================================================ */
+registerModule('aes',{
+  title:'AES Cipher',
+  icon:'🔷',
+  desc:'AES-128 with real S-box, ShiftRows, MixColumns, AddRoundKey. Step through the 10 rounds.',
+  init:function(){
+    this.run();
+  },
+  run:function(){
+    var a=STATE.aes;
+    /* Pad plaintext to 16 bytes */
+    var text=a.plaintext;
+    while(text.length<16)text+='\x00';
+    text=text.substring(0,16);
+    var key=a.key;
+    while(key.length<16)key+='\x00';
+    key=key.substring(0,16);
+    /* Convert to bytes */
+    var block=[];
+    for(var i=0;i<16;i++)block.push(text.charCodeAt(i)&0xFF);
+    var keyBytes=[];
+    for(var j=0;j<16;j++)keyBytes.push(key.charCodeAt(j)&0xFF);
+    /* Encrypt with state capture */
+    var w=aesKeyExpansion(keyBytes);
+    var state=block.slice();
+    var states=[{name:'Initial',data:state.slice()}];
+    addRoundKey(state,w,0);
+    states.push({name:'AddRoundKey (initial)',data:state.slice()});
+    for(var round=1;round<=10;round++){
+      subBytes(state);
+      states.push({name:'Round '+round+': SubBytes',data:state.slice()});
+      shiftRows(state);
+      states.push({name:'Round '+round+': ShiftRows',data:state.slice()});
+      if(round!==10){
+        mixColumns(state);
+        states.push({name:'Round '+round+': MixColumns',data:state.slice()});
+      }
+      addRoundKey(state,w,round);
+      states.push({name:'Round '+round+': AddRoundKey',data:state.slice()});
+    }
+    a.ciphertext=state.map(hexByte).join('');
+    a.keyHex=keyBytes.map(hexByte).join('');
+    a.blockHex=block.map(hexByte).join('');
+    a.states=states;
+    a.state=state;
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020a06';
+    ctx.fillRect(0,0,W,H);
+    var a=STATE.aes;
+    /* Header */
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 16px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('🔷 AES-128 — Advanced Encryption Standard',40,40);
+    /* Key and plaintext display */
+    ctx.font='11px monospace';
+    ctx.fillStyle='#507868';
+    ctx.fillText('Plaintext (hex):',40,70);
+    ctx.fillStyle='#c8f0d8';
+    ctx.fillText(a.blockHex,180,70);
+    ctx.fillStyle='#507868';
+    ctx.fillText('Key (hex):',40,90);
+    ctx.fillStyle='#ffe040';
+    ctx.fillText(a.keyHex,180,90);
+    ctx.fillStyle='#507868';
+    ctx.fillText('Ciphertext:',40,110);
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 12px monospace';
+    ctx.fillText(a.ciphertext,180,110);
+    /* Current state matrix */
+    var stateY=150;
+    ctx.fillStyle='#00e0ff';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('STATE MATRIX (4×4, column-major)',40,stateY);
+    var cellSize=40;
+    var matrixX=40;
+    var matrixY=stateY+20;
+    var st=a.state;
+    for(var r=0;r<4;r++){
+      for(var c=0;c<4;c++){
+        var idx=c*4+r; /* column-major storage */
+        var x=matrixX+c*cellSize;
+        var y=matrixY+r*cellSize;
+        ctx.fillStyle='rgba(12,30,22,.6)';
+        ctx.strokeStyle='rgba(0,224,255,.4)';
+        ctx.lineWidth=1;
+        ctx.beginPath();ctx.roundRect(x+1,y+1,cellSize-2,cellSize-2,4);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#00e0ff';
+        ctx.font='bold 12px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(hexByte(st[idx]),x+cellSize/2,y+cellSize/2+4);
+      }
+    }
+    /* Step slider */
+    var stepY=matrixY+4*cellSize+30;
+    ctx.textAlign='left';
+    ctx.fillStyle='#507868';
+    ctx.font='10px monospace';
+    ctx.fillText('Step: '+(a.step+1)+' / '+(a.states?a.states.length:1)+' — '+(a.states?a.states[a.step].name:''),40,stepY);
+    /* S-box visualization */
+    var sbX=W*0.5;
+    var sbY=stateY;
+    ctx.fillStyle='#00e0ff';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('S-BOX (first 8×8)',sbX,sbY);
+    for(var r2=0;r2<8;r2++){
+      for(var c2=0;c2<8;c2++){
+        var sIdx=r2*32+c2;
+        var sx=sbX+c2*24;
+        var sy=sbY+20+r2*24;
+        ctx.fillStyle='rgba(12,30,22,.5)';
+        ctx.fillRect(sx,sy,22,22);
+        ctx.fillStyle='#00ff88';
+        ctx.font='9px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(hexByte(AES_SBOX[sIdx]),sx+11,sy+15);
+      }
+    }
+    /* Operation descriptions */
+    var descX=W*0.75;
+    var descY=stateY+20;
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('ROUND OPERATIONS',descX,descY);
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='10px monospace';
+    var ops=[
+      '1. SubBytes — each byte replaced via S-box',
+      '2. ShiftRows — cyclic shift rows by 0,1,2,3',
+      '3. MixColumns — GF(2⁸) matrix multiply',
+      '4. AddRoundKey — XOR with round key',
+      '',
+      'Final round skips MixColumns',
+      '',
+      '10 rounds for AES-128',
+      '14 rounds for AES-256'
+    ];
+    ops.forEach(function(op,i){
+      ctx.fillText(op,descX,descY+22+i*16);
+    });
+    setStatsHTML(
+      '<div>Key: '+a.keyHex.substring(0,8)+'...</div>'+
+      '<div>Block: '+a.ciphertext.substring(0,8)+'...</div>'+
+      '<div>Step: '+a.step+'/'+(a.states.length-1)+'</div>'
+    );
+    updateBadge('🔷 AES-128 · '+(a.states[a.step]?a.states[a.step].name:''));
+    $('sbMode').textContent='AES';
+    $('sbSec').textContent='unbroken since 1998';
+  },
+  onDown:function(){},
+  controls:function(){
+    var a=STATE.aes;
+    var html='';
+    html+='<div class="sec"><h4>Input</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Plaintext (16 chars)</span></div>';
+    html+='<input type="text" value="'+esc(a.plaintext)+'" maxlength="16" oninput="STATE.aes.plaintext=this.value;MODULES.aes.run()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Key (16 chars)</span></div>';
+    html+='<input type="text" value="'+esc(a.key)+'" maxlength="16" oninput="STATE.aes.key=this.value;MODULES.aes.run()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Step Through Rounds</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Step</span><span>'+a.step+' / '+(a.states.length-1)+'</span></div>';
+    html+='<input type="range" min="0" max="'+(a.states.length-1)+'" step="1" value="'+a.step+'" oninput="STATE.aes.step=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='<div style="display:flex;gap:6px">';
+    html+='<button class="btn full sm" onclick="STATE.aes.step=Math.max(0,STATE.aes.step-1);renderLeftPanel()">◀ Prev</button>';
+    html+='<button class="btn full sm" onclick="STATE.aes.step=Math.min('+(a.states.length-1)+',STATE.aes.step+1);renderLeftPanel()">Next ▶</button>';
+    html+='</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Preset</h4>';
+    html+='<button class="btn full sm" onclick="STATE.aes.plaintext=\'HELLO AES WORLD!\';STATE.aes.key=\'0123456789ABCDEF\';MODULES.aes.run();STATE.aes.step=0;renderLeftPanel()">Reset</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.aes.key=randomKey();MODULES.aes.run();STATE.aes.step=0;renderLeftPanel()">🎲 Random key</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var a=STATE.aes;
+    var html='<div class="sec"><h4>Current State</h4>';
+    if(a.states){
+      html+='<div class="text-xs" style="font-family:var(--mono);color:var(--c1);margin-bottom:6px">'+a.states[a.step].name+'</div>';
+      html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;font-family:var(--mono);font-size:.6rem;text-align:center">';
+      var s=a.states[a.step].data;
+      for(var r=0;r<4;r++){
+        for(var c=0;c<4;c++){
+          html+='<div style="background:var(--panel3);padding:4px;border-radius:3px;color:var(--c1)">'+hexByte(s[c*4+r])+'</div>';
+        }
+      }
+      html+='</div>';
+    }
+    html+='</div>';
+    html+='<div class="sec"><h4>Operations</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '<b class="text-c1">SubBytes:</b> s\'[i,j] = S-box[s[i,j]]<br>'+
+      'Non-linear byte substitution using Galois inverse + affine transform.<br><br>'+
+      '<b class="text-c1">ShiftRows:</b> row r shifted left by r positions<br><br>'+
+      '<b class="text-c1">MixColumns:</b> multiply each column by fixed 4×4 matrix over GF(2⁸)<br><br>'+
+      '<b class="text-c1">AddRoundKey:</b> XOR state with round key'+
+      '</div></div>';
+    html+='<div class="sec"><h4>S-box Origin</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      'S-box[a] = affine(a⁻¹ in GF(2⁸))<br><br>'+
+      'Where a⁻¹ is the multiplicative inverse and affine is:<br>'+
+      'b\'ᵢ = bᵢ ⊕ b₍ᵢ₊₄₎ ⊕ b₍ᵢ₊₅₎ ⊕ b₍ᵢ₊₆₎ ⊕ b₍ᵢ₊₇₎ ⊕ cᵢ<br>'+
+      'with c = 01100011₂<br><br>'+
+      'This design resists linear and differential cryptanalysis.'+
+      '</div></div>';
+    return html;
+  }
+});
+function randomKey(){
+  var chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  var out='';
+  for(var i=0;i<16;i++)out+=chars[rnd(0,chars.length-1)];
+  return out;
+}
+
+/* ================================================================
+   MODULE: HASH / SHA-256
+   ================================================================ */
+registerModule('hash',{
+  title:'Hash Functions',
+  icon:'#️⃣',
+  desc:'SHA-256 with real compression function, avalanche effect demonstration, and hash-based identicons.',
+  init:function(){
+    this.compute();
+  },
+  compute:function(){
+    var h=STATE.hash;
+    var result=sha256(h.input);
+    h.hash=result.hex;
+    h.sample=result;
+    /* Avalanche: flip 1 bit and see difference */
+    var avInput=h.avalancheInput;
+    var flipped=avInput;
+    if(avInput.length>0){
+      var c=avInput.charCodeAt(0);
+      var flippedChar=String.fromCharCode(c^1);
+      flipped=flippedChar+avInput.substring(1);
+    }
+    var avHash=sha256(flipped);
+    h.avalanche={original:result.hex,flipped:flipped,modified:avHash.hex,
+                 bitsDiff:countBitDiff(result.hex,avHash.hex)};
+    /* Identicon from hash */
+    h.identicon=hashToIdenticon(result.hex);
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020a06';
+    ctx.fillRect(0,0,W,H);
+    var h=STATE.hash;
+    /* Header */
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 16px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('#️⃣ SHA-256 HASH FUNCTION',40,40);
+    /* Input box */
+    ctx.fillStyle='rgba(12,30,22,.5)';
+    ctx.strokeStyle='rgba(0,224,255,.4)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(40,70,W-80,60,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00e0ff';
+    ctx.font='bold 10px monospace';
+    ctx.fillText('INPUT',52,88);
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='bold 14px monospace';
+    ctx.fillText(h.input.length>60?h.input.substring(0,60)+'...':h.input,52,110);
+    /* Arrow */
+    ctx.strokeStyle='#00ff88';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(W/2,140);ctx.lineTo(W/2,170);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(W/2-8,162);ctx.lineTo(W/2,170);ctx.lineTo(W/2+8,162);
+    ctx.stroke();
+    /* Output box */
+    ctx.fillStyle='rgba(12,30,22,.5)';
+    ctx.strokeStyle='rgba(0,255,136,.4)';
+    ctx.beginPath();ctx.roundRect(40,180,W-80,90,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#00ff88';
+    ctx.font='bold 10px monospace';
+    ctx.fillText('SHA-256 HASH (256 bits = 64 hex chars)',52,198);
+    /* Draw hash in chunks */
+    ctx.font='bold 12px monospace';
+    ctx.fillStyle='#00ff88';
+    var hash=h.hash;
+    var chunkY=222;
+    for(var i=0;i<4;i++){
+      var chunk=hash.substring(i*16,(i+1)*16);
+      var chunkX=52+i*(W-104)/4;
+      ctx.font='bold 11px monospace';
+      /* Color each 16-hex chunk differently */
+      ctx.fillStyle=['#00ff88','#00e0ff','#ffe040','#c060ff'][i];
+      ctx.fillText(chunk,chunkX,chunkY);
+    }
+    /* Avalanche effect */
+    var avY=290;
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('AVALANCHE EFFECT — flip 1 bit in input',40,avY);
+    ctx.fillStyle='#c8f0d8';
+    ctx.font='11px monospace';
+    ctx.fillText('Input A: "'+h.avalanche.original.substring(0,20)+'..."',40,avY+22);
+    ctx.fillText('Input B: "'+h.avalanche.flipped.substring(0,20)+'..."',40,avY+38);
+    /* Two hashes side by side */
+    var hy1=avY+60;
+    var hexA=h.avalanche.original;
+    var hexB=h.avalanche.modified;
+    /* Draw hex diff */
+    var cellW=(W-100)/32;
+    for(var k=0;k<32;k++){
+      var ca=parseInt(hexA.substring(k*2,k*2+2),16);
+      var cb=parseInt(hexB.substring(k*2,k*2+2),16);
+      var diff=ca^cb;
+      /* Row A */
+      ctx.fillStyle='rgba(12,30,22,.5)';
+      ctx.fillRect(40+k*cellW,hy1,cellW-2,32);
+      ctx.fillStyle='#00e0ff';
+      ctx.font='bold 10px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(hexA.substring(k*2,k*2+2),40+k*cellW+cellW/2-1,hy1+20);
+      /* Row B */
+      ctx.fillStyle='rgba(12,30,22,.5)';
+      ctx.fillRect(40+k*cellW,hy1+36,cellW-2,32);
+      ctx.fillStyle=diff!==0?'#ffe040':'#507868';
+      ctx.fillText(hexB.substring(k*2,k*2+2),40+k*cellW+cellW/2-1,hy1+56);
+    }
+    /* Bits diff */
+    ctx.textAlign='left';
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 13px monospace';
+    ctx.fillText('Bits flipped: '+h.avalanche.bitsDiff+' / 256 ('+fmt(h.avalanche.bitsDiff/256*100,1)+'%)',40,hy1+96);
+    ctx.fillStyle='#507868';
+    ctx.font='10px monospace';
+    ctx.fillText('Ideal: ~50% (128 bits). Cryptographic hash functions exhibit strict avalanche criterion.',40,hy1+112);
+    /* Identicon */
+    if(h.identicon){
+      var idY=hy1+140;
+      if(idY+180<H){
+        ctx.fillStyle='#00ff88';
+        ctx.font='bold 11px monospace';
+        ctx.textAlign='left';
+        ctx.fillText('HASH-BASED IDENTICON (GitHub/Gravatar style)',40,idY);
+        var idSize=140;
+        var idX=40;
+        var cellSize=idSize/5;
+        for(var r=0;r<5;r++){
+          for(var c=0;c<5;c++){
+            /* Mirror: only draw cols 0-2 then mirror */
+            var value=h.identicon[r*5+c];
+            if(c>2)value=h.identicon[r*5+(4-c)];
+            var cellX=idX+c*cellSize;
+            var cellY=idY+22+r*cellSize;
+            if(value){
+              ctx.fillStyle='#00ff88';
+              ctx.fillRect(cellX,cellY,cellSize-1,cellSize-1);
+            } else {
+              ctx.fillStyle='rgba(12,30,22,.8)';
+              ctx.fillRect(cellX,cellY,cellSize-1,cellSize-1);
+            }
+          }
+        }
+        ctx.strokeStyle='#00ff88';
+        ctx.lineWidth=2;
+        ctx.strokeRect(idX,idY+22,idSize,idSize);
+        ctx.fillStyle='#507868';
+        ctx.font='10px monospace';
+        ctx.fillText('Derived from first 25 bits of SHA-256 digest.',idX+idSize+20,idY+50);
+        ctx.fillText('Every input → unique visual fingerprint.',idX+idSize+20,idY+70);
+      }
+    }
+    setStatsHTML(
+      '<div>Input: '+h.input.length+' bytes</div>'+
+      '<div>Output: 32 bytes</div>'+
+      '<div>Avalanche: '+h.avalanche.bitsDiff+'/256 bits</div>'+
+      '<div>Rounds: 64</div>'
+    );
+    updateBadge('#️⃣ SHA-256 · '+h.hash.substring(0,16)+'...');
+    $('sbMode').textContent='Hash';
+    $('sbSec').textContent='collision-resistant';
+  },
+  onDown:function(){},
+  controls:function(){
+    var h=STATE.hash;
+    var html='';
+    html+='<div class="sec"><h4>Input</h4>';
+    html+='<div class="ctrl"><textarea oninput="STATE.hash.input=this.value;MODULES.hash.compute()">'+esc(h.input)+'</textarea></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>SHA-256 Hash</h4>';
+    html+='<div style="background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:10px;font-family:var(--mono);font-size:.62rem;color:var(--c1);word-break:break-all;line-height:1.7;user-select:text">'+h.hash+'</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Avalanche Test</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Compare with</span></div>';
+    html+='<input type="text" value="'+esc(h.avalancheInput)+'" oninput="STATE.hash.avalancheInput=this.value;MODULES.hash.compute()"></div>';
+    html+='<div class="kv">';
+    html+='<div class="row"><span class="k">Bits flipped</span><span class="v">'+h.avalanche.bitsDiff+' / 256</span></div>';
+    html+='<div class="row"><span class="k">Percentage</span><span class="v">'+fmt(h.avalanche.bitsDiff/256*100,1)+'%</span></div>';
+    html+='</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4>';
+    html+='<button class="btn full sm" onclick="STATE.hash.input=\'\';MODULES.hash.compute();renderLeftPanel()">Empty string</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.hash.input=\'Hello World\';MODULES.hash.compute();renderLeftPanel()">"Hello World"</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.hash.input=\'The quick brown fox jumps over the lazy dog\';MODULES.hash.compute();renderLeftPanel()">Pangram</button>';
+    html+='</div>';
+    html+='<div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.5">Real SHA-256 with SHA_K constants and 64-round compression.</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var h=STATE.hash;
+    var html='<div class="sec"><h4>SHA-256 Pipeline</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '1. Pad message to multiple of 512 bits<br>'+
+      '2. Initialize 8 working variables h₀..h₇<br>'+
+      '3. For each 512-bit block:<br>'+
+      '&nbsp;&nbsp;a. Build message schedule W[0..63]<br>'+
+      '&nbsp;&nbsp;b. 64 rounds of compression<br>'+
+      '&nbsp;&nbsp;c. Add to h values<br>'+
+      '4. Output concatenated h'+
+      '</div></div>';
+    html+='<div class="sec"><h4>Compression Function</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      'T₁ = h + Σ₁(e) + Ch(e,f,g) + Kᵢ + Wᵢ<br>'+
+      'T₂ = Σ₀(a) + Maj(a,b,c)<br>'+
+      'h=g; g=f; f=e; e=d+T₁<br>'+
+      'd=c; c=b; b=a; a=T₁+T₂<br><br>'+
+      'where Σ₀, Σ₁ are bit rotations, Ch and Maj are bitwise selections.'+
+      '</div></div>';
+    html+='<div class="sec"><h4>Current Digest</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);color:var(--c1);word-break:break-all;line-height:1.6">'+h.hash+'</div>';
+    html+='</div>';
+    return html;
+  }
+});
+function countBitDiff(hexA,hexB){
+  var diff=0;
+  for(var i=0;i<Math.min(hexA.length,hexB.length);i++){
+    var a=parseInt(hexA[i],16);
+    var b=parseInt(hexB[i],16);
+    var x=a^b;
+    while(x){diff+=x&1;x>>=1;}
+  }
+  return diff;
+}
+function hashToIdenticon(hex){
+  /* Extract 25 bits from first hex chars */
+  var bits=[];
+  for(var i=0;i<25;i++){
+    var hexChar=hex[i%hex.length];
+    var v=parseInt(hexChar,16);
+    bits.push((v>>(i%4))&1);
+  }
+  return bits;
+}
+</script>
+<script>
+/* ================================================================
+   TABS
+   ================================================================ */
+var TABS=[
+  {key:'classical',icon:'📜',label:'Classical'},
+  {key:'enigma',icon:'⚙️',label:'Enigma'},
+  {key:'cryptanalysis',icon:'🔍',label:'Cryptanalysis'},
+  {key:'rsa',icon:'🔐',label:'RSA'},
+  {key:'dh',icon:'🤝',label:'Diffie-Hellman'},
+  {key:'aes',icon:'🔷',label:'AES'},
+  {key:'hash',icon:'#️⃣',label:'Hash'},
+  {key:'about',icon:'ℹ️',label:'About'}
+];
+function buildTabs(){
+  var tabs=$('tbTabs');
+  tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===key)});
+  $('sbMode').textContent=(MODULES[key]&&MODULES[key].title)||key;
+  if(MODULES[key]&&MODULES[key].init)MODULES[key].init();
+  renderLeftPanel();
+  renderRightPanel();
+}
+function switchRp(name,e){
+  STATE.currentRp=name;
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active');});
+  e.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active');});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+  renderRightPanel();
+}
+function renderLeftPanel(){
+  var body=$('lpBody');
+  if(!body)return;
+  var m=MODULES[STATE.currentTab];
+  if(!m){body.innerHTML='';return;}
+  var html='';
+  html+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--c1);font-size:.72rem">'+m.icon+' '+m.title+'</h4><div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.5;margin-top:4px">'+m.desc+'</div></div>';
+  if(m.controls)html+=m.controls();
+  body.innerHTML=html;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var statePane=$('rpState');
+  if(statePane){
+    statePane.innerHTML=
+      '<div class="sec"><h4>System</h4>'+
+      '<div class="kv">'+
+      '<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>'+
+      '<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,2)+'s</span></div>'+
+      '</div></div>';
+  }
+  var mathPane=$('rpMath');
+  if(mathPane&&m&&m.mathPanel)mathPane.innerHTML=m.mathPanel();
+  else if(mathPane)mathPane.innerHTML='<div class="empty">No math panel</div>';
+  var helpPane=$('rpHelp');
+  if(helpPane&&m)helpPane.innerHTML=
+    '<div class="sec"><h4>Module</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.6;color:var(--tx2)">'+
+    '<b class="text-c1">'+m.icon+' '+m.title+'</b><br><br>'+m.desc+'</div></div>';
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){
+  var p=$('rpLogs');
+  if(!p)return;
+  var html='<div class="sec"><h4>Event Log</h4>';
+  if(!LOG.length)html+='<div class="empty" style="padding:20px;font-size:.62rem">No events</div>';
+  else LOG.slice().reverse().forEach(function(l){
+    var color=l.type==='error'?'var(--c4)':l.type==='success'?'var(--c1)':'var(--c2)';
+    html+='<div style="padding:4px 6px;border-left:2px solid '+color+';margin-bottom:3px;font-family:var(--mono);font-size:.6rem;background:var(--panel3);border-radius:2px">'+
+      '<span style="color:var(--tx3)">'+new Date(l.t).toTimeString().substr(0,8)+'</span> '+
+      '<span style="color:'+color+'">'+esc(l.msg)+'</span></div>';
+  });
+  html+='</div>';
+  p.innerHTML=html;
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['matrix','paper','neon'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  var next=THEMES[(i+1)%THEMES.length];
+  document.documentElement.setAttribute('data-theme',next);
+  STATE.theme=next;
+  toast('Theme: '+next,'success');
+}
+function exportState(){
+  var data={
+    version:'1.0',
+    timestamp:new Date().toISOString(),
+    classical:STATE.classical,
+    enigma:{rotors:STATE.enigma.rotors,positions:STATE.enigma.positions,reflector:STATE.enigma.reflector},
+    rsa:{bits:STATE.rsa.bits,e:STATE.rsa.e,message:STATE.rsa.message},
+    aes:{plaintext:STATE.aes.plaintext,key:STATE.aes.key}
+  };
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='cripto-config.json';a.click();
+  setTimeout(function(){URL.revokeObjectURL(url)},500);
+  toast('Config exported','success');
+}
+function showHelp(){
+  openModal('❓ CRIPTO — Help',
+    '<div class="sec"><h4>🔐 About</h4><div class="text-xs" style="line-height:1.75;color:var(--tx2);font-family:var(--mono)">A cryptography workbench with real algorithms — AES with authentic S-box, SHA-256 with 64-round compression, Miller-Rabin prime testing, and modular arithmetic in BigInt. Break ciphers or design them.</div></div>'+
+    '<div class="sec"><h4>📚 Modules</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">📜 Classical</b> — Caesar, Vigenère, Atbash, ROT13, Playfair<br>'+
+    '<b class="text-c1">⚙️ Enigma</b> — real 3-rotor M3 with plugboard<br>'+
+    '<b class="text-c1">🔍 Cryptanalysis</b> — frequency analysis + auto-crack<br>'+
+    '<b class="text-c1">🔐 RSA</b> — generate primes, encrypt/decrypt<br>'+
+    '<b class="text-c1">🤝 Diffie-Hellman</b> — animated key exchange<br>'+
+    '<b class="text-c1">🔷 AES</b> — step through all 10 rounds<br>'+
+    '<b class="text-c1">#️⃣ Hash</b> — SHA-256 + avalanche + identicon'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">1-7</b> — Jump to module<br>'+
+    '<b class="text-c1">T</b> — Cycle theme<br>'+
+    '<b class="text-c1">?</b> — This help'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',{size:'lg'});
+}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.key>='1'&&e.key<='7'){var idx=parseInt(e.key)-1;if(TABS[idx])switchTab(TABS[idx].key);}
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal();
+});
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+var BOOT_STEPS=[
+  'Loading classical cipher tables...',
+  'Initializing Enigma rotors I–V...',
+  'Preparing frequency analysis databases...',
+  'Testing primality via Miller-Rabin...',
+  'Loading AES S-box (256 bytes)...',
+  'Preparing SHA-256 round constants (64)...',
+  'Deriving identicon fingerprints...',
+  'Ready.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  var iv=setInterval(function(){
+    pct+=rnd(8,18);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('CRIPTO ready · Press ? for help','success',3500);
+      },400);
+    }
+  },150);
+}
+
+/* ================================================================
+   MAIN LOOP
+   ================================================================ */
+var lastFrameTime=performance.now();
+var fpsAccum=0,fpsFrames=0;
+function mainLoop(now){
+  var dt=Math.min((now-lastFrameTime)/1000,0.05);
+  lastFrameTime=now;
+  fpsAccum+=dt;fpsFrames++;
+  if(fpsAccum>=0.5){
+    $('sbFps').textContent=Math.round(fpsFrames/fpsAccum);
+    fpsAccum=0;fpsFrames=0;
+  }
+  var m=MODULES[STATE.currentTab];
+  if(m&&m.tick){try{m.tick(dt);}catch(e){console.error(e);}}
+  if(m&&m.draw){try{m.draw(CANV.ctx);}catch(e){console.error(e);}}
+  requestAnimationFrame(mainLoop);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  buildTabs();
+  initCanvas();
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+  }
+  renderLeftPanel();
+  renderRightPanel();
+  logMsg('CRIPTO initialized','success');
+  bootSequence();
+  requestAnimationFrame(mainLoop);
+  setInterval(function(){
+    if(STATE.currentRp==='logs')renderLogs();
+  },1000);
+});
+
+console.log('%c CRIPTO ','background:linear-gradient(90deg,#00ff88,#00e0ff);color:#050d08;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cCryptography Studio','color:#00ff88;font-weight:600');
+console.log('%cClassical · Enigma · Cryptanalysis · RSA · DH · AES · SHA-256','color:#00e0ff');
+console.log('%cPress ? for help','color:#80b898');
+</script>
+</body></html>

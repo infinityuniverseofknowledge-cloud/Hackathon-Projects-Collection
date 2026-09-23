@@ -1,0 +1,2047 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="biosphere">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a1810">
+<title>BIOSPHERE LAB — Ecosystem Simulator</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+ul,ol{list-style:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--c1);background-clip:content-box}
+
+:root{
+  --bg:#0a1810;--bg2:#0f2118;--bg3:#152c20;--bg4:#1e3a2a;
+  --panel:#0c1e14;--panel2:#122a1c;--panel3:#183828;--panel4:#204c34;
+  --bd:#1e4030;--bd2:#2c5c44;--bd3:#3c7858;
+  --tx:#e4f5ec;--tx2:#a8d0b8;--tx3:#689880;--mu:#405c4c;
+  --c1:#3ee88a;--c1h:#80ffc0;--c1l:#20a860;
+  --c2:#40d0ff;--c2h:#80e8ff;--c2l:#20a0d0;
+  --c3:#ffd040;--c3h:#ffe890;--c3l:#c09000;
+  --c4:#ff3b80;--c4h:#ff90b0;--c4l:#c01850;
+  --c5:#b060ff;--c5h:#d0a0ff;--c5l:#7030c0;
+  --c6:#ff7020;--c6h:#ffb080;--c6l:#c04800;
+  --c7:#40e0d0;--c7h:#80f0e8;--c7l:#20a098;
+  --c8:#ff40c0;--c8h:#ff80d0;--c8l:#c02070;
+  --ok:#3ee88a;--warn:#ffd040;--err:#ff3b80;--info:#40d0ff;
+  --herb:#40e0a0;--carn:#ff3b80;--omni:#ffd040;--plant:#3ee88a;--water:#40d0ff;
+  --g1:linear-gradient(135deg,#3ee88a,#40d0ff);
+  --g2:linear-gradient(135deg,#ff3b80,#ffd040);
+  --g3:linear-gradient(135deg,#b060ff,#40e0d0);
+  --gHolo:linear-gradient(120deg,#3ee88a,#40d0ff,#b060ff,#ffd040,#ff3b80,#3ee88a);
+  --r:10px;--rs:7px;--rxs:5px;--rf:9999px;
+  --sh:0 8px 32px rgba(0,0,0,.65);
+  --sh2:0 16px 48px rgba(0,0,0,.85);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,-apple-system,sans-serif;
+  --disp:'Orbitron','Audiowide',sans-serif;
+  --t1:all .14s cubic-bezier(.4,0,.2,1);
+  --t2:all .24s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="night"]{--bg:#0a0a10;--bg2:#101020;--bg3:#181830;--panel:#101020;--panel2:#181830;--panel3:#202040;
+  --bd:#282848;--bd2:#3c3c58;--tx:#d8d8f0;--tx2:#a0a0c0;--tx3:#606080;
+  --c1:#40a0ff;--c2:#80e0ff;--c3:#ffd040;--c4:#ff4080;
+  --g1:linear-gradient(135deg,#40a0ff,#80e0ff)}
+[data-theme="desert"]{--bg:#1c1408;--bg2:#281c10;--bg3:#342418;--panel:#281c10;--panel2:#342418;
+  --bd:#4c3a24;--bd2:#6c5238;--tx:#ffe4c0;--tx2:#d0b088;--tx3:#907850;
+  --c1:#ff9040;--c2:#40d0ff;--c3:#ffe040;--c4:#c04080;
+  --g1:linear-gradient(135deg,#ff9040,#ffe040)}
+[data-theme="paper"]{--bg:#f0eee8;--bg2:#e4e0d4;--bg3:#d4d0c0;--panel:#fff;--panel2:#f5f2ea;--panel3:#e8e4d8;
+  --bd:#c8c4b4;--bd2:#a8a498;--tx:#0e1a12;--tx2:#3a483c;--tx3:#7a8878;
+  --c1:#00a050;--c2:#0080c0;--c3:#c09000;--c4:#c02060;
+  --g1:linear-gradient(135deg,#00a050,#0080c0)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* ============ BOOT ============ */
+#boot{position:fixed;inset:0;background:#0a1810;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px}
+#boot.hidden{opacity:0;pointer-events:none}
+.boot-helix{position:relative;width:120px;height:120px;margin-bottom:20px}
+.boot-helix .strand{position:absolute;top:0;bottom:0;width:6px;border-radius:3px;opacity:.6}
+.boot-helix .s1{left:20px;background:linear-gradient(to bottom,#3ee88a,#40d0ff);animation:wobble1 3s ease-in-out infinite}
+.boot-helix .s2{right:20px;background:linear-gradient(to bottom,#40d0ff,#ff3b80);animation:wobble2 3s ease-in-out infinite}
+@keyframes wobble1{0%,100%{transform:skewX(0deg)}50%{transform:skewX(20deg)}}
+@keyframes wobble2{0%,100%{transform:skewX(0deg)}50%{transform:skewX(-20deg)}}
+.boot-helix .rung{position:absolute;height:3px;background:rgba(255,255,255,.15);border-radius:2px}
+.boot-logo{font-family:var(--disp);font-size:2.8rem;font-weight:900;letter-spacing:10px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:6px}
+.boot-sub{font-size:.68rem;color:#3ee88a;letter-spacing:8px;margin-bottom:32px;opacity:.75}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#152c20;border-radius:2px;overflow:hidden;margin-bottom:12px}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #3ee88a}
+.boot-pct{font-size:.68rem;color:#3ee88a;margin-bottom:16px}
+.boot-log{font-size:.6rem;color:#689880;text-align:left;width:min(420px,90vw);height:120px;overflow:hidden;line-height:1.7}
+.boot-log .ok{color:#3ee88a}.boot-log .warn{color:#ffd040}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+/* ============ TOPBAR ============ */
+#topbar{height:50px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:5px;font-size:.95rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.7rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:32px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#0a1810;box-shadow:0 0 14px rgba(62,232,138,.35)}
+.tb-tab .tab-icon{font-size:.9rem}
+.tb-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.tb-btn{width:32px;height:32px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-btn.active{background:var(--g1);color:#0a1810;border-color:transparent}
+.tb-stat{font-family:var(--mono);font-size:.62rem;padding:4px 10px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);display:flex;gap:10px}
+
+/* ============ MAIN ============ */
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:250px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:36px}
+.panel-head{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#worldWrap{flex:1;position:relative;background:#05100a;overflow:hidden;min-height:0}
+#worldCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#worldOverlay{position:absolute;inset:0;pointer-events:none;padding:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.co-badge{background:rgba(12,30,20,.85);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:5px 10px;font-family:var(--mono);font-size:.62rem;color:var(--c1);pointer-events:auto;max-width:240px}
+.co-badge.stats{color:var(--c2);display:flex;flex-direction:column;gap:3px;align-items:flex-end;text-align:right}
+
+#rightPanel{width:290px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:36px}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:32px}
+.rp-tab{flex:1;padding:6px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:5px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+/* ============ STATUS BAR ============ */
+#statusbar{height:26px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;font-family:var(--mono);font-size:.62rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}
+
+/* ============ CONTROLS ============ */
+.sec{margin-bottom:14px}
+.sec h4{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);margin-bottom:8px;font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.sec h4 .badge{background:var(--c1);color:#0a1810;font-size:.55rem;padding:1px 7px;border-radius:8px;font-family:var(--mono);letter-spacing:0}
+.lbl{font-size:.62rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);font-family:var(--mono);letter-spacing:0;text-transform:none}
+.ctrl{margin-bottom:10px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;border:none}
+.ctrl input[type=text],.ctrl input[type=number],.ctrl select,.ctrl textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 9px;color:var(--tx);font-size:.7rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(62,232,138,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.7rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1)}
+.btn.primary{background:var(--g1);color:#0a1810;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 16px rgba(62,232,138,.4)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--panel3);border-color:var(--bd)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.danger:hover{background:rgba(255,59,128,.1)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:4px 8px;font-size:.62rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap}
+.toggle{position:relative;width:36px;height:20px;background:var(--panel4);border-radius:var(--rf);cursor:pointer;transition:var(--t2);flex-shrink:0;display:inline-block}
+.toggle.on{background:var(--c1)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:var(--t2)}
+.toggle.on::after{left:18px}
+
+/* ============ HELPERS ============ */
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.text-mono{font-family:var(--mono)}
+.text-xs{font-size:.62rem}
+.text-dim{color:var(--tx3)}
+.text-c1{color:var(--c1)}.text-c2{color:var(--c2)}.text-c3{color:var(--c3)}.text-c4{color:var(--c4)}
+.kv{font-family:var(--mono);font-size:.65rem;line-height:1.7}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd)}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3)}
+.kv .v{color:var(--c1)}
+
+/* ============ MODAL ============ */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:780px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1000px}
+.modal-head{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.9rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:20px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:26px;height:26px;border-radius:var(--rxxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+/* ============ TOAST ============ */
+#toasts{position:fixed;bottom:44px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:10px 16px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.7rem;font-weight:500;max-width:340px;min-width:180px;animation:tin .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c1)}.toast.warn{border-left-color:var(--c3)}.toast.error{border-left-color:var(--c4)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+/* ============ CHARTS ============ */
+.chart-canvas{width:100%;height:auto;display:block;background:var(--bg);border-radius:var(--rxs)}
+.chart-wrap{margin-bottom:12px}
+.chart-label{font-family:var(--mono);font-size:.58rem;color:var(--tx3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;font-weight:700;display:flex;justify-content:space-between}
+
+/* ============ ORGANISM CARD ============ */
+.org-card{background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:10px;margin-bottom:8px;font-family:var(--mono);font-size:.62rem;line-height:1.6}
+.org-card .oc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700}
+.genome-bar{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.genome-bar .gb-label{width:70px;color:var(--tx3);font-size:.58rem;text-transform:uppercase;letter-spacing:.5px}
+.genome-bar .gb-track{flex:1;height:6px;background:var(--bg);border-radius:3px;position:relative;overflow:hidden}
+.genome-bar .gb-fill{height:100%;border-radius:3px}
+.genome-bar .gb-val{width:40px;text-align:right;font-size:.58rem;color:var(--c1)}
+
+@media(max-width:1000px){#leftPanel{width:220px}#rightPanel{width:240px}}
+@media(max-width:700px){#leftPanel{width:0;overflow:hidden}#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-helix">
+    <div class="strand s1"></div>
+    <div class="strand s2"></div>
+    <div class="rung" style="top:15%;left:22px;width:66px"></div>
+    <div class="rung" style="top:35%;left:22px;width:66px"></div>
+    <div class="rung" style="top:55%;left:22px;width:66px"></div>
+    <div class="rung" style="top:75%;left:22px;width:66px"></div>
+  </div>
+  <div class="boot-logo">BIOSPHERE</div>
+  <div class="boot-sub">EVOLUTION SIMULATOR</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('world')">BIOSPHERE</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-stat">
+      <span>POP <span style="color:var(--c1)" id="tbPop">0</span></span>
+      <span>GEN <span style="color:var(--c3)" id="tbGen">0</span></span>
+      <span>TICK <span style="color:var(--c2)" id="tbTick">0</span></span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="toggleSim()" title="Play/Pause (Space)">▶</button>
+      <button class="tb-btn" onclick="stepSim(1)" title="Step 1 tick">⏭</button>
+      <button class="tb-btn" onclick="resetSim()" title="Reset (R)">↺</button>
+      <button class="tb-btn" id="btnFast" onclick="toggleFast()" title="Fast mode">⚡</button>
+      <button class="tb-btn" onclick="saveSim()" title="Save state">💾</button>
+      <button class="tb-btn" onclick="loadSim()" title="Load state">📂</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left panel">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right panel">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Simulation</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="worldWrap">
+        <canvas id="worldCanvas"></canvas>
+        <div id="worldOverlay">
+          <div class="co-badge" id="coBadge">Ready</div>
+          <div class="co-badge stats" id="coStats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="stats" onclick="switchRp('stats',this)">📊<span>Stats</span></div>
+        <div class="rp-tab" data-tab="genome" onclick="switchRp('genome',this)">🧬<span>Genes</span></div>
+        <div class="rp-tab" data-tab="foodweb" onclick="switchRp('foodweb',this)">🍽️<span>Web</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpStats"></div>
+        <div class="rp-pane" id="rpGenome"></div>
+        <div class="rp-pane" id="rpFoodweb"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">Herbivores</span><span class="sb-val" id="sbHerb">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Carnivores</span><span class="sb-val c4" id="sbCarn">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Omnivores</span><span class="sb-val c3" id="sbOmni">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Plants</span><span class="sb-val c2" id="sbPlants">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Extinctions</span><span class="sb-val c4" id="sbExt">0</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Speed</span><span class="sb-val" id="sbSpeed">1×</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;return Number(n).toFixed(d)}
+function dist2(x1,y1,x2,y2){var dx=x1-x2,dy=y1-y2;return dx*dx+dy*dy}
+function toast(m,t,d){t=t||'info';d=d||2400;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:1rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   RANDOM UTILITIES — normal, mutation
+   ================================================================ */
+function gauss(){
+  var u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function mutate(value,rate,min,max){
+  /* Gaussian mutation */
+  var v=value+gauss()*rate;
+  return clamp(v,min,max);
+}
+
+/* ================================================================
+   GENOME — inherited traits
+   ================================================================ */
+var GENOME_TRAITS=[
+  {key:'size',label:'Size',min:0.3,max:2.5,color:'#40d0ff'},
+  {key:'speed',label:'Speed',min:0.3,max:3.0,color:'#40e0d0'},
+  {key:'vision',label:'Vision',min:1,max:12,color:'#b060ff'},
+  {key:'diet',label:'Diet',min:0,max:1,color:'#ffd040'}, /* 0=herbivore, 1=carnivore */
+  {key:'metabolism',label:'Metab',min:0.4,max:2.0,color:'#ff7020'},
+  {key:'aggression',label:'Aggr',min:0,max:1,color:'#ff3b80'},
+  {key:'offspringEnergy',label:'OffEner',min:0.2,max:0.7,color:'#40e88a'},
+  {key:'lifespan',label:'Life',min:200,max:3000,color:'#ff40c0'},
+  {key:'camouflage',label:'Camou',min:0,max:1,color:'#80ffc0'}
+];
+
+function Genome(genes){
+  genes=genes||{};
+  for(var i=0;i<GENOME_TRAITS.length;i++){
+    var t=GENOME_TRAITS[i];
+    this[t.key]=genes[t.key]!==undefined?genes[t.key]:rndF(t.min,t.max);
+  }
+}
+Genome.prototype.clone=function(){
+  var g=new Genome();
+  for(var i=0;i<GENOME_TRAITS.length;i++){
+    var k=GENOME_TRAITS[i].key;
+    g[k]=this[k];
+  }
+  return g;
+};
+Genome.prototype.mutate=function(rate){
+  /* Per-gene mutation */
+  for(var i=0;i<GENOME_TRAITS.length;i++){
+    var t=GENOME_TRAITS[i];
+    var k=t.key;
+    var range=t.max-t.min;
+    /* Mutation strength scales with range */
+    this[k]=mutate(this[k],rate*range*0.1,t.min,t.max);
+  }
+};
+Genome.prototype.crossover=function(other){
+  var child=new Genome();
+  for(var i=0;i<GENOME_TRAITS.length;i++){
+    var k=GENOME_TRAITS[i].key;
+    /* Blend crossover */
+    var mix=Math.random()*0.3+0.35;
+    child[k]=this[k]*mix+other[k]*(1-mix);
+  }
+  return child;
+};
+Genome.prototype.toColor=function(){
+  /* Color based on diet: green=herbivore, red=carnivore, yellow=omnivore */
+  var d=this.diet;
+  var r,g,b;
+  if(d<0.5){
+    var t=d*2;
+    r=Math.round(64+t*136);g=Math.round(232-t*32);b=Math.round(160-t*96);
+  } else {
+    var t2=(d-0.5)*2;
+    r=Math.round(200+t2*55);g=Math.round(200-t2*140);b=Math.round(64+t2*64);
+  }
+  /* Modulate brightness by size */
+  var br=0.7+this.size*0.2;
+  return 'rgb('+Math.round(r*br)+','+Math.round(g*br)+','+Math.round(b*br)+')';
+};
+Genome.prototype.dietClass=function(){
+  if(this.diet<0.3)return 'herbivore';
+  if(this.diet>0.7)return 'carnivore';
+  return 'omnivore';
+};
+Genome.prototype.distance=function(other){
+  var sum=0;
+  for(var i=0;i<GENOME_TRAITS.length;i++){
+    var t=GENOME_TRAITS[i];
+    var k=t.key;
+    var d=(this[k]-other[k])/(t.max-t.min);
+    sum+=d*d;
+  }
+  return Math.sqrt(sum/GENOME_TRAITS.length);
+};
+
+/* ================================================================
+   ORGANISM
+   ================================================================ */
+var ORG_ID=0;
+
+function Organism(x,y,genome,generation){
+  this.id=++ORG_ID;
+  this.x=x;this.y=y;
+  this.genome=genome||new Genome();
+  this.energy=100;
+  this.age=0;
+  this.generation=generation||0;
+  this.alive=true;
+  this.children=0;
+  this.parentId=null;
+  this.dx=0;this.dy=0;
+  this.targetX=x;this.targetY=y;
+  this.state='wander'; /* wander, seek, flee, eat, hunt */
+  this.target=null;
+}
+Organism.prototype.maxEnergy=function(){
+  /* Larger genomes hold more energy */
+  return 100+this.genome.size*80;
+};
+Organism.prototype.reproduceEnergy=function(){
+  /* Must reach a threshold to reproduce */
+  return this.maxEnergy()*0.7;
+};
+Organism.prototype.canReproduce=function(){
+  return this.energy>this.reproduceEnergy()&&this.age>60;
+};
+Organism.prototype.reproduce=function(){
+  /* Asexual by default, sexual if two parents within range would be better */
+  var childGenome=this.genome.clone();
+  childGenome.mutate(MUTATION_RATE);
+  /* Child gets a portion of parent's energy */
+  var invest=this.genome.offspringEnergy*this.energy;
+  this.energy-=invest;
+  var child=new Organism(
+    this.x+rndF(-0.5,0.5),
+    this.y+rndF(-0.5,0.5),
+    childGenome,
+    this.generation+1
+  );
+  child.energy=invest*0.6;
+  child.parentId=this.id;
+  this.children++;
+  return child;
+};
+Organism.prototype.tick=function(){
+  var g=this.genome;
+  /* Energy cost: metabolism * size^2 (larger = more expensive) + movement cost */
+  var baseCost=0.05*g.metabolism*g.size;
+  var moveCost=0.02*Math.hypot(this.dx,this.dy)*g.size;
+  this.energy-=(baseCost+moveCost);
+  this.age++;
+  if(this.energy<=0||this.age>g.lifespan)this.alive=false;
+  /* Can reproduce? */
+  if(this.canReproduce()&&WORLD.population<MAX_POPULATION){
+    var child=this.reproduce();
+    WORLD.newOrganisms.push(child);
+  }
+  /* Camouflage reduces predation */
+  this.effectiveVisibility=1-this.genome.camouflage*0.8;
+};
+
+/* ================================================================
+   WORLD
+   ================================================================ */
+var MAX_POPULATION=1500;
+var MUTATION_RATE=0.15;
+var PLANT_GROW_RATE=0.02;
+var PLANT_MAX=1.0;
+var PLANT_CONSUME_RATE=0.3;
+
+var WORLD={
+  W:100,   /* grid cells */
+  H:60,
+  plants:null,
+  organisms:[],
+  newOrganisms:[],
+  spatialHash:null,
+  cellSize:1,
+  population:0,
+  tick:0,
+  maxGeneration:0,
+  herbivores:0,
+  carnivores:0,
+  omnivores:0,
+  totalPlants:0,
+  extinctions:0,
+  births:0,
+  deaths:0,
+  history:[],
+  historyMax:500,
+  season:0,
+  seasonLength:1000,
+  daylight:1.0,
+  worldTilt:0
+};
+
+function initWorld(){
+  WORLD.plants=new Float32Array(WORLD.W*WORLD.H);
+  for(var i=0;i<WORLD.plants.length;i++){
+    /* Initial random plants with clustering */
+    if(Math.random()<0.4)WORLD.plants[i]=rndF(0.3,1.0);
+  }
+  WORLD.organisms=[];
+  WORLD.newOrganisms=[];
+  WORLD.tick=0;
+  WORLD.extinctions=0;
+  WORLD.births=0;
+  WORLD.deaths=0;
+  WORLD.history=[];
+  WORLD.maxGeneration=0;
+  ORGANISM_ID_RESET();
+}
+
+function ORGANISM_ID_RESET(){ORG_ID=0;}
+
+function populateInitial(count){
+  for(var i=0;i<count;i++){
+    var x=rndF(2,WORLD.W-2);
+    var y=rndF(2,WORLD.H-2);
+    /* Initial diet: mostly herbivores, some carnivores */
+    var genes={};
+    var dietRoll=Math.random();
+    if(dietRoll<0.7)genes.diet=rndF(0,0.25);
+    else if(dietRoll<0.9)genes.diet=rndF(0.35,0.55);
+    else genes.diet=rndF(0.75,1);
+    var g=new Genome(genes);
+    var o=new Organism(x,y,g,0);
+    WORLD.organisms.push(o);
+  }
+}
+
+/* Spatial hash for O(1) neighbor queries */
+function buildSpatialHash(){
+  var hash={};
+  var cellSize=6; /* larger than max vision 12 divided by 2 for safety */
+  WORLD.spatialHash=hash;
+  WORLD.spatialHashCell=cellSize;
+  for(var i=0;i<WORLD.organisms.length;i++){
+    var o=WORLD.organisms[i];
+    var cx=Math.floor(o.x/cellSize);
+    var cy=Math.floor(o.y/cellSize);
+    var key=cx+','+cy;
+    if(!hash[key])hash[key]=[];
+    hash[key].push(o);
+  }
+}
+function querySpatial(x,y,radius){
+  var hash=WORLD.spatialHash;
+  if(!hash)return [];
+  var cellSize=WORLD.spatialHashCell;
+  var results=[];
+  var minCx=Math.floor((x-radius)/cellSize);
+  var maxCx=Math.floor((x+radius)/cellSize);
+  var minCy=Math.floor((y-radius)/cellSize);
+  var maxCy=Math.floor((y+radius)/cellSize);
+  for(var cx=minCx;cx<=maxCx;cx++){
+    for(var cy=minCy;cy<=maxCy;cy++){
+      var arr=hash[cx+','+cy];
+      if(arr){
+        for(var i=0;i<arr.length;i++)results.push(arr[i]);
+      }
+    }
+  }
+  return results;
+}
+
+/* ================================================================
+   SIMULATION TICK
+   ================================================================ */
+function simTick(){
+  WORLD.tick++;
+  /* Season / daylight */
+  var sPos=(WORLD.tick%WORLD.seasonLength)/WORLD.seasonLength;
+  WORLD.season=sPos;
+  /* Day/night cycle */
+  WORLD.daylight=0.5+0.5*Math.sin(sPos*Math.PI*2-Math.PI/2);
+  /* Grow plants */
+  var plantBoost=WORLD.daylight;
+  for(var i=0;i<WORLD.plants.length;i++){
+    if(WORLD.plants[i]<PLANT_MAX){
+      WORLD.plants[i]+=PLANT_GROW_RATE*plantBoost*(0.9+0.2*Math.random());
+      if(WORLD.plants[i]>PLANT_MAX)WORLD.plants[i]=PLANT_MAX;
+    }
+  }
+  /* Build spatial hash */
+  buildSpatialHash();
+  /* Reset counters */
+  var herb=0,carn=0,omni=0,totalPlants=0;
+  /* Process each organism */
+  for(var i=0;i<WORLD.organisms.length;i++){
+    var o=WORLD.organisms[i];
+    if(!o.alive)continue;
+    processOrganism(o);
+    if(o.alive){
+      var cls=o.genome.dietClass();
+      if(cls==='herbivore')herb++;
+      else if(cls==='carnivore')carn++;
+      else omni++;
+    }
+  }
+  /* Remove dead */
+  var newList=[];
+  for(var j=0;j<WORLD.organisms.length;j++){
+    if(WORLD.organisms[j].alive)newList.push(WORLD.organisms[j]);
+    else WORLD.deaths++;
+  }
+  /* Add newborns */
+  for(var k=0;k<WORLD.newOrganisms.length;k++){
+    newList.push(WORLD.newOrganisms[k]);
+    WORLD.births++;
+  }
+  WORLD.newOrganisms=[];
+  WORLD.organisms=newList;
+  /* Track population stats */
+  WORLD.population=newList.length;
+  WORLD.herbivores=herb;
+  WORLD.carnivores=carn;
+  WORLD.omnivores=omni;
+  var plantCount=0;
+  for(var l=0;l<WORLD.plants.length;l++)plantCount+=WORLD.plants[l];
+  WORLD.totalPlants=plantCount;
+  /* Historical tracking */
+  WORLD.history.push({
+    tick:WORLD.tick,
+    pop:WORLD.population,
+    herb:herb,
+    carn:carn,
+    omni:omni,
+    plants:plantCount,
+    daylight:WORLD.daylight
+  });
+  if(WORLD.history.length>WORLD.historyMax)WORLD.history.shift();
+  /* Track max gen */
+  for(var m=0;m<WORLD.organisms.length;m++){
+    if(WORLD.organisms[m].generation>WORLD.maxGeneration)
+      WORLD.maxGeneration=WORLD.organisms[m].generation;
+  }
+  /* Check extinction */
+  if(WORLD.population===0&&WORLD.tick>50){
+    if(!WORLD._extincted){
+      WORLD._extincted=true;
+      WORLD.extinctions++;
+      toast('EXTINCTION EVENT — population reached zero at tick '+WORLD.tick,'error',5000);
+    }
+  } else {
+    WORLD._extincted=false;
+  }
+}
+
+function processOrganism(o){
+  var g=o.genome;
+  /* Sense environment */
+  var vision=g.vision;
+  var neighbors=querySpatial(o.x,o.y,vision);
+  var nearestPrey=null,nearPreyDist=Infinity;
+  var nearestPredator=null,nearPredDist=Infinity;
+  var nearestPlant=null,nearPlantDist=Infinity;
+  /* Find nearby organisms */
+  for(var i=0;i<neighbors.length;i++){
+    var other=neighbors[i];
+    if(other===o||!other.alive)continue;
+    var d=Math.hypot(other.x-o.x,other.y-o.y);
+    if(d>vision)continue;
+    /* Can I eat it? */
+    var canEat=canEatOrganism(o,other);
+    var canBeEaten=canEatOrganism(other,o);
+    /* Predator detection: bigger carnivore/omnivore nearby */
+    if(canBeEaten&&d<nearPredDist){
+      /* Only flee if visible (camouflage) */
+      var vis=1-other.genome.camouflage*0.8;
+      if(Math.random()<vis){
+        nearPredDist=d;
+        nearestPredator=other;
+      }
+    }
+    /* Prey detection */
+    if(canEat&&d<nearPreyDist){
+      nearPreyDist=d;
+      nearestPrey=other;
+    }
+  }
+  /* Find plant cell */
+  if(g.diet<0.7){
+    /* Herbivore or omnivore — look for plants */
+    var px=Math.floor(o.x),py=Math.floor(o.y);
+    /* Check immediate surroundings */
+    for(var dx=-2;dx<=2;dx++){
+      for(var dy=-2;dy<=2;dy++){
+        var cellX=px+dx,cellY=py+dy;
+        if(cellX<0||cellX>=WORLD.W||cellY<0||cellY>=WORLD.H)continue;
+        var p=WORLD.plants[cellY*WORLD.W+cellX];
+        if(p>0.1){
+          var pDist=Math.sqrt(dx*dx+dy*dy);
+          if(pDist<nearPlantDist){
+            nearPlantDist=pDist;
+            nearestPlant={x:cellX+0.5,y:cellY+0.5,amount:p};
+          }
+        }
+      }
+    }
+  }
+  /* Decision: flee > hunt > eat plant > wander */
+  var actionX=0,actionY=0;
+  var speed=g.speed;
+  if(nearestPredator&&nearPredDist<vision*0.6){
+    /* Flee */
+    o.state='flee';
+    actionX=o.x-nearestPredator.x;
+    actionY=o.y-nearestPredator.y;
+  } else if(nearestPrey&&nearPreyDist<vision&&g.diet>0.4){
+    /* Hunt */
+    o.state='hunt';
+    actionX=nearestPrey.x-o.x;
+    actionY=nearestPrey.y-o.y;
+    if(nearPreyDist<1.5){
+      /* Attack */
+      tryEat(o,nearestPrey);
+    }
+  } else if(nearestPlant&&g.diet<0.8){
+    /* Seek plant */
+    o.state='seek';
+    actionX=nearestPlant.x-o.x;
+    actionY=nearestPlant.y-o.y;
+    if(nearPlantDist<1.5){
+      /* Eat plant at current cell */
+      eatPlant(o);
+    }
+  } else {
+    o.state='wander';
+    /* Wander with slight persistence */
+    o.dx=o.dx*0.9+gauss()*0.3;
+    o.dy=o.dy*0.9+gauss()*0.3;
+    actionX=o.dx;
+    actionY=o.dy;
+  }
+  /* Normalize direction */
+  var mag=Math.hypot(actionX,actionY);
+  if(mag>0.001){
+    actionX/=mag;
+    actionY/=mag;
+  }
+  /* Apply speed with metabolic limit */
+  var moveX=actionX*speed*0.1;
+  var moveY=actionY*speed*0.1;
+  o.dx=actionX;
+  o.dy=actionY;
+  /* Move */
+  var nx=o.x+moveX;
+  var ny=o.y+moveY;
+  /* World wrap */
+  if(nx<0)nx+=WORLD.W;
+  if(nx>=WORLD.W)nx-=WORLD.W;
+  if(ny<0)ny+=WORLD.H;
+  if(ny>=WORLD.H)ny-=WORLD.H;
+  o.x=nx;o.y=ny;
+  /* Also try to eat plant at current position (even without seek) */
+  if(g.diet<0.8){
+    eatPlant(o);
+  }
+  o.tick();
+}
+
+function canEatOrganism(predator,prey){
+  var p=predator.genome;
+  var q=prey.genome;
+  /* Must be more carnivorous than prey's diet */
+  if(p.diet<0.4)return false;
+  /* Size matters: must be bigger */
+  if(p.size<q.size*1.05)return false;
+  /* Vision must detect */
+  if(dist2(predator.x,predator.y,prey.x,prey.y)>p.vision*p.vision)return false;
+  /* Cannibalism avoidance: same-family animals shouldn't eat each other often */
+  return true;
+}
+
+function tryEat(predator,prey){
+  if(!prey.alive)return;
+  /* Success chance based on size, speed, aggression */
+  var pg=predator.genome;
+  var qg=prey.genome;
+  var successChance=0.5+pg.aggression*0.3+pg.speed*0.1-qg.speed*0.1;
+  if(Math.random()<successChance){
+    /* Consume */
+    var food=prey.energy*0.6+prey.genome.size*30;
+    predator.energy+=food;
+    if(predator.energy>predator.maxEnergy())predator.energy=predator.maxEnergy();
+    prey.alive=false;
+    prey.eatenBy=predator.id;
+  }
+}
+
+function eatPlant(o){
+  var px=Math.floor(o.x);
+  var py=Math.floor(o.y);
+  if(px<0||px>=WORLD.W||py<0||py>=WORLD.H)return;
+  var idx=py*WORLD.W+px;
+  var available=WORLD.plants[idx];
+  if(available<0.05)return;
+  /* Herbivores eat more efficiently */
+  var eff=1-o.genome.diet*0.5;
+  var consumed=Math.min(available,PLANT_CONSUME_RATE*eff);
+  WORLD.plants[idx]-=consumed;
+  o.energy+=consumed*40;
+  if(o.energy>o.maxEnergy())o.energy=o.maxEnergy();
+}
+
+/* ================================================================
+   INTERACTIONS
+   ================================================================ */
+function spawnOrganism(x,y,dietOverride){
+  if(WORLD.population>=MAX_POPULATION)return null;
+  var genes={};
+  if(dietOverride!=null){
+    genes.diet=dietOverride;
+  } else {
+    var roll=Math.random();
+    if(roll<0.6)genes.diet=rndF(0,0.2);
+    else if(roll<0.85)genes.diet=rndF(0.4,0.6);
+    else genes.diet=rndF(0.8,1);
+  }
+  var g=new Genome(genes);
+  var o=new Organism(x,y,g,0);
+  WORLD.organisms.push(o);
+  return o;
+}
+
+function spawnOrganismBatch(x,y,count,diet){
+  for(var i=0;i<count;i++){
+    spawnOrganism(x+rndF(-2,2),y+rndF(-2,2),diet);
+  }
+}
+
+function paintPlants(x,y,radius,amount){
+  for(var dx=-radius;dx<=radius;dx++){
+    for(var dy=-radius;dy<=radius;dy++){
+      var px=Math.floor(x+dx),py=Math.floor(y+dy);
+      if(px<0||px>=WORLD.W||py<0||py>=WORLD.H)continue;
+      var d=Math.sqrt(dx*dx+dy*dy);
+      if(d>radius)continue;
+      var falloff=1-d/radius;
+      var idx=py*WORLD.W+px;
+      WORLD.plants[idx]=Math.min(PLANT_MAX,WORLD.plants[idx]+amount*falloff);
+    }
+  }
+}
+
+function eraseArea(x,y,radius){
+  /* Remove organisms in area */
+  var r2=radius*radius;
+  for(var i=WORLD.organisms.length-1;i>=0;i--){
+    var o=WORLD.organisms[i];
+    var d2=dist2(o.x,o.y,x,y);
+    if(d2<r2){
+      o.alive=false;
+      WORLD.organisms.splice(i,1);
+    }
+  }
+  /* Remove plants in area */
+  for(var dx=-radius;dx<=radius;dx++){
+    for(var dy=-radius;dy<=radius;dy++){
+      var px=Math.floor(x+dx),py=Math.floor(y+dy);
+      if(px<0||px>=WORLD.W||py<0||py>=WORLD.H)continue;
+      if(dx*dx+dy*dy>r2)continue;
+      WORLD.plants[py*WORLD.W+px]=0;
+    }
+  }
+}
+</script>
+<script>
+/* ================================================================
+   CANVAS RENDERING
+   ================================================================ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1,cellW:0,cellH:0};
+
+function initCanvas(){
+  CANV.canvas=$('worldCanvas');
+  CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  /* Mouse/touch for painting */
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+  CANV.canvas.addEventListener('wheel',onWheel,{passive:false});
+}
+
+function resizeCanvas(){
+  var wrap=CANV.canvas.parentElement;
+  CANV.dpr=window.devicePixelRatio||1;
+  CANV.W=wrap.clientWidth;
+  CANV.H=wrap.clientHeight;
+  CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);
+  CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);
+  CANV.canvas.style.width=CANV.W+'px';
+  CANV.canvas.style.height=CANV.H+'px';
+  CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0);
+  CANV.cellW=CANV.W/WORLD.W;
+  CANV.cellH=CANV.H/WORLD.H;
+}
+
+function render(){
+  var ctx=CANV.ctx;
+  /* Background — water base */
+  ctx.fillStyle='#05100a';
+  ctx.fillRect(0,0,CANV.W,CANV.H);
+  /* Plants layer — render as pixel grid, efficiently */
+  var cw=CANV.cellW,ch=CANV.cellH;
+  for(var py=0;py<WORLD.H;py++){
+    for(var px=0;px<WORLD.W;px++){
+      var p=WORLD.plants[py*WORLD.W+px];
+      if(p<0.03)continue;
+      var green=Math.round(80+p*140);
+      var alpha=Math.min(1,p*0.9);
+      ctx.fillStyle='rgba(30,'+green+',60,'+alpha+')';
+      ctx.fillRect(px*cw,py*ch,cw,ch);
+    }
+  }
+  /* Daylight overlay */
+  if(WORLD.daylight<1){
+    ctx.fillStyle='rgba(0,0,40,'+((1-WORLD.daylight)*0.4)+')';
+    ctx.fillRect(0,0,CANV.W,CANV.H);
+  }
+  /* Vision circles for selected organism */
+  if(SELECTED_ORG){
+    var s=SELECTED_ORG;
+    if(WORLD.organisms.indexOf(s)>=0){
+      var cx2=s.x*cw+0.5;
+      var cy2=s.y*ch+0.5;
+      var r=s.genome.vision*Math.max(cw,ch);
+      ctx.strokeStyle='rgba(62,232,138,.4)';
+      ctx.lineWidth=1;
+      ctx.setLineDash([3,3]);
+      ctx.beginPath();
+      ctx.arc(cx2,cy2,r,0,Math.PI*2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      SELECTED_ORG=null;
+    }
+  }
+  /* Organisms — sorted by size descending so big ones overlay small */
+  var sorted=WORLD.organisms.slice().sort(function(a,b){return a.genome.size-b.genome.size});
+  for(var i=0;i<sorted.length;i++){
+    drawOrganism(ctx,sorted[i]);
+  }
+  /* Hover indicator */
+  if(HOVER_ORG){
+    var h=HOVER_ORG;
+    var hx=h.x*cw,hy=h.y*ch;
+    var hr=h.genome.size*Math.max(cw,ch)*1.2+4;
+    ctx.strokeStyle='#ffd040';
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.arc(hx,hy,hr,0,Math.PI*2);
+    ctx.stroke();
+  }
+}
+
+function drawOrganism(ctx,o){
+  var cw=CANV.cellW,ch=CANV.cellH;
+  var x=o.x*cw;
+  var y=o.y*ch;
+  var r=Math.max(1.5,o.genome.size*Math.max(cw,ch)*0.55);
+  var color=o.genome.toColor();
+  /* Energy visible via alpha/brightness */
+  var energyT=clamp(o.energy/o.maxEnergy(),0,1);
+  var brightness=0.5+energyT*0.5;
+  /* If too small, just draw a pixel */
+  if(r<2){
+    ctx.fillStyle=color;
+    ctx.fillRect(x-r,y-r,r*2,r*2);
+    return;
+  }
+  /* Body */
+  ctx.globalAlpha=brightness;
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fill();
+  /* Outline for predators */
+  if(o.genome.diet>0.6){
+    ctx.strokeStyle='rgba(255,59,128,.9)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+  } else if(o.genome.diet>0.3){
+    ctx.strokeStyle='rgba(255,208,64,.9)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+  }
+  /* Selection outline */
+  if(o===SELECTED_ORG){
+    ctx.globalAlpha=1;
+    ctx.strokeStyle='#ffd040';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(x,y,r+3,0,Math.PI*2);
+    ctx.stroke();
+  }
+  /* Direction indicator */
+  if(o.genome.speed>0.5&&r>3){
+    var dl=Math.hypot(o.dx,o.dy)||1;
+    ctx.strokeStyle='rgba(255,255,255,.4)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+    ctx.lineTo(x+o.dx/dl*r*1.8,y+o.dy/dl*r*1.8);
+    ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ================================================================
+   INTERACTION
+   ================================================================ */
+var MOUSE={x:0,y:0,down:false,downTime:0,button:0};
+var SELECTED_ORG=null;
+var HOVER_ORG=null;
+var PAINT_MODE='plants'; /* plants, herbivore, carnivore, omni, erase */
+
+function canvasCoords(e){
+  var r=CANV.canvas.getBoundingClientRect();
+  return {
+    px:e.clientX-r.left,
+    py:e.clientY-r.top,
+    worldX:(e.clientX-r.left)/CANV.W*WORLD.W,
+    worldY:(e.clientY-r.top)/CANV.H*WORLD.H
+  };
+}
+
+function onDown(e){
+  MOUSE.down=true;
+  MOUSE.downTime=performance.now();
+  MOUSE.button=e.button;
+  var c=canvasCoords(e);
+  MOUSE.x=c.worldX;MOUSE.y=c.worldY;
+  if(e.button===0){
+    if(PAINT_MODE==='plants')paintPlants(c.worldX,c.worldY,4,0.5);
+    else if(PAINT_MODE==='herbivore')spawnOrganismBatch(c.worldX,c.worldY,5,0.1);
+    else if(PAINT_MODE==='carnivore')spawnOrganismBatch(c.worldX,c.worldY,3,0.9);
+    else if(PAINT_MODE==='omni')spawnOrganismBatch(c.worldX,c.worldY,4,0.5);
+    else if(PAINT_MODE==='erase')eraseArea(c.worldX,c.worldY,3);
+  } else {
+    /* Right-click = erase or select */
+    eraseArea(c.worldX,c.worldY,3);
+  }
+}
+function onMove(e){
+  var c=canvasCoords(e);
+  MOUSE.x=c.worldX;MOUSE.y=c.worldY;
+  /* Hover detection */
+  var nearest=null,nd=Infinity;
+  for(var i=0;i<WORLD.organisms.length;i++){
+    var o=WORLD.organisms[i];
+    var d=dist2(o.x,o.y,c.worldX,c.worldY);
+    if(d<nd&&d<4){nd=d;nearest=o;}
+  }
+  HOVER_ORG=nearest;
+  if(MOUSE.down){
+    if(PAINT_MODE==='plants')paintPlants(c.worldX,c.worldY,2,0.3);
+    else if(PAINT_MODE==='herbivore'&&Math.random()<0.3)spawnOrganism(c.worldX,c.worldY,0.1);
+    else if(PAINT_MODE==='carnivore'&&Math.random()<0.2)spawnOrganism(c.worldX,c.worldY,0.9);
+    else if(PAINT_MODE==='omni'&&Math.random()<0.25)spawnOrganism(c.worldX,c.worldY,0.5);
+    else if(PAINT_MODE==='erase')eraseArea(c.worldX,c.worldY,1.5);
+  }
+}
+function onUp(e){
+  MOUSE.down=false;
+  /* Click (short duration) selects organism */
+  var c=canvasCoords(e);
+  if(performance.now()-MOUSE.downTime<200&&!e.target.closest||performance.now()-MOUSE.downTime<200){
+    var nearest=null,nd=Infinity;
+    for(var i=0;i<WORLD.organisms.length;i++){
+      var o=WORLD.organisms[i];
+      var d=dist2(o.x,o.y,c.worldX,c.worldY);
+      if(d<nd&&d<2.5){nd=d;nearest=o;}
+    }
+    if(nearest){
+      SELECTED_ORG=nearest;
+      switchRp('genome',$$('.rp-tab')[1]);
+      renderRightPanel();
+    } else if(SELECTED_ORG){
+      SELECTED_ORG=null;
+      renderRightPanel();
+    }
+  }
+}
+function onTouchStart(e){
+  if(e.touches.length===1){
+    onDown({clientX:e.touches[0].clientX,clientY:e.touches[0].clientY,button:0});
+  }
+  e.preventDefault();
+}
+function onTouchMove(e){
+  if(e.touches.length===1){
+    onMove({clientX:e.touches[0].clientX,clientY:e.touches[0].clientY});
+  }
+  e.preventDefault();
+}
+function onTouchEnd(e){
+  onUp({});
+  e.preventDefault();
+}
+var ZOOM=1;
+function onWheel(e){
+  e.preventDefault();
+  ZOOM=clamp(ZOOM*(e.deltaY<0?1.1:0.9),0.5,4);
+  /* Apply zoom via canvas transform */
+  CANV.canvas.style.transform='scale('+ZOOM+')';
+  CANV.canvas.style.transformOrigin='center center';
+}
+
+/* ================================================================
+   CHARTS
+   ================================================================ */
+function drawPopulationChart(canvas){
+  if(!canvas)return;
+  var wrap=canvas.parentElement;
+  var W=wrap.clientWidth;
+  var H=parseInt(canvas.getAttribute('data-h'))||120;
+  var dpr=window.devicePixelRatio||1;
+  if(canvas.width!==W*dpr||canvas.height!==H*dpr){
+    canvas.width=W*dpr;canvas.height=H*dpr;
+    canvas.style.width=W+'px';canvas.style.height=H+'px';
+  }
+  var ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#05100a';
+  ctx.fillRect(0,0,W,H);
+  var hist=WORLD.history;
+  if(hist.length<2)return;
+  /* Grid */
+  ctx.strokeStyle='rgba(255,255,255,.06)';
+  ctx.lineWidth=1;
+  for(var gi=0;gi<=4;gi++){
+    ctx.beginPath();ctx.moveTo(0,gi*H/4);ctx.lineTo(W,gi*H/4);ctx.stroke();
+  }
+  /* Find max */
+  var maxVal=10;
+  for(var i=0;i<hist.length;i++){
+    if(hist[i].pop>maxVal)maxVal=hist[i].pop;
+    if(hist[i].plants/maxVal<1&&hist[i].plants>maxVal*100)maxVal=hist[i].plants/100;
+  }
+  maxVal=Math.max(maxVal,WORLD.herbivores,WORLD.carnivores,WORLD.omnivores);
+  maxVal=Math.max(maxVal,10);
+  /* Herbivore line */
+  drawLine(ctx,hist,'herb',W,H,maxVal,'#40e0a0');
+  /* Carnivore line */
+  drawLine(ctx,hist,'carn',W,H,maxVal,'#ff3b80');
+  /* Omnivore line */
+  drawLine(ctx,hist,'omni',W,H,maxVal,'#ffd040');
+  /* Total population */
+  drawLine(ctx,hist,'pop',W,H,maxVal,'rgba(64,208,255,.7)',1.5);
+  /* Labels */
+  ctx.fillStyle='#689880';
+  ctx.font='9px monospace';
+  ctx.fillText('max '+maxVal,4,10);
+  ctx.fillText('tick '+WORLD.tick,W-60,10);
+}
+function drawLine(ctx,hist,key,W,H,maxVal,color,width){
+  ctx.strokeStyle=color;
+  ctx.lineWidth=width||1.5;
+  ctx.beginPath();
+  var N=hist.length;
+  for(var i=0;i<N;i++){
+    var x=i/(N-1)*W;
+    var y=H-(hist[i][key]/maxVal)*H;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+
+function drawGenomeHistogram(canvas,key,color){
+  if(!canvas)return;
+  var wrap=canvas.parentElement;
+  var W=wrap.clientWidth;
+  var H=parseInt(canvas.getAttribute('data-h'))||80;
+  var dpr=window.devicePixelRatio||1;
+  if(canvas.width!==W*dpr||canvas.height!==H*dpr){
+    canvas.width=W*dpr;canvas.height=H*dpr;
+    canvas.style.width=W+'px';canvas.style.height=H+'px';
+  }
+  var ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#05100a';
+  ctx.fillRect(0,0,W,H);
+  var trait=null;
+  for(var i=0;i<GENOME_TRAITS.length;i++){
+    if(GENOME_TRAITS[i].key===key){trait=GENOME_TRAITS[i];break;}
+  }
+  if(!trait)return;
+  var bins=20;
+  var hist=new Array(bins).fill(0);
+  var range=trait.max-trait.min;
+  WORLD.organisms.forEach(function(o){
+    var v=o.genome[key];
+    var bi=Math.floor((v-trait.min)/range*bins);
+    bi=clamp(bi,0,bins-1);
+    hist[bi]++;
+  });
+  var maxBin=Math.max.apply(null,hist)||1;
+  for(var i2=0;i2<bins;i2++){
+    var x=i2*W/bins;
+    var h=hist[i2]/maxBin*H;
+    ctx.fillStyle=color;
+    ctx.fillRect(x,H-h,W/bins-1,h);
+  }
+  ctx.fillStyle='#689880';
+  ctx.font='9px monospace';
+  ctx.fillText(fmt(trait.min,1),3,H-2);
+  ctx.fillText(fmt(trait.max,1),W-26,H-2);
+}
+
+function drawDiversityChart(canvas){
+  if(!canvas)return;
+  var wrap=canvas.parentElement;
+  var W=wrap.clientWidth;
+  var H=parseInt(canvas.getAttribute('data-h'))||80;
+  var dpr=window.devicePixelRatio||1;
+  if(canvas.width!==W*dpr||canvas.height!==H*dpr){
+    canvas.width=W*dpr;canvas.height=H*dpr;
+    canvas.style.width=W+'px';canvas.style.height=H+'px';
+  }
+  var ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#05100a';
+  ctx.fillRect(0,0,W,H);
+  /* Pie chart of diet distribution */
+  var herb=WORLD.herbivores,carn=WORLD.carnivores,omni=WORLD.omnivores;
+  var total=herb+carn+omni;
+  if(total===0){
+    ctx.fillStyle='#689880';
+    ctx.font='10px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('no organisms',W/2,H/2);
+    return;
+  }
+  var cx=W*0.25,cy=H/2,radius=Math.min(W*0.2,H*0.4);
+  var angles=[herb/total*Math.PI*2,carn/total*Math.PI*2,omni/total*Math.PI*2];
+  var colors=['#40e0a0','#ff3b80','#ffd040'];
+  var start=-Math.PI/2;
+  for(var i=0;i<3;i++){
+    ctx.fillStyle=colors[i];
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,radius,start,start+angles[i]);
+    ctx.closePath();
+    ctx.fill();
+    start+=angles[i];
+  }
+  /* Legend */
+  ctx.textAlign='left';
+  ctx.font='10px monospace';
+  var lx=W*0.55,ly=H*0.25;
+  ctx.fillStyle='#40e0a0';
+  ctx.fillText('▮ Herb: '+herb,lx,ly);
+  ctx.fillStyle='#ffd040';
+  ctx.fillText('▮ Omni: '+omni,lx,ly+16);
+  ctx.fillStyle='#ff3b80';
+  ctx.fillText('▮ Carn: '+carn,lx,ly+32);
+}
+
+function drawTopPredators(canvas){
+  if(!canvas)return;
+  var wrap=canvas.parentElement;
+  var W=wrap.clientWidth;
+  var H=parseInt(canvas.getAttribute('data-h'))||100;
+  var dpr=window.devicePixelRatio||1;
+  if(canvas.width!==W*dpr||canvas.height!==H*dpr){
+    canvas.width=W*dpr;canvas.height=H*dpr;
+    canvas.style.width=W+'px';canvas.style.height=H+'px';
+  }
+  var ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#05100a';
+  ctx.fillRect(0,0,W,H);
+  /* Find "top" organisms by generation * children */
+  var top=WORLD.organisms.slice().sort(function(a,b){
+    return (b.generation*10+b.children)-(a.generation*10+a.children);
+  }).slice(0,8);
+  ctx.font='10px monospace';
+  top.forEach(function(o,i){
+    var y=14+i*10;
+    if(y>H)return;
+    var score=o.generation*10+o.children;
+    ctx.fillStyle='#3ee88a';
+    ctx.fillText('G'+o.generation+' ×'+o.children,W*0.02,y);
+    ctx.fillStyle=o.genome.toColor();
+    ctx.fillRect(W*0.35,y-8,10,9);
+    ctx.fillStyle='#a8d0b8';
+    ctx.fillText(o.genome.dietClass().slice(0,4),W*0.45,y);
+    ctx.fillText('#'+o.id,W*0.65,y);
+    ctx.fillStyle='#40d0ff';
+    ctx.fillText('e'+Math.round(o.energy),W*0.85,y);
+  });
+}
+</script>
+<script>
+/* ================================================================
+   TABS
+   ================================================================ */
+var TABS=[
+  {key:'world',icon:'🌍',label:'World'},
+  {key:'stats',icon:'📊',label:'Stats'},
+  {key:'about',icon:'ℹ️',label:'About'}
+];
+var ACTIVE_TAB='world';
+
+function buildTabs(){
+  var tabs=$('tbTabs');
+  tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===ACTIVE_TAB?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  ACTIVE_TAB=key;
+  $$('.tb-tab').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-tab')===key)});
+  renderLeftPanel();
+}
+
+function switchRp(name,el2){
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active');});
+  el2.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active');});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+}
+
+/* ================================================================
+   LEFT PANEL
+   ================================================================ */
+function renderLeftPanel(){
+  var body=$('lpBody');
+  if(!body)return;
+  var html='';
+  if(ACTIVE_TAB==='world'||ACTIVE_TAB==='stats'){
+    html+='<div class="sec"><h4>Simulation Speed</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Ticks per frame</span><span id="speedLabel">'+SIM_STATE.ticksPerFrame+'</span></div>';
+    html+='<input type="range" min="1" max="20" value="'+SIM_STATE.ticksPerFrame+'" oninput="SIM_STATE.ticksPerFrame=parseInt(this.value);document.getElementById(\'speedLabel\').textContent=this.value"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>World Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Plant Growth</span><span id="pgrLabel">'+fmt(PLANT_GROW_RATE,3)+'</span></div>';
+    html+='<input type="range" min="0" max="0.1" step="0.005" value="'+PLANT_GROW_RATE+'" oninput="PLANT_GROW_RATE=parseFloat(this.value);document.getElementById(\'pgrLabel\').textContent=Number(this.value).toFixed(3)"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Mutation Rate</span><span id="mutLabel">'+fmt(MUTATION_RATE,2)+'</span></div>';
+    html+='<input type="range" min="0" max="0.5" step="0.01" value="'+MUTATION_RATE+'" oninput="MUTATION_RATE=parseFloat(this.value);document.getElementById(\'mutLabel\').textContent=Number(this.value).toFixed(2)"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Max Population</span><span id="maxLabel">'+MAX_POPULATION+'</span></div>';
+    html+='<input type="range" min="100" max="3000" step="100" value="'+MAX_POPULATION+'" oninput="MAX_POPULATION=parseInt(this.value);document.getElementById(\'maxLabel\').textContent=this.value"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Paint Tool <span class="badge" id="paintBadge">'+PAINT_MODE+'</span></h4>';
+    html+='<div class="btn-row">';
+    [['plants','🌱 Plants'],['herbivore','🟢 Herb'],['omni','🟡 Omni'],['carnivore','🔴 Carn'],['erase','🗑 Erase']].forEach(function(p){
+      html+='<button class="btn sm '+(PAINT_MODE===p[0]?'primary':'')+'" onclick="PAINT_MODE=\''+p[0]+'\';renderLeftPanel()">'+p[1]+'</button>';
+    });
+    html+='</div>';
+    html+='<div class="text-xs text-dim" style="margin-top:6px;line-height:1.5;font-family:var(--mono)">Click or drag on canvas to apply. Right-click to erase.</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Scenarios</h4>';
+    html+='<button class="btn full sm" onclick="scenarioEden()">🌺 Eden (plenty of food)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="scenarioDrought()">🏜️ Drought (no plants grow)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="scenarioArmsRace()">⚔️ Arms Race (predator-prey)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="scenarioIsolation()">🏝️ Isolation (one species)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="scenarioInvasion()">👽 Invasion (small pop)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="scenarioMassExtinction()">☄️ Mass Extinction</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn full primary" onclick="randomizeWorld()">🎲 Randomize</button>';
+    html+='<button class="btn full" style="margin-top:6px" onclick="clearOrganisms()">🗑 Clear Organisms</button>';
+    html+='<button class="btn full" style="margin-top:6px" onclick="clearPlants()">🌱 Clear Plants</button>';
+    html+='<button class="btn full danger" style="margin-top:6px" onclick="resetSim()">↺ Reset Everything</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>History</h4>';
+    html+='<div class="kv">';
+    html+='<div class="row"><span class="k">Total births</span><span class="v">'+WORLD.births+'</span></div>';
+    html+='<div class="row"><span class="k">Total deaths</span><span class="v">'+WORLD.deaths+'</span></div>';
+    html+='<div class="row"><span class="k">Extinctions</span><span class="v">'+WORLD.extinctions+'</span></div>';
+    html+='<div class="row"><span class="k">Max generation</span><span class="v">'+WORLD.maxGeneration+'</span></div>';
+    html+='</div></div>';
+  }
+  else if(ACTIVE_TAB==='stats'){
+    html+='<div class="sec"><h4>Current Stats</h4>';
+    html+='<div class="kv">';
+    html+='<div class="row"><span class="k">Population</span><span class="v">'+WORLD.population+'</span></div>';
+    html+='<div class="row"><span class="k">Herbivores</span><span class="v">'+WORLD.herbivores+'</span></div>';
+    html+='<div class="row"><span class="k">Omnivores</span><span class="v">'+WORLD.omnivores+'</span></div>';
+    html+='<div class="row"><span class="k">Carnivores</span><span class="v">'+WORLD.carnivores+'</span></div>';
+    html+='<div class="row"><span class="k">Plants</span><span class="v">'+Math.round(WORLD.totalPlants)+'</span></div>';
+    html+='<div class="row"><span class="k">Daylight</span><span class="v">'+(WORLD.daylight*100).toFixed(0)+'%</span></div>';
+    html+='<div class="row"><span class="k">Tick</span><span class="v">'+WORLD.tick+'</span></div>';
+    html+='</div></div>';
+    /* Averages */
+    if(WORLD.organisms.length){
+      var avg={};
+      GENOME_TRAITS.forEach(function(t){avg[t.key]=0;});
+      WORLD.organisms.forEach(function(o){
+        GENOME_TRAITS.forEach(function(t){avg[t.key]+=o.genome[t.key];});
+      });
+      GENOME_TRAITS.forEach(function(t){avg[t.key]/=WORLD.organisms.length;});
+      html+='<div class="sec"><h4>Average Genome</h4>';
+      html+='<div class="kv">';
+      GENOME_TRAITS.forEach(function(t){
+        html+='<div class="row"><span class="k">'+t.label+'</span><span class="v">'+fmt(avg[t.key],2)+'</span></div>';
+      });
+      html+='</div></div>';
+    }
+  }
+  else if(ACTIVE_TAB==='about'){
+    html+='<div class="sec"><h4>BIOSPHERE LAB</h4>';
+    html+='<div class="text-xs" style="line-height:1.7;color:var(--tx2);font-family:var(--mono)">An artificial life simulator where organisms with real genomes evolve by natural selection. Every creature has genes controlling its body, behavior, and reproduction. Watch evolution happen in real time.</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>How it Works</h4>';
+    html+='<div class="text-xs" style="line-height:1.7;color:var(--tx2);font-family:var(--mono)">'+
+      '<b class="text-c1">Genome:</b> 9 continuous traits — size, speed, vision, diet, metabolism, aggression, offspring investment, lifespan, camouflage.<br><br>'+
+      '<b class="text-c1">Energy:</b> Each organism spends energy every tick (metabolism × size). Eating plants or prey replenishes it. Reproduce at 70% max energy.<br><br>'+
+      '<b class="text-c1">Selection:</b> Organisms that find food and avoid predators reproduce more. Their genes spread. Traits that fail die out.<br><br>'+
+      '<b class="text-c1">Mutation:</b> Children inherit a mutated copy of parent genes (Gaussian noise). Rate adjustable.<br><br>'+
+      '<b class="text-c1">Day/Night:</b> Plants grow faster during daylight. Predators thrive in darkness.<br><br>'+
+      '<b class="text-c1">Spatial hash:</b> Neighbor queries run in O(1) so thousands of organisms simulate smoothly.'+
+      '</div></div>';
+  }
+  body.innerHTML=html;
+}
+
+/* ================================================================
+   RIGHT PANEL
+   ================================================================ */
+function renderRightPanel(){
+  renderStatsPane();
+  renderGenomePane();
+  renderFoodwebPane();
+}
+function renderStatsPane(){
+  var p=$('rpStats');
+  if(!p)return;
+  var html='';
+  html+='<div class="chart-wrap"><div class="chart-label"><span>Population over time</span><span id="popLegend"></span></div>';
+  html+='<canvas class="chart-canvas" id="popChart" data-h="120"></canvas></div>';
+  html+='<div class="chart-wrap"><div class="chart-label"><span>Diet distribution</span></div>';
+  html+='<canvas class="chart-canvas" id="dietChart" data-h="80"></canvas></div>';
+  html+='<div class="chart-wrap"><div class="chart-label"><span>Top bloodlines</span></div>';
+  html+='<canvas class="chart-canvas" id="topChart" data-h="100"></canvas></div>';
+  p.innerHTML=html;
+  /* Initial draw */
+  setTimeout(function(){
+    drawPopulationChart($('popChart'));
+    drawDiversityChart($('dietChart'));
+    drawTopPredators($('topChart'));
+  },50);
+}
+function renderGenomePane(){
+  var p=$('rpGenome');
+  if(!p)return;
+  var html='';
+  if(SELECTED_ORG){
+    var o=SELECTED_ORG;
+    if(WORLD.organisms.indexOf(o)<0){
+      SELECTED_ORG=null;
+    } else {
+      html+='<div class="org-card">';
+      html+='<div class="oc-head"><span style="color:'+o.genome.toColor()+'">● Organism #'+o.id+'</span><span class="text-dim">G'+o.generation+'</span></div>';
+      html+='<div class="kv" style="font-size:.62rem">';
+      html+='<div class="row"><span class="k">Energy</span><span class="v">'+Math.round(o.energy)+' / '+Math.round(o.maxEnergy())+'</span></div>';
+      html+='<div class="row"><span class="k">Age</span><span class="v">'+o.age+' / '+Math.round(o.genome.lifespan)+'</span></div>';
+      html+='<div class="row"><span class="k">Children</span><span class="v">'+o.children+'</span></div>';
+      html+='<div class="row"><span class="k">Diet class</span><span class="v">'+o.genome.dietClass()+'</span></div>';
+      html+='<div class="row"><span class="k">State</span><span class="v">'+o.state+'</span></div>';
+      html+='</div></div>';
+      html+='<div class="sec"><h4>Genome</h4>';
+      GENOME_TRAITS.forEach(function(t){
+        var v=o.genome[t.key];
+        var pct=(v-t.min)/(t.max-t.min)*100;
+        html+='<div class="genome-bar">'+
+          '<span class="gb-label">'+t.label+'</span>'+
+          '<div class="gb-track"><div class="gb-fill" style="width:'+pct+'%;background:'+t.color+'"></div></div>'+
+          '<span class="gb-val">'+fmt(v,2)+'</span>'+
+          '</div>';
+      });
+      html+='</div>';
+      html+='<div class="sec"><h4>Actions</h4>';
+      html+='<button class="btn full" onclick="cloneSelected()">🧬 Clone</button>';
+      html+='<button class="btn full" style="margin-top:6px" onclick="followSelected()">👁️ Follow</button>';
+      html+='<button class="btn full danger" style="margin-top:6px" onclick="killSelected()">💀 Kill</button>';
+      html+='</div>';
+    }
+  } else {
+    html+='<div class="text-xs text-dim" style="text-align:center;padding:30px 10px;font-family:var(--mono);line-height:1.7">'+
+      'Click any organism<br>to inspect its genome<br>and follow its lineage.'+
+      '</div>';
+  }
+  /* Histograms */
+  html+='<div class="sec"><h4>Trait Distributions</h4>';
+  html+='<div class="chart-wrap"><div class="chart-label"><span>Size</span></div>';
+  html+='<canvas class="chart-canvas" id="histSize" data-h="60"></canvas></div>';
+  html+='<div class="chart-wrap"><div class="chart-label"><span>Speed</span></div>';
+  html+='<canvas class="chart-canvas" id="histSpeed" data-h="60"></canvas></div>';
+  html+='<div class="chart-wrap"><div class="chart-label"><span>Vision</span></div>';
+  html+='<canvas class="chart-canvas" id="histVision" data-h="60"></canvas></div>';
+  html+='<div class="chart-wrap"><div class="chart-label"><span>Diet</span></div>';
+  html+='<canvas class="chart-canvas" id="histDiet" data-h="60"></canvas></div>';
+  p.innerHTML=html;
+  setTimeout(function(){
+    drawGenomeHistogram($('histSize'),'size','#40d0ff');
+    drawGenomeHistogram($('histSpeed'),'speed','#40e0d0');
+    drawGenomeHistogram($('histVision'),'vision','#b060ff');
+    drawGenomeHistogram($('histDiet'),'diet','#ffd040');
+  },50);
+}
+function renderFoodwebPane(){
+  var p=$('rpFoodweb');
+  if(!p)return;
+  var html='';
+  html+='<div class="sec"><h4>Food Web</h4>';
+  html+='<div class="text-xs text-dim" style="margin-bottom:8px;font-family:var(--mono)">Real-time trophic relationships.</div>';
+  html+='<canvas class="chart-canvas" id="foodwebChart" data-h="240" style="width:100%;height:240px"></canvas>';
+  html+='</div>';
+  html+='<div class="sec"><h4>Population Dynamics</h4>';
+  html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+    'Lotka-Volterra style oscillations between predators and prey emerge naturally from agent behavior.'+
+    '</div></div>';
+  p.innerHTML=html;
+  setTimeout(function(){drawFoodWeb($('foodwebChart'));},50);
+}
+function drawFoodWeb(canvas){
+  if(!canvas)return;
+  var wrap=canvas.parentElement;
+  var W=wrap.clientWidth;
+  var H=240;
+  var dpr=window.devicePixelRatio||1;
+  if(canvas.width!==W*dpr||canvas.height!==H*dpr){
+    canvas.width=W*dpr;canvas.height=H*dpr;
+    canvas.style.width=W+'px';canvas.style.height=H+'px';
+  }
+  var ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#05100a';
+  ctx.fillRect(0,0,W,H);
+  /* Draw as circles with links */
+  var herbN=Math.max(1,WORLD.herbivores);
+  var carnN=Math.max(1,WORLD.carnivores);
+  var omniN=Math.max(1,WORLD.omnivores);
+  var plantsN=Math.max(1,Math.round(WORLD.totalPlants/10));
+  var nodes=[
+    {x:W*0.5,y:H*0.15,r:Math.min(30,15+Math.log(plantsN+1)*4),label:'Plants',color:'#40e0a0'},
+    {x:W*0.2,y:H*0.65,r:Math.min(30,10+Math.log(herbN+1)*4),label:'Herbivores',color:'#40e0a0'},
+    {x:W*0.8,y:H*0.65,r:Math.min(30,10+Math.log(carnN+1)*4),label:'Carnivores',color:'#ff3b80'},
+    {x:W*0.5,y:H*0.85,r:Math.min(30,10+Math.log(omniN+1)*4),label:'Omnivores',color:'#ffd040'}
+  ];
+  /* Edges */
+  function edge(a,b,color){
+    ctx.strokeStyle=color;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(nodes[a].x,nodes[a].y);
+    ctx.lineTo(nodes[b].x,nodes[b].y);
+    ctx.stroke();
+    /* Arrowhead */
+    var angle=Math.atan2(nodes[b].y-nodes[a].y,nodes[b].x-nodes[a].x);
+    var mx=(nodes[a].x+nodes[b].x)/2;
+    var my=(nodes[a].y+nodes[b].y)/2;
+    ctx.beginPath();
+    ctx.moveTo(mx,my);
+    ctx.lineTo(mx-8*Math.cos(angle-0.5),my-8*Math.sin(angle-0.5));
+    ctx.lineTo(mx-8*Math.cos(angle+0.5),my-8*Math.sin(angle+0.5));
+    ctx.closePath();
+    ctx.fillStyle=color;
+    ctx.fill();
+  }
+  edge(0,1,'rgba(62,232,138,.6)'); /* plants -> herbivores */
+  edge(0,3,'rgba(255,208,64,.5)'); /* plants -> omnivores */
+  edge(1,2,'rgba(255,59,128,.6)'); /* herbivores -> carnivores */
+  edge(3,2,'rgba(255,208,64,.5)'); /* omnivores -> carnivores */
+  edge(2,2,'rgba(255,59,128,.3)'); /* carnivores -> carnivores (cannibalism) */
+  edge(1,1,'rgba(62,232,138,.3)'); /* herbivores -> herbivores */
+  /* Nodes */
+  nodes.forEach(function(n){
+    ctx.beginPath();
+    ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+    ctx.fillStyle=n.color;
+    ctx.globalAlpha=0.3;
+    ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.strokeStyle=n.color;
+    ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.fillStyle='#e4f5ec';
+    ctx.font='bold 10px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(n.label,n.x,n.y-n.r-6);
+    ctx.fillStyle=n.color;
+    ctx.font='bold 11px monospace';
+    var count=n.label==='Plants'?Math.round(WORLD.totalPlants):
+      n.label==='Herbivores'?WORLD.herbivores:
+      n.label==='Carnivores'?WORLD.carnivores:WORLD.omnivores;
+    ctx.fillText(count,n.x,n.y+4);
+  });
+}
+
+/* ================================================================
+   ACTIONS ON SELECTED ORGANISM
+   ================================================================ */
+function cloneSelected(){
+  if(!SELECTED_ORG)return;
+  var o=SELECTED_ORG;
+  var g=o.genome.clone();
+  var clone=new Organism(o.x+rndF(-1,1),o.y+rndF(-1,1),g,o.generation);
+  clone.energy=o.maxEnergy()*0.8;
+  WORLD.organisms.push(clone);
+  toast('Cloned organism #'+o.id,'success');
+}
+function followSelected(){
+  if(!SELECTED_ORG)return;
+  toast('Following #'+SELECTED_ORG.id,'info');
+}
+function killSelected(){
+  if(!SELECTED_ORG)return;
+  SELECTED_ORG.alive=false;
+  var idx=WORLD.organisms.indexOf(SELECTED_ORG);
+  if(idx>=0)WORLD.organisms.splice(idx,1);
+  toast('Organism #'+SELECTED_ORG.id+' removed','warn');
+  SELECTED_ORG=null;
+  renderRightPanel();
+}
+</script>
+<script>
+/* ================================================================
+   SIM STATE
+   ================================================================ */
+var SIM_STATE={
+  running:false,
+  ticksPerFrame:1,
+  fastMode:false,
+  lastFrameTime:performance.now(),
+  fps:60,
+  frameAccum:0,
+  frameCount:0,
+  lastRender:0
+};
+
+function toggleSim(){
+  SIM_STATE.running=!SIM_STATE.running;
+  $('btnPlay').textContent=SIM_STATE.running?'⏸':'▶';
+  $('btnPlay').classList.toggle('active',SIM_STATE.running);
+  toast(SIM_STATE.running?'Running':'Paused','info',900);
+}
+function toggleFast(){
+  SIM_STATE.fastMode=!SIM_STATE.fastMode;
+  $('btnFast').classList.toggle('active',SIM_STATE.fastMode);
+  toast(SIM_STATE.fastMode?'Fast mode ON':'Fast mode OFF','info',900);
+}
+function stepSim(n){
+  for(var i=0;i<(n||1);i++)simTick();
+  render();
+  updateStatsDisplay();
+}
+function resetSim(){
+  SIM_STATE.running=false;
+  $('btnPlay').textContent='▶';
+  $('btnPlay').classList.remove('active');
+  initWorld();
+  populateInitial(150);
+  SELECTED_ORG=null;
+  updateStatsDisplay();
+  render();
+  renderRightPanel();
+  toast('Simulation reset','success');
+}
+function randomizeWorld(){
+  clearOrganisms();
+  clearPlants();
+  for(var i=0;i<WORLD.plants.length;i++){
+    if(Math.random()<0.5)WORLD.plants[i]=rndF(0.2,1.0);
+  }
+  populateInitial(200);
+  toast('World randomized','success');
+}
+function clearOrganisms(){
+  WORLD.organisms=[];
+  WORLD.population=0;
+  WORLD.herbivores=0;WORLD.carnivores=0;WORLD.omnivores=0;
+  SELECTED_ORG=null;
+  toast('Organisms cleared','info');
+}
+function clearPlants(){
+  WORLD.plants.fill(0);
+  WORLD.totalPlants=0;
+  toast('Plants cleared','info');
+}
+
+/* ================================================================
+   SCENARIOS
+   ================================================================ */
+function scenarioEden(){
+  initWorld();
+  for(var i=0;i<WORLD.plants.length;i++)WORLD.plants[i]=PLANT_MAX;
+  populateInitial(100);
+  PLANT_GROW_RATE=0.05;
+  renderLeftPanel();
+  toast('🌺 Eden: lush world, watch populations explode','success',3500);
+}
+function scenarioDrought(){
+  initWorld();
+  populateInitial(200);
+  PLANT_GROW_RATE=0;
+  renderLeftPanel();
+  toast('🏜️ Drought: no new plants. Watch the collapse.','warn',3500);
+}
+function scenarioArmsRace(){
+  initWorld();
+  for(var i=0;i<WORLD.plants.length;i++)if(Math.random()<0.7)WORLD.plants[i]=rndF(0.5,1);
+  /* Half herbivores, half carnivores */
+  for(var j=0;j<80;j++){
+    spawnOrganism(rndF(3,WORLD.W-3),rndF(3,WORLD.H-3),0.1);
+  }
+  for(var k=0;k<40;k++){
+    spawnOrganism(rndF(3,WORLD.W-3),rndF(3,WORLD.H-3),0.9);
+  }
+  toast('⚔️ Arms race: predators vs prey','success',3500);
+}
+function scenarioIsolation(){
+  initWorld();
+  for(var i=0;i<WORLD.plants.length;i++)if(Math.random()<0.5)WORLD.plants[i]=rndF(0.3,1);
+  /* Only herbivores */
+  for(var j=0;j<30;j++)spawnOrganism(rndF(3,WORLD.W-3),rndF(3,WORLD.H-3),0.05);
+  toast('🏝️ Isolation: herbivores only','success',3500);
+}
+function scenarioInvasion(){
+  initWorld();
+  for(var i=0;i<WORLD.plants.length;i++)if(Math.random()<0.6)WORLD.plants[i]=rndF(0.5,1);
+  /* Small founder population */
+  for(var j=0;j<8;j++)spawnOrganism(rndF(3,WORLD.W-3),rndF(3,WORLD.H-3),0.2);
+  toast('👽 Invasion: 8 founders — will they survive?','success',3500);
+}
+function scenarioMassExtinction(){
+  /* Kill 90% of organisms */
+  var kill=Math.floor(WORLD.organisms.length*0.9);
+  for(var i=0;i<kill;i++){
+    var idx=rnd(0,WORLD.organisms.length-1);
+    WORLD.organisms[idx].alive=false;
+    WORLD.organisms.splice(idx,1);
+  }
+  /* Kill most plants too */
+  for(var j=0;j<WORLD.plants.length;j++)WORLD.plants[j]*=0.1;
+  toast('☄️ Mass extinction: 90% of life gone','warn',4500);
+}
+
+/* ================================================================
+   SAVE / LOAD
+   ================================================================ */
+function saveSim(){
+  try{
+    var data={
+      version:'1.0',
+      world:{
+        W:WORLD.W,H:WORLD.H,tick:WORLD.tick,
+        season:WORLD.season,seasonLength:WORLD.seasonLength,
+        daylight:WORLD.daylight,
+        maxGeneration:WORLD.maxGeneration,
+        extinctions:WORLD.extinctions,
+        births:WORLD.births,deaths:WORLD.deaths
+      },
+      plants:Array.from(WORLD.plants).map(function(v){return Math.round(v*100)/100;}),
+      organisms:WORLD.organisms.map(function(o){
+        var genes={};
+        GENOME_TRAITS.forEach(function(t){genes[t.key]=o.genome[t.key];});
+        return {
+          x:Math.round(o.x*100)/100,
+          y:Math.round(o.y*100)/100,
+          e:Math.round(o.energy),
+          age:o.age,
+          gen:o.generation,
+          genes:genes
+        };
+      })
+    };
+    var str=JSON.stringify(data);
+    if(str.length>4*1024*1024){
+      toast('Too much data to save (>4MB). Reduce population.','warn',4000);
+      return;
+    }
+    localStorage.setItem('biosphere-save',str);
+    toast('Saved '+WORLD.organisms.length+' organisms','success');
+  }catch(e){
+    toast('Save failed: '+e.message,'error',4000);
+  }
+}
+function loadSim(){
+  try{
+    var raw=localStorage.getItem('biosphere-save');
+    if(!raw){toast('No save found','warn');return}
+    var data=JSON.parse(raw);
+    initWorld();
+    WORLD.tick=data.world.tick||0;
+    WORLD.season=data.world.season||0;
+    WORLD.daylight=data.world.daylight||1;
+    WORLD.maxGeneration=data.world.maxGeneration||0;
+    WORLD.extinctions=data.world.extinctions||0;
+    WORLD.births=data.world.births||0;
+    WORLD.deaths=data.world.deaths||0;
+    /* Plants */
+    if(data.plants){
+      for(var i=0;i<Math.min(data.plants.length,WORLD.plants.length);i++){
+        WORLD.plants[i]=data.plants[i];
+      }
+    }
+    /* Organisms */
+    WORLD.organisms=[];
+    if(data.organisms){
+      data.organisms.forEach(function(od){
+        var g=new Genome(od.genes);
+        var o=new Organism(od.x,od.y,g,od.gen||0);
+        o.energy=od.e||100;
+        o.age=od.age||0;
+        WORLD.organisms.push(o);
+      });
+    }
+    WORLD.population=WORLD.organisms.length;
+    SELECTED_ORG=null;
+    updateStatsDisplay();
+    render();
+    renderRightPanel();
+    toast('Loaded '+WORLD.organisms.length+' organisms','success');
+  }catch(e){
+    toast('Load failed: '+e.message,'error',4000);
+  }
+}
+
+/* ================================================================
+   THEME / PANELS / HELP
+   ================================================================ */
+var THEMES=['biosphere','night','desert','paper'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  document.documentElement.setAttribute('data-theme',THEMES[(i+1)%THEMES.length]);
+  toast('Theme: '+THEMES[(i+1)%THEMES.length],'success');
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+
+function showHelp(){
+  openModal('❓ BIOSPHERE LAB — Help',
+    '<div class="sec"><h4>🌍 About</h4><div class="text-xs" style="line-height:1.75;color:var(--tx2);font-family:var(--mono)">An artificial life simulator where creatures with real genomes evolve by natural selection. Every organism has 9 continuous genetic traits — size, speed, vision, diet, metabolism, aggression, offspring investment, lifespan, and camouflage. Watch evolution happen in real time as they eat, hunt, flee, and reproduce.</div></div>'+
+    '<div class="sec"><h4>🖱️ Interaction</h4><div class="text-xs" style="line-height:1.9;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">Click</b> on organism — inspect its genome<br>'+
+    '<b class="text-c1">Drag</b> — paint with current tool<br>'+
+    '<b class="text-c1">Right-click</b> — erase area<br>'+
+    '<b class="text-c1">Scroll</b> — zoom in/out<br>'+
+    '<b class="text-c1">Paint tools</b> — plants, herbivores, carnivores, omnivores, erase'+
+    '</div></div>'+
+    '<div class="sec"><h4>🧬 The Genome</h4><div class="text-xs" style="line-height:1.8;color:var(--tx2);font-family:var(--mono)">'+
+    '<b>Size</b> — bigger holds more energy but costs more<br>'+
+    '<b>Speed</b> — faster movement, higher metabolic cost<br>'+
+    '<b>Vision</b> — detects prey/predators at longer range<br>'+
+    '<b>Diet</b> — 0 = herbivore, 1 = carnivore<br>'+
+    '<b>Metabolism</b> — energy cost per tick<br>'+
+    '<b>Aggression</b> — attack success rate<br>'+
+    '<b>Offspring</b> — investment per child<br>'+
+    '<b>Lifespan</b> — max age in ticks<br>'+
+    '<b>Camouflage</b> — lowers predator detection chance'+
+    '</div></div>'+
+    '<div class="sec"><h4>🎬 Scenarios</h4><div class="text-xs" style="line-height:1.9;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">🌺 Eden</b> — lush world, watch overpopulation<br>'+
+    '<b class="text-c1">🏜️ Drought</b> — no new plants, total collapse<br>'+
+    '<b class="text-c1">⚔️ Arms Race</b> — predators vs prey<br>'+
+    '<b class="text-c1">🏝️ Isolation</b> — one species, no predators<br>'+
+    '<b class="text-c1">👽 Invasion</b> — 8 founders, will they survive?<br>'+
+    '<b class="text-c1">☄️ Extinction</b> — kill 90% and watch recovery'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">Space</b> — Play/Pause<br>'+
+    '<b class="text-c1">S</b> — Step one tick<br>'+
+    '<b class="text-c1">R</b> — Reset<br>'+
+    '<b class="text-c1">F</b> — Fast mode<br>'+
+    '<b class="text-c1">T</b> — Cycle theme<br>'+
+    '<b class="text-c1">?</b> — This help'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',
+    {size:'lg'});
+}
+
+/* Keyboard */
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'){e.preventDefault();toggleSim();}
+  else if(e.key==='s'||e.key==='S'){stepSim(1);}
+  else if(e.key==='r'||e.key==='R'){resetSim();}
+  else if(e.key==='f'||e.key==='F'){toggleFast();}
+  else if(e.key==='t'||e.key==='T'){toggleTheme();}
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/')){showHelp();}
+  else if(e.key==='Escape')closeModal();
+});
+
+/* ================================================================
+   STATS UPDATE
+   ================================================================ */
+var _lastStatsUpdate=0;
+function updateStatsDisplay(force){
+  var now=performance.now();
+  if(!force&&now-_lastStatsUpdate<100)return;
+  _lastStatsUpdate=now;
+  $('tbPop').textContent=WORLD.population;
+  $('tbGen').textContent=WORLD.maxGeneration;
+  $('tbTick').textContent=WORLD.tick;
+  $('sbHerb').textContent=WORLD.herbivores;
+  $('sbCarn').textContent=WORLD.carnivores;
+  $('sbOmni').textContent=WORLD.omnivores;
+  $('sbPlants').textContent=Math.round(WORLD.totalPlants);
+  $('sbExt').textContent=WORLD.extinctions;
+  $('sbSpeed').textContent=(SIM_STATE.fastMode?SIM_STATE.ticksPerFrame*3:SIM_STATE.ticksPerFrame)+'×';
+  /* Overlay stats */
+  var st='<div>Pop <b style="color:var(--c1)">'+WORLD.population+'</b></div>';
+  st+='<div>Herb '+WORLD.herbivores+' · Carn '+WORLD.carnivores+' · Omni '+WORLD.omnivores+'</div>';
+  st+='<div>Plants '+Math.round(WORLD.totalPlants)+'</div>';
+  st+='<div>Daylight '+(WORLD.daylight*100).toFixed(0)+'%</div>';
+  st+='<div>Gen '+WORLD.maxGeneration+' · Tick '+WORLD.tick+'</div>';
+  $('coStats').innerHTML=st;
+  var badge='';
+  if(SIM_STATE.running)badge='<span style="color:var(--c1)">● RUNNING</span>';
+  else badge='<span style="color:var(--c3)">● PAUSED</span>';
+  badge+=' <span style="color:var(--tx3)">'+SIM_STATE.ticksPerFrame+'×</span>';
+  $('coBadge').innerHTML=badge;
+}
+
+/* ================================================================
+   MAIN LOOP
+   ================================================================ */
+function mainLoop(now){
+  var dt=Math.min((now-SIM_STATE.lastFrameTime)/1000,0.1);
+  SIM_STATE.lastFrameTime=now;
+  SIM_STATE.frameAccum+=dt;
+  SIM_STATE.frameCount++;
+  if(SIM_STATE.frameAccum>=0.5){
+    SIM_STATE.fps=SIM_STATE.frameCount/SIM_STATE.frameAccum;
+    SIM_STATE.frameAccum=0;SIM_STATE.frameCount=0;
+  }
+  /* Simulate */
+  if(SIM_STATE.running){
+    var ticks=SIM_STATE.ticksPerFrame;
+    if(SIM_STATE.fastMode)ticks*=3;
+    for(var i=0;i<ticks;i++)simTick();
+  }
+  /* Render — limit to 30fps for chart refresh */
+  render();
+  updateStatsDisplay();
+  /* Refresh charts every ~500ms */
+  if(now-SIM_STATE.lastRender>500){
+    SIM_STATE.lastRender=now;
+    if($('popChart'))drawPopulationChart($('popChart'));
+    if($('dietChart'))drawDiversityChart($('dietChart'));
+    if($('topChart'))drawTopPredators($('topChart'));
+    if($('histSize')){
+      drawGenomeHistogram($('histSize'),'size','#40d0ff');
+      drawGenomeHistogram($('histSpeed'),'speed','#40e0d0');
+      drawGenomeHistogram($('histVision'),'vision','#b060ff');
+      drawGenomeHistogram($('histDiet'),'diet','#ffd040');
+    }
+    if($('foodwebChart'))drawFoodWeb($('foodwebChart'));
+    /* Update genome pane for selected */
+    if(SELECTED_ORG&&$('rpGenome')&&$('rpGenome').classList.contains('active')){
+      renderGenomePane();
+    }
+  }
+  requestAnimationFrame(mainLoop);
+}
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+var BOOT_STEPS=[
+  'Initializing world grid...',
+  'Allocating plant field ('+(WORLD.W*WORLD.H)+' cells)...',
+  'Creating '+GENOME_TRAITS.length+'-gene genome schema...',
+  'Warming up spatial hash...',
+  'Loading natural selection engine...',
+  'Preparing 6 scenarios...',
+  'Starting food web tracker...',
+  'Ready.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  var iv=setInterval(function(){
+    pct+=rnd(6,14);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('BIOSPHERE LAB ready · Press ? for help','success',3500);
+      },400);
+    }
+  },150);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  initWorld();
+  populateInitial(150);
+  initCanvas();
+  buildTabs();
+  renderLeftPanel();
+  renderRightPanel();
+  updateStatsDisplay(true);
+  render();
+  requestAnimationFrame(mainLoop);
+  bootSequence();
+});
+
+console.log('%c BIOSPHERE LAB ','background:linear-gradient(90deg,#3ee88a,#40d0ff);color:#0a1810;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cEcosystem & Evolution Simulator','color:#3ee88a;font-weight:600');
+console.log('%cGenetic algorithms · Natural selection · Food webs · Population dynamics','color:#40d0ff');
+console.log('%cPress SPACE to play, ? for help','color:#a8d0b8');
+</script>
+</body></html>

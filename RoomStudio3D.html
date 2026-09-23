@@ -1,0 +1,2804 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=1">
+<title>Room Studio 3D — Interior First-Person</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-system,sans-serif;background:#0a0a14;color:#e8e8ff}
+canvas{display:block;position:absolute;inset:0;touch-action:none}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+button{cursor:pointer}
+input,select,textarea{-webkit-user-select:text;user-select:text}
+
+:root{
+  --bg:#0a0a14;--pnl:rgba(15,15,30,.94);--pnl2:rgba(25,25,45,.95);
+  --bd:rgba(120,120,200,.25);--bd2:rgba(120,120,200,.5);
+  --tx:#e8e8ff;--tx2:#a0a0c8;--tx3:#606080;
+  --c1:#7a5cff;--c2:#00d4ff;--c3:#ff4db8;--c4:#ffb020;--c5:#00ffb0;
+  --er:#ff5a5a;--ok:#00ffb0;
+  --mono:'JetBrains Mono',Consolas,monospace;
+}
+
+#toolbar{position:absolute;top:0;left:0;right:0;height:52px;z-index:20;
+  background:linear-gradient(180deg,rgba(15,15,30,.96),rgba(15,15,30,.88));
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;padding:0 10px;gap:6px;
+  overflow-x:auto;overflow-y:hidden;white-space:nowrap}
+#toolbar::-webkit-scrollbar{display:none}
+.tb-logo{display:flex;align-items:center;gap:8px;padding-right:12px;
+  border-right:1px solid var(--bd);flex-shrink:0}
+.tb-logo .ico{width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,#7a5cff,#00d4ff);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 4px 16px rgba(122,92,255,.5)}
+.tb-logo .nm{font-weight:800;font-size:.82rem;letter-spacing:1.5px;
+  background:linear-gradient(135deg,#7a5cff,#00d4ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text}
+.tb-logo .sub{font-size:.52rem;color:var(--tx3);letter-spacing:1px;margin-top:1px}
+.tbtn{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;
+  border-radius:7px;border:1px solid var(--bd);
+  background:rgba(25,25,45,.7);color:var(--tx);font-weight:600;
+  font-size:.72rem;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.tbtn:hover{background:rgba(40,40,70,.9);border-color:var(--bd2);transform:translateY(-1px)}
+.tbtn.on{background:linear-gradient(135deg,#7a5cff,#00d4ff);color:#000;border-color:transparent}
+.tbtn.er{background:rgba(255,90,90,.15);border-color:rgba(255,90,90,.5);color:#ff9a9a}
+.tbtn.ok{background:rgba(0,255,176,.15);border-color:rgba(0,255,176,.5);color:#a0ffd0}
+.tbtn.wr{background:rgba(255,176,32,.15);border-color:rgba(255,176,32,.5);color:#ffd080}
+.sep{width:1px;height:26px;background:var(--bd);margin:0 4px;flex-shrink:0}
+
+#sidebar{position:absolute;top:52px;bottom:0;left:0;width:280px;z-index:15;
+  background:var(--pnl);backdrop-filter:blur(14px);
+  border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;transition:transform .25s}
+#sidebar.hidden{transform:translateX(-100%)}
+.sb-tabs{display:flex;border-bottom:1px solid var(--bd);
+  overflow-x:auto;flex-shrink:0;background:rgba(0,0,0,.25)}
+.sb-tabs::-webkit-scrollbar{display:none}
+.sb-tab{padding:9px 12px;font-size:.62rem;font-weight:700;
+  color:var(--tx2);border-bottom:2px solid transparent;
+  white-space:nowrap;cursor:pointer;letter-spacing:.5px}
+.sb-tab.on{color:#fff;border-bottom-color:var(--c1);
+  background:linear-gradient(180deg,transparent,rgba(122,92,255,.15))}
+.sb-body{flex:1;overflow-y:auto;padding:10px}
+.sb-body::-webkit-scrollbar{width:6px}
+.sb-body::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.card{padding:8px 5px;background:rgba(30,30,55,.75);
+  border:1px solid var(--bd);border-radius:7px;
+  text-align:center;cursor:pointer;transition:all .15s;
+  font-size:.6rem;line-height:1.25;overflow:hidden}
+.card:hover{background:rgba(50,50,90,.9);border-color:var(--c1);
+  transform:translateY(-2px);box-shadow:0 6px 18px rgba(122,92,255,.35)}
+.card .sw{width:18px;height:18px;margin:0 auto 4px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.25);
+  box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.card .nm{font-weight:600;font-size:.56rem;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff}
+.card .pr{font-size:.5rem;color:var(--tx3);margin-top:2px}
+
+#props{position:absolute;top:52px;right:0;width:270px;bottom:0;z-index:15;
+  background:var(--pnl);backdrop-filter:blur(14px);
+  border-left:1px solid var(--bd);
+  display:flex;flex-direction:column;transition:transform .25s;
+  overflow-y:auto;padding:12px}
+#props.hidden{transform:translateX(100%)}
+#props::-webkit-scrollbar{width:6px}
+#props::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+.props-title{font-size:.7rem;font-weight:800;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--tx2);
+  padding-bottom:8px;border-bottom:1px solid var(--bd);margin-bottom:12px}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:.58rem;font-weight:700;
+  color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;
+  margin-bottom:4px}
+.field input,.field select{width:100%;padding:7px 9px;
+  background:rgba(0,0,0,.35);border:1px solid var(--bd);
+  border-radius:6px;color:var(--tx);font-size:.72rem;transition:all .15s}
+.field input:focus,.field select:focus{border-color:var(--c1);
+  box-shadow:0 0 0 2px rgba(122,92,255,.25)}
+.field input[type=color]{padding:2px;height:36px;cursor:pointer}
+.field input[type=range]{padding:0;height:5px;-webkit-appearance:none;
+  background:var(--bd);border-radius:3px}
+.field input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
+  width:16px;height:16px;border-radius:50%;background:var(--c1);
+  cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.empty{color:var(--tx3);font-style:italic;text-align:center;
+  padding:24px 8px;font-size:.68rem;line-height:1.6}
+
+#hud{position:absolute;inset:0;pointer-events:none;z-index:10}
+#crosshair{position:absolute;top:50%;left:50%;
+  width:22px;height:22px;transform:translate(-50%,-50%);
+  pointer-events:none;opacity:.85}
+#crosshair::before,#crosshair::after{content:'';position:absolute;
+  background:rgba(255,255,255,.85);box-shadow:0 0 4px #000}
+#crosshair::before{left:50%;top:0;width:2px;height:100%;
+  transform:translateX(-50%)}
+#crosshair::after{top:50%;left:0;height:2px;width:100%;
+  transform:translateY(-50%)}
+#crosshair.on::before,#crosshair.on::after{background:#00ffb0}
+
+.joystick{position:absolute;bottom:24px;width:140px;height:140px;
+  border-radius:50%;pointer-events:auto;
+  background:radial-gradient(circle,rgba(30,30,60,.55) 0%,
+    rgba(20,20,40,.75) 70%,rgba(10,10,20,.85) 100%);
+  border:2px solid rgba(122,92,255,.5);
+  box-shadow:0 0 30px rgba(122,92,255,.3),
+    inset 0 0 30px rgba(0,0,0,.5);
+  touch-action:none}
+#joyL{left:20px}
+#joyR{right:20px}
+.joystick::after{content:'';position:absolute;inset:16px;
+  border-radius:50%;border:1px dashed rgba(255,255,255,.12)}
+.stick{position:absolute;top:50%;left:50%;
+  width:56px;height:56px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,
+    rgba(200,180,255,.95),rgba(122,92,255,.75) 60%,
+    rgba(50,30,120,.9) 100%);
+  box-shadow:0 6px 20px rgba(122,92,255,.6),
+    inset 0 -3px 8px rgba(0,0,0,.3);
+  transform:translate(-50%,-50%);pointer-events:none;
+  transition:transform .05s}
+.joystick .lbl{position:absolute;bottom:-22px;left:50%;
+  transform:translateX(-50%);font-size:.55rem;color:var(--tx3);
+  letter-spacing:1.5px;font-weight:700;white-space:nowrap}
+
+#stats{position:absolute;top:64px;left:50%;transform:translateX(-50%);
+  padding:5px 12px;background:rgba(10,10,25,.88);
+  border:1px solid var(--bd);border-radius:100px;
+  font-family:var(--mono);font-size:.62rem;color:var(--tx2);
+  display:flex;gap:14px;pointer-events:auto;
+  backdrop-filter:blur(10px);white-space:nowrap}
+#stats b{color:#00ffb0;font-weight:700}
+
+#toast{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);
+  padding:9px 18px;background:rgba(15,15,30,.96);
+  border:1px solid var(--bd);border-left:3px solid var(--c1);
+  border-radius:7px;font-size:.72rem;font-weight:600;
+  box-shadow:0 8px 30px rgba(0,0,0,.7);opacity:0;
+  transition:opacity .25s;pointer-events:none;z-index:30;max-width:80%}
+#toast.on{opacity:1}
+
+#help{position:absolute;top:64px;right:290px;padding:8px 12px;
+  background:rgba(10,10,25,.85);border:1px solid var(--bd);
+  border-radius:7px;font-size:.6rem;color:var(--tx2);
+  line-height:1.7;pointer-events:none;max-width:200px}
+#help b{color:#00ffb0}
+#help kbd{background:rgba(255,255,255,.1);padding:1px 5px;
+  border-radius:3px;font-family:var(--mono);font-size:.55rem;
+  border:1px solid rgba(255,255,255,.15)}
+
+#loading{position:absolute;inset:0;background:#0a0a14;z-index:100;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:16px;transition:opacity .5s}
+#loading.hide{opacity:0;pointer-events:none}
+#loading .ldr{width:50px;height:50px;border-radius:50%;
+  border:3px solid rgba(122,92,255,.2);border-top-color:#7a5cff;
+  animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading .msg{color:#a0a0c8;font-size:.8rem;letter-spacing:1px}
+#loading .err{color:#ff5a5a;font-size:.75rem;max-width:80%;
+  text-align:center;line-height:1.6;padding:0 20px}
+
+.mode-pill{position:absolute;top:64px;left:12px;padding:5px 12px;
+  background:linear-gradient(135deg,#7a5cff,#00d4ff);
+  color:#000;font-weight:800;font-size:.62rem;
+  border-radius:100px;letter-spacing:1.5px;pointer-events:none}
+
+@media(max-width:900px){
+  #sidebar{width:220px}
+  #props{width:210px}
+  #help{display:none}
+  .joystick{width:120px;height:120px;bottom:16px}
+  #joyL{left:12px}
+  #joyR{right:12px}
+  .stick{width:48px;height:48px}
+  #stats{font-size:.55rem;gap:8px;padding:4px 8px}
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="ldr"></div>
+  <div class="msg" id="loadMsg">Carregando Room Studio 3D...</div>
+  <div class="err" id="loadErr"></div>
+</div>
+
+<div id="toolbar">
+  <div class="tb-logo">
+    <div class="ico">&#127968;</div>
+    <div>
+      <div class="nm">ROOM STUDIO 3D</div>
+      <div class="sub">FIRST-PERSON DESIGNER</div>
+    </div>
+  </div>
+  <button class="tbtn on" id="btnWalk" onclick="setMode('walk')">&#128694; Andar</button>
+  <button class="tbtn" id="btnEdit" onclick="setMode('edit')">&#9998; Editar</button>
+  <div class="sep"></div>
+  <button class="tbtn" onclick="addAtCrosshair()">&#10133; Adicionar</button>
+  <button class="tbtn" onclick="deleteSelected()">&#128465; Apagar</button>
+  <button class="tbtn er" onclick="clearRoom()">&#128683; Limpar</button>
+  <div class="sep"></div>
+  <button class="tbtn" onclick="toggleSidebar()">&#9776; Cat&#225;logo</button>
+  <button class="tbtn" onclick="toggleProps()">&#9881; Propriedades</button>
+  <div class="sep"></div>
+  <button class="tbtn wr" onclick="saveRoom()">&#128190; Salvar</button>
+  <button class="tbtn wr" onclick="loadRoom()">&#128194; Carregar</button>
+  <button class="tbtn wr" onclick="exportRoom()">&#128229; Exportar</button>
+  <div class="sep"></div>
+  <button class="tbtn" onclick="resetView()">&#8635; Reset</button>
+</div>
+
+<div id="sidebar">
+  <div class="sb-tabs" id="sbTabs"></div>
+  <div class="sb-body" id="sbBody"></div>
+</div>
+
+<div id="props" class="hidden">
+  <div class="props-title">&#9881; Propriedades</div>
+  <div id="propsBody"><div class="empty">Nenhum objeto selecionado.<br>Clique em um objeto ou adicione um novo.</div></div>
+</div>
+
+<div id="hud">
+  <div id="crosshair"></div>
+  <div class="mode-pill" id="modePill">MODO: ANDAR</div>
+  <div id="stats">
+    <span>FPS <b id="fps">--</b></span>
+    <span>X <b id="px">0.0</b></span>
+    <span>Y <b id="py">0.0</b></span>
+    <span>Z <b id="pz">0.0</b></span>
+    <span>Obj <b id="ocount">0</b></span>
+  </div>
+  <div id="help">
+    <b>Controles:</b><br>
+    <kbd>W A S D</kbd> mover<br>
+    <kbd>Arrastar</kbd> olhar<br>
+    <kbd>Shift</kbd> correr<br>
+    <kbd>E</kbd> adicionar<br>
+    <kbd>Del</kbd> apagar<br>
+    <kbd>R</kbd> reset
+  </div>
+  <div class="joystick" id="joyL">
+    <div class="stick" id="stickL"></div>
+    <div class="lbl">MOVER</div>
+  </div>
+  <div class="joystick" id="joyR">
+    <div class="stick" id="stickR"></div>
+    <div class="lbl">OLHAR</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+var CAT_FURNITURE = [
+  {id:"CAT_FURNITURE_1",name:"Cama_Solteiro",type:"bed",w:0.95,h:0.5,d:2.05,color:"#7a5230"},
+  {id:"CAT_FURNITURE_2",name:"Cama_Casal",type:"bed",w:1.55,h:0.55,d:2.05,color:"#6a4520"},
+  {id:"CAT_FURNITURE_3",name:"Cama_King",type:"bed",w:1.95,h:0.6,d:2.15,color:"#5a3a18"},
+  {id:"CAT_FURNITURE_4",name:"Cama_Beliche",type:"bed",w:0.95,h:1.6,d:2.05,color:"#6a4520"},
+  {id:"CAT_FURNITURE_5",name:"Berço",type:"bed",w:0.75,h:0.55,d:1.25,color:"#e8c0c8"},
+  {id:"CAT_FURNITURE_6",name:"Mesa_Jantar",type:"table",w:1.4,h:0.75,d:0.85,color:"#6b4a28"},
+  {id:"CAT_FURNITURE_7",name:"Mesa_Centro",type:"table",w:1.1,h:0.42,d:0.6,color:"#8a5a30"},
+  {id:"CAT_FURNITURE_8",name:"Mesa_Escritorio",type:"table",w:1.25,h:0.75,d:0.65,color:"#4a2a14"},
+  {id:"CAT_FURNITURE_9",name:"Mesa_Cabeceira",type:"table",w:0.5,h:0.55,d:0.42,color:"#6b4a28"},
+  {id:"CAT_FURNITURE_10",name:"Mesa_Bar",type:"table",w:1.6,h:1.05,d:0.5,color:"#3a1a0a"},
+  {id:"CAT_FURNITURE_11",name:"Mesa_Ping_Pong",type:"table",w:1.5,h:0.75,d:2.7,color:"#1a4a2a"},
+  {id:"CAT_FURNITURE_12",name:"Mesa_Sinuca",type:"table",w:1.4,h:0.9,d:2.4,color:"#2a5a2a"},
+  {id:"CAT_FURNITURE_13",name:"Bancada_Cozinha",type:"table",w:1.8,h:0.9,d:0.65,color:"#3a3a3a"},
+  {id:"CAT_FURNITURE_14",name:"Bancada_Banheiro",type:"table",w:1.2,h:0.9,d:0.55,color:"#d8d8d8"},
+  {id:"CAT_FURNITURE_15",name:"Cadeira_Jantar",type:"chair",w:0.46,h:0.95,d:0.5,color:"#4a2a14"},
+  {id:"CAT_FURNITURE_16",name:"Cadeira_Escritorio",type:"chair",w:0.6,h:1.05,d:0.6,color:"#222228"},
+  {id:"CAT_FURNITURE_17",name:"Cadeira_Gamer",type:"chair",w:0.7,h:1.2,d:0.7,color:"#1a1a2a"},
+  {id:"CAT_FURNITURE_18",name:"Cadeira_Bebê",type:"chair",w:0.5,h:0.9,d:0.5,color:"#c8a060"},
+  {id:"CAT_FURNITURE_19",name:"Poltrona",type:"chair",w:0.85,h:0.9,d:0.9,color:"#5a2830"},
+  {id:"CAT_FURNITURE_20",name:"Puff",type:"chair",w:0.5,h:0.42,d:0.5,color:"#8a4a3a"},
+  {id:"CAT_FURNITURE_21",name:"Banquinho",type:"chair",w:0.35,h:0.45,d:0.35,color:"#8a6a3a"},
+  {id:"CAT_FURNITURE_22",name:"Banquinho_Bar",type:"chair",w:0.35,h:0.75,d:0.35,color:"#3a1a0a"},
+  {id:"CAT_FURNITURE_23",name:"Banco_Sala",type:"chair",w:1.6,h:0.45,d:0.4,color:"#5a3a1a"},
+  {id:"CAT_FURNITURE_24",name:"Sofá_2Lug",type:"sofa",w:1.65,h:0.85,d:0.9,color:"#3a3a4a"},
+  {id:"CAT_FURNITURE_25",name:"Sofá_3Lug",type:"sofa",w:2.4,h:0.85,d:0.95,color:"#3a3a4a"},
+  {id:"CAT_FURNITURE_26",name:"Sofá_Canto",type:"sofa",w:2.4,h:0.85,d:1.6,color:"#3a3a4a"},
+  {id:"CAT_FURNITURE_27",name:"Sofá_Retrátil",type:"sofa",w:2.2,h:0.9,d:1.0,color:"#4a3a5a"},
+  {id:"CAT_FURNITURE_28",name:"Guarda_Roupa",type:"wardrobe",w:1.2,h:2.2,d:0.6,color:"#5a3a1e"},
+  {id:"CAT_FURNITURE_29",name:"Guarda_Roupa_Grande",type:"wardrobe",w:2.0,h:2.3,d:0.65,color:"#4a2a14"},
+  {id:"CAT_FURNITURE_30",name:"Guarda_Roupa_Deslizante",type:"wardrobe",w:1.8,h:2.3,d:0.7,color:"#5a3a1e"},
+  {id:"CAT_FURNITURE_31",name:"Cômoda",type:"wardrobe",w:1.0,h:0.85,d:0.5,color:"#5a3a1e"},
+  {id:"CAT_FURNITURE_32",name:"Criado_Mudo",type:"wardrobe",w:0.45,h:0.65,d:0.4,color:"#5a3a1e"},
+  {id:"CAT_FURNITURE_33",name:"Estante_Livros",type:"shelf",w:0.9,h:1.8,d:0.35,color:"#3a2818"},
+  {id:"CAT_FURNITURE_34",name:"Estante_Grande",type:"shelf",w:1.6,h:2.0,d:0.4,color:"#3a2818"},
+  {id:"CAT_FURNITURE_35",name:"Estante_Cubo",type:"shelf",w:1.2,h:1.2,d:0.35,color:"#5a4a3a"},
+  {id:"CAT_FURNITURE_36",name:"Prateleira",type:"shelf",w:1.2,h:0.35,d:0.28,color:"#6b4a28"},
+  {id:"CAT_FURNITURE_37",name:"Nicho_Parede",type:"shelf",w:0.8,h:0.9,d:0.3,color:"#6b4a28"},
+  {id:"CAT_FURNITURE_38",name:"TV_Stand",type:"tv",w:1.3,h:0.5,d:0.42,color:"#1a1a1a"},
+  {id:"CAT_FURNITURE_39",name:"TV_Painel",type:"tv",w:1.2,h:0.7,d:0.06,color:"#0a0a0a"},
+  {id:"CAT_FURNITURE_40",name:"TV_Painel_Grande",type:"tv",w:1.8,h:1.05,d:0.08,color:"#0a0a0a"},
+  {id:"CAT_FURNITURE_41",name:"Projetor",type:"tv",w:0.35,h:0.35,d:0.35,color:"#e8e8e8"},
+  {id:"CAT_FURNITURE_42",name:"Luminária_Pé",type:"lamp",w:0.28,h:1.6,d:0.28,color:"#c8c8c0"},
+  {id:"CAT_FURNITURE_43",name:"Luminária_Mesa",type:"lamp",w:0.28,h:0.55,d:0.28,color:"#c8c8c0"},
+  {id:"CAT_FURNITURE_44",name:"Lustre",type:"lamp",w:0.55,h:0.6,d:0.55,color:"#c8c8c0"},
+  {id:"CAT_FURNITURE_45",name:"Arandela",type:"lamp",w:0.2,h:0.4,d:0.18,color:"#c8c8c0"},
+  {id:"CAT_FURNITURE_46",name:"Abajur",type:"lamp",w:0.3,h:0.4,d:0.3,color:"#c8a080"},
+  {id:"CAT_FURNITURE_47",name:"Fita_LED",type:"lamp",w:2.0,h:0.05,d:0.05,color:"#a0d0ff"},
+  {id:"CAT_FURNITURE_48",name:"Plafonier",type:"lamp",w:0.5,h:0.15,d:0.5,color:"#f0f0f0"},
+  {id:"CAT_FURNITURE_49",name:"Tapete_Pequeno",type:"rug",w:1.2,h:0.02,d:1.7,color:"#8a3a5a"},
+  {id:"CAT_FURNITURE_50",name:"Tapete_Grande",type:"rug",w:2.4,h:0.02,d:3.0,color:"#3a5a8a"},
+  {id:"CAT_FURNITURE_51",name:"Tapete_Redondo",type:"rug",w:1.8,h:0.02,d:1.8,color:"#a08040"},
+  {id:"CAT_FURNITURE_52",name:"Tapete_Persa",type:"rug",w:2.0,h:0.02,d:3.2,color:"#7a2020"},
+  {id:"CAT_FURNITURE_53",name:"Quadro_Pequeno",type:"painting",w:0.5,h:0.6,d:0.05,color:"#5a3a1a"},
+  {id:"CAT_FURNITURE_54",name:"Quadro_Grande",type:"painting",w:1.0,h:0.8,d:0.05,color:"#5a3a1a"},
+  {id:"CAT_FURNITURE_55",name:"Quadro_Tríptico",type:"painting",w:1.6,h:0.6,d:0.05,color:"#5a3a1a"},
+  {id:"CAT_FURNITURE_56",name:"Espelho_Pequeno",type:"mirror",w:0.5,h:0.7,d:0.05,color:"#c0d8e8"},
+  {id:"CAT_FURNITURE_57",name:"Espelho_Grande",type:"mirror",w:0.9,h:1.6,d:0.06,color:"#c0d8e8"},
+  {id:"CAT_FURNITURE_58",name:"Espelho_Corpo_Inteiro",type:"mirror",w:0.6,h:1.8,d:0.05,color:"#c0d8e8"},
+  {id:"CAT_FURNITURE_59",name:"Relógio_Parede",type:"mirror",w:0.35,h:0.35,d:0.06,color:"#e8e8e8"},
+  {id:"CAT_FURNITURE_60",name:"Planta_Vaso",type:"plant",w:0.5,h:1.1,d:0.5,color:"#2a6a2a"},
+  {id:"CAT_FURNITURE_61",name:"Planta_Grande",type:"plant",w:0.7,h:1.6,d:0.7,color:"#2a6a2a"},
+  {id:"CAT_FURNITURE_62",name:"Planta_Pendente",type:"plant",w:0.5,h:0.5,d:0.5,color:"#2a6a2a"},
+  {id:"CAT_FURNITURE_63",name:"Vaso_Flores",type:"plant",w:0.35,h:0.45,d:0.35,color:"#8a5a8a"},
+  {id:"CAT_FURNITURE_64",name:"Cacto",type:"plant",w:0.3,h:0.7,d:0.3,color:"#2a6a3a"},
+  {id:"CAT_FURNITURE_65",name:"Bonsai",type:"plant",w:0.4,h:0.5,d:0.4,color:"#3a5a2a"},
+  {id:"CAT_FURNITURE_66",name:"Aquário",type:"table",w:1.2,h:0.6,d:0.5,color:"#2070a0"},
+  {id:"CAT_FURNITURE_67",name:"Aquário_Redondo",type:"table",w:0.4,h:0.5,d:0.4,color:"#2080c0"},
+  {id:"CAT_FURNITURE_68",name:"Terário",type:"table",w:0.35,h:0.4,d:0.35,color:"#40a060"},
+  {id:"CAT_FURNITURE_69",name:"Lareira",type:"fireplace",w:1.2,h:1.1,d:0.4,color:"#3a2a1a"},
+  {id:"CAT_FURNITURE_70",name:"Ventilador_Teto",type:"fan",w:1.2,h:0.15,d:1.2,color:"#c8c8c0"},
+  {id:"CAT_FURNITURE_71",name:"Ventilador_Pé",type:"fan",w:0.4,h:1.3,d:0.4,color:"#e8e8e8"},
+  {id:"CAT_FURNITURE_72",name:"Cortina_Janela",type:"curtain",w:1.6,h:2.0,d:0.1,color:"#8a4a6a"},
+  {id:"CAT_FURNITURE_73",name:"Cortina_Porta",type:"curtain",w:1.0,h:2.2,d:0.1,color:"#8a4a6a"},
+  {id:"CAT_FURNITURE_74",name:"Cofre",type:"chest",w:0.6,h:0.7,d:0.55,color:"#2a2a2a"},
+  {id:"CAT_FURNITURE_75",name:"Baú",type:"chest",w:1.0,h:0.6,d:0.55,color:"#6a3a1a"},
+  {id:"CAT_FURNITURE_76",name:"Baú_Antigo",type:"chest",w:1.2,h:0.7,d:0.6,color:"#5a3a1a"},
+  {id:"CAT_FURNITURE_77",name:"Trocador_Bebê",type:"table",w:0.85,h:0.85,d:0.55,color:"#c8a8b0"},
+  {id:"CAT_FURNITURE_78",name:"Balcão_Recepção",type:"table",w:1.8,h:1.1,d:0.6,color:"#4a3a2a"},
+  {id:"CAT_FURNITURE_79",name:"Estante_Vinho",type:"shelf",w:0.9,h:1.4,d:0.35,color:"#3a1a0a"},
+  {id:"CAT_FURNITURE_80",name:"Cavalete_Pintura",type:"table",w:0.6,h:1.5,d:0.5,color:"#8a6a3a"},
+  {id:"CAT_FURNITURE_81",name:"Piano_Digital",type:"table",w:1.5,h:1.1,d:0.6,color:"#1a1a1a"},
+  {id:"CAT_FURNITURE_82",name:"Suporte_Violão",type:"shelf",w:0.4,h:1.0,d:0.2,color:"#6a3a1a"},
+  {id:"CAT_FURNITURE_83",name:"Bicicleta",type:"table",w:0.6,h:1.0,d:1.7,color:"#2a2a3a"},
+  {id:"CAT_FURNITURE_84",name:"Esteira",type:"table",w:0.7,h:0.9,d:1.6,color:"#2a2a2a"},
+  {id:"CAT_FURNITURE_85",name:"Halteres_Kit",type:"shelf",w:0.5,h:0.6,d:0.4,color:"#1a1a1a"},
+  {id:"CAT_FURNITURE_86",name:"Saco_Pancada",type:"table",w:0.5,h:1.6,d:0.5,color:"#1a1a1a"},
+  {id:"CAT_FURNITURE_87",name:"Pia_Cozinha",type:"table",w:0.6,h:0.9,d:0.55,color:"#c8c8d0"},
+  {id:"CAT_FURNITURE_88",name:"Pia_Banheiro",type:"table",w:0.6,h:0.85,d:0.45,color:"#f0f0f0"},
+  {id:"CAT_FURNITURE_89",name:"Fogão",type:"table",w:0.6,h:0.9,d:0.55,color:"#1a1a1a"},
+  {id:"CAT_FURNITURE_90",name:"Cooktop",type:"table",w:0.6,h:0.06,d:0.5,color:"#1a1a1a"},
+  {id:"CAT_FURNITURE_91",name:"Forno",type:"table",w:0.6,h:0.7,d:0.55,color:"#1a1a1a"},
+  {id:"CAT_FURNITURE_92",name:"Geladeira",type:"wardrobe",w:0.7,h:1.8,d:0.7,color:"#c8c8d0"},
+  {id:"CAT_FURNITURE_93",name:"Geladeira_Duplex",type:"wardrobe",w:0.9,h:1.8,d:0.75,color:"#a8a8b8"},
+  {id:"CAT_FURNITURE_94",name:"Freezer",type:"wardrobe",w:0.7,h:0.9,d:0.65,color:"#c8c8d0"},
+  {id:"CAT_FURNITURE_95",name:"Microondas",type:"table",w:0.5,h:0.3,d:0.4,color:"#1a1a1a"},
+  {id:"CAT_FURNITURE_96",name:"Máquina_Lavar",type:"table",w:0.6,h:0.85,d:0.6,color:"#c8c8d0"},
+  {id:"CAT_FURNITURE_97",name:"Máquina_Secar",type:"table",w:0.6,h:0.85,d:0.6,color:"#c8c8d0"},
+  {id:"CAT_FURNITURE_98",name:"Lava_Louças",type:"table",w:0.6,h:0.85,d:0.6,color:"#c8c8d0"},
+  {id:"CAT_FURNITURE_99",name:"Coifa",type:"fan",w:0.7,h:0.35,d:0.5,color:"#c8c8d0"},
+  {id:"CAT_FURNITURE_100",name:"Exaustor",type:"fan",w:0.5,h:0.3,d:0.5,color:"#e8e8e8"},
+  {id:"CAT_FURNITURE_101",name:"Churrasqueira",type:"fireplace",w:1.2,h:1.0,d:0.6,color:"#2a2a2a"},
+  {id:"CAT_FURNITURE_102",name:"Tanque",type:"table",w:0.8,h:0.85,d:0.6,color:"#d8d8d8"},
+  {id:"CAT_FURNITURE_103",name:"Vaso_Sanitário",type:"chair",w:0.4,h:0.75,d:0.65,color:"#f0f0f0"},
+  {id:"CAT_FURNITURE_104",name:"Bidê",type:"chair",w:0.4,h:0.4,d:0.55,color:"#f0f0f0"},
+  {id:"CAT_FURNITURE_105",name:"Box_Banheiro",type:"door",w:1.0,h:2.0,d:0.05,color:"#c0d8e8"},
+  {id:"CAT_FURNITURE_106",name:"Banheira",type:"table",w:0.8,h:0.55,d:1.7,color:"#f0f0f0"},
+  {id:"CAT_FURNITURE_107",name:"Banheira_Hidro",type:"table",w:0.9,h:0.6,d:1.8,color:"#d8d8e0"},
+  {id:"CAT_FURNITURE_108",name:"Ofurô",type:"table",w:1.4,h:0.75,d:1.4,color:"#6a4a2a"},
+  {id:"CAT_FURNITURE_109",name:"Cabide_Pé",type:"shelf",w:0.4,h:1.7,d:0.4,color:"#5a3a1a"},
+  {id:"CAT_FURNITURE_110",name:"Sapateira",type:"shelf",w:1.0,h:0.5,d:0.4,color:"#5a3a1a"},
+  {id:"CAT_FURNITURE_111",name:"Cabideiro_Parede",type:"shelf",w:0.6,h:0.15,d:0.15,color:"#5a3a1a"},
+  {id:"CAT_FURNITURE_112",name:"Mesa_Costura",type:"table",w:1.2,h:0.75,d:0.6,color:"#5a3a1a"},
+  {id:"CAT_FURNITURE_113",name:"Prancha_Passar",type:"table",w:1.2,h:0.15,d:0.4,color:"#e8e8e8"},
+  {id:"CAT_FURNITURE_114",name:"Aspirador",type:"table",w:0.4,h:1.0,d:0.4,color:"#c02020"},
+  {id:"CAT_FURNITURE_115",name:"Robô_Aspirador",type:"table",w:0.35,h:0.1,d:0.35,color:"#1a1a1a"},
+  {id:"CAT_FURNITURE_116",name:"Cesto_Roupa",type:"chest",w:0.5,h:0.6,d:0.5,color:"#8a6a3a"},
+  {id:"CAT_FURNITURE_117",name:"Lixeira",type:"chest",w:0.35,h:0.5,d:0.35,color:"#606060"},
+  {id:"CAT_FURNITURE_118",name:"Lixeira_Reciclagem",type:"chest",w:0.5,h:0.6,d:0.4,color:"#2a8a2a"},
+  {id:"CAT_FURNITURE_119",name:"Varal",type:"shelf",w:1.4,h:0.1,d:0.15,color:"#c8c8c8"},
+  {id:"CAT_FURNITURE_120",name:"Escada",type:"shelf",w:0.6,h:2.0,d:0.3,color:"#c8c8c8"},
+  {id:"CAT_FURNITURE_121",name:"Furadeira",type:"table",w:0.3,h:0.35,d:0.3,color:"#c02020"},
+  {id:"CAT_FURNITURE_122",name:"Caixa_Ferramenta",type:"chest",w:0.6,h:0.3,d:0.4,color:"#c02020"},
+  {id:"CAT_FURNITURE_123",name:"Guarda_Chuva",type:"shelf",w:0.2,h:0.9,d:0.2,color:"#202020"},
+  {id:"CAT_FURNITURE_124",name:"Escova_Parede",type:"shelf",w:0.2,h:1.7,d:0.2,color:"#8a6a3a"},
+  {id:"CAT_FURNITURE_125",name:"Quarto_Bebê_Completo",type:"table",w:1.4,h:0.9,d:0.6,color:"#c8a8b0"},
+  {id:"CAT_FURNITURE_126",name:"Carrinho_Bebê",type:"table",w:0.6,h:0.9,d:1.0,color:"#c04080"},
+  {id:"CAT_FURNITURE_127",name:"Berço_Portátil",type:"bed",w:0.7,h:0.5,d:1.0,color:"#a0c0d8"},
+  {id:"CAT_FURNITURE_128",name:"Banheira_Bebê",type:"table",w:0.6,h:0.3,d:0.9,color:"#a0d0e0"},
+  {id:"CAT_FURNITURE_129",name:"Troninho",type:"chair",w:0.35,h:0.35,d:0.35,color:"#40a0c0"},
+  {id:"CAT_FURNITURE_130",name:"Esterilizador",type:"table",w:0.3,h:0.35,d:0.3,color:"#e8e8e8"},
+  {id:"CAT_FURNITURE_131",name:"Mamadeira_Esc",type:"shelf",w:0.3,h:0.3,d:0.2,color:"#f0f0f0"},
+];
+var CAT_WALLS = [
+  {id:"CAT_WALLS_1",name:"Branco_Neve",type:"rug",w:0.3,h:0.3,d:0.05,color:"#f8f8f8"},
+  {id:"CAT_WALLS_2",name:"Branco_Gelo",type:"rug",w:0.3,h:0.3,d:0.05,color:"#eef4f8"},
+  {id:"CAT_WALLS_3",name:"Branco_Quente",type:"rug",w:0.3,h:0.3,d:0.05,color:"#f8f4ec"},
+  {id:"CAT_WALLS_4",name:"Off_White",type:"rug",w:0.3,h:0.3,d:0.05,color:"#f0ece0"},
+  {id:"CAT_WALLS_5",name:"Cinza_Pérola",type:"rug",w:0.3,h:0.3,d:0.05,color:"#d8d8d4"},
+  {id:"CAT_WALLS_6",name:"Cinza_Londres",type:"rug",w:0.3,h:0.3,d:0.05,color:"#909098"},
+  {id:"CAT_WALLS_7",name:"Cinza_Chumbo",type:"rug",w:0.3,h:0.3,d:0.05,color:"#606068"},
+  {id:"CAT_WALLS_8",name:"Grafite",type:"rug",w:0.3,h:0.3,d:0.05,color:"#3a3a44"},
+  {id:"CAT_WALLS_9",name:"Preto_Fosco",type:"rug",w:0.3,h:0.3,d:0.05,color:"#18181c"},
+  {id:"CAT_WALLS_10",name:"Bege_Areia",type:"rug",w:0.3,h:0.3,d:0.05,color:"#d4c4a8"},
+  {id:"CAT_WALLS_11",name:"Bege_Champagne",type:"rug",w:0.3,h:0.3,d:0.05,color:"#e8dcc0"},
+  {id:"CAT_WALLS_12",name:"Areia_Clara",type:"rug",w:0.3,h:0.3,d:0.05,color:"#e0d0b0"},
+  {id:"CAT_WALLS_13",name:"Terracota",type:"rug",w:0.3,h:0.3,d:0.05,color:"#b86a4a"},
+  {id:"CAT_WALLS_14",name:"Argila",type:"rug",w:0.3,h:0.3,d:0.05,color:"#a05838"},
+  {id:"CAT_WALLS_15",name:"Tijolo_Aparente",type:"rug",w:0.3,h:0.3,d:0.05,color:"#a05038"},
+  {id:"CAT_WALLS_16",name:"Vermelho_Tijolo",type:"rug",w:0.3,h:0.3,d:0.05,color:"#8a3a30"},
+  {id:"CAT_WALLS_17",name:"Vermelho_Vinho",type:"rug",w:0.3,h:0.3,d:0.05,color:"#6a2030"},
+  {id:"CAT_WALLS_18",name:"Vermelho_Coral",type:"rug",w:0.3,h:0.3,d:0.05,color:"#e06050"},
+  {id:"CAT_WALLS_19",name:"Rosa_Antigo",type:"rug",w:0.3,h:0.3,d:0.05,color:"#c88890"},
+  {id:"CAT_WALLS_20",name:"Rosa_Bebê",type:"rug",w:0.3,h:0.3,d:0.05,color:"#f0c8d0"},
+  {id:"CAT_WALLS_21",name:"Rosa_Chiclete",type:"rug",w:0.3,h:0.3,d:0.05,color:"#e890a8"},
+  {id:"CAT_WALLS_22",name:"Roxo_Lavanda",type:"rug",w:0.3,h:0.3,d:0.05,color:"#b0a0d0"},
+  {id:"CAT_WALLS_23",name:"Roxo_Uva",type:"rug",w:0.3,h:0.3,d:0.05,color:"#6a4080"},
+  {id:"CAT_WALLS_24",name:"Roxo_Profundo",type:"rug",w:0.3,h:0.3,d:0.05,color:"#4a2860"},
+  {id:"CAT_WALLS_25",name:"Azul_Céu",type:"rug",w:0.3,h:0.3,d:0.05,color:"#a0c0e8"},
+  {id:"CAT_WALLS_26",name:"Azul_Petróleo",type:"rug",w:0.3,h:0.3,d:0.05,color:"#306080"},
+  {id:"CAT_WALLS_27",name:"Azul_Marinho",type:"rug",w:0.3,h:0.3,d:0.05,color:"#1a3058"},
+  {id:"CAT_WALLS_28",name:"Azul_Bebê",type:"rug",w:0.3,h:0.3,d:0.05,color:"#c0d8f0"},
+  {id:"CAT_WALLS_29",name:"Azul_Royal",type:"rug",w:0.3,h:0.3,d:0.05,color:"#2a4088"},
+  {id:"CAT_WALLS_30",name:"Verde_Menta",type:"rug",w:0.3,h:0.3,d:0.05,color:"#a0d8c0"},
+  {id:"CAT_WALLS_31",name:"Verde_Sálvia",type:"rug",w:0.3,h:0.3,d:0.05,color:"#8aa080"},
+  {id:"CAT_WALLS_32",name:"Verde_Oliva",type:"rug",w:0.3,h:0.3,d:0.05,color:"#606040"},
+  {id:"CAT_WALLS_33",name:"Verde_Musgo",type:"rug",w:0.3,h:0.3,d:0.05,color:"#4a5a30"},
+  {id:"CAT_WALLS_34",name:"Verde_Esmeralda",type:"rug",w:0.3,h:0.3,d:0.05,color:"#1a6a4a"},
+  {id:"CAT_WALLS_35",name:"Verde_Bebê",type:"rug",w:0.3,h:0.3,d:0.05,color:"#c0e0b0"},
+  {id:"CAT_WALLS_36",name:"Amarelo_Mostarda",type:"rug",w:0.3,h:0.3,d:0.05,color:"#c8a040"},
+  {id:"CAT_WALLS_37",name:"Amarelo_Canário",type:"rug",w:0.3,h:0.3,d:0.05,color:"#e8d040"},
+  {id:"CAT_WALLS_38",name:"Amarelo_Bebê",type:"rug",w:0.3,h:0.3,d:0.05,color:"#f0e8a0"},
+  {id:"CAT_WALLS_39",name:"Laranja_Queimado",type:"rug",w:0.3,h:0.3,d:0.05,color:"#c86020"},
+  {id:"CAT_WALLS_40",name:"Laranja_Cenoura",type:"rug",w:0.3,h:0.3,d:0.05,color:"#e07820"},
+  {id:"CAT_WALLS_41",name:"Ocre",type:"rug",w:0.3,h:0.3,d:0.05,color:"#c09050"},
+  {id:"CAT_WALLS_42",name:"Dourado_Vintage",type:"rug",w:0.3,h:0.3,d:0.05,color:"#a89050"},
+  {id:"CAT_WALLS_43",name:"Marrom_Chocolate",type:"rug",w:0.3,h:0.3,d:0.05,color:"#5a3820"},
+  {id:"CAT_WALLS_44",name:"Marrom_Cacau",type:"rug",w:0.3,h:0.3,d:0.05,color:"#6a4830"},
+  {id:"CAT_WALLS_45",name:"Marrom_Café",type:"rug",w:0.3,h:0.3,d:0.05,color:"#3a2418"},
+  {id:"CAT_WALLS_46",name:"Nude",type:"rug",w:0.3,h:0.3,d:0.05,color:"#d8b8a0"},
+  {id:"CAT_WALLS_47",name:"Champagne_Metálico",type:"rug",w:0.3,h:0.3,d:0.05,color:"#d8c0a0"},
+  {id:"CAT_WALLS_48",name:"Concreto_Aparente",type:"rug",w:0.3,h:0.3,d:0.05,color:"#909090"},
+];
+var CAT_FLOORS = [
+  {id:"CAT_FLOORS_1",name:"Madeira_Carvalho",type:"rug",w:2.5,h:0.02,d:2.5,color:"#8a6a3a"},
+  {id:"CAT_FLOORS_2",name:"Madeira_Nogueira",type:"rug",w:2.5,h:0.02,d:2.5,color:"#5a3a1a"},
+  {id:"CAT_FLOORS_3",name:"Madeira_Cedro",type:"rug",w:2.5,h:0.02,d:2.5,color:"#a06a3a"},
+  {id:"CAT_FLOORS_4",name:"Madeira_Ebano",type:"rug",w:2.5,h:0.02,d:2.5,color:"#2a1a0a"},
+  {id:"CAT_FLOORS_5",name:"Madeira_Pinho",type:"rug",w:2.5,h:0.02,d:2.5,color:"#c8a870"},
+  {id:"CAT_FLOORS_6",name:"Madeira_Teca",type:"rug",w:2.5,h:0.02,d:2.5,color:"#806040"},
+  {id:"CAT_FLOORS_7",name:"Madeira_Acácia",type:"rug",w:2.5,h:0.02,d:2.5,color:"#a88050"},
+  {id:"CAT_FLOORS_8",name:"Madeira_Peroba",type:"rug",w:2.5,h:0.02,d:2.5,color:"#7a5030"},
+  {id:"CAT_FLOORS_9",name:"Madeira_Freijó",type:"rug",w:2.5,h:0.02,d:2.5,color:"#3a2010"},
+  {id:"CAT_FLOORS_10",name:"Madeira_Cumaru",type:"rug",w:2.5,h:0.02,d:2.5,color:"#5a3018"},
+  {id:"CAT_FLOORS_11",name:"Mármore_Branco",type:"rug",w:2.5,h:0.02,d:2.5,color:"#f0f0f0"},
+  {id:"CAT_FLOORS_12",name:"Mármore_Carrara",type:"rug",w:2.5,h:0.02,d:2.5,color:"#e8e8e8"},
+  {id:"CAT_FLOORS_13",name:"Mármore_Preto",type:"rug",w:2.5,h:0.02,d:2.5,color:"#1a1a1a"},
+  {id:"CAT_FLOORS_14",name:"Mármore_Bege",type:"rug",w:2.5,h:0.02,d:2.5,color:"#d0b898"},
+  {id:"CAT_FLOORS_15",name:"Mármore_Travertino",type:"rug",w:2.5,h:0.02,d:2.5,color:"#d8c8a8"},
+  {id:"CAT_FLOORS_16",name:"Granito_Cinza",type:"rug",w:2.5,h:0.02,d:2.5,color:"#707070"},
+  {id:"CAT_FLOORS_17",name:"Granito_Preto",type:"rug",w:2.5,h:0.02,d:2.5,color:"#202020"},
+  {id:"CAT_FLOORS_18",name:"Granito_Vermelho",type:"rug",w:2.5,h:0.02,d:2.5,color:"#6a3028"},
+  {id:"CAT_FLOORS_19",name:"Granito_Verde",type:"rug",w:2.5,h:0.02,d:2.5,color:"#405840"},
+  {id:"CAT_FLOORS_20",name:"Granito_Amarelo",type:"rug",w:2.5,h:0.02,d:2.5,color:"#a08040"},
+  {id:"CAT_FLOORS_21",name:"Porcelanato_Branco",type:"rug",w:2.5,h:0.02,d:2.5,color:"#f0f0f0"},
+  {id:"CAT_FLOORS_22",name:"Porcelanato_Cinza",type:"rug",w:2.5,h:0.02,d:2.5,color:"#909090"},
+  {id:"CAT_FLOORS_23",name:"Porcelanato_Madeira",type:"rug",w:2.5,h:0.02,d:2.5,color:"#8a6a3a"},
+  {id:"CAT_FLOORS_24",name:"Porcelanato_Mármore",type:"rug",w:2.5,h:0.02,d:2.5,color:"#e8e8e0"},
+  {id:"CAT_FLOORS_25",name:"Cerâmica_Bege",type:"rug",w:2.5,h:0.02,d:2.5,color:"#c0a080"},
+  {id:"CAT_FLOORS_26",name:"Cerâmica_Verde",type:"rug",w:2.5,h:0.02,d:2.5,color:"#5a8a5a"},
+  {id:"CAT_FLOORS_27",name:"Cerâmica_Azul",type:"rug",w:2.5,h:0.02,d:2.5,color:"#5a6a8a"},
+  {id:"CAT_FLOORS_28",name:"Cerâmica_Rústica",type:"rug",w:2.5,h:0.02,d:2.5,color:"#b08060"},
+  {id:"CAT_FLOORS_29",name:"Cimento_Queimado",type:"rug",w:2.5,h:0.02,d:2.5,color:"#808080"},
+  {id:"CAT_FLOORS_30",name:"Concreto_Aparente",type:"rug",w:2.5,h:0.02,d:2.5,color:"#a0a0a0"},
+  {id:"CAT_FLOORS_31",name:"Concreto_Ácido",type:"rug",w:2.5,h:0.02,d:2.5,color:"#909090"},
+  {id:"CAT_FLOORS_32",name:"Taco_Madeira",type:"rug",w:2.5,h:0.02,d:2.5,color:"#7a5a2a"},
+  {id:"CAT_FLOORS_33",name:"Parquet",type:"rug",w:2.5,h:0.02,d:2.5,color:"#8a6a48"},
+  {id:"CAT_FLOORS_34",name:"Vinílico_Claro",type:"rug",w:2.5,h:0.02,d:2.5,color:"#c8c8b8"},
+  {id:"CAT_FLOORS_35",name:"Vinílico_Escuro",type:"rug",w:2.5,h:0.02,d:2.5,color:"#4a4a3a"},
+  {id:"CAT_FLOORS_36",name:"Vinílico_Madeira",type:"rug",w:2.5,h:0.02,d:2.5,color:"#9a7a58"},
+  {id:"CAT_FLOORS_37",name:"Laminado_Carvalho",type:"rug",w:2.5,h:0.02,d:2.5,color:"#a08050"},
+  {id:"CAT_FLOORS_38",name:"Laminado_Preto",type:"rug",w:2.5,h:0.02,d:2.5,color:"#2a2a2a"},
+  {id:"CAT_FLOORS_39",name:"Carpete_Cinza",type:"rug",w:2.5,h:0.02,d:2.5,color:"#606060"},
+  {id:"CAT_FLOORS_40",name:"Carpete_Bege",type:"rug",w:2.5,h:0.02,d:2.5,color:"#b0a890"},
+  {id:"CAT_FLOORS_41",name:"Carpete_Azul",type:"rug",w:2.5,h:0.02,d:2.5,color:"#405070"},
+  {id:"CAT_FLOORS_42",name:"Carpete_Vermelho",type:"rug",w:2.5,h:0.02,d:2.5,color:"#602020"},
+  {id:"CAT_FLOORS_43",name:"Carpete_Verde",type:"rug",w:2.5,h:0.02,d:2.5,color:"#305030"},
+  {id:"CAT_FLOORS_44",name:"Pedra_Ardósia",type:"rug",w:2.5,h:0.02,d:2.5,color:"#3a3a40"},
+  {id:"CAT_FLOORS_45",name:"Pedra_Calcário",type:"rug",w:2.5,h:0.02,d:2.5,color:"#d0c8b0"},
+  {id:"CAT_FLOORS_46",name:"Pedra_Sextavada",type:"rug",w:2.5,h:0.02,d:2.5,color:"#909090"},
+  {id:"CAT_FLOORS_47",name:"Pedra_Hijau",type:"rug",w:2.5,h:0.02,d:2.5,color:"#4a6a4a"},
+  {id:"CAT_FLOORS_48",name:"Pedra_Miracema",type:"rug",w:2.5,h:0.02,d:2.5,color:"#c0a880"},
+  {id:"CAT_FLOORS_49",name:"Terra_Batida",type:"rug",w:2.5,h:0.02,d:2.5,color:"#8a6a4a"},
+  {id:"CAT_FLOORS_50",name:"Brita",type:"rug",w:2.5,h:0.02,d:2.5,color:"#808080"},
+  {id:"CAT_FLOORS_51",name:"Areia",type:"rug",w:2.5,h:0.02,d:2.5,color:"#d0b880"},
+  {id:"CAT_FLOORS_52",name:"Gramado",type:"rug",w:2.5,h:0.02,d:2.5,color:"#2a602a"},
+  {id:"CAT_FLOORS_53",name:"Grama_Sintética",type:"rug",w:2.5,h:0.02,d:2.5,color:"#3a803a"},
+  {id:"CAT_FLOORS_54",name:"Deck_Madeira",type:"rug",w:2.5,h:0.02,d:2.5,color:"#6a4a2a"},
+  {id:"CAT_FLOORS_55",name:"Bambu",type:"rug",w:2.5,h:0.02,d:2.5,color:"#b09060"},
+  {id:"CAT_FLOORS_56",name:"Cortiça",type:"rug",w:2.5,h:0.02,d:2.5,color:"#c0a060"},
+  {id:"CAT_FLOORS_57",name:"Epóxi_Metálico",type:"rug",w:2.5,h:0.02,d:2.5,color:"#505060"},
+  {id:"CAT_FLOORS_58",name:"Epóxi_Branco",type:"rug",w:2.5,h:0.02,d:2.5,color:"#e0e0e0"},
+  {id:"CAT_FLOORS_59",name:"Epóxi_Preto",type:"rug",w:2.5,h:0.02,d:2.5,color:"#1a1a1a"},
+  {id:"CAT_FLOORS_60",name:"Epóxi_Verde",type:"rug",w:2.5,h:0.02,d:2.5,color:"#1a4a2a"},
+  {id:"CAT_FLOORS_61",name:"Epóxi_Azul",type:"rug",w:2.5,h:0.02,d:2.5,color:"#1a3a6a"},
+  {id:"CAT_FLOORS_62",name:"Epóxi_Vermelho",type:"rug",w:2.5,h:0.02,d:2.5,color:"#6a2020"},
+  {id:"CAT_FLOORS_63",name:"Xadrez_Preto_Branco",type:"rug",w:2.5,h:0.02,d:2.5,color:"#404040"},
+  {id:"CAT_FLOORS_64",name:"Xadrez_Madeira",type:"rug",w:2.5,h:0.02,d:2.5,color:"#806040"},
+  {id:"CAT_FLOORS_65",name:"Xadrez_Azul_Branco",type:"rug",w:2.5,h:0.02,d:2.5,color:"#5070a0"},
+];
+var CAT_CEILINGS = [
+  {id:"CAT_CEILINGS_1",name:"Liso_Branco",type:"rug",w:3.0,h:0.02,d:3.0,color:"#f0f0f0"},
+  {id:"CAT_CEILINGS_2",name:"Liso_Cinza",type:"rug",w:3.0,h:0.02,d:3.0,color:"#c0c0c0"},
+  {id:"CAT_CEILINGS_3",name:"Liso_Bege",type:"rug",w:3.0,h:0.02,d:3.0,color:"#e0d8c0"},
+  {id:"CAT_CEILINGS_4",name:"Liso_Creme",type:"rug",w:3.0,h:0.02,d:3.0,color:"#e8dcc0"},
+  {id:"CAT_CEILINGS_5",name:"Textura_Gesso",type:"rug",w:3.0,h:0.02,d:3.0,color:"#e8e8e0"},
+  {id:"CAT_CEILINGS_6",name:"Textura_Acústico",type:"rug",w:3.0,h:0.02,d:3.0,color:"#d8d8d0"},
+  {id:"CAT_CEILINGS_7",name:"Painel_Madeira",type:"rug",w:3.0,h:0.02,d:3.0,color:"#8a6a3a"},
+  {id:"CAT_CEILINGS_8",name:"Painel_PVC_Branco",type:"rug",w:3.0,h:0.02,d:3.0,color:"#d0d0d8"},
+  {id:"CAT_CEILINGS_9",name:"Painel_PVC_Madeira",type:"rug",w:3.0,h:0.02,d:3.0,color:"#a08050"},
+  {id:"CAT_CEILINGS_10",name:"Vigamento_Aparente",type:"rug",w:3.0,h:0.02,d:3.0,color:"#5a4a3a"},
+  {id:"CAT_CEILINGS_11",name:"Vigamento_Branco",type:"rug",w:3.0,h:0.02,d:3.0,color:"#e8e8e8"},
+  {id:"CAT_CEILINGS_12",name:"Laje_Concreto",type:"rug",w:3.0,h:0.02,d:3.0,color:"#909090"},
+  {id:"CAT_CEILINGS_13",name:"Estrelado",type:"rug",w:3.0,h:0.02,d:3.0,color:"#1a1a30"},
+  {id:"CAT_CEILINGS_14",name:"Brilhante",type:"rug",w:3.0,h:0.02,d:3.0,color:"#d8d8f0"},
+  {id:"CAT_CEILINGS_15",name:"Retrofit_LED",type:"rug",w:3.0,h:0.02,d:3.0,color:"#c0c8d0"},
+  {id:"CAT_CEILINGS_16",name:"Industrial_Tubos",type:"rug",w:3.0,h:0.02,d:3.0,color:"#606060"},
+  {id:"CAT_CEILINGS_17",name:"Rústico",type:"rug",w:3.0,h:0.02,d:3.0,color:"#a08060"},
+  {id:"CAT_CEILINGS_18",name:"Moderno_Fita",type:"rug",w:3.0,h:0.02,d:3.0,color:"#303040"},
+  {id:"CAT_CEILINGS_19",name:"Clássico_Roseta",type:"rug",w:3.0,h:0.02,d:3.0,color:"#e0d8d0"},
+  {id:"CAT_CEILINGS_20",name:"Barroco",type:"rug",w:3.0,h:0.02,d:3.0,color:"#d0c8b0"},
+  {id:"CAT_CEILINGS_21",name:"Minimalista",type:"rug",w:3.0,h:0.02,d:3.0,color:"#f8f8f8"},
+  {id:"CAT_CEILINGS_22",name:"Espelhado",type:"rug",w:3.0,h:0.02,d:3.0,color:"#c8d0e0"},
+  {id:"CAT_CEILINGS_23",name:"Verde_Oliva",type:"rug",w:3.0,h:0.02,d:3.0,color:"#606040"},
+];
+var CAT_LIGHTS = [
+  {id:"CAT_LIGHTS_1",name:"Lâmpada_Comum",type:"lamp",w:0.3,h:1.2,d:0.3,color:"#ffe8a0"},
+  {id:"CAT_LIGHTS_2",name:"Lâmpada_Quente",type:"lamp",w:0.3,h:1.2,d:0.3,color:"#ffd060"},
+  {id:"CAT_LIGHTS_3",name:"Lâmpada_Fria",type:"lamp",w:0.3,h:1.2,d:0.3,color:"#c0d8ff"},
+  {id:"CAT_LIGHTS_4",name:"LED_Branco",type:"lamp",w:0.3,h:1.2,d:0.3,color:"#ffffff"},
+  {id:"CAT_LIGHTS_5",name:"LED_Âmbar",type:"lamp",w:0.3,h:1.2,d:0.3,color:"#ffc060"},
+  {id:"CAT_LIGHTS_6",name:"LED_RGB_Mudança",type:"lamp",w:0.3,h:1.2,d:0.3,color:"#ff40a0"},
+  {id:"CAT_LIGHTS_7",name:"Fluorescente",type:"lamp",w:0.3,h:1.2,d:0.3,color:"#e0f0ff"},
+  {id:"CAT_LIGHTS_8",name:"Halógena",type:"lamp",w:0.3,h:1.2,d:0.3,color:"#ffd0a0"},
+  {id:"CAT_LIGHTS_9",name:"Spot_Direcional",type:"lamp",w:0.3,h:1.2,d:0.3,color:"#fff0c0"},
+  {id:"CAT_LIGHTS_10",name:"Refletor",type:"lamp",w:0.4,h:1.3,d:0.4,color:"#ffffff"},
+  {id:"CAT_LIGHTS_11",name:"Lustre_Cristal",type:"lamp",w:0.5,h:1.4,d:0.5,color:"#e8e0ff"},
+  {id:"CAT_LIGHTS_12",name:"Pendente_Industrial",type:"lamp",w:0.4,h:1.5,d:0.4,color:"#ffb860"},
+  {id:"CAT_LIGHTS_13",name:"Abajur",type:"lamp",w:0.3,h:0.4,d:0.3,color:"#ffd090"},
+  {id:"CAT_LIGHTS_14",name:"Arandela",type:"lamp",w:0.2,h:0.4,d:0.18,color:"#ffd080"},
+  {id:"CAT_LIGHTS_15",name:"Fita_LED",type:"lamp",w:2.0,h:0.05,d:0.05,color:"#80c0ff"},
+  {id:"CAT_LIGHTS_16",name:"Neon_Rosa",type:"lamp",w:0.5,h:0.5,d:0.5,color:"#ff40ff"},
+  {id:"CAT_LIGHTS_17",name:"Neon_Azul",type:"lamp",w:0.5,h:0.5,d:0.5,color:"#40a0ff"},
+  {id:"CAT_LIGHTS_18",name:"Neon_Verde",type:"lamp",w:0.5,h:0.5,d:0.5,color:"#40ff80"},
+  {id:"CAT_LIGHTS_19",name:"Neon_Amarelo",type:"lamp",w:0.5,h:0.5,d:0.5,color:"#ffff40"},
+  {id:"CAT_LIGHTS_20",name:"Luz_Indireta",type:"lamp",w:1.5,h:0.05,d:0.05,color:"#ffe0b0"},
+  {id:"CAT_LIGHTS_21",name:"Projetor",type:"lamp",w:0.5,h:0.5,d:0.5,color:"#ffffff"},
+  {id:"CAT_LIGHTS_22",name:"Globo_Iluminado",type:"lamp",w:0.4,h:0.4,d:0.4,color:"#f0f0f0"},
+  {id:"CAT_LIGHTS_23",name:"Esfera_Flutuante",type:"lamp",w:0.4,h:0.4,d:0.4,color:"#a0d0ff"},
+  {id:"CAT_LIGHTS_24",name:"Vela",type:"lamp",w:0.1,h:0.25,d:0.1,color:"#ffe0b0"},
+  {id:"CAT_LIGHTS_25",name:"Tocha",type:"lamp",w:0.1,h:1.2,d:0.1,color:"#ff9040"},
+];
+var CAT_DOORS = [
+  {id:"CAT_DOORS_1",name:"Porta_Simples",type:"door",w:1.0,h:2.1,d:0.05,color:"#6a3a1a"},
+  {id:"CAT_DOORS_2",name:"Porta_Dupla",type:"door",w:1.7,h:2.1,d:0.05,color:"#6a3a1a"},
+  {id:"CAT_DOORS_3",name:"Porta_Correr",type:"door",w:1.4,h:2.1,d:0.05,color:"#5a3a1a"},
+  {id:"CAT_DOORS_4",name:"Porta_Automática",type:"door",w:1.4,h:2.1,d:0.05,color:"#a0c0d8"},
+  {id:"CAT_DOORS_5",name:"Porta_Branca",type:"door",w:1.0,h:2.1,d:0.05,color:"#f0f0f0"},
+  {id:"CAT_DOORS_6",name:"Porta_Preta",type:"door",w:1.0,h:2.1,d:0.05,color:"#101010"},
+  {id:"CAT_DOORS_7",name:"Porta_Cedro",type:"door",w:1.0,h:2.1,d:0.05,color:"#8a5a2a"},
+  {id:"CAT_DOORS_8",name:"Porta_Vidro",type:"door",w:0.95,h:2.1,d:0.05,color:"#c0d8e8"},
+  {id:"CAT_DOORS_9",name:"Porta_Pivotante",type:"door",w:1.2,h:2.2,d:0.06,color:"#5a3a1a"},
+  {id:"CAT_DOORS_10",name:"Porta_Sanfonada",type:"door",w:0.9,h:2.1,d:0.05,color:"#8a6a3a"},
+  {id:"CAT_DOORS_11",name:"Porta_Blindada",type:"door",w:1.0,h:2.2,d:0.08,color:"#2a2a3a"},
+  {id:"CAT_DOORS_12",name:"Porta_Cozinha",type:"door",w:0.9,h:2.0,d:0.05,color:"#c8c8c8"},
+  {id:"CAT_DOORS_13",name:"Porta_Banheiro",type:"door",w:0.75,h:2.0,d:0.05,color:"#e8e8e8"},
+  {id:"CAT_DOORS_14",name:"Porta_Camarim",type:"door",w:1.0,h:2.1,d:0.05,color:"#6a3a1a"},
+  {id:"CAT_DOORS_15",name:"Porta_Correr_Vidro",type:"door",w:1.6,h:2.1,d:0.06,color:"#a0d0e8"},
+  {id:"CAT_DOORS_16",name:"Janela_Simples",type:"window",w:1.2,h:1.0,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_17",name:"Janela_Grande",type:"window",w:1.8,h:1.2,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_18",name:"Janela_Basculante",type:"window",w:0.8,h:0.7,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_19",name:"Janela_Correr",type:"window",w:1.6,h:1.2,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_20",name:"Janela_Teto",type:"window",w:1.2,h:1.0,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_21",name:"Janela_Arco",type:"window",w:1.4,h:1.5,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_22",name:"Janela_Óculo",type:"window",w:0.7,h:0.7,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_23",name:"Janela_Clarabóia",type:"window",w:1.0,h:1.0,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_24",name:"Baldrame",type:"window",w:1.6,h:0.3,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_25",name:"Janela_Panorâmica",type:"window",w:2.4,h:1.6,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_26",name:"Vitrô",type:"window",w:1.2,h:1.4,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_27",name:"Vitral_Colorido",type:"window",w:1.0,h:1.4,d:0.05,color:"#c08040"},
+  {id:"CAT_DOORS_28",name:"Box_Banheiro",type:"door",w:0.9,h:2.0,d:0.05,color:"#c0d8e8"},
+  {id:"CAT_DOORS_29",name:"Box_Vidro",type:"door",w:0.9,h:2.0,d:0.05,color:"#a0d0e8"},
+  {id:"CAT_DOORS_30",name:"Portão",type:"door",w:2.4,h:2.2,d:0.08,color:"#2a2a2a"},
+  {id:"CAT_DOORS_31",name:"Portão_Correr",type:"door",w:3.0,h:2.2,d:0.08,color:"#3a3a3a"},
+  {id:"CAT_DOORS_32",name:"Cancela",type:"door",w:1.8,h:1.2,d:0.08,color:"#c02020"},
+];
+var CAT_TRIMS = [
+  {id:"CAT_TRIMS_1",name:"Rodapé_Madeira",type:"box",w:1.0,h:0.1,d:0.03,color:"#5a3a1a"},
+  {id:"CAT_TRIMS_2",name:"Rodapé_Branco",type:"box",w:1.0,h:0.1,d:0.03,color:"#e8e8e8"},
+  {id:"CAT_TRIMS_3",name:"Rodapé_Preto",type:"box",w:1.0,h:0.1,d:0.03,color:"#1a1a1a"},
+  {id:"CAT_TRIMS_4",name:"Rodapé_Mármore",type:"box",w:1.0,h:0.12,d:0.04,color:"#d0d0d0"},
+  {id:"CAT_TRIMS_5",name:"Rodapé_Inox",type:"box",w:1.0,h:0.1,d:0.03,color:"#a0a0a8"},
+  {id:"CAT_TRIMS_6",name:"Rodapé_Alumínio",type:"box",w:1.0,h:0.1,d:0.03,color:"#c0c0c8"},
+  {id:"CAT_TRIMS_7",name:"Sanca_Gesso",type:"box",w:1.0,h:0.15,d:0.15,color:"#f0f0f0"},
+  {id:"CAT_TRIMS_8",name:"Sanca_LED",type:"box",w:1.0,h:0.12,d:0.15,color:"#d0d8ff"},
+  {id:"CAT_TRIMS_9",name:"Cornija_Clássica",type:"box",w:1.0,h:0.12,d:0.12,color:"#e8e0d0"},
+  {id:"CAT_TRIMS_10",name:"Cornija_Moderna",type:"box",w:1.0,h:0.08,d:0.08,color:"#a0a0a0"},
+  {id:"CAT_TRIMS_11",name:"Cornija_Rústica",type:"box",w:1.0,h:0.14,d:0.14,color:"#806040"},
+  {id:"CAT_TRIMS_12",name:"Painel_Ripado",type:"box",w:0.6,h:2.2,d:0.03,color:"#8a6a3a"},
+  {id:"CAT_TRIMS_13",name:"Painel_Perfilado",type:"box",w:1.0,h:2.2,d:0.05,color:"#c0c0c0"},
+  {id:"CAT_TRIMS_14",name:"Painel_Acústico",type:"box",w:0.6,h:1.2,d:0.04,color:"#a09080"},
+  {id:"CAT_TRIMS_15",name:"Papel_Parede_Listrado",type:"box",w:1.0,h:2.2,d:0.02,color:"#d0c8b0"},
+  {id:"CAT_TRIMS_16",name:"Papel_Parede_Floral",type:"box",w:1.0,h:2.2,d:0.02,color:"#e0c0d0"},
+  {id:"CAT_TRIMS_17",name:"Papel_Parede_Geométrico",type:"box",w:1.0,h:2.2,d:0.02,color:"#b0c0d0"},
+  {id:"CAT_TRIMS_18",name:"Papel_Parede_Listras_Azuis",type:"box",w:1.0,h:2.2,d:0.02,color:"#90b0d0"},
+  {id:"CAT_TRIMS_19",name:"Papel_Parede_Poá",type:"box",w:1.0,h:2.2,d:0.02,color:"#e0d0c0"},
+  {id:"CAT_TRIMS_20",name:"Azulejo_Cozinha",type:"box",w:0.6,h:0.6,d:0.02,color:"#e8e8e8"},
+  {id:"CAT_TRIMS_21",name:"Azulejo_Banheiro",type:"box",w:0.6,h:0.6,d:0.02,color:"#d0e0e8"},
+  {id:"CAT_TRIMS_22",name:"Azulejo_Preto_Branco",type:"box",w:0.6,h:0.6,d:0.02,color:"#2a2a2a"},
+  {id:"CAT_TRIMS_23",name:"Pastilha_Vidro",type:"box",w:0.3,h:0.3,d:0.02,color:"#a0d0c0"},
+  {id:"CAT_TRIMS_24",name:"Pastilha_Porcelana",type:"box",w:0.3,h:0.3,d:0.02,color:"#e0e0e0"},
+  {id:"CAT_TRIMS_25",name:"Pastilha_Metálica",type:"box",w:0.3,h:0.3,d:0.02,color:"#c0c0c8"},
+  {id:"CAT_TRIMS_26",name:"Boiserie",type:"box",w:1.0,h:1.2,d:0.03,color:"#5a3a1a"},
+  {id:"CAT_TRIMS_27",name:"Lambril",type:"box",w:1.0,h:1.0,d:0.03,color:"#7a5a3a"},
+  {id:"CAT_TRIMS_28",name:"Baguete",type:"box",w:1.0,h:0.1,d:0.02,color:"#d0b890"},
+  {id:"CAT_TRIMS_29",name:"Baguete_Dourada",type:"box",w:1.0,h:0.1,d:0.02,color:"#c8a040"},
+  {id:"CAT_TRIMS_30",name:"Chapa_Perfurada",type:"box",w:0.6,h:1.2,d:0.02,color:"#a0a0a8"},
+  {id:"CAT_TRIMS_31",name:"Vidro_Serigrafado",type:"box",w:1.2,h:2.0,d:0.02,color:"#c0d8e8"},
+  {id:"CAT_TRIMS_32",name:"Tijolo_Aparente",type:"box",w:0.6,h:0.4,d:0.04,color:"#a05038"},
+  {id:"CAT_TRIMS_33",name:"Pedra_Revestimento",type:"box",w:0.6,h:0.4,d:0.05,color:"#909090"},
+];
+var CAT_DECOR = [
+  {id:"CAT_DECOR_1",name:"Vaso_Pequeno",type:"box",w:0.25,h:0.35,d:0.25,color:"#c04080"},
+  {id:"CAT_DECOR_2",name:"Vaso_Grande",type:"box",w:0.4,h:0.9,d:0.4,color:"#8040c0"},
+  {id:"CAT_DECOR_3",name:"Vaso_Alto",type:"box",w:0.3,h:1.2,d:0.3,color:"#c0c0c0"},
+  {id:"CAT_DECOR_4",name:"Vaso_Cerâmica",type:"box",w:0.35,h:0.5,d:0.35,color:"#a06040"},
+  {id:"CAT_DECOR_5",name:"Vaso_Terracota",type:"box",w:0.4,h:0.6,d:0.4,color:"#b86a4a"},
+  {id:"CAT_DECOR_6",name:"Jarra",type:"box",w:0.3,h:0.45,d:0.3,color:"#a0c0d8"},
+  {id:"CAT_DECOR_7",name:"Bule",type:"box",w:0.3,h:0.25,d:0.3,color:"#e8e8e8"},
+  {id:"CAT_DECOR_8",name:"Xícara_Gigante",type:"box",w:0.35,h:0.3,d:0.35,color:"#e0c0a0"},
+  {id:"CAT_DECOR_9",name:"Prato_Decorativo",type:"box",w:0.4,h:0.05,d:0.4,color:"#4090c0"},
+  {id:"CAT_DECOR_10",name:"Travessa",type:"box",w:0.5,h:0.08,d:0.35,color:"#e0d0a0"},
+  {id:"CAT_DECOR_11",name:"Bandeja",type:"box",w:0.6,h:0.05,d:0.4,color:"#8a5a3a"},
+  {id:"CAT_DECOR_12",name:"Tábua_Frios",type:"box",w:0.5,h:0.03,d:0.3,color:"#5a3a1a"},
+  {id:"CAT_DECOR_13",name:"Queijeira",type:"box",w:0.35,h:0.15,d:0.35,color:"#f0e0c0"},
+  {id:"CAT_DECOR_14",name:"Fruteira",type:"box",w:0.35,h:0.2,d:0.35,color:"#c0a060"},
+  {id:"CAT_DECOR_15",name:"Bolo_Decor",type:"box",w:0.3,h:0.25,d:0.3,color:"#e0a0c0"},
+  {id:"CAT_DECOR_16",name:"Cupcake_Decor",type:"box",w:0.15,h:0.2,d:0.15,color:"#f0c0d0"},
+  {id:"CAT_DECOR_17",name:"Sorvete_Decor",type:"box",w:0.12,h:0.25,d:0.12,color:"#f0d0a0"},
+  {id:"CAT_DECOR_18",name:"Escultura_Abstrata",type:"box",w:0.3,h:0.9,d:0.3,color:"#e0d0a0"},
+  {id:"CAT_DECOR_19",name:"Escultura_Clássica",type:"box",w:0.35,h:1.1,d:0.35,color:"#e8e8e8"},
+  {id:"CAT_DECOR_20",name:"Estátua_Bronze",type:"box",w:0.4,h:1.3,d:0.4,color:"#8a6a3a"},
+  {id:"CAT_DECOR_21",name:"Buda",type:"box",w:0.5,h:0.8,d:0.4,color:"#c8a060"},
+  {id:"CAT_DECOR_22",name:"Fonte_Mesa",type:"box",w:0.4,h:0.5,d:0.4,color:"#a0d0e8"},
+  {id:"CAT_DECOR_23",name:"Globo_Terrestre",type:"box",w:0.35,h:0.5,d:0.35,color:"#2060a0"},
+  {id:"CAT_DECOR_24",name:"Lupa",type:"box",w:0.25,h:0.3,d:0.15,color:"#c8a040"},
+  {id:"CAT_DECOR_25",name:"Relógio_Cuco",type:"box",w:0.25,h:0.4,d:0.15,color:"#8a5a2a"},
+  {id:"CAT_DECOR_26",name:"Relógio_Pêndulo",type:"box",w:0.4,h:1.6,d:0.2,color:"#5a3a1a"},
+  {id:"CAT_DECOR_27",name:"Ampulheta",type:"box",w:0.2,h:0.35,d:0.2,color:"#e0c080"},
+  {id:"CAT_DECOR_28",name:"Bússola",type:"box",w:0.15,h:0.08,d:0.15,color:"#c8a060"},
+  {id:"CAT_DECOR_29",name:"Telescópio",type:"box",w:0.35,h:1.3,d:0.35,color:"#3a3a4a"},
+  {id:"CAT_DECOR_30",name:"Microscópio",type:"box",w:0.25,h:0.45,d:0.25,color:"#2a2a3a"},
+  {id:"CAT_DECOR_31",name:"Máquina_Escrever",type:"box",w:0.5,h:0.35,d:0.4,color:"#1a1a1a"},
+  {id:"CAT_DECOR_32",name:"Rádio_Antigo",type:"box",w:0.4,h:0.3,d:0.25,color:"#6a3a1a"},
+  {id:"CAT_DECOR_33",name:"Vitrola",type:"box",w:0.5,h:0.25,d:0.4,color:"#3a1a0a"},
+  {id:"CAT_DECOR_34",name:"Gramofone",type:"box",w:0.4,h:0.6,d:0.4,color:"#a08040"},
+  {id:"CAT_DECOR_35",name:"Caixa_Música",type:"box",w:0.25,h:0.2,d:0.2,color:"#8a5a3a"},
+  {id:"CAT_DECOR_36",name:"Boneca",type:"box",w:0.2,h:0.35,d:0.15,color:"#e0a0c0"},
+  {id:"CAT_DECOR_37",name:"Urso_Pelúcia",type:"box",w:0.3,h:0.4,d:0.25,color:"#8a5a3a"},
+  {id:"CAT_DECOR_38",name:"Robô_Brinquedo",type:"box",w:0.25,h:0.35,d:0.2,color:"#4080c0"},
+  {id:"CAT_DECOR_39",name:"Carrinho",type:"box",w:0.3,h:0.15,d:0.15,color:"#c02020"},
+  {id:"CAT_DECOR_40",name:"Lego_Set",type:"box",w:0.3,h:0.2,d:0.3,color:"#c0c020"},
+  {id:"CAT_DECOR_41",name:"Xadrez_Tabuleiro",type:"box",w:0.5,h:0.03,d:0.5,color:"#3a2a1a"},
+  {id:"CAT_DECOR_42",name:"Baralho",type:"box",w:0.15,h:0.04,d:0.1,color:"#e8e8e8"},
+  {id:"CAT_DECOR_43",name:"Dado_Grande",type:"box",w:0.15,h:0.15,d:0.15,color:"#e8e8e8"},
+  {id:"CAT_DECOR_44",name:"Vela",type:"box",w:0.1,h:0.25,d:0.1,color:"#f0e0c0"},
+  {id:"CAT_DECOR_45",name:"Lanterna",type:"box",w:0.15,h:0.25,d:0.15,color:"#c0a060"},
+  {id:"CAT_DECOR_46",name:"Castiçal",type:"box",w:0.15,h:0.35,d:0.15,color:"#c8a040"},
+  {id:"CAT_DECOR_47",name:"Incenso",type:"box",w:0.12,h:0.3,d:0.12,color:"#a08060"},
+  {id:"CAT_DECOR_48",name:"Difusor",type:"box",w:0.15,h:0.25,d:0.15,color:"#c0d0e0"},
+  {id:"CAT_DECOR_49",name:"Gaiola",type:"box",w:0.4,h:0.6,d:0.4,color:"#c0a060"},
+  {id:"CAT_DECOR_50",name:"Fonte_Parede",type:"box",w:0.5,h:0.6,d:0.15,color:"#a0c0d8"},
+  {id:"CAT_DECOR_51",name:"Espelho_Vintage",type:"box",w:0.5,h:0.9,d:0.06,color:"#c0a060"},
+  {id:"CAT_DECOR_52",name:"Quadro_Abstrato",type:"box",w:0.6,h:0.7,d:0.05,color:"#a040c0"},
+  {id:"CAT_DECOR_53",name:"Quadro_Paisagem",type:"box",w:0.8,h:0.6,d:0.05,color:"#40a060"},
+  {id:"CAT_DECOR_54",name:"Quadro_Retrato",type:"box",w:0.5,h:0.7,d:0.05,color:"#805030"},
+  {id:"CAT_DECOR_55",name:"Gravura",type:"box",w:0.5,h:0.5,d:0.05,color:"#c0b090"},
+  {id:"CAT_DECOR_56",name:"Cartaz_Filme",type:"box",w:0.5,h:0.7,d:0.03,color:"#1a1a2a"},
+  {id:"CAT_DECOR_57",name:"Poster_Banda",type:"box",w:0.5,h:0.7,d:0.03,color:"#3a1a3a"},
+  {id:"CAT_DECOR_58",name:"Mapa_Mundi",type:"box",w:1.0,h:0.7,d:0.03,color:"#c0a080"},
+  {id:"CAT_DECOR_59",name:"Bandeira",type:"box",w:0.6,h:0.4,d:0.02,color:"#c02020"},
+  {id:"CAT_DECOR_60",name:"Troféu",type:"box",w:0.2,h:0.35,d:0.15,color:"#c8a040"},
+  {id:"CAT_DECOR_61",name:"Medalha",type:"box",w:0.15,h:0.15,d:0.03,color:"#c8a040"},
+  {id:"CAT_DECOR_62",name:"Taça",type:"box",w:0.2,h:0.3,d:0.15,color:"#e8e8f0"},
+  {id:"CAT_DECOR_63",name:"Cálice",type:"box",w:0.15,h:0.25,d:0.15,color:"#c0c8d0"},
+  {id:"CAT_DECOR_64",name:"Ânfora",type:"box",w:0.35,h:0.7,d:0.35,color:"#8a5a3a"},
+  {id:"CAT_DECOR_65",name:"Abacaxi_Decor",type:"box",w:0.15,h:0.25,d:0.15,color:"#e0c020"},
+  {id:"CAT_DECOR_66",name:"Limão_Decor",type:"box",w:0.1,h:0.12,d:0.1,color:"#c0d020"},
+  {id:"CAT_DECOR_67",name:"Maçã_Decor",type:"box",w:0.1,h:0.12,d:0.1,color:"#c02020"},
+  {id:"CAT_DECOR_68",name:"Uva_Decor",type:"box",w:0.12,h:0.15,d:0.12,color:"#602060"},
+  {id:"CAT_DECOR_69",name:"Banana_Decor",type:"box",w:0.15,h:0.1,d:0.1,color:"#e0c020"},
+  {id:"CAT_DECOR_70",name:"Cogumelo_Decor",type:"box",w:0.12,h:0.15,d:0.12,color:"#c02020"},
+  {id:"CAT_DECOR_71",name:"Estrela_Marinha",type:"box",w:0.2,h:0.05,d:0.2,color:"#e09040"},
+  {id:"CAT_DECOR_72",name:"Concha",type:"box",w:0.15,h:0.08,d:0.15,color:"#f0d8b0"},
+  {id:"CAT_DECOR_73",name:"Cristal",type:"box",w:0.15,h:0.35,d:0.15,color:"#c0d8ff"},
+  {id:"CAT_DECOR_74",name:"Geodo",type:"box",w:0.25,h:0.2,d:0.25,color:"#a080c0"},
+  {id:"CAT_DECOR_75",name:"Fóssil",type:"box",w:0.3,h:0.1,d:0.3,color:"#a09080"},
+  {id:"CAT_DECOR_76",name:"Meteorito",type:"box",w:0.2,h:0.2,d:0.2,color:"#4a4a4a"},
+  {id:"CAT_DECOR_77",name:"Mármore_Bola",type:"box",w:0.2,h:0.2,d:0.2,color:"#e8e8e8"},
+  {id:"CAT_DECOR_78",name:"Cubo_Metálico",type:"box",w:0.2,h:0.2,d:0.2,color:"#c0c0c8"},
+  {id:"CAT_DECOR_79",name:"Esfera_Espelhada",type:"box",w:0.2,h:0.2,d:0.2,color:"#d0d8e8"},
+  {id:"CAT_DECOR_80",name:"Pião",type:"box",w:0.15,h:0.2,d:0.15,color:"#c02020"},
+  {id:"CAT_DECOR_81",name:"Ioiô",type:"box",w:0.1,h:0.1,d:0.05,color:"#e0c020"},
+  {id:"CAT_DECOR_82",name:"Bola_Futebol",type:"box",w:0.22,h:0.22,d:0.22,color:"#e8e8e8"},
+  {id:"CAT_DECOR_83",name:"Bola_Basquete",type:"box",w:0.24,h:0.24,d:0.24,color:"#e08040"},
+  {id:"CAT_DECOR_84",name:"Bola_Vôlei",type:"box",w:0.21,h:0.21,d:0.21,color:"#e0e0e0"},
+  {id:"CAT_DECOR_85",name:"Bola_Boliche",type:"box",w:0.22,h:0.22,d:0.22,color:"#1a1a1a"},
+  {id:"CAT_DECOR_86",name:"Pipa",type:"box",w:0.6,h:0.6,d:0.02,color:"#e04040"},
+  {id:"CAT_DECOR_87",name:"Patinete",type:"box",w:0.4,h:0.9,d:0.7,color:"#1a1a1a"},
+  {id:"CAT_DECOR_88",name:"Skate",type:"box",w:0.25,h:0.1,d:0.8,color:"#606060"},
+  {id:"CAT_DECOR_89",name:"Chinelo",type:"box",w:0.15,h:0.05,d:0.3,color:"#4090c0"},
+  {id:"CAT_DECOR_90",name:"Tênis",type:"box",w:0.15,h:0.12,d:0.3,color:"#e8e8e8"},
+  {id:"CAT_DECOR_91",name:"Bota",type:"box",w:0.15,h:0.3,d:0.25,color:"#5a3a1a"},
+  {id:"CAT_DECOR_92",name:"Chapéu",type:"box",w:0.25,h:0.15,d:0.25,color:"#8a6a3a"},
+  {id:"CAT_DECOR_93",name:"Boné",type:"box",w:0.22,h:0.15,d:0.28,color:"#c02020"},
+  {id:"CAT_DECOR_94",name:"Óculos",type:"box",w:0.18,h:0.06,d:0.15,color:"#1a1a1a"},
+  {id:"CAT_DECOR_95",name:"Relógio_Pulso",type:"box",w:0.08,h:0.05,d:0.05,color:"#c8a040"},
+  {id:"CAT_DECOR_96",name:"Colar",type:"box",w:0.15,h:0.02,d:0.15,color:"#e0c060"},
+  {id:"CAT_DECOR_97",name:"Anel",type:"box",w:0.03,h:0.03,d:0.02,color:"#e0d0a0"},
+  {id:"CAT_DECOR_98",name:"Brinco",type:"box",w:0.04,h:0.05,d:0.02,color:"#e0d0a0"},
+  {id:"CAT_DECOR_99",name:"Pulseira",type:"box",w:0.1,h:0.02,d:0.1,color:"#c0a080"},
+  {id:"CAT_DECOR_100",name:"Cinto",type:"box",w:0.4,h:0.05,d:0.03,color:"#3a2010"},
+  {id:"CAT_DECOR_101",name:"Gravata",type:"box",w:0.15,h:0.6,d:0.03,color:"#8a2020"},
+  {id:"CAT_DECOR_102",name:"Lenço",type:"box",w:0.3,h:0.3,d:0.02,color:"#c0a0d0"},
+  {id:"CAT_DECOR_103",name:"Cachecol",type:"box",w:0.2,h:0.4,d:0.1,color:"#c02020"},
+  {id:"CAT_DECOR_104",name:"Luva",type:"box",w:0.15,h:0.25,d:0.1,color:"#2a2a2a"},
+  {id:"CAT_DECOR_105",name:"Meia",type:"box",w:0.15,h:0.2,d:0.08,color:"#2a2a2a"},
+  {id:"CAT_DECOR_106",name:"Camiseta",type:"box",w:0.4,h:0.5,d:0.05,color:"#4090c0"},
+  {id:"CAT_DECOR_107",name:"Calça",type:"box",w:0.4,h:0.8,d:0.05,color:"#3a3a3a"},
+  {id:"CAT_DECOR_108",name:"Vestido",type:"box",w:0.4,h:0.8,d:0.05,color:"#c04080"},
+  {id:"CAT_DECOR_109",name:"Casaco",type:"box",w:0.5,h:0.7,d:0.1,color:"#2a2a3a"},
+  {id:"CAT_DECOR_110",name:"Blusa",type:"box",w:0.4,h:0.55,d:0.08,color:"#a040c0"},
+  {id:"CAT_DECOR_111",name:"Saia",type:"box",w:0.35,h:0.5,d:0.05,color:"#80a040"},
+];
+var CAT_ELEC = [
+  {id:"CAT_ELEC_1",name:"Notebook",type:"table",w:0.35,h:0.03,d:0.25,color:"#1a1a1a"},
+  {id:"CAT_ELEC_2",name:"Notebook_Gamer",type:"table",w:0.4,h:0.03,d:0.28,color:"#2a2a4a"},
+  {id:"CAT_ELEC_3",name:"Monitor",type:"table",w:0.55,h:0.4,d:0.08,color:"#1a1a1a"},
+  {id:"CAT_ELEC_4",name:"Monitor_Ultra_Wide",type:"table",w:0.9,h:0.4,d:0.08,color:"#1a1a1a"},
+  {id:"CAT_ELEC_5",name:"Monitor_Duplo",type:"table",w:1.1,h:0.4,d:0.08,color:"#1a1a1a"},
+  {id:"CAT_ELEC_6",name:"Teclado",type:"table",w:0.45,h:0.03,d:0.15,color:"#1a1a1a"},
+  {id:"CAT_ELEC_7",name:"Teclado_Mecânico",type:"table",w:0.45,h:0.04,d:0.15,color:"#2a2a2a"},
+  {id:"CAT_ELEC_8",name:"Mouse",type:"table",w:0.08,h:0.04,d:0.12,color:"#1a1a1a"},
+  {id:"CAT_ELEC_9",name:"Mousepad",type:"table",w:0.3,h:0.01,d:0.25,color:"#1a1a1a"},
+  {id:"CAT_ELEC_10",name:"Webcam",type:"table",w:0.08,h:0.08,d:0.06,color:"#1a1a1a"},
+  {id:"CAT_ELEC_11",name:"Headset",type:"table",w:0.2,h:0.2,d:0.15,color:"#1a1a1a"},
+  {id:"CAT_ELEC_12",name:"Caixa_Som",type:"table",w:0.2,h:0.35,d:0.2,color:"#1a1a1a"},
+  {id:"CAT_ELEC_13",name:"Subwoofer",type:"table",w:0.35,h:0.4,d:0.35,color:"#1a1a1a"},
+  {id:"CAT_ELEC_14",name:"Amplificador",type:"table",w:0.4,h:0.15,d:0.3,color:"#2a2a2a"},
+  {id:"CAT_ELEC_15",name:"Toca_Disco",type:"table",w:0.4,h:0.1,d:0.4,color:"#1a1a1a"},
+  {id:"CAT_ELEC_16",name:"Rádio_Portátil",type:"table",w:0.25,h:0.15,d:0.1,color:"#c02020"},
+  {id:"CAT_ELEC_17",name:"TV_CRT",type:"table",w:0.6,h:0.5,d:0.6,color:"#2a2a2a"},
+  {id:"CAT_ELEC_18",name:"TV_LED_Slim",type:"tv",w:1.2,h:0.7,d:0.05,color:"#0a0a0a"},
+  {id:"CAT_ELEC_19",name:"TV_OLED_Curva",type:"tv",w:1.4,h:0.8,d:0.08,color:"#0a0a0a"},
+  {id:"CAT_ELEC_20",name:"Console_Videogame",type:"table",w:0.3,h:0.1,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_ELEC_21",name:"Controle_Videogame",type:"table",w:0.18,h:0.08,d:0.12,color:"#1a1a1a"},
+  {id:"CAT_ELEC_22",name:"Joystick_Arcade",type:"table",w:0.3,h:0.15,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_ELEC_23",name:"Óculos_VR",type:"table",w:0.18,h:0.12,d:0.15,color:"#1a1a1a"},
+  {id:"CAT_ELEC_24",name:"Drone",type:"table",w:0.35,h:0.15,d:0.35,color:"#2a2a3a"},
+  {id:"CAT_ELEC_25",name:"Câmera_Fotográfica",type:"table",w:0.15,h:0.12,d:0.1,color:"#1a1a1a"},
+  {id:"CAT_ELEC_26",name:"Câmera_Filmadora",type:"table",w:0.2,h:0.15,d:0.25,color:"#1a1a1a"},
+  {id:"CAT_ELEC_27",name:"Tripé",type:"table",w:0.15,h:1.5,d:0.15,color:"#1a1a1a"},
+  {id:"CAT_ELEC_28",name:"Estabilizador",type:"table",w:0.2,h:0.15,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_ELEC_29",name:"Ring_Light",type:"table",w:0.4,h:0.4,d:0.1,color:"#f0f0f0"},
+  {id:"CAT_ELEC_30",name:"Softbox",type:"table",w:0.6,h:0.6,d:0.5,color:"#f0f0f0"},
+  {id:"CAT_ELEC_31",name:"Estúdio_Kit",type:"table",w:1.2,h:2.0,d:0.8,color:"#1a1a1a"},
+  {id:"CAT_ELEC_32",name:"Projetor_Home_Theater",type:"table",w:0.4,h:0.15,d:0.35,color:"#e8e8e8"},
+  {id:"CAT_ELEC_33",name:"Tela_Projeção",type:"table",w:2.0,h:1.2,d:0.05,color:"#f0f0f0"},
+  {id:"CAT_ELEC_34",name:"Soundbar",type:"table",w:1.0,h:0.1,d:0.12,color:"#1a1a1a"},
+  {id:"CAT_ELEC_35",name:"Barra_LED_RGB",type:"table",w:1.0,h:0.06,d:0.06,color:"#a040c0"},
+  {id:"CAT_ELEC_36",name:"Fita_LED_Endereçável",type:"table",w:2.0,h:0.02,d:0.02,color:"#40c0a0"},
+  {id:"CAT_ELEC_37",name:"Smartspeaker",type:"table",w:0.15,h:0.2,d:0.15,color:"#a0a0a8"},
+  {id:"CAT_ELEC_38",name:"Tablet",type:"table",w:0.25,h:0.02,d:0.18,color:"#1a1a1a"},
+  {id:"CAT_ELEC_39",name:"Suporte_Tablet",type:"table",w:0.2,h:0.15,d:0.1,color:"#1a1a1a"},
+  {id:"CAT_ELEC_40",name:"Smartwatch",type:"table",w:0.05,h:0.05,d:0.02,color:"#1a1a1a"},
+  {id:"CAT_ELEC_41",name:"Kindle",type:"table",w:0.15,h:0.02,d:0.2,color:"#1a1a1a"},
+  {id:"CAT_ELEC_42",name:"Impressora_3D",type:"table",w:0.4,h:0.5,d:0.4,color:"#1a1a1a"},
+  {id:"CAT_ELEC_43",name:"Impressora",type:"table",w:0.4,h:0.3,d:0.35,color:"#e8e8e8"},
+  {id:"CAT_ELEC_44",name:"Scanner",type:"table",w:0.35,h:0.15,d:0.4,color:"#c8c8c8"},
+  {id:"CAT_ELEC_45",name:"Roteador",type:"table",w:0.2,h:0.05,d:0.15,color:"#1a1a1a"},
+  {id:"CAT_ELEC_46",name:"Modem",type:"table",w:0.18,h:0.05,d:0.12,color:"#1a1a1a"},
+  {id:"CAT_ELEC_47",name:"Switch_Rede",type:"table",w:0.4,h:0.05,d:0.2,color:"#1a1a1a"},
+  {id:"CAT_ELEC_48",name:"NAS",type:"table",w:0.2,h:0.25,d:0.25,color:"#1a1a1a"},
+  {id:"CAT_ELEC_49",name:"Servidor",type:"table",w:0.6,h:2.0,d:0.8,color:"#1a1a1a"},
+  {id:"CAT_ELEC_50",name:"Rack_Rede",type:"table",w:0.6,h:2.0,d:0.6,color:"#1a1a1a"},
+  {id:"CAT_ELEC_51",name:"Nobreak",type:"table",w:0.3,h:0.25,d:0.35,color:"#1a1a1a"},
+  {id:"CAT_ELEC_52",name:"Fonte_Bancada",type:"table",w:0.35,h:0.15,d:0.3,color:"#2a2a2a"},
+  {id:"CAT_ELEC_53",name:"Osciloscópio",type:"table",w:0.4,h:0.25,d:0.3,color:"#1a1a2a"},
+  {id:"CAT_ELEC_54",name:"Multímetro",type:"table",w:0.18,h:0.05,d:0.1,color:"#c02020"},
+  {id:"CAT_ELEC_55",name:"Estação_Solda",type:"table",w:0.25,h:0.15,d:0.2,color:"#1a1a1a"},
+  {id:"CAT_ELEC_56",name:"Ferro_Solda",type:"table",w:0.1,h:0.15,d:0.05,color:"#1a1a1a"},
+  {id:"CAT_ELEC_57",name:"Microcontrolador",type:"table",w:0.15,h:0.03,d:0.1,color:"#1a4a1a"},
+  {id:"CAT_ELEC_58",name:"Raspberry_Pi",type:"table",w:0.1,h:0.03,d:0.07,color:"#1a3a1a"},
+  {id:"CAT_ELEC_59",name:"Arduino",type:"table",w:0.1,h:0.03,d:0.07,color:"#2a4a6a"},
+  {id:"CAT_ELEC_60",name:"Sensor_Kit",type:"table",w:0.3,h:0.1,d:0.2,color:"#2a2a2a"},
+  {id:"CAT_ELEC_61",name:"Breadboard",type:"table",w:0.18,h:0.02,d:0.12,color:"#f0f0f0"},
+  {id:"CAT_ELEC_62",name:"Cabos_Kit",type:"table",w:0.3,h:0.05,d:0.2,color:"#1a1a1a"},
+];
+var CAT_KITCHEN = [
+  {id:"CAT_KITCHEN_1",name:"Panela_Pequena",type:"table",w:0.2,h:0.15,d:0.2,color:"#c8c8d0"},
+  {id:"CAT_KITCHEN_2",name:"Panela_Média",type:"table",w:0.25,h:0.18,d:0.25,color:"#c8c8d0"},
+  {id:"CAT_KITCHEN_3",name:"Panela_Grande",type:"table",w:0.3,h:0.22,d:0.3,color:"#c8c8d0"},
+  {id:"CAT_KITCHEN_4",name:"Panela_Pressão",type:"table",w:0.25,h:0.3,d:0.25,color:"#a0a0a8"},
+  {id:"CAT_KITCHEN_5",name:"Frigideira",type:"table",w:0.28,h:0.08,d:0.28,color:"#1a1a1a"},
+  {id:"CAT_KITCHEN_6",name:"Wok",type:"table",w:0.3,h:0.1,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_KITCHEN_7",name:"Caçarola",type:"table",w:0.22,h:0.15,d:0.22,color:"#c8c8d0"},
+  {id:"CAT_KITCHEN_8",name:"Assadeira",type:"table",w:0.35,h:0.08,d:0.25,color:"#2a2a2a"},
+  {id:"CAT_KITCHEN_9",name:"Forma_Bolo",type:"table",w:0.25,h:0.08,d:0.25,color:"#2a2a2a"},
+  {id:"CAT_KITCHEN_10",name:"Prato_Raso",type:"table",w:0.25,h:0.03,d:0.25,color:"#f0f0f0"},
+  {id:"CAT_KITCHEN_11",name:"Prato_Fundo",type:"table",w:0.25,h:0.06,d:0.25,color:"#f0f0f0"},
+  {id:"CAT_KITCHEN_12",name:"Prato_Sobremesa",type:"table",w:0.2,h:0.02,d:0.2,color:"#f0f0f0"},
+  {id:"CAT_KITCHEN_13",name:"Tigela",type:"table",w:0.2,h:0.1,d:0.2,color:"#f0f0f0"},
+  {id:"CAT_KITCHEN_14",name:"Bowl_Salada",type:"table",w:0.28,h:0.1,d:0.28,color:"#c0d0b0"},
+  {id:"CAT_KITCHEN_15",name:"Copo",type:"table",w:0.08,h:0.15,d:0.08,color:"#c0d8e8"},
+  {id:"CAT_KITCHEN_16",name:"Copo_Longo",type:"table",w:0.07,h:0.2,d:0.07,color:"#c0d8e8"},
+  {id:"CAT_KITCHEN_17",name:"Taça_Vinho",type:"table",w:0.09,h:0.22,d:0.09,color:"#c8d8e8"},
+  {id:"CAT_KITCHEN_18",name:"Taça_Champagne",type:"table",w:0.08,h:0.25,d:0.08,color:"#c8d8e8"},
+  {id:"CAT_KITCHEN_19",name:"Caneca",type:"table",w:0.1,h:0.12,d:0.1,color:"#c0a0a0"},
+  {id:"CAT_KITCHEN_20",name:"Xícara_Café",type:"table",w:0.08,h:0.08,d:0.08,color:"#e8e8e8"},
+  {id:"CAT_KITCHEN_21",name:"Xícara_Chá",type:"table",w:0.08,h:0.07,d:0.08,color:"#e8e8e8"},
+  {id:"CAT_KITCHEN_22",name:"Pires",type:"table",w:0.14,h:0.02,d:0.14,color:"#e8e8e8"},
+  {id:"CAT_KITCHEN_23",name:"Bule_Chá",type:"table",w:0.18,h:0.2,d:0.18,color:"#e8e8e8"},
+  {id:"CAT_KITCHEN_24",name:"Cafeteira",type:"table",w:0.25,h:0.4,d:0.25,color:"#2a2a2a"},
+  {id:"CAT_KITCHEN_25",name:"Cafeteira_Italiana",type:"table",w:0.12,h:0.2,d:0.12,color:"#a0a0a8"},
+  {id:"CAT_KITCHEN_26",name:"Chaleira",type:"table",w:0.2,h:0.22,d:0.2,color:"#c8c8d0"},
+  {id:"CAT_KITCHEN_27",name:"Chaleira_Elétrica",type:"table",w:0.2,h:0.25,d:0.2,color:"#e8e8e8"},
+  {id:"CAT_KITCHEN_28",name:"Liquidificador",type:"table",w:0.18,h:0.4,d:0.18,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_29",name:"Batedeira",type:"table",w:0.25,h:0.35,d:0.2,color:"#c02020"},
+  {id:"CAT_KITCHEN_30",name:"Processador_Alimentos",type:"table",w:0.25,h:0.4,d:0.25,color:"#e8e8e8"},
+  {id:"CAT_KITCHEN_31",name:"Air_Fryer",type:"table",w:0.3,h:0.35,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_KITCHEN_32",name:"Sanduicheira",type:"table",w:0.28,h:0.15,d:0.25,color:"#1a1a1a"},
+  {id:"CAT_KITCHEN_33",name:"Torradeira",type:"table",w:0.25,h:0.2,d:0.15,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_34",name:"Microondas_Grande",type:"table",w:0.5,h:0.32,d:0.4,color:"#1a1a1a"},
+  {id:"CAT_KITCHEN_35",name:"Lava_Louças_Bancada",type:"table",w:0.55,h:0.5,d:0.5,color:"#c8c8d0"},
+  {id:"CAT_KITCHEN_36",name:"Escorredor_Louça",type:"table",w:0.4,h:0.15,d:0.35,color:"#c0c0c0"},
+  {id:"CAT_KITCHEN_37",name:"Porta_Tempero",type:"table",w:0.3,h:0.35,d:0.15,color:"#8a6a3a"},
+  {id:"CAT_KITCHEN_38",name:"Tábua_Corte",type:"table",w:0.35,h:0.03,d:0.25,color:"#8a6a3a"},
+  {id:"CAT_KITCHEN_39",name:"Faca",type:"table",w:0.03,h:0.25,d:0.03,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_40",name:"Garfo",type:"table",w:0.03,h:0.2,d:0.02,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_41",name:"Colher",type:"table",w:0.03,h:0.2,d:0.02,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_42",name:"Colher_Sopa",type:"table",w:0.05,h:0.22,d:0.03,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_43",name:"Concha",type:"table",w:0.06,h:0.25,d:0.06,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_44",name:"Espátula",type:"table",w:0.05,h:0.3,d:0.03,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_45",name:"Pegador",type:"table",w:0.05,h:0.3,d:0.03,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_46",name:"Batedor",type:"table",w:0.05,h:0.3,d:0.05,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_47",name:"Ralador",type:"table",w:0.08,h:0.2,d:0.08,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_48",name:"Abridor",type:"table",w:0.06,h:0.15,d:0.03,color:"#c8c8c8"},
+  {id:"CAT_KITCHEN_49",name:"Saca_Rolha",type:"table",w:0.08,h:0.08,d:0.08,color:"#c02020"},
+  {id:"CAT_KITCHEN_50",name:"Funil",type:"table",w:0.1,h:0.12,d:0.1,color:"#c0c0c0"},
+  {id:"CAT_KITCHEN_51",name:"Medidor",type:"table",w:0.1,h:0.15,d:0.1,color:"#e8e8e8"},
+  {id:"CAT_KITCHEN_52",name:"Balança",type:"table",w:0.25,h:0.08,d:0.2,color:"#1a1a1a"},
+  {id:"CAT_KITCHEN_53",name:"Timer_Cozinha",type:"table",w:0.08,h:0.08,d:0.04,color:"#c02020"},
+  {id:"CAT_KITCHEN_54",name:"Pote_Hermético",type:"table",w:0.12,h:0.15,d:0.12,color:"#e8e8e8"},
+  {id:"CAT_KITCHEN_55",name:"Pote_Vidro",type:"table",w:0.1,h:0.15,d:0.1,color:"#a0d0e0"},
+  {id:"CAT_KITCHEN_56",name:"Jarra_Vidro",type:"table",w:0.15,h:0.25,d:0.15,color:"#a0d0e0"},
+  {id:"CAT_KITCHEN_57",name:"Garrafa",type:"table",w:0.08,h:0.3,d:0.08,color:"#2a5a2a"},
+  {id:"CAT_KITCHEN_58",name:"Lata",type:"table",w:0.06,h:0.12,d:0.06,color:"#c02020"},
+  {id:"CAT_KITCHEN_59",name:"Caixa_Cereal",type:"table",w:0.15,h:0.25,d:0.05,color:"#c8a040"},
+  {id:"CAT_KITCHEN_60",name:"Sacola_Mercado",type:"table",w:0.25,h:0.3,d:0.15,color:"#8a8a8a"},
+  {id:"CAT_KITCHEN_61",name:"Cesta_Mercado",type:"table",w:0.3,h:0.15,d:0.2,color:"#a08060"},
+  {id:"CAT_KITCHEN_62",name:"Carrinho_Compras",type:"table",w:0.4,h:1.0,d:0.6,color:"#a0a0a8"},
+  {id:"CAT_KITCHEN_63",name:"Gelo_Balde",type:"table",w:0.15,h:0.2,d:0.15,color:"#c0d8e8"},
+  {id:"CAT_KITCHEN_64",name:"Bandeja_Gelo",type:"table",w:0.2,h:0.03,d:0.15,color:"#c0d8e8"},
+  {id:"CAT_KITCHEN_65",name:"Forma_Gelo",type:"table",w:0.2,h:0.08,d:0.15,color:"#c0d8e8"},
+  {id:"CAT_KITCHEN_66",name:"Saco_Pipoca",type:"table",w:0.15,h:0.25,d:0.08,color:"#e0c040"},
+  {id:"CAT_KITCHEN_67",name:"Pipoca",type:"table",w:0.1,h:0.1,d:0.1,color:"#f0e080"},
+  {id:"CAT_KITCHEN_68",name:"Chocolate",type:"table",w:0.15,h:0.02,d:0.08,color:"#5a3a1a"},
+  {id:"CAT_KITCHEN_69",name:"Bala",type:"table",w:0.05,h:0.05,d:0.05,color:"#c02060"},
+  {id:"CAT_KITCHEN_70",name:"Pirulito",type:"table",w:0.04,h:0.15,d:0.04,color:"#c02020"},
+];
+var CAT_BATH = [
+  {id:"CAT_BATH_1",name:"Escova_Dente",type:"table",w:0.02,h:0.18,d:0.03,color:"#c0c0d0"},
+  {id:"CAT_BATH_2",name:"Pasta_Dente",type:"table",w:0.04,h:0.15,d:0.04,color:"#a0d0e0"},
+  {id:"CAT_BATH_3",name:"Sabonete",type:"table",w:0.08,h:0.03,d:0.05,color:"#f0e0c0"},
+  {id:"CAT_BATH_4",name:"Saboneteira",type:"table",w:0.1,h:0.03,d:0.08,color:"#c0d0e0"},
+  {id:"CAT_BATH_5",name:"Porta_Sabonete",type:"table",w:0.12,h:0.02,d:0.1,color:"#a0a0a8"},
+  {id:"CAT_BATH_6",name:"Shampoo",type:"table",w:0.06,h:0.2,d:0.06,color:"#a060c0"},
+  {id:"CAT_BATH_7",name:"Condicionador",type:"table",w:0.06,h:0.2,d:0.06,color:"#c0a0d0"},
+  {id:"CAT_BATH_8",name:"Sabonete_Líquido",type:"table",w:0.06,h:0.18,d:0.06,color:"#c0d8e0"},
+  {id:"CAT_BATH_9",name:"Creme",type:"table",w:0.06,h:0.1,d:0.06,color:"#f0e0c0"},
+  {id:"CAT_BATH_10",name:"Hidratante",type:"table",w:0.08,h:0.15,d:0.06,color:"#e0c0a0"},
+  {id:"CAT_BATH_11",name:"Protetor_Solar",type:"table",w:0.06,h:0.15,d:0.04,color:"#e0c060"},
+  {id:"CAT_BATH_12",name:"Perfume",type:"table",w:0.06,h:0.12,d:0.06,color:"#c04080"},
+  {id:"CAT_BATH_13",name:"Desodorante",type:"table",w:0.05,h:0.12,d:0.05,color:"#a0d0e0"},
+  {id:"CAT_BATH_14",name:"Cotonete",type:"table",w:0.08,h:0.06,d:0.08,color:"#f0f0f0"},
+  {id:"CAT_BATH_15",name:"Algodão",type:"table",w:0.1,h:0.08,d:0.1,color:"#f0f0f0"},
+  {id:"CAT_BATH_16",name:"Escova_Cabelo",type:"table",w:0.06,h:0.22,d:0.05,color:"#8a6a3a"},
+  {id:"CAT_BATH_17",name:"Pente",type:"table",w:0.1,h:0.02,d:0.04,color:"#1a1a1a"},
+  {id:"CAT_BATH_18",name:"Secador",type:"table",w:0.15,h:0.2,d:0.1,color:"#c02020"},
+  {id:"CAT_BATH_19",name:"Chapinha",type:"table",w:0.04,h:0.25,d:0.04,color:"#2a2a2a"},
+  {id:"CAT_BATH_20",name:"Modelador",type:"table",w:0.05,h:0.25,d:0.05,color:"#2a2a2a"},
+  {id:"CAT_BATH_21",name:"Barbeador",type:"table",w:0.06,h:0.15,d:0.04,color:"#2a2a2a"},
+  {id:"CAT_BATH_22",name:"Espuma_Barbear",type:"table",w:0.05,h:0.12,d:0.05,color:"#f0f0f0"},
+  {id:"CAT_BATH_23",name:"Aparelho_Barbear",type:"table",w:0.08,h:0.05,d:0.05,color:"#c0c0c0"},
+  {id:"CAT_BATH_24",name:"Toalha_Banho",type:"box",w:0.4,h:0.03,d:0.6,color:"#e8e0d0"},
+  {id:"CAT_BATH_25",name:"Toalha_Rosto",type:"box",w:0.3,h:0.03,d:0.4,color:"#d0c8b8"},
+  {id:"CAT_BATH_26",name:"Roupão",type:"box",w:0.4,h:0.9,d:0.1,color:"#f0e8d0"},
+  {id:"CAT_BATH_27",name:"Tapete_Banheiro",type:"rug",w:0.5,h:0.03,d:0.8,color:"#a0c0d0"},
+  {id:"CAT_BATH_28",name:"Tapete_Box",type:"rug",w:0.6,h:0.03,d:0.9,color:"#a0d0e0"},
+  {id:"CAT_BATH_29",name:"Cortina_Box",type:"curtain",w:1.0,h:2.0,d:0.05,color:"#a0d0e0"},
+  {id:"CAT_BATH_30",name:"Cortina_Box_Transparente",type:"curtain",w:1.0,h:2.0,d:0.05,color:"#d0e8f0"},
+  {id:"CAT_BATH_31",name:"Suporte_Toalha",type:"box",w:0.6,h:0.06,d:0.08,color:"#a0a0a8"},
+  {id:"CAT_BATH_32",name:"Gancho",type:"box",w:0.05,h:0.1,d:0.03,color:"#a0a0a8"},
+  {id:"CAT_BATH_33",name:"Espelho_Banheiro",type:"box",w:0.6,h:0.7,d:0.05,color:"#c0d8e8"},
+  {id:"CAT_BATH_34",name:"Gabinete_Banheiro",type:"box",w:0.6,h:0.7,d:0.15,color:"#f0f0f0"},
+  {id:"CAT_BATH_35",name:"Armário_Banheiro",type:"wardrobe",w:0.6,h:1.5,d:0.3,color:"#e8e8e8"},
+  {id:"CAT_BATH_36",name:"Prateleira_Banheiro",type:"shelf",w:0.5,h:0.03,d:0.15,color:"#a0a0a8"},
+  {id:"CAT_BATH_37",name:"Porta_Escova",type:"box",w:0.15,h:0.25,d:0.1,color:"#c0c0d0"},
+  {id:"CAT_BATH_38",name:"Porta_Papel",type:"box",w:0.15,h:0.15,d:0.08,color:"#c0c0d0"},
+  {id:"CAT_BATH_39",name:"Rolo_Papel",type:"box",w:0.11,h:0.11,d:0.1,color:"#f0f0f0"},
+  {id:"CAT_BATH_40",name:"Lixeira_Banheiro",type:"chest",w:0.25,h:0.3,d:0.25,color:"#a0a0a8"},
+  {id:"CAT_BATH_41",name:"Balança_Banheiro",type:"table",w:0.3,h:0.03,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_BATH_42",name:"Escada_Banheiro",type:"shelf",w:0.4,h:1.5,d:0.3,color:"#c0c0c0"},
+  {id:"CAT_BATH_43",name:"Cabide_Toalha",type:"box",w:0.5,h:0.1,d:0.05,color:"#8a6a3a"},
+  {id:"CAT_BATH_44",name:"Saboneteira_Parede",type:"box",w:0.12,h:0.05,d:0.1,color:"#a0a0a8"},
+  {id:"CAT_BATH_45",name:"Toalheiro_Aquecido",type:"box",w:0.8,h:0.1,d:0.1,color:"#c0c0c8"},
+  {id:"CAT_BATH_46",name:"Difusor_Aromas",type:"box",w:0.1,h:0.15,d:0.1,color:"#c0d0e0"},
+  {id:"CAT_BATH_47",name:"Vela_Aromática",type:"box",w:0.08,h:0.1,d:0.08,color:"#f0e0c0"},
+  {id:"CAT_BATH_48",name:"Kit_Banheiro",type:"box",w:0.3,h:0.2,d:0.2,color:"#a0d0e0"},
+];
+var CAT_OFFICE = [
+  {id:"CAT_OFFICE_1",name:"Lápis",type:"table",w:0.02,h:0.18,d:0.02,color:"#e0c060"},
+  {id:"CAT_OFFICE_2",name:"Caneta",type:"table",w:0.02,h:0.15,d:0.02,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_3",name:"Caneta_Colorida",type:"table",w:0.02,h:0.15,d:0.02,color:"#c02020"},
+  {id:"CAT_OFFICE_4",name:"Marcador",type:"table",w:0.02,h:0.15,d:0.02,color:"#40c040"},
+  {id:"CAT_OFFICE_5",name:"Marca_Texto",type:"table",w:0.02,h:0.15,d:0.02,color:"#e0c040"},
+  {id:"CAT_OFFICE_6",name:"Borracha",type:"table",w:0.04,h:0.02,d:0.03,color:"#f0f0f0"},
+  {id:"CAT_OFFICE_7",name:"Apontador",type:"table",w:0.03,h:0.03,d:0.03,color:"#c0c0c0"},
+  {id:"CAT_OFFICE_8",name:"Régua",type:"table",w:0.3,h:0.02,d:0.04,color:"#e8e8e8"},
+  {id:"CAT_OFFICE_9",name:"Régua_T",type:"table",w:0.5,h:0.02,d:0.1,color:"#e8e8e8"},
+  {id:"CAT_OFFICE_10",name:"Esquadro",type:"table",w:0.2,h:0.02,d:0.15,color:"#e8e8e8"},
+  {id:"CAT_OFFICE_11",name:"Compasso",type:"table",w:0.12,h:0.15,d:0.03,color:"#a0a0a8"},
+  {id:"CAT_OFFICE_12",name:"Transferidor",type:"table",w:0.15,h:0.02,d:0.08,color:"#e8e8e8"},
+  {id:"CAT_OFFICE_13",name:"Tesoura",type:"table",w:0.08,h:0.2,d:0.02,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_14",name:"Estilete",type:"table",w:0.03,h:0.15,d:0.02,color:"#e0c020"},
+  {id:"CAT_OFFICE_15",name:"Cola_Bastão",type:"table",w:0.03,h:0.1,d:0.03,color:"#e8e0c0"},
+  {id:"CAT_OFFICE_16",name:"Cola_Branca",type:"table",w:0.06,h:0.12,d:0.06,color:"#e8e8e8"},
+  {id:"CAT_OFFICE_17",name:"Fita_Adesiva",type:"table",w:0.1,h:0.1,d:0.1,color:"#e8e0c0"},
+  {id:"CAT_OFFICE_18",name:"Fita_Isolante",type:"table",w:0.08,h:0.08,d:0.08,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_19",name:"Fita_Métrica",type:"table",w:0.06,h:0.06,d:0.02,color:"#e0c060"},
+  {id:"CAT_OFFICE_20",name:"Grampeador",type:"table",w:0.08,h:0.06,d:0.03,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_21",name:"Perfurador",type:"table",w:0.1,h:0.1,d:0.06,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_22",name:"Clips",type:"table",w:0.06,h:0.06,d:0.06,color:"#a0a0a8"},
+  {id:"CAT_OFFICE_23",name:"Ímã",type:"table",w:0.04,h:0.04,d:0.02,color:"#c02020"},
+  {id:"CAT_OFFICE_24",name:"Bloco_Notas",type:"table",w:0.12,h:0.02,d:0.12,color:"#e0d040"},
+  {id:"CAT_OFFICE_25",name:"Post_It",type:"table",w:0.08,h:0.01,d:0.08,color:"#e0d040"},
+  {id:"CAT_OFFICE_26",name:"Caderno",type:"table",w:0.15,h:0.02,d:0.2,color:"#a0c0d0"},
+  {id:"CAT_OFFICE_27",name:"Caderno_Grande",type:"table",w:0.21,h:0.03,d:0.28,color:"#c0a0d0"},
+  {id:"CAT_OFFICE_28",name:"Agenda",type:"table",w:0.13,h:0.03,d:0.18,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_29",name:"Pasta",type:"table",w:0.25,h:0.03,d:0.32,color:"#a0c0d0"},
+  {id:"CAT_OFFICE_30",name:"Pasta_Arquivo",type:"table",w:0.3,h:0.35,d:0.1,color:"#c02020"},
+  {id:"CAT_OFFICE_31",name:"Envelope",type:"table",w:0.22,h:0.01,d:0.11,color:"#f0e8d0"},
+  {id:"CAT_OFFICE_32",name:"Selo",type:"table",w:0.02,h:0.02,d:0.005,color:"#e0c060"},
+  {id:"CAT_OFFICE_33",name:"Lacre",type:"table",w:0.03,h:0.03,d:0.02,color:"#a02020"},
+  {id:"CAT_OFFICE_34",name:"Cartão_Visita",type:"table",w:0.09,h:0.005,d:0.05,color:"#f0f0f0"},
+  {id:"CAT_OFFICE_35",name:"Livro",type:"table",w:0.15,h:0.03,d:0.22,color:"#8a2020"},
+  {id:"CAT_OFFICE_36",name:"Livro_Grosso",type:"table",w:0.18,h:0.05,d:0.25,color:"#2a4a6a"},
+  {id:"CAT_OFFICE_37",name:"Revista",type:"table",w:0.21,h:0.01,d:0.28,color:"#c02020"},
+  {id:"CAT_OFFICE_38",name:"Jornal",type:"table",w:0.3,h:0.01,d:0.4,color:"#e8e0c0"},
+  {id:"CAT_OFFICE_39",name:"Dicionário",type:"table",w:0.2,h:0.06,d:0.27,color:"#5a3a1a"},
+  {id:"CAT_OFFICE_40",name:"Atlas",type:"table",w:0.28,h:0.03,d:0.35,color:"#3a5a3a"},
+  {id:"CAT_OFFICE_41",name:"Mangá",type:"table",w:0.13,h:0.02,d:0.18,color:"#a0a0a8"},
+  {id:"CAT_OFFICE_42",name:"HQ",type:"table",w:0.17,h:0.01,d:0.26,color:"#c02020"},
+  {id:"CAT_OFFICE_43",name:"Porta_Revista",type:"shelf",w:0.3,h:0.4,d:0.1,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_44",name:"Porta_Livro",type:"shelf",w:0.2,h:0.25,d:0.15,color:"#8a6a3a"},
+  {id:"CAT_OFFICE_45",name:"Suporte_Leitura",type:"shelf",w:0.3,h:0.15,d:0.25,color:"#8a6a3a"},
+  {id:"CAT_OFFICE_46",name:"Luminária_Mesa_Escritório",type:"lamp",w:0.3,h:0.5,d:0.3,color:"#c0c0c8"},
+  {id:"CAT_OFFICE_47",name:"Grampeador_Elétrico",type:"table",w:0.12,h:0.15,d:0.1,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_48",name:"Fragmentadora",type:"table",w:0.35,h:0.4,d:0.3,color:"#2a2a2a"},
+  {id:"CAT_OFFICE_49",name:"Calculadora",type:"table",w:0.15,h:0.03,d:0.2,color:"#a0a0a8"},
+  {id:"CAT_OFFICE_50",name:"Calculadora_Científica",type:"table",w:0.18,h:0.03,d:0.25,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_51",name:"Quadro_Branco",type:"box",w:1.2,h:0.9,d:0.04,color:"#f0f0f0"},
+  {id:"CAT_OFFICE_52",name:"Quadro_Negro",type:"box",w:1.2,h:0.9,d:0.04,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_53",name:"Flip_Chart",type:"box",w:0.7,h:1.5,d:0.06,color:"#f0f0f0"},
+  {id:"CAT_OFFICE_54",name:"Projetor_Apresentação",type:"table",w:0.35,h:0.15,d:0.3,color:"#e8e8e8"},
+  {id:"CAT_OFFICE_55",name:"Apontador_Laser",type:"table",w:0.03,h:0.15,d:0.03,color:"#1a1a1a"},
+  {id:"CAT_OFFICE_56",name:"Controle_Apresentação",type:"table",w:0.06,h:0.02,d:0.12,color:"#1a1a1a"},
+];
+var CAT_TOOLS = [
+  {id:"CAT_TOOLS_1",name:"Martelo",type:"table",w:0.1,h:0.35,d:0.05,color:"#8a6a3a"},
+  {id:"CAT_TOOLS_2",name:"Marreta",type:"table",w:0.15,h:0.5,d:0.08,color:"#3a3a3a"},
+  {id:"CAT_TOOLS_3",name:"Chave_Fenda",type:"table",w:0.05,h:0.2,d:0.03,color:"#c0c0c8"},
+  {id:"CAT_TOOLS_4",name:"Chave_Philips",type:"table",w:0.05,h:0.2,d:0.03,color:"#c0c0c8"},
+  {id:"CAT_TOOLS_5",name:"Chave_Inglesa",type:"table",w:0.1,h:0.25,d:0.05,color:"#a0a0a8"},
+  {id:"CAT_TOOLS_6",name:"Alicate",type:"table",w:0.08,h:0.2,d:0.03,color:"#c02020"},
+  {id:"CAT_TOOLS_7",name:"Alicate_Universal",type:"table",w:0.1,h:0.22,d:0.03,color:"#c0c0c8"},
+  {id:"CAT_TOOLS_8",name:"Serrote",type:"table",w:0.15,h:0.4,d:0.03,color:"#c02020"},
+  {id:"CAT_TOOLS_9",name:"Serra_Tico_Tico",type:"table",w:0.3,h:0.15,d:0.1,color:"#2a2a2a"},
+  {id:"CAT_TOOLS_10",name:"Serra_Circular",type:"table",w:0.25,h:0.25,d:0.2,color:"#2a2a2a"},
+  {id:"CAT_TOOLS_11",name:"Serra_Makita",type:"table",w:0.3,h:0.3,d:0.25,color:"#2a2a2a"},
+  {id:"CAT_TOOLS_12",name:"Furadeira_Makita",type:"table",w:0.25,h:0.3,d:0.25,color:"#2a2a2a"},
+  {id:"CAT_TOOLS_13",name:"Parafusadeira",type:"table",w:0.2,h:0.25,d:0.2,color:"#c02020"},
+  {id:"CAT_TOOLS_14",name:"Lixadeira",type:"table",w:0.2,h:0.2,d:0.2,color:"#1a1a1a"},
+  {id:"CAT_TOOLS_15",name:"Trena_Laser",type:"table",w:0.08,h:0.12,d:0.04,color:"#c02020"},
+  {id:"CAT_TOOLS_16",name:"Nível_Laser",type:"table",w:0.3,h:0.15,d:0.1,color:"#1a1a1a"},
+  {id:"CAT_TOOLS_17",name:"Prumo",type:"table",w:0.05,h:0.3,d:0.05,color:"#1a1a1a"},
+  {id:"CAT_TOOLS_18",name:"Esquadro_Metal",type:"table",w:0.25,h:0.03,d:0.15,color:"#c0c0c8"},
+  {id:"CAT_TOOLS_19",name:"Lima",type:"table",w:0.03,h:0.25,d:0.03,color:"#1a1a1a"},
+  {id:"CAT_TOOLS_20",name:"Lixa",type:"table",w:0.15,h:0.02,d:0.1,color:"#c8a080"},
+  {id:"CAT_TOOLS_21",name:"Sargento",type:"table",w:0.3,h:0.15,d:0.15,color:"#c02020"},
+  {id:"CAT_TOOLS_22",name:"Grampo",type:"table",w:0.2,h:0.1,d:0.1,color:"#c0c0c8"},
+  {id:"CAT_TOOLS_23",name:"Formão",type:"table",w:0.03,h:0.25,d:0.03,color:"#8a6a3a"},
+  {id:"CAT_TOOLS_24",name:"Bisturi",type:"table",w:0.02,h:0.15,d:0.02,color:"#1a1a1a"},
+  {id:"CAT_TOOLS_25",name:"Tinta_Spray",type:"table",w:0.06,h:0.2,d:0.06,color:"#c02020"},
+  {id:"CAT_TOOLS_26",name:"Rolo_Pintura",type:"table",w:0.1,h:0.25,d:0.1,color:"#e8e8e8"},
+  {id:"CAT_TOOLS_27",name:"Pincel",type:"table",w:0.05,h:0.25,d:0.05,color:"#8a6a3a"},
+  {id:"CAT_TOOLS_28",name:"Broxa",type:"table",w:0.1,h:0.2,d:0.05,color:"#c0a060"},
+  {id:"CAT_TOOLS_29",name:"Bandeja_Tinta",type:"table",w:0.3,h:0.06,d:0.2,color:"#a0a0a8"},
+  {id:"CAT_TOOLS_30",name:"Fita_Crepe",type:"table",w:0.1,h:0.1,d:0.1,color:"#e8d0a0"},
+  {id:"CAT_TOOLS_31",name:"Lona",type:"box",w:1.5,h:0.02,d:2.0,color:"#a0d0b0"},
+  {id:"CAT_TOOLS_32",name:"Balde",type:"table",w:0.3,h:0.35,d:0.3,color:"#c02020"},
+  {id:"CAT_TOOLS_33",name:"Bacia",type:"table",w:0.4,h:0.15,d:0.4,color:"#4090c0"},
+  {id:"CAT_TOOLS_34",name:"Regador",type:"table",w:0.25,h:0.3,d:0.25,color:"#40a060"},
+  {id:"CAT_TOOLS_35",name:"Mangueira",type:"table",w:0.4,h:0.06,d:0.4,color:"#40a060"},
+  {id:"CAT_TOOLS_36",name:"Aspersor",type:"table",w:0.15,h:0.1,d:0.15,color:"#40a060"},
+  {id:"CAT_TOOLS_37",name:"Vassoura",type:"table",w:0.3,h:1.3,d:0.1,color:"#c0a060"},
+  {id:"CAT_TOOLS_38",name:"Rodo",type:"table",w:0.4,h:1.2,d:0.1,color:"#c0c0c8"},
+  {id:"CAT_TOOLS_39",name:"Esfregona",type:"table",w:0.3,h:1.3,d:0.15,color:"#e0e0e0"},
+  {id:"CAT_TOOLS_40",name:"Pá",type:"table",w:0.2,h:1.2,d:0.2,color:"#c0c0c8"},
+  {id:"CAT_TOOLS_41",name:"Enxada",type:"table",w:0.2,h:1.2,d:0.15,color:"#8a6a3a"},
+  {id:"CAT_TOOLS_42",name:"Ancinho",type:"table",w:0.3,h:1.2,d:0.1,color:"#c0c0c8"},
+  {id:"CAT_TOOLS_43",name:"Tesoura_Poda",type:"table",w:0.15,h:0.3,d:0.05,color:"#c02020"},
+  {id:"CAT_TOOLS_44",name:"Serrote_Poda",type:"table",w:0.1,h:0.5,d:0.03,color:"#c02020"},
+  {id:"CAT_TOOLS_45",name:"Machado",type:"table",w:0.15,h:0.7,d:0.05,color:"#8a6a3a"},
+  {id:"CAT_TOOLS_46",name:"Facão",type:"table",w:0.08,h:0.4,d:0.03,color:"#1a1a1a"},
+  {id:"CAT_TOOLS_47",name:"Cutelo",type:"table",w:0.1,h:0.25,d:0.03,color:"#1a1a1a"},
+  {id:"CAT_TOOLS_48",name:"Foice",type:"table",w:0.15,h:0.5,d:0.08,color:"#8a6a3a"},
+  {id:"CAT_TOOLS_49",name:"Enxó",type:"table",w:0.12,h:0.3,d:0.05,color:"#8a6a3a"},
+  {id:"CAT_TOOLS_50",name:"Ferramenta_Kit",type:"chest",w:0.6,h:0.35,d:0.4,color:"#c02020"},
+  {id:"CAT_TOOLS_51",name:"Maleta_Ferramenta",type:"chest",w:0.5,h:0.4,d:0.25,color:"#1a1a1a"},
+  {id:"CAT_TOOLS_52",name:"Caixa_Ferramenta_Metal",type:"chest",w:0.6,h:0.3,d:0.35,color:"#c0c0c8"},
+  {id:"CAT_TOOLS_53",name:"Cinto_Ferramenta",type:"box",w:1.2,h:0.05,d:0.08,color:"#8a6a3a"},
+  {id:"CAT_TOOLS_54",name:"Banco_Trabalho",type:"table",w:1.5,h:0.9,d:0.6,color:"#8a6a3a"},
+  {id:"CAT_TOOLS_55",name:"Morsa",type:"table",w:0.2,h:0.2,d:0.2,color:"#3a3a3a"},
+  {id:"CAT_TOOLS_56",name:"Bigorna",type:"table",w:0.3,h:0.25,d:0.15,color:"#3a3a3a"},
+  {id:"CAT_TOOLS_57",name:"Torno",type:"table",w:0.6,h:0.4,d:0.3,color:"#2a2a2a"},
+];
+var CAT_SPORT = [
+  {id:"CAT_SPORT_1",name:"Haltere_5kg",type:"table",w:0.4,h:0.1,d:0.1,color:"#1a1a1a"},
+  {id:"CAT_SPORT_2",name:"Haltere_10kg",type:"table",w:0.5,h:0.12,d:0.12,color:"#1a1a1a"},
+  {id:"CAT_SPORT_3",name:"Haltere_20kg",type:"table",w:0.6,h:0.15,d:0.15,color:"#1a1a1a"},
+  {id:"CAT_SPORT_4",name:"Kettlebell_8kg",type:"table",w:0.15,h:0.2,d:0.15,color:"#1a1a1a"},
+  {id:"CAT_SPORT_5",name:"Kettlebell_16kg",type:"table",w:0.2,h:0.25,d:0.2,color:"#1a1a1a"},
+  {id:"CAT_SPORT_6",name:"Barra_Olimpica",type:"table",w:1.2,h:0.06,d:0.06,color:"#a0a0a8"},
+  {id:"CAT_SPORT_7",name:"Anilha_5kg",type:"table",w:0.22,h:0.05,d:0.22,color:"#1a1a1a"},
+  {id:"CAT_SPORT_8",name:"Anilha_10kg",type:"table",w:0.28,h:0.06,d:0.28,color:"#1a1a1a"},
+  {id:"CAT_SPORT_9",name:"Anilha_20kg",type:"table",w:0.35,h:0.08,d:0.35,color:"#1a1a1a"},
+  {id:"CAT_SPORT_10",name:"Halteres_Kit",type:"chest",w:0.8,h:0.2,d:0.4,color:"#1a1a1a"},
+  {id:"CAT_SPORT_11",name:"Barra_Fixa",type:"table",w:1.0,h:0.06,d:0.1,color:"#a0a0a8"},
+  {id:"CAT_SPORT_12",name:"Barra_Paralela",type:"table",w:1.2,h:0.06,d:0.1,color:"#a0a0a8"},
+  {id:"CAT_SPORT_13",name:"Abdominal_Roda",type:"table",w:0.2,h:0.15,d:0.2,color:"#1a1a1a"},
+  {id:"CAT_SPORT_14",name:"Corda_Pular",type:"table",w:0.15,h:0.15,d:0.15,color:"#c02020"},
+  {id:"CAT_SPORT_15",name:"Elastico_Kit",type:"chest",w:0.25,h:0.15,d:0.25,color:"#c02020"},
+  {id:"CAT_SPORT_16",name:"Faixa_Resistencia",type:"box",w:0.3,h:0.02,d:0.05,color:"#a040c0"},
+  {id:"CAT_SPORT_17",name:"Colchonete",type:"box",w:0.6,h:0.08,d:1.0,color:"#4090c0"},
+  {id:"CAT_SPORT_18",name:"Bola_Suica",type:"table",w:0.6,h:0.6,d:0.6,color:"#a0d0e0"},
+  {id:"CAT_SPORT_19",name:"Bola_Pilates",type:"table",w:0.5,h:0.5,d:0.5,color:"#e0d0a0"},
+  {id:"CAT_SPORT_20",name:"Bola_Medicinal",type:"table",w:0.22,h:0.22,d:0.22,color:"#2a2a3a"},
+  {id:"CAT_SPORT_21",name:"Bosu",type:"table",w:0.6,h:0.2,d:0.6,color:"#2a2a3a"},
+  {id:"CAT_SPORT_22",name:"Plataforma_Equilíbrio",type:"table",w:0.5,h:0.15,d:0.5,color:"#2a2a3a"},
+  {id:"CAT_SPORT_23",name:"Roda_Abdominal",type:"table",w:0.2,h:0.2,d:0.05,color:"#1a1a1a"},
+  {id:"CAT_SPORT_24",name:"Suporte_Flexão",type:"table",w:0.3,h:0.15,d:0.2,color:"#1a1a1a"},
+  {id:"CAT_SPORT_25",name:"Luva_Boxe",type:"box",w:0.15,h:0.25,d:0.15,color:"#c02020"},
+  {id:"CAT_SPORT_26",name:"Manopla",type:"box",w:0.15,h:0.2,d:0.15,color:"#1a1a1a"},
+  {id:"CAT_SPORT_27",name:"Saco_Pancada_Grande",type:"table",w:0.5,h:1.8,d:0.5,color:"#1a1a1a"},
+  {id:"CAT_SPORT_28",name:"Saco_Pancada_Pequeno",type:"table",w:0.35,h:1.2,d:0.35,color:"#1a1a1a"},
+  {id:"CAT_SPORT_29",name:"Boneco_Treino",type:"table",w:0.4,h:1.8,d:0.4,color:"#c02020"},
+  {id:"CAT_SPORT_30",name:"Kimono",type:"box",w:0.4,h:0.9,d:0.05,color:"#f0f0f0"},
+  {id:"CAT_SPORT_31",name:"Faixa_Judô",type:"box",w:0.3,h:0.05,d:0.03,color:"#c02020"},
+  {id:"CAT_SPORT_32",name:"Tatame",type:"rug",w:1.0,h:0.04,d:1.0,color:"#a0c0d0"},
+  {id:"CAT_SPORT_33",name:"Tatame_Kit",type:"rug",w:2.0,h:0.04,d:2.0,color:"#a0c0d0"},
+  {id:"CAT_SPORT_34",name:"Esteira_Profissional",type:"table",w:0.9,h:1.4,d:1.8,color:"#2a2a2a"},
+  {id:"CAT_SPORT_35",name:"Bicicleta_Ergométrica",type:"table",w:0.5,h:1.2,d:1.2,color:"#2a2a2a"},
+  {id:"CAT_SPORT_36",name:"Elíptico",type:"table",w:0.6,h:1.6,d:1.2,color:"#2a2a2a"},
+  {id:"CAT_SPORT_37",name:"Remo_Ergométrico",type:"table",w:0.5,h:0.4,d:1.8,color:"#3a3a3a"},
+  {id:"CAT_SPORT_38",name:"Escada_Simulador",type:"table",w:0.7,h:1.8,d:1.0,color:"#2a2a2a"},
+  {id:"CAT_SPORT_39",name:"Hack_Squat",type:"table",w:1.0,h:1.8,d:1.2,color:"#2a2a2a"},
+  {id:"CAT_SPORT_40",name:"Banco_Supino",type:"table",w:0.5,h:0.5,d:1.3,color:"#2a2a2a"},
+  {id:"CAT_SPORT_41",name:"Banco_Inclinado",type:"table",w:0.5,h:0.6,d:1.3,color:"#2a2a2a"},
+  {id:"CAT_SPORT_42",name:"Gaiola_Agachamento",type:"table",w:1.2,h:2.0,d:1.4,color:"#2a2a2a"},
+  {id:"CAT_SPORT_43",name:"Leg_Press",type:"table",w:1.0,h:1.4,d:1.6,color:"#2a2a2a"},
+  {id:"CAT_SPORT_44",name:"Puxada_Alta",type:"table",w:1.0,h:2.0,d:0.8,color:"#2a2a2a"},
+  {id:"CAT_SPORT_45",name:"Pulley",type:"table",w:0.8,h:2.2,d:0.6,color:"#2a2a2a"},
+  {id:"CAT_SPORT_46",name:"Cross_Over",type:"table",w:1.4,h:2.2,d:0.8,color:"#2a2a2a"},
+  {id:"CAT_SPORT_47",name:"Peck_Deck",type:"table",w:1.2,h:1.6,d:1.2,color:"#2a2a2a"},
+  {id:"CAT_SPORT_48",name:"Cadeira_Extensora",type:"table",w:0.8,h:1.2,d:1.2,color:"#2a2a2a"},
+  {id:"CAT_SPORT_49",name:"Cadeira_Flexora",type:"table",w:0.8,h:1.2,d:1.2,color:"#2a2a2a"},
+  {id:"CAT_SPORT_50",name:"Panturrilha",type:"table",w:0.6,h:1.2,d:1.0,color:"#2a2a2a"},
+];
+var CAT_APPLI = [
+  {id:"CAT_APPLI_1",name:"Ventilador_Coluna",type:"lamp",w:0.4,h:1.2,d:0.4,color:"#e8e8e8"},
+  {id:"CAT_APPLI_2",name:"Ventilador_Mesa",type:"lamp",w:0.35,h:0.5,d:0.35,color:"#e8e8e8"},
+  {id:"CAT_APPLI_3",name:"Purificador_Ar",type:"lamp",w:0.4,h:0.6,d:0.35,color:"#e8e8e8"},
+  {id:"CAT_APPLI_4",name:"Umidificador",type:"lamp",w:0.3,h:0.4,d:0.3,color:"#a0d0e0"},
+  {id:"CAT_APPLI_5",name:"Desumidificador",type:"lamp",w:0.35,h:0.5,d:0.3,color:"#c0c0c0"},
+  {id:"CAT_APPLI_6",name:"Aquecedor",type:"lamp",w:0.4,h:0.6,d:0.3,color:"#c02020"},
+  {id:"CAT_APPLI_7",name:"Radiador_Óleo",type:"lamp",w:0.5,h:0.6,d:0.2,color:"#c0c0c0"},
+  {id:"CAT_APPLI_8",name:"Ar_Condicionado",type:"box",w:0.9,h:0.3,d:0.2,color:"#e8e8e8"},
+  {id:"CAT_APPLI_9",name:"Ar_Condicionado_Portátil",type:"lamp",w:0.4,h:0.8,d:0.4,color:"#e8e8e8"},
+  {id:"CAT_APPLI_10",name:"Climatizador",type:"lamp",w:0.4,h:0.7,d:0.35,color:"#a0c0d8"},
+  {id:"CAT_APPLI_11",name:"Aspirador_Pó",type:"lamp",w:0.35,h:1.1,d:0.35,color:"#c02020"},
+  {id:"CAT_APPLI_12",name:"Aspirador_Vertical",type:"lamp",w:0.3,h:1.2,d:0.2,color:"#2a2a2a"},
+  {id:"CAT_APPLI_13",name:"Aspirador_Robô",type:"lamp",w:0.35,h:0.1,d:0.35,color:"#1a1a1a"},
+  {id:"CAT_APPLI_14",name:"Aspirador_Água",type:"lamp",w:0.4,h:0.6,d:0.4,color:"#4090c0"},
+  {id:"CAT_APPLI_15",name:"Enceradeira",type:"lamp",w:0.4,h:0.9,d:0.4,color:"#c0c0c8"},
+  {id:"CAT_APPLI_16",name:"Lavadora_Alta_Pressão",type:"lamp",w:0.35,h:0.5,d:0.35,color:"#c02020"},
+  {id:"CAT_APPLI_17",name:"Máquina_Costura",type:"table",w:0.5,h:0.4,d:0.3,color:"#e8e8e8"},
+  {id:"CAT_APPLI_18",name:"Máquina_Overloque",type:"table",w:0.5,h:0.4,d:0.3,color:"#2a2a2a"},
+  {id:"CAT_APPLI_19",name:"Ferro_Passar",type:"table",w:0.15,h:0.15,d:0.25,color:"#a0d0e0"},
+  {id:"CAT_APPLI_20",name:"Ferro_Vapor",type:"table",w:0.15,h:0.18,d:0.25,color:"#a0d0e0"},
+  {id:"CAT_APPLI_21",name:"Prancha_Passar",type:"table",w:1.2,h:0.05,d:0.35,color:"#f0f0f0"},
+  {id:"CAT_APPLI_22",name:"Secadora_Roupa",type:"wardrobe",w:0.6,h:0.9,d:0.6,color:"#e8e8e8"},
+  {id:"CAT_APPLI_23",name:"Lava_Louça_Compacta",type:"table",w:0.55,h:0.5,d:0.5,color:"#e8e8e8"},
+  {id:"CAT_APPLI_24",name:"Coifa_Industrial",type:"fan",w:0.9,h:0.5,d:0.6,color:"#c8c8d0"},
+  {id:"CAT_APPLI_25",name:"Cooktop_Indução",type:"table",w:0.6,h:0.06,d:0.5,color:"#1a1a1a"},
+  {id:"CAT_APPLI_26",name:"Forno_Elétrico",type:"table",w:0.6,h:0.6,d:0.55,color:"#1a1a1a"},
+  {id:"CAT_APPLI_27",name:"Forno_Embutir",type:"table",w:0.6,h:0.6,d:0.55,color:"#1a1a1a"},
+  {id:"CAT_APPLI_28",name:"Forno_Microondas_Embutir",type:"table",w:0.6,h:0.4,d:0.55,color:"#1a1a1a"},
+  {id:"CAT_APPLI_29",name:"Adega_Climatizada",type:"wardrobe",w:0.6,h:0.8,d:0.55,color:"#2a2a3a"},
+  {id:"CAT_APPLI_30",name:"Cervejeira",type:"wardrobe",w:0.6,h:0.9,d:0.55,color:"#c8c8d0"},
+  {id:"CAT_APPLI_31",name:"Máquina_Gelo",type:"lamp",w:0.4,h:0.8,d:0.4,color:"#a0d0e0"},
+  {id:"CAT_APPLI_32",name:"Bebedouro",type:"lamp",w:0.35,h:1.1,d:0.35,color:"#a0d0e0"},
+  {id:"CAT_APPLI_33",name:"Purificador_Água",type:"lamp",w:0.35,h:0.5,d:0.3,color:"#c0d8e8"},
+  {id:"CAT_APPLI_34",name:"Filtro_Água",type:"lamp",w:0.25,h:0.5,d:0.25,color:"#a0d0e0"},
+  {id:"CAT_APPLI_35",name:"Churrasqueira_Elétrica",type:"fireplace",w:0.9,h:0.4,d:0.5,color:"#2a2a2a"},
+  {id:"CAT_APPLI_36",name:"Panificadora",type:"table",w:0.35,h:0.35,d:0.35,color:"#e8e8e8"},
+  {id:"CAT_APPLI_37",name:"Sorveteira",type:"table",w:0.25,h:0.3,d:0.25,color:"#c0d8e8"},
+  {id:"CAT_APPLI_38",name:"Iogurteira",type:"table",w:0.25,h:0.2,d:0.25,color:"#f0e0c0"},
+  {id:"CAT_APPLI_39",name:"Máquina_Café_Expresso",type:"table",w:0.35,h:0.4,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_APPLI_40",name:"Máquina_Café_Cápsula",type:"table",w:0.2,h:0.3,d:0.25,color:"#c02020"},
+  {id:"CAT_APPLI_41",name:"Moedor_Café",type:"table",w:0.15,h:0.25,d:0.15,color:"#3a3a3a"},
+  {id:"CAT_APPLI_42",name:"Espumador_Leite",type:"table",w:0.12,h:0.2,d:0.12,color:"#c0c0c8"},
+  {id:"CAT_APPLI_43",name:"Fritadeira_Elétrica",type:"table",w:0.3,h:0.25,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_APPLI_44",name:"Panela_Elétrica",type:"table",w:0.3,h:0.25,d:0.3,color:"#c8c8d0"},
+  {id:"CAT_APPLI_45",name:"Slow_Cooker",type:"table",w:0.3,h:0.25,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_APPLI_46",name:"Crock_Pot",type:"table",w:0.3,h:0.25,d:0.3,color:"#c8c8d0"},
+  {id:"CAT_APPLI_47",name:"Multiprocessador",type:"table",w:0.35,h:0.35,d:0.3,color:"#c0c0c8"},
+];
+var CAT_MUSIC = [
+  {id:"CAT_MUSIC_1",name:"Violão_Clássico",type:"table",w:0.35,h:0.9,d:0.1,color:"#c8a060"},
+  {id:"CAT_MUSIC_2",name:"Violão_Aço",type:"table",w:0.38,h:0.95,d:0.12,color:"#8a5a2a"},
+  {id:"CAT_MUSIC_3",name:"Violão_12_Cordas",type:"table",w:0.4,h:0.95,d:0.12,color:"#6a3a1a"},
+  {id:"CAT_MUSIC_4",name:"Guitarra_Elétrica",type:"table",w:0.35,h:0.9,d:0.08,color:"#c02020"},
+  {id:"CAT_MUSIC_5",name:"Guitarra_Strato",type:"table",w:0.35,h:0.9,d:0.08,color:"#1a1a1a"},
+  {id:"CAT_MUSIC_6",name:"Guitarra_Les_Paul",type:"table",w:0.35,h:0.9,d:0.08,color:"#c08020"},
+  {id:"CAT_MUSIC_7",name:"Baixo_Elétrico",type:"table",w:0.35,h:1.1,d:0.08,color:"#2a2a3a"},
+  {id:"CAT_MUSIC_8",name:"Baixo_5_Cordas",type:"table",w:0.35,h:1.15,d:0.08,color:"#8a2020"},
+  {id:"CAT_MUSIC_9",name:"Ukulele",type:"table",w:0.25,h:0.6,d:0.08,color:"#c8a060"},
+  {id:"CAT_MUSIC_10",name:"Cavaquinho",type:"table",w:0.28,h:0.65,d:0.08,color:"#a08040"},
+  {id:"CAT_MUSIC_11",name:"Bandolim",type:"table",w:0.3,h:0.7,d:0.1,color:"#5a3a1a"},
+  {id:"CAT_MUSIC_12",name:"Banjo",type:"table",w:0.4,h:0.9,d:0.1,color:"#c8a060"},
+  {id:"CAT_MUSIC_13",name:"Cavaquinho_Regional",type:"table",w:0.28,h:0.65,d:0.08,color:"#a08040"},
+  {id:"CAT_MUSIC_14",name:"Violino",type:"table",w:0.25,h:0.6,d:0.08,color:"#8a4a2a"},
+  {id:"CAT_MUSIC_15",name:"Viola",type:"table",w:0.35,h:0.7,d:0.1,color:"#6a3a1a"},
+  {id:"CAT_MUSIC_16",name:"Violoncelo",type:"table",w:0.4,h:1.2,d:0.15,color:"#5a3a1a"},
+  {id:"CAT_MUSIC_17",name:"Contrabaixo",type:"table",w:0.5,h:1.85,d:0.25,color:"#3a2010"},
+  {id:"CAT_MUSIC_18",name:"Harpa",type:"table",w:0.9,h:1.7,d:0.35,color:"#e0d0a0"},
+  {id:"CAT_MUSIC_19",name:"Flauta_Transversal",type:"table",w:0.05,h:0.65,d:0.05,color:"#c0c0c8"},
+  {id:"CAT_MUSIC_20",name:"Flauta_Doce",type:"table",w:0.04,h:0.35,d:0.04,color:"#e8e0c0"},
+  {id:"CAT_MUSIC_21",name:"Ocarina",type:"table",w:0.08,h:0.1,d:0.08,color:"#a08040"},
+  {id:"CAT_MUSIC_22",name:"Clarinete",type:"table",w:0.08,h:0.65,d:0.08,color:"#1a1a1a"},
+  {id:"CAT_MUSIC_23",name:"Saxofone",type:"table",w:0.15,h:0.7,d:0.15,color:"#c8a040"},
+  {id:"CAT_MUSIC_24",name:"Trompete",type:"table",w:0.15,h:0.45,d:0.15,color:"#c8a040"},
+  {id:"CAT_MUSIC_25",name:"Trombone",type:"table",w:0.2,h:0.6,d:0.2,color:"#c8a040"},
+  {id:"CAT_MUSIC_26",name:"Tuba",type:"table",w:0.5,h:0.9,d:0.5,color:"#c8a040"},
+  {id:"CAT_MUSIC_27",name:"Trompa",type:"table",w:0.35,h:0.5,d:0.35,color:"#c8a040"},
+  {id:"CAT_MUSIC_28",name:"Gaita",type:"table",w:0.25,h:0.15,d:0.06,color:"#c0c0c8"},
+  {id:"CAT_MUSIC_29",name:"Acordeon",type:"table",w:0.4,h:0.4,d:0.3,color:"#c02020"},
+  {id:"CAT_MUSIC_30",name:"Piano_Digital",type:"table",w:1.4,h:0.3,d:0.35,color:"#1a1a1a"},
+  {id:"CAT_MUSIC_31",name:"Piano_Cauda",type:"table",w:1.5,h:1.0,d:2.0,color:"#1a1a1a"},
+  {id:"CAT_MUSIC_32",name:"Teclado_MIDI",type:"table",w:1.2,h:0.15,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_MUSIC_33",name:"Sintetizador",type:"table",w:0.9,h:0.15,d:0.4,color:"#1a1a1a"},
+  {id:"CAT_MUSIC_34",name:"Controlador_MIDI",type:"table",w:0.6,h:0.15,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_MUSIC_35",name:"Bateria_Kit",type:"table",w:1.6,h:1.2,d:1.6,color:"#c02020"},
+  {id:"CAT_MUSIC_36",name:"Caixa_Bateria",type:"table",w:0.4,h:0.6,d:0.4,color:"#e0d0a0"},
+  {id:"CAT_MUSIC_37",name:"Bumbo",type:"table",w:0.6,h:0.6,d:0.6,color:"#c02020"},
+  {id:"CAT_MUSIC_38",name:"Tom_Tom",type:"table",w:0.35,h:0.4,d:0.35,color:"#c02020"},
+  {id:"CAT_MUSIC_39",name:"Prato_Bateria",type:"table",w:0.4,h:0.02,d:0.4,color:"#c8a040"},
+  {id:"CAT_MUSIC_40",name:"Surdo",type:"table",w:0.5,h:0.5,d:0.5,color:"#e0d0a0"},
+  {id:"CAT_MUSIC_41",name:"Pandeiro",type:"table",w:0.3,h:0.08,d:0.3,color:"#c8a040"},
+  {id:"CAT_MUSIC_42",name:"Tamborim",type:"table",w:0.15,h:0.08,d:0.15,color:"#c02020"},
+  {id:"CAT_MUSIC_43",name:"Cuíca",type:"table",w:0.3,h:0.1,d:0.15,color:"#c8a040"},
+  {id:"CAT_MUSIC_44",name:"Berimbau",type:"table",w:0.15,h:1.5,d:0.15,color:"#8a6a3a"},
+  {id:"CAT_MUSIC_45",name:"Atabaque",type:"table",w:0.4,h:0.9,d:0.4,color:"#8a5a2a"},
+  {id:"CAT_MUSIC_46",name:"Conga",type:"table",w:0.35,h:0.8,d:0.35,color:"#c8a040"},
+  {id:"CAT_MUSIC_47",name:"Bongo",type:"table",w:0.4,h:0.4,d:0.2,color:"#8a5a2a"},
+  {id:"CAT_MUSIC_48",name:"Djembê",type:"table",w:0.35,h:0.65,d:0.35,color:"#8a5a2a"},
+  {id:"CAT_MUSIC_49",name:"Maracas",type:"table",w:0.08,h:0.25,d:0.08,color:"#c8a040"},
+  {id:"CAT_MUSIC_50",name:"Chocalho",type:"table",w:0.1,h:0.15,d:0.1,color:"#c8a040"},
+  {id:"CAT_MUSIC_51",name:"Triângulo",type:"table",w:0.15,h:0.15,d:0.02,color:"#c8a040"},
+  {id:"CAT_MUSIC_52",name:"Sinos",type:"table",w:0.2,h:0.3,d:0.05,color:"#c8a040"},
+  {id:"CAT_MUSIC_53",name:"Xilofone",type:"table",w:0.7,h:0.4,d:0.4,color:"#c8a040"},
+  {id:"CAT_MUSIC_54",name:"Metalofone",type:"table",w:0.7,h:0.4,d:0.4,color:"#a0a0a8"},
+  {id:"CAT_MUSIC_55",name:"Glockenspiel",type:"table",w:0.5,h:0.2,d:0.3,color:"#e0d0a0"},
+  {id:"CAT_MUSIC_56",name:"Apito",type:"table",w:0.04,h:0.1,d:0.04,color:"#c0c0c8"},
+];
+var CAT_PLANTS = [
+  {id:"CAT_PLANTS_1",name:"Samambaia",type:"plant",w:0.5,h:0.7,d:0.5,color:"#2a6a2a"},
+  {id:"CAT_PLANTS_2",name:"Costela_de_Adão",type:"plant",w:0.6,h:1.0,d:0.6,color:"#2a5a2a"},
+  {id:"CAT_PLANTS_3",name:"Espada_de_São_Jorge",type:"plant",w:0.5,h:0.9,d:0.5,color:"#2a6a3a"},
+  {id:"CAT_PLANTS_4",name:"Zamioculca",type:"plant",w:0.5,h:0.9,d:0.5,color:"#1a5a2a"},
+  {id:"CAT_PLANTS_5",name:"Jiboia",type:"plant",w:0.4,h:1.2,d:0.4,color:"#2a6a2a"},
+  {id:"CAT_PLANTS_6",name:"Pothos",type:"plant",w:0.4,h:0.9,d:0.4,color:"#2a8a3a"},
+  {id:"CAT_PLANTS_7",name:"Peperômia",type:"plant",w:0.3,h:0.4,d:0.3,color:"#3a6a3a"},
+  {id:"CAT_PLANTS_8",name:"Suculenta",type:"plant",w:0.2,h:0.2,d:0.2,color:"#3a8a4a"},
+  {id:"CAT_PLANTS_9",name:"Cacto_Mandacaru",type:"plant",w:0.3,h:1.2,d:0.3,color:"#3a7a3a"},
+  {id:"CAT_PLANTS_10",name:"Cacto_Pequeno",type:"plant",w:0.15,h:0.25,d:0.15,color:"#2a6a3a"},
+  {id:"CAT_PLANTS_11",name:"Aloe_Vera",type:"plant",w:0.3,h:0.5,d:0.3,color:"#4a9a5a"},
+  {id:"CAT_PLANTS_12",name:"Suculenta_Grande",type:"plant",w:0.35,h:0.4,d:0.35,color:"#4a9a6a"},
+  {id:"CAT_PLANTS_13",name:"Orquídea",type:"plant",w:0.3,h:0.6,d:0.3,color:"#c04080"},
+  {id:"CAT_PLANTS_14",name:"Bromélia",type:"plant",w:0.4,h:0.5,d:0.4,color:"#c02020"},
+  {id:"CAT_PLANTS_15",name:"Violeta",type:"plant",w:0.25,h:0.3,d:0.25,color:"#a040a0"},
+  {id:"CAT_PLANTS_16",name:"Girassol",type:"plant",w:0.3,h:1.2,d:0.3,color:"#e0c020"},
+  {id:"CAT_PLANTS_17",name:"Rosa_Vermelha",type:"plant",w:0.3,h:0.8,d:0.3,color:"#c02020"},
+  {id:"CAT_PLANTS_18",name:"Rosa_Branca",type:"plant",w:0.3,h:0.8,d:0.3,color:"#f0f0f0"},
+  {id:"CAT_PLANTS_19",name:"Tulipa",type:"plant",w:0.2,h:0.5,d:0.2,color:"#e04060"},
+  {id:"CAT_PLANTS_20",name:"Margarida",type:"plant",w:0.25,h:0.4,d:0.25,color:"#f0f0a0"},
+  {id:"CAT_PLANTS_21",name:"Lírio",type:"plant",w:0.3,h:0.7,d:0.3,color:"#f0e0c0"},
+  {id:"CAT_PLANTS_22",name:"Antúrio",type:"plant",w:0.35,h:0.7,d:0.35,color:"#c02020"},
+  {id:"CAT_PLANTS_23",name:"Copos_de_Leite",type:"plant",w:0.25,h:0.5,d:0.25,color:"#f0f0e0"},
+  {id:"CAT_PLANTS_24",name:"Hortelã",type:"plant",w:0.3,h:0.4,d:0.3,color:"#2a8a3a"},
+  {id:"CAT_PLANTS_25",name:"Manjericão",type:"plant",w:0.3,h:0.5,d:0.3,color:"#2a6a2a"},
+  {id:"CAT_PLANTS_26",name:"Alecrim",type:"plant",w:0.3,h:0.5,d:0.3,color:"#3a6a3a"},
+  {id:"CAT_PLANTS_27",name:"Tomilho",type:"plant",w:0.25,h:0.4,d:0.25,color:"#4a7a4a"},
+  {id:"CAT_PLANTS_28",name:"Salsinha",type:"plant",w:0.25,h:0.35,d:0.25,color:"#2a8a3a"},
+  {id:"CAT_PLANTS_29",name:"Cebolinha",type:"plant",w:0.25,h:0.35,d:0.25,color:"#2a8a3a"},
+  {id:"CAT_PLANTS_30",name:"Coentro",type:"plant",w:0.25,h:0.4,d:0.25,color:"#2a7a3a"},
+  {id:"CAT_PLANTS_31",name:"Lavanda",type:"plant",w:0.3,h:0.5,d:0.3,color:"#a090c0"},
+  {id:"CAT_PLANTS_32",name:"Bambu",type:"plant",w:0.5,h:1.5,d:0.5,color:"#6a8a3a"},
+  {id:"CAT_PLANTS_33",name:"Bambu_Fortunei",type:"plant",w:0.4,h:1.0,d:0.4,color:"#4a6a3a"},
+  {id:"CAT_PLANTS_34",name:"Palmeira_Areca",type:"plant",w:0.7,h:1.6,d:0.7,color:"#2a6a3a"},
+  {id:"CAT_PLANTS_35",name:"Palmeira_Ráfia",type:"plant",w:0.8,h:1.8,d:0.8,color:"#2a6a2a"},
+  {id:"CAT_PLANTS_36",name:"Palmeira_Fênix",type:"plant",w:0.7,h:2.0,d:0.7,color:"#2a5a2a"},
+  {id:"CAT_PLANTS_37",name:"Ficus",type:"plant",w:0.8,h:1.5,d:0.8,color:"#2a5a2a"},
+  {id:"CAT_PLANTS_38",name:"Ficus_Lira",type:"plant",w:0.7,h:1.4,d:0.7,color:"#2a6a3a"},
+  {id:"CAT_PLANTS_39",name:"Árvore_da_Borracha",type:"plant",w:0.7,h:1.3,d:0.7,color:"#2a5a2a"},
+  {id:"CAT_PLANTS_40",name:"Dracena",type:"plant",w:0.5,h:1.4,d:0.5,color:"#3a6a3a"},
+  {id:"CAT_PLANTS_41",name:"Yucca",type:"plant",w:0.6,h:1.5,d:0.6,color:"#4a7a4a"},
+  {id:"CAT_PLANTS_42",name:"Bonsai_Pequeno",type:"plant",w:0.3,h:0.4,d:0.3,color:"#3a5a2a"},
+  {id:"CAT_PLANTS_43",name:"Bonsai_Grande",type:"plant",w:0.5,h:0.7,d:0.5,color:"#3a5a2a"},
+  {id:"CAT_PLANTS_44",name:"Bonsai_Junípero",type:"plant",w:0.4,h:0.6,d:0.4,color:"#3a5a2a"},
+  {id:"CAT_PLANTS_45",name:"Musgo",type:"plant",w:0.3,h:0.1,d:0.3,color:"#2a5a2a"},
+  {id:"CAT_PLANTS_46",name:"Musgo_Bola",type:"plant",w:0.25,h:0.3,d:0.25,color:"#3a6a3a"},
+  {id:"CAT_PLANTS_47",name:"Planta_Carnívora",type:"plant",w:0.25,h:0.3,d:0.25,color:"#c02020"},
+  {id:"CAT_PLANTS_48",name:"Dionaea",type:"plant",w:0.2,h:0.25,d:0.2,color:"#a02020"},
+  {id:"CAT_PLANTS_49",name:"Nepenthes",type:"plant",w:0.3,h:0.5,d:0.3,color:"#3a7a3a"},
+  {id:"CAT_PLANTS_50",name:"Trepadeira",type:"plant",w:0.4,h:1.5,d:0.4,color:"#2a8a3a"},
+  {id:"CAT_PLANTS_51",name:"Hera",type:"plant",w:0.4,h:1.2,d:0.4,color:"#2a6a3a"},
+  {id:"CAT_PLANTS_52",name:"Unha_de_Gato",type:"plant",w:0.4,h:1.5,d:0.4,color:"#2a8a3a"},
+  {id:"CAT_PLANTS_53",name:"Jasmim",type:"plant",w:0.4,h:1.2,d:0.4,color:"#f0f0e0"},
+  {id:"CAT_PLANTS_54",name:"Buganvília",type:"plant",w:0.5,h:1.5,d:0.5,color:"#c040a0"},
+  {id:"CAT_PLANTS_55",name:"Hibisco",type:"plant",w:0.4,h:0.8,d:0.4,color:"#c04020"},
+  {id:"CAT_PLANTS_56",name:"Gardenia",type:"plant",w:0.35,h:0.7,d:0.35,color:"#f0f0e0"},
+  {id:"CAT_PLANTS_57",name:"Camelia",type:"plant",w:0.4,h:0.8,d:0.4,color:"#c04060"},
+  {id:"CAT_PLANTS_58",name:"Azaleia",type:"plant",w:0.4,h:0.7,d:0.4,color:"#c04080"},
+  {id:"CAT_PLANTS_59",name:"Hortênsia",type:"plant",w:0.5,h:0.9,d:0.5,color:"#a0a0d0"},
+  {id:"CAT_PLANTS_60",name:"Peônia",type:"plant",w:0.35,h:0.6,d:0.35,color:"#c04080"},
+  {id:"CAT_PLANTS_61",name:"Crisântemo",type:"plant",w:0.3,h:0.5,d:0.3,color:"#e0c020"},
+  {id:"CAT_PLANTS_62",name:"Cravo",type:"plant",w:0.25,h:0.5,d:0.25,color:"#c02020"},
+  {id:"CAT_PLANTS_63",name:"Begônia",type:"plant",w:0.3,h:0.4,d:0.3,color:"#e04060"},
+  {id:"CAT_PLANTS_64",name:"Impatiens",type:"plant",w:0.3,h:0.4,d:0.3,color:"#c04080"},
+  {id:"CAT_PLANTS_65",name:"Gerânio",type:"plant",w:0.3,h:0.5,d:0.3,color:"#c02020"},
+  {id:"CAT_PLANTS_66",name:"Petúnia",type:"plant",w:0.3,h:0.4,d:0.3,color:"#a040c0"},
+  {id:"CAT_PLANTS_67",name:"Amor_Perfeito",type:"plant",w:0.25,h:0.35,d:0.25,color:"#8040c0"},
+  {id:"CAT_PLANTS_68",name:"Prímula",type:"plant",w:0.25,h:0.35,d:0.25,color:"#e0c040"},
+  {id:"CAT_PLANTS_69",name:"Kalanchoe",type:"plant",w:0.25,h:0.3,d:0.25,color:"#c04040"},
+  {id:"CAT_PLANTS_70",name:"Onze_Horas",type:"plant",w:0.25,h:0.3,d:0.25,color:"#e06080"},
+];
+var CAT_TOYS = [
+  {id:"CAT_TOYS_1",name:"Bloco_Montar",type:"table",w:0.15,h:0.15,d:0.15,color:"#c02020"},
+  {id:"CAT_TOYS_2",name:"Lego_Base",type:"table",w:0.25,h:0.02,d:0.25,color:"#40c040"},
+  {id:"CAT_TOYS_3",name:"Lego_Torre",type:"table",w:0.15,h:0.4,d:0.15,color:"#c0c020"},
+  {id:"CAT_TOYS_4",name:"Carrinho_Controle",type:"table",w:0.3,h:0.15,d:0.2,color:"#c02020"},
+  {id:"CAT_TOYS_5",name:"Carrinho_Fricção",type:"table",w:0.15,h:0.08,d:0.15,color:"#4090c0"},
+  {id:"CAT_TOYS_6",name:"Caminhão",type:"table",w:0.3,h:0.15,d:0.15,color:"#e0c040"},
+  {id:"CAT_TOYS_7",name:"Trator",type:"table",w:0.25,h:0.15,d:0.2,color:"#2a8a2a"},
+  {id:"CAT_TOYS_8",name:"Avião_Brinquedo",type:"table",w:0.3,h:0.1,d:0.3,color:"#c0c0c8"},
+  {id:"CAT_TOYS_9",name:"Barco_Brinquedo",type:"table",w:0.25,h:0.15,d:0.1,color:"#4090c0"},
+  {id:"CAT_TOYS_10",name:"Trem_Elétrico",type:"table",w:0.5,h:0.15,d:0.25,color:"#1a1a1a"},
+  {id:"CAT_TOYS_11",name:"Trilho_Trem",type:"table",w:1.5,h:0.03,d:1.0,color:"#606060"},
+  {id:"CAT_TOYS_12",name:"Dinossauro",type:"table",w:0.35,h:0.25,d:0.15,color:"#3a6a3a"},
+  {id:"CAT_TOYS_13",name:"Boneca_Bebê",type:"table",w:0.15,h:0.35,d:0.1,color:"#f0c0d0"},
+  {id:"CAT_TOYS_14",name:"Boneca_Princesa",type:"table",w:0.15,h:0.4,d:0.1,color:"#c040a0"},
+  {id:"CAT_TOYS_15",name:"Boneco_Herói",type:"table",w:0.15,h:0.35,d:0.1,color:"#c02020"},
+  {id:"CAT_TOYS_16",name:"Boneco_Robô",type:"table",w:0.15,h:0.35,d:0.1,color:"#4090c0"},
+  {id:"CAT_TOYS_17",name:"Boneco_Ação",type:"table",w:0.15,h:0.3,d:0.1,color:"#2a2a3a"},
+  {id:"CAT_TOYS_18",name:"Super_Herói",type:"table",w:0.15,h:0.35,d:0.1,color:"#c02020"},
+  {id:"CAT_TOYS_19",name:"Pelúcia_Urso",type:"table",w:0.3,h:0.4,d:0.25,color:"#8a5a3a"},
+  {id:"CAT_TOYS_20",name:"Pelúcia_Coelho",type:"table",w:0.25,h:0.35,d:0.2,color:"#f0f0e0"},
+  {id:"CAT_TOYS_21",name:"Pelúcia_Gato",type:"table",w:0.25,h:0.3,d:0.25,color:"#2a2a2a"},
+  {id:"CAT_TOYS_22",name:"Pelúcia_Cachorro",type:"table",w:0.3,h:0.35,d:0.25,color:"#8a6a3a"},
+  {id:"CAT_TOYS_23",name:"Pelúcia_Elefante",type:"table",w:0.35,h:0.4,d:0.3,color:"#a0a0a8"},
+  {id:"CAT_TOYS_24",name:"Pelúcia_Gigante",type:"table",w:0.8,h:1.0,d:0.6,color:"#8a5a3a"},
+  {id:"CAT_TOYS_25",name:"Quebra_Cabeça",type:"table",w:0.35,h:0.02,d:0.35,color:"#a0c0d0"},
+  {id:"CAT_TOYS_26",name:"Quebra_Cabeça_3D",type:"table",w:0.25,h:0.25,d:0.25,color:"#c02020"},
+  {id:"CAT_TOYS_27",name:"Dominó",type:"table",w:0.25,h:0.03,d:0.12,color:"#1a1a1a"},
+  {id:"CAT_TOYS_28",name:"Dama",type:"table",w:0.3,h:0.03,d:0.3,color:"#f0e0c0"},
+  {id:"CAT_TOYS_29",name:"Xadrez_Infantil",type:"table",w:0.35,h:0.03,d:0.35,color:"#c0a060"},
+  {id:"CAT_TOYS_30",name:"Ludo",type:"table",w:0.35,h:0.03,d:0.35,color:"#c02020"},
+  {id:"CAT_TOYS_31",name:"Jogo_Memória",type:"table",w:0.3,h:0.05,d:0.3,color:"#c0d0e0"},
+  {id:"CAT_TOYS_32",name:"Cartas_Uno",type:"table",w:0.12,h:0.03,d:0.08,color:"#c02020"},
+  {id:"CAT_TOYS_33",name:"Pipa_Colorida",type:"table",w:0.4,h:0.4,d:0.02,color:"#4090c0"},
+  {id:"CAT_TOYS_34",name:"Pião_Colorido",type:"table",w:0.15,h:0.2,d:0.15,color:"#e0c040"},
+  {id:"CAT_TOYS_35",name:"Ioiô_Colorido",type:"table",w:0.1,h:0.1,d:0.05,color:"#c02020"},
+  {id:"CAT_TOYS_36",name:"Bola_Pula",type:"table",w:0.3,h:0.3,d:0.3,color:"#c04080"},
+  {id:"CAT_TOYS_37",name:"Bola_Praia",type:"table",w:0.4,h:0.4,d:0.4,color:"#40a0c0"},
+  {id:"CAT_TOYS_38",name:"Bola_Futebol_Infantil",type:"table",w:0.18,h:0.18,d:0.18,color:"#f0f0f0"},
+  {id:"CAT_TOYS_39",name:"Bola_Basquete_Infantil",type:"table",w:0.20,h:0.20,d:0.20,color:"#e08040"},
+  {id:"CAT_TOYS_40",name:"Boliche_Kit",type:"chest",w:0.6,h:0.3,d:0.4,color:"#f0f0f0"},
+  {id:"CAT_TOYS_41",name:"Argolas",type:"table",w:0.3,h:0.05,d:0.3,color:"#c02020"},
+  {id:"CAT_TOYS_42",name:"Bambolê",type:"table",w:0.5,h:0.5,d:0.05,color:"#c04080"},
+  {id:"CAT_TOYS_43",name:"Elástico_Pular",type:"table",w:0.2,h:0.1,d:0.2,color:"#c02020"},
+  {id:"CAT_TOYS_44",name:"Amarelinha",type:"rug",w:1.0,h:0.02,d:1.5,color:"#e0c040"},
+  {id:"CAT_TOYS_45",name:"Giz_Cera",type:"table",w:0.1,h:0.1,d:0.1,color:"#c02020"},
+  {id:"CAT_TOYS_46",name:"Giz_Lousa",type:"table",w:0.08,h:0.1,d:0.03,color:"#f0f0f0"},
+  {id:"CAT_TOYS_47",name:"Lousa_Mágica",type:"table",w:0.3,h:0.4,d:0.05,color:"#1a1a1a"},
+  {id:"CAT_TOYS_48",name:"Massa_Modelar",type:"table",w:0.15,h:0.08,d:0.15,color:"#e0c040"},
+  {id:"CAT_TOYS_49",name:"Slime",type:"table",w:0.15,h:0.1,d:0.15,color:"#40c040"},
+  {id:"CAT_TOYS_50",name:"Areia_Kinética",type:"table",w:0.3,h:0.1,d:0.3,color:"#e0c080"},
+  {id:"CAT_TOYS_51",name:"Piscina_Bolinhas",type:"table",w:1.2,h:0.4,d:1.2,color:"#4090c0"},
+  {id:"CAT_TOYS_52",name:"Escorregador",type:"table",w:0.8,h:1.2,d:1.5,color:"#c02020"},
+  {id:"CAT_TOYS_53",name:"Balanço",type:"table",w:1.2,h:1.5,d:0.5,color:"#8a6a3a"},
+  {id:"CAT_TOYS_54",name:"Gangorra",type:"table",w:1.8,h:0.4,d:0.3,color:"#8a6a3a"},
+  {id:"CAT_TOYS_55",name:"Casinha_Infantil",type:"table",w:1.5,h:1.5,d:1.5,color:"#c0a060"},
+  {id:"CAT_TOYS_56",name:"Toca",type:"table",w:0.8,h:0.8,d:0.8,color:"#4090c0"},
+  {id:"CAT_TOYS_57",name:"Cavalinho_Balanço",type:"table",w:0.8,h:0.9,d:0.5,color:"#8a5a3a"},
+  {id:"CAT_TOYS_58",name:"Triciclo",type:"table",w:0.5,h:0.6,d:0.8,color:"#c02020"},
+  {id:"CAT_TOYS_59",name:"Patinete_Infantil",type:"table",w:0.4,h:0.8,d:0.6,color:"#4090c0"},
+  {id:"CAT_TOYS_60",name:"Bicicleta_Infantil",type:"table",w:0.5,h:0.8,d:1.0,color:"#c02020"},
+  {id:"CAT_TOYS_61",name:"Carrinho_Bebê_Boneca",type:"table",w:0.4,h:0.8,d:0.6,color:"#c04080"},
+  {id:"CAT_TOYS_62",name:"Berço_Boneca",type:"table",w:0.3,h:0.3,d:0.6,color:"#f0c0d0"},
+  {id:"CAT_TOYS_63",name:"Mamadeira_Boneca",type:"table",w:0.04,h:0.1,d:0.04,color:"#f0f0f0"},
+  {id:"CAT_TOYS_64",name:"Chupeta",type:"table",w:0.05,h:0.05,d:0.03,color:"#f0c0d0"},
+  {id:"CAT_TOYS_65",name:"Fralda_Boneca",type:"table",w:0.15,h:0.02,d:0.15,color:"#f0f0f0"},
+];
+var CAT_PARTY = [
+  {id:"CAT_PARTY_1",name:"Árvore_Natal_Pequena",type:"lamp",w:0.4,h:0.9,d:0.4,color:"#2a6a2a"},
+  {id:"CAT_PARTY_2",name:"Árvore_Natal_Média",type:"lamp",w:0.6,h:1.4,d:0.6,color:"#2a5a2a"},
+  {id:"CAT_PARTY_3",name:"Árvore_Natal_Grande",type:"lamp",w:0.9,h:2.0,d:0.9,color:"#2a5a2a"},
+  {id:"CAT_PARTY_4",name:"Estrela_Natal",type:"lamp",w:0.3,h:0.3,d:0.1,color:"#e0c040"},
+  {id:"CAT_PARTY_5",name:"Bola_Natal_Vermelha",type:"lamp",w:0.12,h:0.12,d:0.12,color:"#c02020"},
+  {id:"CAT_PARTY_6",name:"Bola_Natal_Dourada",type:"lamp",w:0.12,h:0.12,d:0.12,color:"#c8a040"},
+  {id:"CAT_PARTY_7",name:"Bola_Natal_Prata",type:"lamp",w:0.12,h:0.12,d:0.12,color:"#c0c0c8"},
+  {id:"CAT_PARTY_8",name:"Bola_Natal_Azul",type:"lamp",w:0.12,h:0.12,d:0.12,color:"#4090c0"},
+  {id:"CAT_PARTY_9",name:"Pisca_Pisca",type:"lamp",w:2.0,h:0.02,d:0.02,color:"#c0d0e0"},
+  {id:"CAT_PARTY_10",name:"Fita_Natal",type:"lamp",w:1.0,h:0.1,d:0.1,color:"#c02020"},
+  {id:"CAT_PARTY_11",name:"Neve_Artificial",type:"lamp",w:0.2,h:0.05,d:0.2,color:"#f0f0f0"},
+  {id:"CAT_PARTY_12",name:"Papai_Noel",type:"box",w:0.3,h:0.6,d:0.25,color:"#c02020"},
+  {id:"CAT_PARTY_13",name:"Boneco_de_Neve",type:"box",w:0.4,h:0.7,d:0.4,color:"#f0f0f0"},
+  {id:"CAT_PARTY_14",name:"Rena",type:"box",w:0.5,h:0.5,d:0.15,color:"#8a5a3a"},
+  {id:"CAT_PARTY_15",name:"Presépio",type:"box",w:0.6,h:0.4,d:0.3,color:"#8a5a3a"},
+  {id:"CAT_PARTY_16",name:"Coroa_Advento",type:"box",w:0.4,h:0.15,d:0.4,color:"#2a6a2a"},
+  {id:"CAT_PARTY_17",name:"Meia_Natal",type:"box",w:0.2,h:0.3,d:0.05,color:"#c02020"},
+  {id:"CAT_PARTY_18",name:"Guirlanda",type:"box",w:0.4,h:0.4,d:0.1,color:"#2a6a2a"},
+  {id:"CAT_PARTY_19",name:"Bota_Natal",type:"box",w:0.2,h:0.4,d:0.15,color:"#c02020"},
+  {id:"CAT_PARTY_20",name:"Bengala_Doce",type:"box",w:0.05,h:0.25,d:0.05,color:"#c02020"},
+  {id:"CAT_PARTY_21",name:"Boneco_Gengibre",type:"box",w:0.15,h:0.25,d:0.1,color:"#c8a060"},
+  {id:"CAT_PARTY_22",name:"Duende",type:"box",w:0.2,h:0.5,d:0.15,color:"#c02020"},
+  {id:"CAT_PARTY_23",name:"Sino_Natal",type:"box",w:0.15,h:0.2,d:0.1,color:"#c8a040"},
+  {id:"CAT_PARTY_24",name:"Vela_Natal",type:"box",w:0.08,h:0.25,d:0.08,color:"#c02020"},
+  {id:"CAT_PARTY_25",name:"Presente_Caixa",type:"lamp",w:0.3,h:0.3,d:0.3,color:"#c02020"},
+  {id:"CAT_PARTY_26",name:"Presente_Caixa_Azul",type:"lamp",w:0.3,h:0.3,d:0.3,color:"#4090c0"},
+  {id:"CAT_PARTY_27",name:"Presente_Caixa_Verde",type:"lamp",w:0.3,h:0.3,d:0.3,color:"#2a8a2a"},
+  {id:"CAT_PARTY_28",name:"Laço_Presente",type:"box",w:0.15,h:0.1,d:0.15,color:"#c8a040"},
+  {id:"CAT_PARTY_29",name:"Cartão_Natal",type:"box",w:0.15,h:0.02,d:0.1,color:"#f0f0e0"},
+  {id:"CAT_PARTY_30",name:"Enfeite_Felpudo",type:"box",w:0.1,h:0.1,d:0.02,color:"#c02020"},
+  {id:"CAT_PARTY_31",name:"Velas_Hanukkah",type:"box",w:0.3,h:0.2,d:0.05,color:"#c8a040"},
+  {id:"CAT_PARTY_32",name:"Menorá",type:"box",w:0.3,h:0.4,d:0.1,color:"#c8a040"},
+  {id:"CAT_PARTY_33",name:"Dreidel",type:"box",w:0.08,h:0.1,d:0.08,color:"#4090c0"},
+  {id:"CAT_PARTY_34",name:"Abóbora_Halloween",type:"box",w:0.4,h:0.4,d:0.4,color:"#e08020"},
+  {id:"CAT_PARTY_35",name:"Abóbora_Iluminada",type:"box",w:0.4,h:0.4,d:0.4,color:"#e07810"},
+  {id:"CAT_PARTY_36",name:"Fantasma_Halloween",type:"box",w:0.4,h:0.8,d:0.4,color:"#f0f0f0"},
+  {id:"CAT_PARTY_37",name:"Morcego_Halloween",type:"box",w:0.4,h:0.2,d:0.05,color:"#1a1a1a"},
+  {id:"CAT_PARTY_38",name:"Aranha_Halloween",type:"box",w:0.3,h:0.15,d:0.3,color:"#1a1a1a"},
+  {id:"CAT_PARTY_39",name:"Teia_Halloween",type:"box",w:0.5,h:0.5,d:0.02,color:"#f0f0f0"},
+  {id:"CAT_PARTY_40",name:"Caveira",type:"box",w:0.2,h:0.25,d:0.2,color:"#f0f0f0"},
+  {id:"CAT_PARTY_41",name:"Túmulo",type:"box",w:0.4,h:0.7,d:0.15,color:"#606060"},
+  {id:"CAT_PARTY_42",name:"Vassoura_Bruxa",type:"box",w:0.1,h:1.3,d:0.1,color:"#8a6a3a"},
+  {id:"CAT_PARTY_43",name:"Chapéu_Bruxa",type:"box",w:0.4,h:0.5,d:0.4,color:"#1a1a1a"},
+  {id:"CAT_PARTY_44",name:"Caldeirão",type:"box",w:0.4,h:0.3,d:0.4,color:"#2a2a2a"},
+  {id:"CAT_PARTY_45",name:"Bandeira_Festa",type:"box",w:2.0,h:0.3,d:0.02,color:"#c02020"},
+  {id:"CAT_PARTY_46",name:"Balão_Festa",type:"lamp",w:0.2,h:0.3,d:0.2,color:"#c02020"},
+  {id:"CAT_PARTY_47",name:"Balão_Festa_Azul",type:"lamp",w:0.2,h:0.3,d:0.2,color:"#4090c0"},
+  {id:"CAT_PARTY_48",name:"Balão_Festa_Amarelo",type:"lamp",w:0.2,h:0.3,d:0.2,color:"#e0c040"},
+  {id:"CAT_PARTY_49",name:"Balão_Festa_Verde",type:"lamp",w:0.2,h:0.3,d:0.2,color:"#2a8a2a"},
+  {id:"CAT_PARTY_50",name:"Balão_Festa_Rosa",type:"lamp",w:0.2,h:0.3,d:0.2,color:"#c04080"},
+  {id:"CAT_PARTY_51",name:"Chapéu_Festa",type:"box",w:0.15,h:0.25,d:0.15,color:"#c02020"},
+  {id:"CAT_PARTY_52",name:"Vela_Aniversário",type:"box",w:0.03,h:0.15,d:0.03,color:"#c8a040"},
+  {id:"CAT_PARTY_53",name:"Bolo_Aniversário",type:"box",w:0.3,h:0.15,d:0.3,color:"#e0a0c0"},
+  {id:"CAT_PARTY_54",name:"Cupcake_Aniversário",type:"box",w:0.12,h:0.15,d:0.12,color:"#f0c0d0"},
+  {id:"CAT_PARTY_55",name:"Cones_Festa",type:"box",w:0.2,h:0.2,d:0.1,color:"#c8a040"},
+  {id:"CAT_PARTY_56",name:"Serpentina",type:"box",w:0.15,h:0.08,d:0.15,color:"#c040a0"},
+  {id:"CAT_PARTY_57",name:"Confete",type:"box",w:0.1,h:0.05,d:0.1,color:"#e04080"},
+  {id:"CAT_PARTY_58",name:"Apito_Festa",type:"box",w:0.04,h:0.1,d:0.04,color:"#c8a040"},
+];
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* fallback: se o CDN principal falhar, tenta unpkg */
+if (typeof THREE === 'undefined') {
+  document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');
+}
+</script>
+<script>
+"use strict";
+
+/* ============== Utilitários ============== */
+function $(id){return document.getElementById(id)}
+function $$(s){return document.querySelectorAll(s)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function showToast(msg){
+  var t = $('toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(function(){ t.classList.remove('on'); }, 1800);
+}
+
+/* ============== Estado ============== */
+var APP = {
+  mode:'walk',
+  objects:[],
+  selected:null,
+  currentCat:'furniture',
+  currentPick:null,
+  roomW:12,
+  roomD:12,
+  roomH:2.8,
+  wallColor:'#e8e0d0',
+  floorColor:'#8a6a3a',
+  ceilColor:'#f0f0f0',
+  player:{
+    pos:null,
+    yaw:Math.PI,
+    pitch:-0.05,
+    height:1.6,
+    radius:0.35
+  },
+  keys:{},
+  joyL:{x:0,y:0},
+  joyR:{x:0,y:0},
+  fps:0,
+  frameCount:0,
+  lastFpsTime:0,
+  _id:0
+};
+
+var scene, camera, renderer;
+var roomGroup, objectsGroup;
+var clock;
+var raycaster;
+var ndcX = 0, ndcY = 0;
+
+/* ============== Three.js Init ============== */
+function initThree(){
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a14);
+  scene.fog = new THREE.Fog(0x0a0a14, 18, 45);
+
+  camera = new THREE.PerspectiveCamera(72, window.innerWidth/window.innerHeight, 0.05, 200);
+  camera.rotation.order = 'YXZ';
+
+  renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  var ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(ambient);
+
+  var hemi = new THREE.HemisphereLight(0xffffff, 0x444466, 0.4);
+  scene.add(hemi);
+
+  var sun = new THREE.DirectionalLight(0xfff0e0, 0.9);
+  sun.position.set(8, 15, 6);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -18;
+  sun.shadow.camera.right = 18;
+  sun.shadow.camera.top = 18;
+  sun.shadow.camera.bottom = -18;
+  sun.shadow.camera.near = 0.5;
+  sun.shadow.camera.far = 45;
+  sun.shadow.bias = -0.0004;
+  scene.add(sun);
+
+  roomGroup = new THREE.Group();
+  objectsGroup = new THREE.Group();
+  scene.add(roomGroup);
+  scene.add(objectsGroup);
+
+  clock = new THREE.Clock();
+  raycaster = new THREE.Raycaster();
+}
+
+/* ============== Room construction ============== */
+function buildRoom(){
+  while(roomGroup.children.length){
+    var c = roomGroup.children[0];
+    roomGroup.remove(c);
+    disposeNode(c);
+  }
+
+  var W = APP.roomW, D = APP.roomD, H = APP.roomH;
+
+  var wallMat  = new THREE.MeshStandardMaterial({color:APP.wallColor,  roughness:0.92, metalness:0.02});
+  var floorMat = new THREE.MeshStandardMaterial({color:APP.floorColor, roughness:0.65, metalness:0.05});
+  var ceilMat  = new THREE.MeshStandardMaterial({color:APP.ceilColor,  roughness:0.95, metalness:0});
+
+  var floorGeo = new THREE.PlaneGeometry(W, D);
+  var floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI/2;
+  floor.receiveShadow = true;
+  roomGroup.add(floor);
+
+  var ceil = new THREE.Mesh(floorGeo.clone(), ceilMat);
+  ceil.rotation.x = Math.PI/2;
+  ceil.position.y = H;
+  roomGroup.add(ceil);
+
+  var wallGeoX = new THREE.PlaneGeometry(D, H);
+  var wallGeoZ = new THREE.PlaneGeometry(W, H);
+
+  var w1 = new THREE.Mesh(wallGeoZ, wallMat);
+  w1.position.set(0, H/2, -D/2);
+  w1.receiveShadow = true;
+  roomGroup.add(w1);
+
+  var w2 = new THREE.Mesh(wallGeoZ.clone(), wallMat);
+  w2.position.set(0, H/2, D/2);
+  w2.rotation.y = Math.PI;
+  w2.receiveShadow = true;
+  roomGroup.add(w2);
+
+  var w3 = new THREE.Mesh(wallGeoX, wallMat);
+  w3.position.set(-W/2, H/2, 0);
+  w3.rotation.y = Math.PI/2;
+  w3.receiveShadow = true;
+  roomGroup.add(w3);
+
+  var w4 = new THREE.Mesh(wallGeoX.clone(), wallMat);
+  w4.position.set(W/2, H/2, 0);
+  w4.rotation.y = -Math.PI/2;
+  w4.receiveShadow = true;
+  roomGroup.add(w4);
+
+  /* Rodapé */
+  var trimMat = new THREE.MeshStandardMaterial({color:0x2a1a0a, roughness:0.6});
+  var th = 0.08, tt = 0.03;
+  var t1 = new THREE.Mesh(new THREE.BoxGeometry(W, th, tt), trimMat);
+  t1.position.set(0, th/2, -D/2 + tt/2);
+  roomGroup.add(t1);
+  var t2 = new THREE.Mesh(new THREE.BoxGeometry(W, th, tt), trimMat);
+  t2.position.set(0, th/2, D/2 - tt/2);
+  roomGroup.add(t2);
+  var t3 = new THREE.Mesh(new THREE.BoxGeometry(tt, th, D), trimMat);
+  t3.position.set(-W/2 + tt/2, th/2, 0);
+  roomGroup.add(t3);
+  var t4 = new THREE.Mesh(new THREE.BoxGeometry(tt, th, D), trimMat);
+  t4.position.set(W/2 - tt/2, th/2, 0);
+  roomGroup.add(t4);
+}
+
+function disposeNode(n){
+  if(n.geometry) n.geometry.dispose();
+  if(n.material){
+    if(Array.isArray(n.material)) n.material.forEach(function(m){m.dispose()});
+    else n.material.dispose();
+  }
+}
+
+/* ============== Object builders ============== */
+var BUILDERS = {
+  bed: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+    var base = new THREE.Mesh(
+      new THREE.BoxGeometry(w, 0.25, d),
+      new THREE.MeshStandardMaterial({color:0x4a2a14, roughness:0.7})
+    );
+    base.position.y = 0.125;
+    base.castShadow = base.receiveShadow = true;
+    g.add(base);
+
+    var mat = new THREE.Mesh(
+      new THREE.BoxGeometry(w*0.96, 0.22, d*0.96),
+      new THREE.MeshStandardMaterial({color:0xe8e0d0, roughness:0.95})
+    );
+    mat.position.y = 0.37;
+    mat.castShadow = true;
+    g.add(mat);
+
+    var cov = new THREE.Mesh(
+      new THREE.BoxGeometry(w*0.98, 0.06, d*0.7),
+      new THREE.MeshStandardMaterial({color:color, roughness:0.98})
+    );
+    cov.position.set(0, 0.51, d*0.1);
+    cov.castShadow = true;
+    g.add(cov);
+
+    var pil = new THREE.Mesh(
+      new THREE.BoxGeometry(w*0.6, 0.1, 0.35),
+      new THREE.MeshStandardMaterial({color:0xf0f0f0, roughness:0.9})
+    );
+    pil.position.set(0, 0.53, -d/2 + 0.25);
+    pil.castShadow = true;
+    g.add(pil);
+    return g;
+  },
+
+  table: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+    var mat = new THREE.MeshStandardMaterial({color:color, roughness:0.6, metalness:0.05});
+
+    var top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.05, d), mat);
+    top.position.y = h - 0.025;
+    top.castShadow = true;
+    top.receiveShadow = true;
+    g.add(top);
+
+    var legW = Math.min(0.06, w*0.08);
+    var legH = h - 0.05;
+    var offX = w/2 - legW;
+    var offZ = d/2 - legW;
+    var legMat = new THREE.MeshStandardMaterial({color:0x2a1a0a, roughness:0.7});
+    [[-offX,-offZ],[offX,-offZ],[-offX,offZ],[offX,offZ]].forEach(function(p){
+      var leg = new THREE.Mesh(new THREE.BoxGeometry(legW, legH, legW), legMat);
+      leg.position.set(p[0], legH/2, p[1]);
+      leg.castShadow = true;
+      g.add(leg);
+    });
+    return g;
+  },
+
+  chair: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+    var mat = new THREE.MeshStandardMaterial({color:color, roughness:0.7});
+
+    var seat = new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, d), mat);
+    seat.position.y = h * 0.5;
+    seat.castShadow = true;
+    seat.receiveShadow = true;
+    g.add(seat);
+
+    var back = new THREE.Mesh(new THREE.BoxGeometry(w, h*0.55, 0.06), mat);
+    back.position.set(0, h*0.5 + h*0.27, -d/2 + 0.03);
+    back.castShadow = true;
+    g.add(back);
+
+    var lh = h * 0.5;
+    var lw = 0.05;
+    var offX = w/2 - lw;
+    var offZ = d/2 - lw;
+    [[-offX,-offZ],[offX,-offZ],[-offX,offZ],[offX,offZ]].forEach(function(p){
+      var leg = new THREE.Mesh(new THREE.BoxGeometry(lw, lh, lw), mat);
+      leg.position.set(p[0], lh/2, p[1]);
+      leg.castShadow = true;
+      g.add(leg);
+    });
+    return g;
+  },
+
+  sofa: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+    var mat = new THREE.MeshStandardMaterial({color:color, roughness:0.95});
+
+    var base = new THREE.Mesh(new THREE.BoxGeometry(w, h*0.5, d), mat);
+    base.position.y = h * 0.25;
+    base.castShadow = true;
+    base.receiveShadow = true;
+    g.add(base);
+
+    var back = new THREE.Mesh(new THREE.BoxGeometry(w, h*0.55, 0.18), mat);
+    back.position.set(0, h*0.5 + h*0.275, -d/2 + 0.09);
+    back.castShadow = true;
+    g.add(back);
+
+    var armL = new THREE.Mesh(new THREE.BoxGeometry(0.16, h*0.4, d*0.9), mat);
+    armL.position.set(-w/2 + 0.08, h*0.5 + h*0.1, 0);
+    armL.castShadow = true;
+    g.add(armL);
+
+    var armR = armL.clone();
+    armR.position.x = w/2 - 0.08;
+    g.add(armR);
+    return g;
+  },
+
+  wardrobe: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+    var mat = new THREE.MeshStandardMaterial({color:color, roughness:0.55, metalness:0.05});
+
+    var body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    body.position.y = h/2;
+    body.castShadow = true;
+    body.receiveShadow = true;
+    g.add(body);
+
+    var line = new THREE.Mesh(
+      new THREE.BoxGeometry(0.02, h*0.9, 0.01),
+      new THREE.MeshStandardMaterial({color:0x1a1a1a})
+    );
+    line.position.set(0, h/2, d/2 + 0.005);
+    g.add(line);
+
+    var knobMat = new THREE.MeshStandardMaterial({color:0xc8c8c8, metalness:0.8, roughness:0.2});
+    var k1 = new THREE.Mesh(new THREE.SphereGeometry(0.02, 12, 12), knobMat);
+    k1.position.set(-0.06, h*0.5, d/2 + 0.02);
+    g.add(k1);
+    var k2 = k1.clone();
+    k2.position.x = 0.06;
+    g.add(k2);
+    return g;
+  },
+
+  shelf: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+    var mat = new THREE.MeshStandardMaterial({color:color, roughness:0.7});
+
+    var side1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, h, d), mat);
+    side1.position.set(-w/2 + 0.015, h/2, 0);
+    side1.castShadow = true;
+    g.add(side1);
+    var side2 = side1.clone();
+    side2.position.x = w/2 - 0.015;
+    g.add(side2);
+
+    var shelves = 4;
+    for(var i=0;i<shelves;i++){
+      var sh = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, 0.025, d), mat);
+      sh.position.set(0, h/shelves*(i+1) - h/shelves*0.5, 0);
+      sh.castShadow = true;
+      sh.receiveShadow = true;
+      g.add(sh);
+    }
+
+    var back = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.01), mat);
+    back.position.set(0, h/2, -d/2 + 0.005);
+    g.add(back);
+    return g;
+  },
+
+  tv: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+
+    var bezel = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshStandardMaterial({color:color, roughness:0.4, metalness:0.3})
+    );
+    bezel.position.y = h/2 + 0.1;
+    bezel.castShadow = true;
+    g.add(bezel);
+
+    var screen = new THREE.Mesh(
+      new THREE.PlaneGeometry(w*0.94, h*0.88),
+      new THREE.MeshBasicMaterial({color:0x101828})
+    );
+    screen.position.set(0, h/2 + 0.1, d/2 + 0.002);
+    g.add(screen);
+
+    if(d > 0.15){
+      var standBase = new THREE.Mesh(
+        new THREE.BoxGeometry(w*0.5, 0.02, 0.25),
+        new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.3})
+      );
+      standBase.position.set(0, 0.01, 0);
+      g.add(standBase);
+      var neck = new THREE.Mesh(
+        new THREE.BoxGeometry(0.05, 0.1, 0.05),
+        new THREE.MeshStandardMaterial({color:0x1a1a1a})
+      );
+      neck.position.set(0, 0.06, 0);
+      g.add(neck);
+    }
+    return g;
+  },
+
+  lamp: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1];
+
+    var base = new THREE.Mesh(
+      new THREE.CylinderGeometry(w*0.6, w*0.7, 0.04, 20),
+      new THREE.MeshStandardMaterial({color:0x2a2a2a, metalness:0.7, roughness:0.3})
+    );
+    base.position.y = 0.02;
+    base.castShadow = true;
+    g.add(base);
+
+    var rod = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.012, 0.012, h*0.7, 12),
+      new THREE.MeshStandardMaterial({color:0x2a2a2a, metalness:0.8, roughness:0.2})
+    );
+    rod.position.y = h*0.35 + 0.04;
+    g.add(rod);
+
+    var shade = new THREE.Mesh(
+      new THREE.ConeGeometry(w*0.7, h*0.28, 24, 1, true),
+      new THREE.MeshStandardMaterial({
+        color:color, emissive:color, emissiveIntensity:0.4,
+        side:THREE.DoubleSide, roughness:0.9
+      })
+    );
+    shade.position.y = h*0.7 + 0.04;
+    g.add(shade);
+
+    var light = new THREE.PointLight(color, 0.75, 6, 2);
+    light.position.y = h*0.72;
+    g.add(light);
+    return g;
+  },
+
+  rug: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+    var r = new THREE.Mesh(
+      new THREE.BoxGeometry(w, Math.max(0.015, h), d),
+      new THREE.MeshStandardMaterial({color:color, roughness:1})
+    );
+    r.position.y = 0.01;
+    r.receiveShadow = true;
+    g.add(r);
+    return g;
+  },
+
+  painting: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+
+    var frame = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshStandardMaterial({color:0x2a1a0a, roughness:0.5})
+    );
+    frame.castShadow = true;
+    g.add(frame);
+
+    var canvas = new THREE.Mesh(
+      new THREE.PlaneGeometry(w*0.88, h*0.88),
+      new THREE.MeshStandardMaterial({color:color, roughness:0.9})
+    );
+    canvas.position.z = d/2 + 0.002;
+    g.add(canvas);
+    return g;
+  },
+
+  mirror: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+
+    var frame = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshStandardMaterial({color:color, roughness:0.4, metalness:0.6})
+    );
+    frame.castShadow = true;
+    g.add(frame);
+
+    var glass = new THREE.Mesh(
+      new THREE.PlaneGeometry(w*0.88, h*0.88),
+      new THREE.MeshStandardMaterial({color:0xc0d8e8, metalness:1, roughness:0.05})
+    );
+    glass.position.z = d/2 + 0.002;
+    g.add(glass);
+    return g;
+  },
+
+  plant: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1];
+
+    var potH = h * 0.3;
+    var pot = new THREE.Mesh(
+      new THREE.CylinderGeometry(w*0.5, w*0.4, potH, 16),
+      new THREE.MeshStandardMaterial({color:0xa06040, roughness:0.85})
+    );
+    pot.position.y = potH/2;
+    pot.castShadow = true;
+    g.add(pot);
+
+    var foliage = new THREE.Mesh(
+      new THREE.SphereGeometry(w*0.75, 12, 10),
+      new THREE.MeshStandardMaterial({color:color, roughness:0.9})
+    );
+    foliage.position.y = potH + w*0.6;
+    foliage.castShadow = true;
+    g.add(foliage);
+
+    for(var i=0;i<5;i++){
+      var stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.008, 0.01, h*0.4, 8),
+        new THREE.MeshStandardMaterial({color:0x2a5a2a})
+      );
+      var ang = (i/5)*Math.PI*2;
+      stem.position.set(Math.cos(ang)*w*0.3, potH + h*0.2, Math.sin(ang)*w*0.3);
+      stem.rotation.z = Math.cos(ang)*0.3;
+      stem.rotation.x = Math.sin(ang)*0.3;
+      g.add(stem);
+    }
+    return g;
+  },
+
+  fireplace: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+    var mat = new THREE.MeshStandardMaterial({color:color, roughness:0.95});
+
+    var body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    body.position.y = h/2;
+    body.castShadow = true;
+    g.add(body);
+
+    var hole = new THREE.Mesh(
+      new THREE.BoxGeometry(w*0.5, h*0.55, 0.02),
+      new THREE.MeshBasicMaterial({color:0x100808})
+    );
+    hole.position.set(0, h*0.3, d/2 + 0.005);
+    g.add(hole);
+
+    var fire = new THREE.Mesh(
+      new THREE.ConeGeometry(w*0.18, h*0.35, 8),
+      new THREE.MeshBasicMaterial({color:0xff6020})
+    );
+    fire.position.set(0, h*0.22, d/2 + 0.02);
+    g.add(fire);
+
+    var light = new THREE.PointLight(0xff8040, 1.2, 5, 2);
+    light.position.set(0, h*0.3, d/2 + 0.1);
+    g.add(light);
+    return g;
+  },
+
+  fan: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1];
+
+    var base = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, 0.06, 16),
+      new THREE.MeshStandardMaterial({color:0x2a2a2a, metalness:0.6})
+    );
+    base.position.y = 0.03;
+    g.add(base);
+
+    var rod = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.02, 0.02, h, 12),
+      new THREE.MeshStandardMaterial({color:0x2a2a2a, metalness:0.7})
+    );
+    rod.position.y = h/2 + 0.06;
+    g.add(rod);
+
+    var motor = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.09, 0.09, 0.08, 16),
+      new THREE.MeshStandardMaterial({color:0x303030, metalness:0.5})
+    );
+    motor.position.y = h + 0.06;
+    g.add(motor);
+
+    for(var i=0;i<4;i++){
+      var blade = new THREE.Mesh(
+        new THREE.BoxGeometry(w*0.85, 0.012, 0.1),
+        new THREE.MeshStandardMaterial({color:color, roughness:0.4})
+      );
+      blade.position.y = h + 0.02;
+      blade.rotation.y = (i/4)*Math.PI*2;
+      blade.translateX(w*0.42);
+      g.add(blade);
+    }
+    return g;
+  },
+
+  curtain: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1];
+    var mat = new THREE.MeshStandardMaterial({color:color, roughness:0.98, side:THREE.DoubleSide});
+    var panel = new THREE.Mesh(new THREE.PlaneGeometry(w, h, 8, 4), mat);
+    var pos = panel.geometry.attributes.position;
+    for(var i=0;i<pos.count;i++){
+      var x = pos.getX(i);
+      pos.setZ(i, Math.sin(x*8)*0.02);
+    }
+    pos.needsUpdate = true;
+    panel.geometry.computeVertexNormals();
+    panel.position.y = h/2;
+    g.add(panel);
+    return g;
+  },
+
+  chest: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+
+    var body = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h*0.7, d),
+      new THREE.MeshStandardMaterial({color:color, roughness:0.6})
+    );
+    body.position.y = h*0.35;
+    body.castShadow = true;
+    g.add(body);
+
+    var lid = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h*0.3, d),
+      new THREE.MeshStandardMaterial({color:0x3a2010, roughness:0.55})
+    );
+    lid.position.y = h*0.85;
+    g.add(lid);
+
+    var lock = new THREE.Mesh(
+      new THREE.BoxGeometry(0.05, 0.05, 0.02),
+      new THREE.MeshStandardMaterial({color:0xc8a040, metalness:0.9, roughness:0.2})
+    );
+    lock.position.set(0, h*0.55, d/2 + 0.01);
+    g.add(lock);
+    return g;
+  },
+
+  door: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+
+    var door = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshStandardMaterial({color:color, roughness:0.55})
+    );
+    door.position.y = h/2;
+    door.castShadow = true;
+    door.receiveShadow = true;
+    g.add(door);
+
+    var knob = new THREE.Mesh(
+      new THREE.SphereGeometry(0.035, 12, 12),
+      new THREE.MeshStandardMaterial({color:0xc8a040, metalness:0.9, roughness:0.15})
+    );
+    knob.position.set(w*0.35, h*0.5, d/2 + 0.02);
+    g.add(knob);
+    return g;
+  },
+
+  window: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+
+    var frame = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshStandardMaterial({color:0xe8e8e8, roughness:0.5})
+    );
+    frame.castShadow = true;
+    g.add(frame);
+
+    var glass = new THREE.Mesh(
+      new THREE.PlaneGeometry(w*0.92, h*0.92),
+      new THREE.MeshStandardMaterial({
+        color:color, transparent:true, opacity:0.35,
+        metalness:0.1, roughness:0.05
+      })
+    );
+    glass.position.z = 0.001;
+    g.add(glass);
+
+    var mull = new THREE.Mesh(
+      new THREE.BoxGeometry(0.02, h*0.9, d*1.1),
+      new THREE.MeshStandardMaterial({color:0xe8e8e8})
+    );
+    mull.position.z = d/2 + 0.001;
+    g.add(mull);
+
+    var mull2 = new THREE.Mesh(
+      new THREE.BoxGeometry(w*0.9, 0.02, d*1.1),
+      new THREE.MeshStandardMaterial({color:0xe8e8e8})
+    );
+    mull2.position.z = d/2 + 0.001;
+    g.add(mull2);
+    return g;
+  },
+
+  box: function(color, size){
+    var g = new THREE.Group();
+    var w = size[0], h = size[1], d = size[2];
+    var m = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d),
+      new THREE.MeshStandardMaterial({color:color, roughness:0.7})
+    );
+    m.position.y = h/2;
+    m.castShadow = true;
+    m.receiveShadow = true;
+    g.add(m);
+    return g;
+  }
+};
+
+function buildObject(def){
+  var builder = BUILDERS[def.type] || BUILDERS.box;
+  var grp = builder(def.color, [def.w, def.h, def.d]);
+  grp.userData.def = def;
+  grp.userData.w = def.w;
+  grp.userData.h = def.h;
+  grp.userData.d = def.d;
+  return grp;
+}
+
+/* ============== Add / delete ============== */
+function getSpawnPos(){
+  var dir = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation);
+  dir.y = 0;
+  dir.normalize();
+  var pos = APP.player.pos.clone().add(dir.multiplyScalar(2.5));
+  pos.y = 0;
+  var mx = APP.roomW/2 - 0.6;
+  var mz = APP.roomD/2 - 0.6;
+  pos.x = clamp(pos.x, -mx, mx);
+  pos.z = clamp(pos.z, -mz, mz);
+  return pos;
+}
+
+function addObject(def, pos){
+  if(!def){ showToast('Escolha um item no catálogo primeiro'); return; }
+  pos = pos || getSpawnPos();
+  var obj = buildObject(def);
+  obj.position.copy(pos);
+  obj.userData.uid = ++APP._id;
+  objectsGroup.add(obj);
+  APP.objects.push(obj);
+  updateCount();
+  showToast('Adicionado: ' + def.name);
+}
+
+function addAtCrosshair(){
+  if(APP.currentPick){
+    addObject(APP.currentPick);
+  } else {
+    var list = getCatList(APP.currentCat);
+    if(list && list.length){
+      addObject(list[0]);
+    } else {
+      showToast('Nenhum item disponível');
+    }
+  }
+}
+
+function deleteSelected(){
+  if(!APP.selected){ showToast('Nada selecionado'); return; }
+  var idx = APP.objects.indexOf(APP.selected);
+  if(idx >= 0) APP.objects.splice(idx, 1);
+  objectsGroup.remove(APP.selected);
+  disposeNode(APP.selected);
+  APP.selected = null;
+  updateCount();
+  refreshProps();
+  showToast('Removido');
+}
+
+function clearRoom(){
+  if(!confirm('Apagar todos os objetos do quarto?')) return;
+  for(var i=APP.objects.length-1;i>=0;i--){
+    objectsGroup.remove(APP.objects[i]);
+    disposeNode(APP.objects[i]);
+  }
+  APP.objects = [];
+  APP.selected = null;
+  updateCount();
+  refreshProps();
+  showToast('Quarto limpo');
+}
+
+function updateCount(){
+  var el = $('ocount');
+  if(el) el.textContent = APP.objects.length;
+}
+
+/* ============== Selection / raycast ============== */
+function pickObject(){
+  raycaster.setFromCamera({x:0, y:0}, camera);
+  var hits = raycaster.intersectObjects(objectsGroup.children, true);
+  if(hits.length){
+    var top = hits[0].object;
+    while(top.parent && top.parent !== objectsGroup) top = top.parent;
+    if(top.parent === objectsGroup){
+      APP.selected = top;
+      refreshProps();
+      showToast('Selecionado: ' + (top.userData.def ? top.userData.def.name : 'objeto'));
+      return;
+    }
+  }
+  APP.selected = null;
+  refreshProps();
+}
+
+/* ============== Properties panel ============== */
+function refreshProps(){
+  var body = $('propsBody');
+  if(!body) return;
+  if(!APP.selected){
+    body.innerHTML = '<div class="empty">Nenhum objeto selecionado.<br>Toque em um objeto ou adicione um novo.</div>';
+    return;
+  }
+  var o = APP.selected;
+  var d = o.userData.def || {};
+  var xMax = (APP.roomW/2 - 0.3).toFixed(1);
+  var zMax = (APP.roomD/2 - 0.3).toFixed(1);
+
+  var html = '';
+  html += '<div class="field"><label>Nome</label><input type="text" id="pName" value="' + (d.name||'Objeto') + '"></div>';
+  html += '<div class="field"><label>Cor</label><input type="color" id="pColor" value="' + (d.color||'#ffffff') + '"></div>';
+  html += '<div class="field"><label>Posição X</label><input type="range" id="pX" min="-' + xMax + '" max="' + xMax + '" step="0.05" value="' + o.position.x.toFixed(2) + '"></div>';
+  html += '<div class="field"><label>Posição Z</label><input type="range" id="pZ" min="-' + zMax + '" max="' + zMax + '" step="0.05" value="' + o.position.z.toFixed(2) + '"></div>';
+  html += '<div class="field"><label>Rotação Y (' + Math.round((o.rotation.y*180/Math.PI)) + '°)</label><input type="range" id="pRY" min="0" max="360" step="1" value="' + ((o.rotation.y*180/Math.PI).toFixed(0)) + '"></div>';
+  html += '<div class="field"><label>Escala</label><input type="range" id="pS" min="0.3" max="3" step="0.05" value="' + o.scale.x.toFixed(2) + '"></div>';
+  html += '<div class="row3">';
+  html += '<button class="tbtn" onclick="rotateSel(-15)">-15&#176;</button>';
+  html += '<button class="tbtn" onclick="rotateSel(15)">+15&#176;</button>';
+  html += '<button class="tbtn" onclick="duplicateSel()">Dup</button>';
+  html += '</div>';
+  html += '<div class="row2" style="margin-top:8px">';
+  html += '<button class="tbtn er" onclick="deleteSelected()">Apagar</button>';
+  html += '<button class="tbtn" onclick="deselect()">Desselec.</button>';
+  html += '</div>';
+
+  body.innerHTML = html;
+
+  var nameEl = $('pName'); if(nameEl) nameEl.oninput = function(){ if(o.userData.def) o.userData.def.name = this.value; };
+  var colEl = $('pColor'); if(colEl) colEl.oninput = function(){
+    var c = this.value;
+    o.traverse(function(child){
+      if(child.isMesh && child.material){
+        if(Array.isArray(child.material)) child.material.forEach(function(m){ if(m.color) m.color.set(c); });
+        else if(child.material.color) child.material.color.set(c);
+      }
+    });
+    if(o.userData.def) o.userData.def.color = c;
+  };
+  var xEl = $('pX'); if(xEl) xEl.oninput = function(){ o.position.x = parseFloat(this.value); };
+  var zEl = $('pZ'); if(zEl) zEl.oninput = function(){ o.position.z = parseFloat(this.value); };
+  var rEl = $('pRY'); if(rEl) rEl.oninput = function(){ o.rotation.y = parseFloat(this.value) * Math.PI / 180; };
+  var sEl = $('pS'); if(sEl) sEl.oninput = function(){ var s = parseFloat(this.value); o.scale.set(s, s, s); };
+}
+
+function rotateSel(deg){
+  if(!APP.selected) return;
+  APP.selected.rotation.y += deg * Math.PI / 180;
+  refreshProps();
+}
+
+function duplicateSel(){
+  if(!APP.selected) return;
+  var src = APP.selected;
+  var d = src.userData.def;
+  if(!d) return;
+  var copyDef = JSON.parse(JSON.stringify(d));
+  var pos = src.position.clone();
+  pos.x += 0.6;
+  pos.z += 0.6;
+  addObject(copyDef, pos);
+}
+
+function deselect(){
+  APP.selected = null;
+  refreshProps();
+}
+
+/* ============== Catálogo UI ============== */
+var CATS = [
+  {id:'furniture', name:'Móveis',    get:function(){ return (typeof CAT_FURNITURE!=='undefined')?CAT_FURNITURE:[]; }},
+  {id:'walls',     name:'Parede',    get:function(){ return (typeof CAT_WALLS!=='undefined')?CAT_WALLS:[]; }},
+  {id:'floors',    name:'Piso',      get:function(){ return (typeof CAT_FLOORS!=='undefined')?CAT_FLOORS:[]; }},
+  {id:'ceilings',  name:'Teto',      get:function(){ return (typeof CAT_CEILINGS!=='undefined')?CAT_CEILINGS:[]; }},
+  {id:'lights',    name:'Luzes',     get:function(){ return (typeof CAT_LIGHTS!=='undefined')?CAT_LIGHTS:[]; }},
+  {id:'doors',     name:'Portas/Jan',get:function(){ return (typeof CAT_DOORS!=='undefined')?CAT_DOORS:[]; }},
+  {id:'trims',     name:'Acabam.',   get:function(){ return (typeof CAT_TRIMS!=='undefined')?CAT_TRIMS:[]; }},
+  {id:'decor',     name:'Decoração', get:function(){ return (typeof CAT_DECOR!=='undefined')?CAT_DECOR:[]; }},
+  {id:'elec',      name:'Eletrôn.',  get:function(){ return (typeof CAT_ELEC!=='undefined')?CAT_ELEC:[]; }},
+  {id:'kitchen',   name:'Cozinha',   get:function(){ return (typeof CAT_KITCHEN!=='undefined')?CAT_KITCHEN:[]; }},
+  {id:'bath',      name:'Banheiro',  get:function(){ return (typeof CAT_BATH!=='undefined')?CAT_BATH:[]; }},
+  {id:'office',    name:'Escritório',get:function(){ return (typeof CAT_OFFICE!=='undefined')?CAT_OFFICE:[]; }},
+  {id:'tools',     name:'Ferrament.',get:function(){ return (typeof CAT_TOOLS!=='undefined')?CAT_TOOLS:[]; }},
+  {id:'sport',     name:'Esporte',   get:function(){ return (typeof CAT_SPORT!=='undefined')?CAT_SPORT:[]; }},
+  {id:'appli',     name:'Eletrod.',  get:function(){ return (typeof CAT_APPLI!=='undefined')?CAT_APPLI:[]; }},
+  {id:'music',     name:'Música',    get:function(){ return (typeof CAT_MUSIC!=='undefined')?CAT_MUSIC:[]; }},
+  {id:'plants',    name:'Plantas',   get:function(){ return (typeof CAT_PLANTS!=='undefined')?CAT_PLANTS:[]; }},
+  {id:'toys',      name:'Brinqued.', get:function(){ return (typeof CAT_TOYS!=='undefined')?CAT_TOYS:[]; }},
+  {id:'party',     name:'Festas',    get:function(){ return (typeof CAT_PARTY!=='undefined')?CAT_PARTY:[]; }}
+];
+
+function getCatList(id){
+  for(var i=0;i<CATS.length;i++){
+    if(CATS[i].id === id) return CATS[i].get();
+  }
+  return [];
+}
+
+function buildSbTabs(){
+  var tabs = $('sbTabs');
+  if(!tabs) return;
+  tabs.innerHTML = '';
+  CATS.forEach(function(c){
+    var t = document.createElement('div');
+    t.className = 'sb-tab' + (c.id === APP.currentCat ? ' on' : '');
+    t.textContent = c.name;
+    t.onclick = function(){ APP.currentCat = c.id; buildSbTabs(); buildSbBody(); };
+    tabs.appendChild(t);
+  });
+}
+
+function buildSbBody(){
+  var body = $('sbBody');
+  if(!body) return;
+  body.innerHTML = '';
+  var list = getCatList(APP.currentCat);
+  if(!list || !list.length){
+    body.innerHTML = '<div class="empty">Sem itens nesta categoria</div>';
+    return;
+  }
+  var grid = document.createElement('div');
+  grid.className = 'grid';
+  var limit = 300;
+  var shown = list.slice(0, limit);
+
+  shown.forEach(function(item){
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML =
+      '<div class="sw" style="background:' + (item.color||'#888') + '"></div>' +
+      '<div class="nm">' + item.name + '</div>' +
+      '<div class="pr">' + (item.w ? item.w.toFixed(2) : '-') + 'm</div>';
+    card.onclick = function(){
+      $$('.card').forEach(function(c){ c.classList.remove('on'); });
+      card.classList.add('on');
+      APP.currentPick = item;
+      addObject(item);
+    };
+    grid.appendChild(card);
+  });
+
+  body.appendChild(grid);
+  if(list.length > limit){
+    var info = document.createElement('div');
+    info.className = 'empty';
+    info.textContent = 'Mostrando ' + limit + ' de ' + list.length + ' itens';
+    body.appendChild(info);
+  }
+}
+
+/* ============== Joystick ============== */
+function setupJoystick(baseEl, stickEl, onChange){
+  if(!baseEl || !stickEl) return;
+  var active = false;
+  var activeId = null;
+  var cx = 0, cy = 0, R = 60;
+
+  function start(x, y){
+    var r = baseEl.getBoundingClientRect();
+    cx = r.left + r.width/2;
+    cy = r.top + r.height/2;
+    R = r.width/2 - 24;
+    if(R < 20) R = 40;
+    active = true;
+    move(x, y);
+  }
+
+  function move(x, y){
+    var dx = x - cx;
+    var dy = y - cy;
+    var d = Math.sqrt(dx*dx + dy*dy);
+    if(d > R){ dx = dx / d * R; dy = dy / d * R; }
+    stickEl.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+    onChange(dx / R, dy / R);
+  }
+
+  function end(){
+    active = false;
+    activeId = null;
+    stickEl.style.transform = 'translate(-50%, -50%)';
+    onChange(0, 0);
+  }
+
+  baseEl.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    if(activeId !== null) return;
+    var t = e.changedTouches[0];
+    activeId = t.identifier;
+    start(t.clientX, t.clientY);
+  }, {passive:false});
+
+  baseEl.addEventListener('touchmove', function(e){
+    if(!active || activeId === null) return;
+    e.preventDefault();
+    for(var i=0;i<e.changedTouches.length;i++){
+      var t = e.changedTouches[i];
+      if(t.identifier === activeId){ move(t.clientX, t.clientY); break; }
+    }
+  }, {passive:false});
+
+  baseEl.addEventListener('touchend', function(e){
+    for(var i=0;i<e.changedTouches.length;i++){
+      if(e.changedTouches[i].identifier === activeId){ end(); return; }
+    }
+  });
+  baseEl.addEventListener('touchcancel', end);
+
+  baseEl.addEventListener('mousedown', function(e){
+    e.preventDefault();
+    if(activeId !== null) return;
+    activeId = 'mouse';
+    start(e.clientX, e.clientY);
+  });
+  document.addEventListener('mousemove', function(e){
+    if(active && activeId === 'mouse') move(e.clientX, e.clientY);
+  });
+  document.addEventListener('mouseup', function(){
+    if(active && activeId === 'mouse') end();
+  });
+}
+
+/* ============== Look controls ============== */
+function setupLookControls(){
+  var dragging = false;
+  var lastX = 0, lastY = 0;
+  var sens = 0.0025;
+
+  function isOnJoystick(target){
+    return target && target.closest && target.closest('.joystick');
+  }
+
+  renderer.domElement.addEventListener('mousedown', function(e){
+    if(isOnJoystick(e.target)) return;
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!dragging) return;
+    var dx = e.clientX - lastX;
+    var dy = e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    APP.player.yaw -= dx * sens;
+    APP.player.pitch -= dy * sens;
+    APP.player.pitch = clamp(APP.player.pitch, -Math.PI/2 + 0.05, Math.PI/2 - 0.05);
+  });
+  document.addEventListener('mouseup', function(){ dragging = false; });
+
+  var touchId = null;
+  var tLastX = 0, tLastY = 0;
+
+  renderer.domElement.addEventListener('touchstart', function(e){
+    if(isOnJoystick(e.target)) return;
+    if(touchId !== null) return;
+    var t = e.changedTouches[0];
+    touchId = t.identifier;
+    tLastX = t.clientX;
+    tLastY = t.clientY;
+  }, {passive:false});
+
+  renderer.domElement.addEventListener('touchmove', function(e){
+    if(touchId === null) return;
+    for(var i=0;i<e.changedTouches.length;i++){
+      var t = e.changedTouches[i];
+      if(t.identifier === touchId){
+        var dx = t.clientX - tLastX;
+        var dy = t.clientY - tLastY;
+        tLastX = t.clientX;
+        tLastY = t.clientY;
+        APP.player.yaw -= dx * sens * 0.9;
+        APP.player.pitch -= dy * sens * 0.9;
+        APP.player.pitch = clamp(APP.player.pitch, -Math.PI/2 + 0.05, Math.PI/2 - 0.05);
+        break;
+      }
+    }
+  }, {passive:false});
+
+  renderer.domElement.addEventListener('touchend', function(e){
+    for(var i=0;i<e.changedTouches.length;i++){
+      if(e.changedTouches[i].identifier === touchId){ touchId = null; return; }
+    }
+  });
+
+  /* click → selecionar em modo edit */
+  renderer.domElement.addEventListener('click', function(e){
+    if(APP.mode === 'edit' && !isOnJoystick(e.target)) pickObject();
+  });
+}
+
+/* ============== Keyboard ============== */
+function setupKeyboard(){
+  document.addEventListener('keydown', function(e){
+    var k = (e.key || '').toLowerCase();
+    APP.keys[k] = true;
+    if(k === 'e'){ e.preventDefault(); addAtCrosshair(); }
+    if(k === 'delete' || k === 'backspace'){ e.preventDefault(); deleteSelected(); }
+    if(k === 'r'){ e.preventDefault(); resetView(); }
+  });
+  document.addEventListener('keyup', function(e){
+    var k = (e.key || '').toLowerCase();
+    APP.keys[k] = false;
+  });
+}
+
+/* ============== Mode ============== */
+function setMode(m){
+  APP.mode = m;
+  var bw = $('btnWalk'), be = $('btnEdit');
+  if(bw) bw.classList.toggle('on', m === 'walk');
+  if(be) be.classList.toggle('on', m === 'edit');
+  var pill = $('modePill');
+  if(pill) pill.textContent = (m === 'walk') ? 'MODO: ANDAR' : 'MODO: EDITAR';
+  var ch = $('crosshair');
+  if(ch) ch.classList.toggle('on', m === 'edit');
+  showToast('Modo: ' + (m === 'walk' ? 'Andar' : 'Editar'));
+}
+
+function toggleSidebar(){ var s = $('sidebar'); if(s) s.classList.toggle('hidden'); }
+function toggleProps(){ var p = $('props'); if(p) p.classList.toggle('hidden'); }
+
+function resetView(){
+  APP.player.pos.set(0, APP.player.height, APP.roomD/2 - 1);
+  APP.player.yaw = Math.PI;
+  APP.player.pitch = -0.05;
+  showToast('Vista resetada');
+}
+
+/* ============== Player update ============== */
+function updatePlayer(dt){
+  var jx = APP.joyL.x;
+  var jy = APP.joyL.y;
+
+  var kx = 0, kz = 0;
+  if(APP.keys['w'] || APP.keys['arrowup'])    kz -= 1;
+  if(APP.keys['s'] || APP.keys['arrowdown'])  kz += 1;
+  if(APP.keys['a'] || APP.keys['arrowleft'])  kx -= 1;
+  if(APP.keys['d'] || APP.keys['arrowright']) kx += 1;
+
+  var mx = kx + jx;
+  var mz = kz + jy;
+
+  var len = Math.sqrt(mx*mx + mz*mz);
+  if(len > 1){ mx /= len; mz /= len; }
+
+  var speed = 3.0;
+  if(APP.keys['shift']) speed = 5.5;
+
+  var dir = new THREE.Vector3(mx, 0, mz);
+  dir.applyEuler(new THREE.Euler(0, APP.player.yaw, 0, 'YXZ'));
+  dir.multiplyScalar(speed * dt);
+
+  var newX = APP.player.pos.x + dir.x;
+  var newZ = APP.player.pos.z + dir.z;
+
+  var limX = APP.roomW/2 - APP.player.radius;
+  var limZ = APP.roomD/2 - APP.player.radius;
+  newX = clamp(newX, -limX, limX);
+  newZ = clamp(newZ, -limZ, limZ);
+
+  for(var i=0;i<APP.objects.length;i++){
+    var o = APP.objects[i];
+    var ow = (o.userData.w || 0.5) * o.scale.x;
+    var od = (o.userData.d || 0.5) * o.scale.z;
+    var ox = o.position.x;
+    var oz = o.position.z;
+    var pr = APP.player.radius;
+
+    if(newX + pr > ox - ow/2 && newX - pr < ox + ow/2 &&
+       newZ + pr > oz - od/2 && newZ - pr < oz + od/2){
+      var dxr = (newX < ox) ? (ox - ow/2) - (newX + pr) : (ox + ow/2) - (newX - pr);
+      var dzr = (newZ < oz) ? (oz - od/2) - (newZ + pr) : (oz + od/2) - (newZ - pr);
+      if(Math.abs(dxr) < Math.abs(dzr)) newX += dxr;
+      else newZ += dzr;
+    }
+  }
+
+  APP.player.pos.x = newX;
+  APP.player.pos.z = newZ;
+  APP.player.pos.y = APP.player.height;
+
+  camera.position.copy(APP.player.pos);
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = APP.player.yaw;
+  camera.rotation.x = APP.player.pitch;
+  camera.rotation.z = 0;
+}
+
+/* ============== Save / load ============== */
+function serializeRoom(){
+  return {
+    version: 2,
+    roomW: APP.roomW,
+    roomD: APP.roomD,
+    roomH: APP.roomH,
+    wallColor: APP.wallColor,
+    floorColor: APP.floorColor,
+    ceilColor: APP.ceilColor,
+    player: {
+      x: APP.player.pos.x,
+      y: APP.player.pos.y,
+      z: APP.player.pos.z,
+      yaw: APP.player.yaw,
+      pitch: APP.player.pitch
+    },
+    objects: APP.objects.map(function(o){
+      return {
+        def: o.userData.def,
+        pos: [o.position.x, o.position.y, o.position.z],
+        rotY: o.rotation.y,
+        scale: o.scale.x
+      };
+    })
+  };
+}
+
+function saveRoom(){
+  try{
+    localStorage.setItem('roomstudio_room_v2', JSON.stringify(serializeRoom()));
+    showToast('Sala salva (' + APP.objects.length + ' objetos)');
+  }catch(e){ showToast('Erro ao salvar'); }
+}
+
+function loadRoom(){
+  try{
+    var raw = localStorage.getItem('roomstudio_room_v2') || localStorage.getItem('roomstudio_room');
+    if(!raw){ showToast('Nenhum save encontrado'); return; }
+    applyRoomData(JSON.parse(raw));
+    showToast('Sala carregada');
+  }catch(e){ showToast('Erro ao carregar'); }
+}
+
+function exportRoom(){
+  try{
+    var blob = new Blob([JSON.stringify(serializeRoom(), null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'room3d.json';
+    a.click();
+    showToast('Exportado');
+  }catch(e){ showToast('Erro ao exportar'); }
+}
+
+function clearRoomSilent(){
+  for(var i=APP.objects.length-1;i>=0;i--){
+    objectsGroup.remove(APP.objects[i]);
+    disposeNode(APP.objects[i]);
+  }
+  APP.objects = [];
+  APP.selected = null;
+}
+
+function applyRoomData(data){
+  clearRoomSilent();
+  if(data.roomW) APP.roomW = data.roomW;
+  if(data.roomD) APP.roomD = data.roomD;
+  if(data.roomH) APP.roomH = data.roomH;
+  if(data.wallColor) APP.wallColor = data.wallColor;
+  if(data.floorColor) APP.floorColor = data.floorColor;
+  if(data.ceilColor) APP.ceilColor = data.ceilColor;
+  buildRoom();
+  if(data.player){
+    APP.player.pos.set(data.player.x || 0, APP.player.height, data.player.z || 0);
+    APP.player.yaw = data.player.yaw || 0;
+    APP.player.pitch = data.player.pitch || 0;
+  }
+  if(data.objects){
+    data.objects.forEach(function(o){
+      var def = o.def || {name:'Objeto', type:'box', color:'#aaa', w:0.5, h:0.5, d:0.5};
+      var obj = buildObject(def);
+      if(o.pos) obj.position.set(o.pos[0], o.pos[1] || 0, o.pos[2]);
+      if(o.rotY) obj.rotation.y = o.rotY;
+      if(o.scale) obj.scale.set(o.scale, o.scale, o.scale);
+      objectsGroup.add(obj);
+      APP.objects.push(obj);
+    });
+  }
+  updateCount();
+}
+
+/* ============== Main loop ============== */
+function animate(){
+  requestAnimationFrame(animate);
+  var dt = Math.min(clock.getDelta(), 0.05);
+
+  if(APP.joyR.x !== 0 || APP.joyR.y !== 0){
+    APP.player.yaw   -= APP.joyR.x * 2.5 * dt;
+    APP.player.pitch -= APP.joyR.y * 2.5 * dt;
+    APP.player.pitch = clamp(APP.player.pitch, -Math.PI/2 + 0.05, Math.PI/2 - 0.05);
+  }
+
+  if(APP.mode === 'walk'){
+    updatePlayer(dt);
+  } else {
+    camera.position.copy(APP.player.pos);
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = APP.player.yaw;
+    camera.rotation.x = APP.player.pitch;
+  }
+
+  APP.frameCount++;
+  var now = performance.now();
+  if(now - APP.lastFpsTime > 500){
+    APP.fps = Math.round(APP.frameCount * 1000 / (now - APP.lastFpsTime));
+    APP.frameCount = 0;
+    APP.lastFpsTime = now;
+    var el = $('fps'); if(el) el.textContent = APP.fps;
+    var ex = $('px'); if(ex) ex.textContent = APP.player.pos.x.toFixed(1);
+    var ey = $('py'); if(ey) ey.textContent = APP.player.pos.y.toFixed(1);
+    var ez = $('pz'); if(ez) ez.textContent = APP.player.pos.z.toFixed(1);
+  }
+
+  renderer.render(scene, camera);
+}
+
+/* ============== Boot ============== */
+function boot(){
+  try{
+    if(typeof THREE === 'undefined'){
+      throw new Error('Three.js não carregou. Verifique sua conexão com a internet.');
+    }
+    if(typeof CAT_FURNITURE === 'undefined'){
+      throw new Error('Catálogos não carregaram. Recarregue a página.');
+    }
+
+    initThree();
+    buildRoom();
+
+    APP.player.pos = new THREE.Vector3(0, APP.player.height, APP.roomD/2 - 1);
+    APP.player.yaw = Math.PI;
+    APP.player.pitch = -0.05;
+
+    setupLookControls();
+    setupKeyboard();
+    setupJoystick($('joyL'), $('stickL'), function(x, y){ APP.joyL.x = x; APP.joyL.y = y; });
+    setupJoystick($('joyR'), $('stickR'), function(x, y){ APP.joyR.x = x; APP.joyR.y = y; });
+
+    buildSbTabs();
+    buildSbBody();
+
+    window.addEventListener('resize', function(){
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    /* Objetos iniciais de demonstração */
+    addObject({name:'Cama Casal', type:'bed', color:'#8a5230', w:1.55, h:0.55, d:2.05}, new THREE.Vector3(-3.5, 0, -3));
+    addObject({name:'Guarda-Roupa', type:'wardrobe', color:'#5a3a1e', w:1.2, h:2.2, d:0.6}, new THREE.Vector3(-3.5, 0, 0.5));
+    addObject({name:'Mesa Centro', type:'table', color:'#6b4a28', w:1.1, h:0.42, d:0.6}, new THREE.Vector3(0, 0, 0));
+    addObject({name:'Sofá 3 Lug', type:'sofa', color:'#3a3a4a', w:2.4, h:0.85, d:0.95}, new THREE.Vector3(0, 0, 3));
+    addObject({name:'TV Painel', type:'tv', color:'#1a1a1a', w:1.2, h:0.7, d:0.08}, new THREE.Vector3(0, 0, -4.8));
+    addObject({name:'Estante', type:'shelf', color:'#3a2818', w:0.9, h:1.8, d:0.35}, new THREE.Vector3(3, 0, -3));
+    addObject({name:'Planta', type:'plant', color:'#2a6a2a', w:0.5, h:1.1, d:0.5}, new THREE.Vector3(3.5, 0, 3));
+
+    var loading = $('loading');
+    if(loading) setTimeout(function(){ loading.classList.add('hide'); }, 300);
+
+    animate();
+
+  }catch(err){
+    console.error(err);
+    var errEl = $('loadErr');
+    if(errEl) errEl.textContent = err.message || String(err);
+    var msgEl = $('loadMsg');
+    if(msgEl) msgEl.textContent = 'Erro ao iniciar';
+  }
+}
+
+if(document.readyState === 'complete' || document.readyState === 'interactive'){
+  setTimeout(boot, 50);
+} else {
+  window.addEventListener('load', boot);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,2169 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="lumen">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#08080c">
+<title>LUMEN — Ray Tracing Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+ul,ol{list-style:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--c1);background-clip:content-box}
+
+:root{
+  --bg:#08080c;--bg2:#0e0e14;--bg3:#161620;--bg4:#1e1e2c;
+  --panel:#0c0c12;--panel2:#141420;--panel3:#1c1c2c;--panel4:#26263a;
+  --bd:#242436;--bd2:#3a3a54;--bd3:#525270;
+  --tx:#e8e8f0;--tx2:#a0a0b8;--tx3:#6a6a88;--mu:#454560;
+  --c1:#ff9040;--c1h:#ffb080;--c1l:#c06020;
+  --c2:#40a0ff;--c2h:#80c0ff;--c2l:#2070d0;
+  --c3:#40e888;--c3h:#80ffc0;--c3l:#20a860;
+  --c4:#ff4080;--c4h:#ff90b0;--c4l:#c02060;
+  --c5:#ffd040;--c5h:#ffe890;--c5l:#c09000;
+  --c6:#b060ff;--c6h:#d0a0ff;--c6l:#7030c0;
+  --c7:#40d0d0;--c7h:#80e8e8;--c7l:#20a0a0;
+  --c8:#ff40c0;--c8h:#ff80e0;--c8l:#c02080;
+  --ok:#40e888;--warn:#ffd040;--err:#ff4080;--info:#40a0ff;
+  --g1:linear-gradient(135deg,#ff9040,#40a0ff);
+  --g2:linear-gradient(135deg,#40e888,#40a0ff);
+  --gHolo:linear-gradient(120deg,#ff9040,#ff4080,#b060ff,#40a0ff,#40e888,#ff9040);
+  --r:10px;--rs:7px;--rxs:5px;--rf:9999px;
+  --sh:0 8px 32px rgba(0,0,0,.7);
+  --sh2:0 16px 48px rgba(0,0,0,.92);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,-apple-system,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .14s cubic-bezier(.4,0,.2,1);
+  --t2:all .24s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"]{--bg:#000;--bg2:#080808;--bg3:#101010;--panel:#080808;--panel2:#101010;
+  --bd:#1e1e1e;--bd2:#303030;--tx:#e0e0e0;--tx2:#909090;--tx3:#585858;
+  --c1:#40ffff;--c2:#4080ff;--c3:#40ff80;--c4:#ff4080;
+  --g1:linear-gradient(135deg,#40ffff,#4080ff)}
+[data-theme="light"]{--bg:#f4f4f8;--bg2:#e8e8f0;--bg3:#dcdce8;--panel:#fff;--panel2:#f5f5fa;--panel3:#e8e8f0;--panel4:#d8d8e4;
+  --bd:#c8c8d8;--bd2:#a0a0b8;--tx:#0a0a14;--tx2:#4a4a5e;--tx3:#7a7a90;
+  --c1:#c06020;--c2:#2060c0;--c3:#20a060;--c4:#c02060;
+  --g1:linear-gradient(135deg,#c06020,#2060c0)}
+[data-theme="vaporwave"]{--bg:#100618;--bg2:#1a0a28;--bg3:#24103c;--panel:#180828;--panel2:#24103c;
+  --bd:#402060;--bd2:#603090;--tx:#f0e0ff;--tx2:#c0a0d8;--tx3:#8060a8;
+  --c1:#ff80d0;--c2:#80d0ff;--c3:#80ffd0;--c4:#ff4080;
+  --g1:linear-gradient(135deg,#ff80d0,#80d0ff)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* ============ BOOT ============ */
+#boot{position:fixed;inset:0;background:#08080c;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px}
+#boot.hidden{opacity:0;pointer-events:none}
+.boot-scene{position:relative;width:180px;height:180px;margin-bottom:20px}
+.boot-scene svg{width:100%;height:100%}
+.boot-scene .sphere{fill:url(#gradSphere);animation:sphereFloat 3s ease-in-out infinite}
+.boot-scene .ray{stroke:#ff9040;stroke-width:1.5;opacity:.6;stroke-dasharray:4,4;animation:rayDraw 2s linear infinite}
+.boot-scene .floor{fill:#1a1a2a;opacity:.5}
+@keyframes sphereFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes rayDraw{0%{stroke-dashoffset:60}100%{stroke-dashoffset:0}}
+.boot-logo{font-family:var(--disp);font-size:3.4rem;font-weight:900;letter-spacing:14px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:6px}
+.boot-sub{font-size:.68rem;color:#ff9040;letter-spacing:8px;margin-bottom:32px;opacity:.75}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#161620;border-radius:2px;overflow:hidden;margin-bottom:12px}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #ff9040}
+.boot-pct{font-size:.68rem;color:#ff9040;margin-bottom:16px}
+.boot-log{font-size:.6rem;color:#6a6a88;text-align:left;width:min(460px,90vw);height:130px;overflow:hidden;line-height:1.7}
+.boot-log .ok{color:#40e888}.boot-log .warn{color:#ffd040}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+/* ============ TOPBAR ============ */
+#topbar{height:50px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:6px;font-size:1rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:32px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#08080c;box-shadow:0 0 14px rgba(255,144,64,.35)}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.tb-btn{width:32px;height:32px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-btn.active{background:var(--g1);color:#08080c;border-color:transparent}
+.tb-btn.rendering{background:var(--err);color:#fff;animation:pulseBtn .8s infinite}
+@keyframes pulseBtn{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.95)}}
+.tb-status{font-family:var(--mono);font-size:.62rem;padding:4px 10px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600;display:flex;gap:10px;max-width:380px;overflow:hidden}
+
+/* ============ MAIN ============ */
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:280px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:36px}
+.panel-head{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:#000;position:relative}
+#renderCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;cursor:grab}
+#renderCanvas.dragging{cursor:grabbing}
+#renderOverlay{position:absolute;inset:0;pointer-events:none;padding:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ro-badge{background:rgba(12,12,18,.85);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 12px;font-family:var(--mono);font-size:.62rem;color:var(--c1);pointer-events:auto;max-width:280px}
+.ro-badge.stats{color:var(--c2);display:flex;flex-direction:column;gap:3px;align-items:flex-end;text-align:right}
+.ro-progress{background:rgba(12,12,18,.9);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:8px 12px;font-family:var(--mono);font-size:.62rem;color:var(--c5);pointer-events:auto;min-width:220px}
+.ro-progress .bar{height:3px;background:var(--panel4);border-radius:2px;overflow:hidden;margin-top:5px}
+.ro-progress .bar-fill{height:100%;background:var(--g1);border-radius:2px;transition:width .15s;box-shadow:0 0 8px var(--c1)}
+
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#rightPanel.collapsed{width:36px}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:32px}
+.rp-tab{flex:1;padding:6px;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent;white-space:nowrap}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+/* ============ STATUS BAR ============ */
+#statusbar{height:28px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;font-family:var(--mono);font-size:.62rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}.sb-val.c5{color:var(--c5)}
+
+/* ============ CONTROLS ============ */
+.sec{margin-bottom:14px}
+.sec h4{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);margin-bottom:8px;font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.sec h4 .badge{background:var(--c1);color:#08080c;font-size:.55rem;padding:1px 7px;border-radius:8px;font-family:var(--mono);letter-spacing:0}
+.lbl{font-size:.6rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);font-family:var(--mono);letter-spacing:0;text-transform:none}
+.ctrl{margin-bottom:10px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;border:none}
+.ctrl input[type=text],.ctrl input[type=number],.ctrl select,.ctrl textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 9px;color:var(--tx);font-size:.68rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(255,144,64,.15)}
+.ctrl input[type=color]{width:100%;height:32px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);cursor:pointer;padding:2px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1)}
+.btn.primary{background:var(--g1);color:#08080c;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 16px rgba(255,144,64,.4)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--panel3);border-color:var(--bd)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.danger:hover{background:rgba(255,64,128,.1)}
+.btn.success{color:var(--c3);border-color:var(--c3)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:4px 8px;font-size:.6rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap}
+.toggle{position:relative;width:36px;height:20px;background:var(--panel4);border-radius:var(--rf);cursor:pointer;transition:var(--t2);flex-shrink:0;display:inline-block}
+.toggle.on{background:var(--c1)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:var(--t2)}
+.toggle.on::after{left:18px}
+
+/* ============ LISTS ============ */
+.list{display:flex;flex-direction:column;gap:2px}
+.li{padding:6px 9px;border-radius:var(--rxs);cursor:pointer;font-size:.66rem;display:flex;align-items:center;gap:8px;transition:var(--t1);color:var(--tx2);font-family:var(--mono)}
+.li:hover{background:var(--panel3);color:var(--tx)}
+.li.active{background:rgba(255,144,64,.12);color:var(--c1);border-left:2px solid var(--c1);padding-left:7px}
+.li .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .meta{font-size:.58rem;color:var(--tx3)}
+.li .swatch{width:16px;height:16px;border-radius:3px;border:1px solid rgba(255,255,255,.1)}
+.li .del{opacity:0;color:var(--err);font-size:.8rem;padding:0 4px;transition:var(--t1)}
+.li:hover .del{opacity:1}
+
+/* ============ HELPERS ============ */
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.text-mono{font-family:var(--mono)}
+.text-xs{font-size:.62rem}
+.text-dim{color:var(--tx3)}
+.text-c1{color:var(--c1)}.text-c2{color:var(--c2)}.text-c3{color:var(--c3)}.text-c4{color:var(--c4)}.text-c5{color:var(--c5)}
+.kv{font-family:var(--mono);font-size:.62rem;line-height:1.75}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3);white-space:nowrap}
+.kv .v{color:var(--c1);text-align:right;word-break:break-all;font-size:.6rem}
+.empty{text-align:center;padding:30px 20px;color:var(--tx3);font-size:.7rem;font-family:var(--mono)}
+.empty .e-icon{font-size:2.5rem;opacity:.3;margin-bottom:10px}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px;margin-bottom:12px}
+.stat{background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:8px;text-align:center}
+.stat .sv{font-family:var(--mono);font-size:.92rem;font-weight:800;color:var(--c1);line-height:1.1;word-break:break-all}
+.stat .sl{font-size:.5rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-top:3px}
+
+/* ============ MODAL ============ */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.9rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:20px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:26px;height:26px;border-radius:var(--rxxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+/* ============ TOAST ============ */
+#toasts{position:fixed;bottom:44px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:10px 16px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.7rem;font-weight:500;max-width:340px;min-width:180px;animation:tin .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c3)}.toast.warn{border-left-color:var(--c5)}.toast.error{border-left-color:var(--c4)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:1000px){#leftPanel{width:220px}#rightPanel{width:260px}}
+@media(max-width:700px){#leftPanel{width:0;overflow:hidden}#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-scene">
+    <svg viewBox="0 0 180 180">
+      <defs>
+        <radialGradient id="gradSphere" cx="35%" cy="35%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="50%" stop-color="#ff9040"/>
+          <stop offset="100%" stop-color="#c04020"/>
+        </radialGradient>
+      </defs>
+      <ellipse class="floor" cx="90" cy="150" rx="80" ry="20"/>
+      <circle class="sphere" cx="90" cy="90" r="45"/>
+      <line class="ray" x1="20" y1="30" x2="55" y2="60"/>
+      <line class="ray" x1="160" y1="30" x2="125" y2="60"/>
+      <line class="ray" x1="90" y1="20" x2="90" y2="45"/>
+    </svg>
+  </div>
+  <div class="boot-logo">LUMEN</div>
+  <div class="boot-sub">RAY TRACING STUDIO</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('render')">LUMEN</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status">
+      <span>SPP <span style="color:var(--c1)" id="tbSPP">0</span></span>
+      <span>RES <span style="color:var(--c2)" id="tbRes">—</span></span>
+      <span>OBJ <span style="color:var(--c3)" id="tbObjs">0</span></span>
+      <span>MODE <span style="color:var(--c5)" id="tbMode">Path</span></span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnRender" onclick="toggleRender()" title="Render/Pause (Space)">▶</button>
+      <button class="tb-btn" onclick="resetAccum()" title="Reset samples (R)">↺</button>
+      <button class="tb-btn" onclick="saveScene()" title="Save scene">💾</button>
+      <button class="tb-btn" onclick="loadScene()" title="Load scene">📂</button>
+      <button class="tb-btn" onclick="exportImage()" title="Export PNG">⬇</button>
+      <button class="tb-btn" onclick="screenshot()" title="Screenshot">📷</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left panel">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right panel">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Scene</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <canvas id="renderCanvas"></canvas>
+      <div id="renderOverlay">
+        <div style="display:flex;flex-direction:column;gap:8px;pointer-events:auto">
+          <div class="ro-badge" id="roBadge">Ready</div>
+          <div class="ro-badge" id="roHint">Drag to orbit · Wheel to zoom</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:auto">
+          <div class="ro-progress" id="roProgress" style="display:none">
+            <div id="roProgLabel">Rendering…</div>
+            <div class="bar"><div class="bar-fill" id="roProgFill" style="width:0%"></div></div>
+          </div>
+          <div class="ro-badge stats" id="roStats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="inspector" onclick="switchRp('inspector',this)">🔍<span>Inspector</span></div>
+        <div class="rp-tab" data-tab="material" onclick="switchRp('material',this)">🎨<span>Material</span></div>
+        <div class="rp-tab" data-tab="camera" onclick="switchRp('camera',this)">📷<span>Camera</span></div>
+        <div class="rp-tab" data-tab="stats" onclick="switchRp('stats',this)">📊<span>Stats</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpInspector"></div>
+        <div class="rp-pane" id="rpMaterial"></div>
+        <div class="rp-pane" id="rpCamera"></div>
+        <div class="rp-pane" id="rpStats"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">Samples</span><span class="sb-val" id="sbSamples">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Rays</span><span class="sb-val c2" id="sbRays">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Time</span><span class="sb-val c3" id="sbTime">0.0s</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Rays/s</span><span class="sb-val c5" id="sbRaysPerSec">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">BVH nodes</span><span class="sb-val" id="sbBVH">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Depth</span><span class="sb-val" id="sbDepth">5</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFPS">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Status</span><span class="sb-val" id="sbState">Idle</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2400;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:1rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   VEC3 MATH
+   ================================================================ */
+function V3(x,y,z){return {x:x,y:y,z:z};}
+var V={
+  add:function(a,b){return {x:a.x+b.x,y:a.y+b.y,z:a.z+b.z}},
+  sub:function(a,b){return {x:a.x-b.x,y:a.y-b.y,z:a.z-b.z}},
+  mul:function(a,b){return {x:a.x*b.x,y:a.y*b.y,z:a.z*b.z}},
+  scale:function(a,s){return {x:a.x*s,y:a.y*s,z:a.z*s}},
+  dot:function(a,b){return a.x*b.x+a.y*b.y+a.z*b.z},
+  cross:function(a,b){return {x:a.y*b.z-a.z*b.y,y:a.z*b.x-a.x*b.z,z:a.x*b.y-a.y*b.x}},
+  len:function(a){return Math.sqrt(a.x*a.x+a.y*a.y+a.z*a.z)},
+  len2:function(a){return a.x*a.x+a.y*a.y+a.z*a.z},
+  norm:function(a){var l=V.len(a);return l>0?V.scale(a,1/l):{x:0,y:0,z:0}},
+  neg:function(a){return {x:-a.x,y:-a.y,z:-a.z}},
+  lerp:function(a,b,t){return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t}},
+  reflect:function(v,n){return V.sub(v,V.scale(n,2*V.dot(v,n)))},
+  refract:function(uv,n,etai_over_etat){
+    /* Snell's law */
+    var cos_theta=Math.min(V.dot(V.neg(uv),n),1.0);
+    var r_out_perp=V.scale(V.add(uv,V.scale(n,cos_theta)),etai_over_etat);
+    var r_out_parallel=V.scale(n,-Math.sqrt(Math.abs(1.0-V.len2(r_out_perp))));
+    return V.add(r_out_perp,r_out_parallel);
+  },
+  nearZero:function(v){var s=1e-8;return Math.abs(v.x)<s&&Math.abs(v.y)<s&&Math.abs(v.z)<s},
+  randomUnit:function(){
+    /* Uniformly distributed on unit sphere */
+    var a=Math.random()*Math.PI*2;
+    var z=rndF(-1,1);
+    var r=Math.sqrt(1-z*z);
+    return {x:r*Math.cos(a),y:r*Math.sin(a),z:z};
+  },
+  randomHemisphere:function(normal){
+    /* Cosine-weighted hemisphere sampling */
+    var r1=Math.random(),r2=Math.random();
+    var phi=2*Math.PI*r1;
+    var cosTheta=Math.sqrt(1-r2);
+    var sinTheta=Math.sqrt(r2);
+    /* Build a coordinate frame around the normal */
+    var w=normal;
+    var a=Math.abs(w.x)>0.9?{x:0,y:1,z:0}:{x:1,y:0,z:0};
+    var u=V.norm(V.cross(a,w));
+    var v=V.cross(w,u);
+    return V.add(V.add(V.scale(u,Math.cos(phi)*sinTheta),V.scale(v,Math.sin(phi)*sinTheta)),V.scale(w,cosTheta));
+  }
+};
+
+/* ================================================================
+   RAY
+   ================================================================ */
+function Ray(origin,direction){this.o=origin;this.d=direction;}
+Ray.prototype.at=function(t){return V.add(this.o,V.scale(this.d,t));};
+
+/* ================================================================
+   MATERIALS
+   ================================================================ */
+var MAT_TYPE={
+  LAMBERT:'lambert',
+  METAL:'metal',
+  GLASS:'glass',
+  EMISSIVE:'emissive',
+  CHECKER:'checker',
+  VELVET:'velvet'
+};
+function Material(opts){
+  opts=opts||{};
+  this.type=opts.type||MAT_TYPE.LAMBERT;
+  this.albedo=opts.albedo||{x:0.8,y:0.8,z:0.8};
+  this.emission=opts.emission||{x:0,y:0,z:0};
+  this.emissionStrength=opts.emissionStrength||0;
+  this.fuzz=opts.fuzz!==undefined?opts.fuzz:0;
+  this.ior=opts.ior!==undefined?opts.ior:1.5;
+  this.albedo2=opts.albedo2||{x:0.1,y:0.1,z:0.1};
+  this.checkerScale=opts.checkerScale||10;
+}
+Material.prototype.scatter=function(ray,hit,scene,depth,isInside){
+  if(this.type===MAT_TYPE.LAMBERT){
+    /* Diffuse: sample hemisphere */
+    var target=V.add(V.add(hit.point,hit.normal),V.randomUnit());
+    var dir=V.norm(V.sub(target,hit.point));
+    /* Ensure direction is on the same side */
+    if(V.dot(dir,hit.normal)<0)dir=V.norm(V.add(hit.normal,V.randomUnit()));
+    return {scattered:true,ray:new Ray(hit.point,dir),attenuation:this.albedo};
+  }
+  if(this.type===MAT_TYPE.METAL){
+    var reflected=V.reflect(V.norm(ray.d),hit.normal);
+    var fuzzDir=V.add(reflected,V.scale(V.randomUnit(),this.fuzz));
+    if(V.dot(fuzzDir,hit.normal)>0){
+      return {scattered:true,ray:new Ray(hit.point,fuzzDir),attenuation:this.albedo};
+    }
+    return {scattered:false};
+  }
+  if(this.type===MAT_TYPE.GLASS){
+    var attenuation={x:1,y:1,z:1};
+    var refraction_ratio=isInside?this.ior:(1.0/this.ior);
+    var unit_dir=V.norm(ray.d);
+    var cos_theta=Math.min(V.dot(V.neg(unit_dir),hit.normal),1.0);
+    var sin_theta=Math.sqrt(1.0-cos_theta*cos_theta);
+    var cannot_refract=refraction_ratio*sin_theta>1.0;
+    var direction;
+    /* Schlick approximation for Fresnel */
+    var r0=Math.pow((1-refraction_ratio)/(1+refraction_ratio),2);
+    var reflectance=r0+(1-r0)*Math.pow(1-cos_theta,5);
+    if(cannot_refract||reflectance>Math.random()){
+      direction=V.reflect(unit_dir,hit.normal);
+    } else {
+      direction=V.refract(unit_dir,hit.normal,refraction_ratio);
+    }
+    return {scattered:true,ray:new Ray(hit.point,direction),attenuation:attenuation};
+  }
+  if(this.type===MAT_TYPE.EMISSIVE){
+    return {scattered:false};
+  }
+  if(this.type===MAT_TYPE.CHECKER){
+    /* Determine checker color based on world position */
+    var p=hit.point;
+    var s=this.checkerScale;
+    var parity=Math.floor(p.x*s)+Math.floor(p.y*s)+Math.floor(p.z*s);
+    var albedo=(parity&1)?this.albedo:this.albedo2;
+    var target2=V.add(V.add(hit.point,hit.normal),V.randomUnit());
+    var dir2=V.norm(V.sub(target2,hit.point));
+    if(V.dot(dir2,hit.normal)<0)dir2=V.norm(V.add(hit.normal,V.randomUnit()));
+    return {scattered:true,ray:new Ray(hit.point,dir2),attenuation:albedo};
+  }
+  if(this.type===MAT_TYPE.VELVET){
+    /* Velvet/retroreflective: more scattering toward viewer */
+    var dir3=V.randomHemisphere(hit.normal);
+    var align=Math.abs(V.dot(dir3,V.neg(ray.d)));
+    var attenuation2=V.scale(this.albedo,align);
+    return {scattered:true,ray:new Ray(hit.point,dir3),attenuation:attenuation2};
+  }
+  return {scattered:false};
+};
+
+/* ================================================================
+   HIT RECORD
+   ================================================================ */
+function Hit(){this.t=0;this.point=null;this.normal=null;this.material=null;this.front=true;this.object=null;}
+
+/* ================================================================
+   PRIMITIVES
+   ================================================================ */
+function Sphere(center,radius,material){
+  this.type='sphere';
+  this.center=center;
+  this.radius=radius;
+  this.material=material;
+  /* Bounding box */
+  this.bbox={
+    min:{x:center.x-radius,y:center.y-radius,z:center.z-radius},
+    max:{x:center.x+radius,y:center.y+radius,z:center.z+radius}
+  };
+}
+Sphere.prototype.intersect=function(ray,tMin,tMax,hit){
+  var oc=V.sub(ray.o,this.center);
+  var a=V.len2(ray.d);
+  var h=V.dot(oc,ray.d);
+  var c=V.len2(oc)-this.radius*this.radius;
+  var disc=h*h-a*c;
+  if(disc<0)return false;
+  var sq=Math.sqrt(disc);
+  var t=(-h-sq)/a;
+  if(t<tMin||t>tMax){
+    t=(-h+sq)/a;
+    if(t<tMin||t>tMax)return false;
+  }
+  hit.t=t;
+  hit.point=ray.at(t);
+  var outNormal=V.scale(V.sub(hit.point,this.center),1/this.radius);
+  hit.front=V.dot(ray.d,outNormal)<0;
+  hit.normal=hit.front?outNormal:V.neg(outNormal);
+  hit.material=this.material;
+  hit.object=this;
+  return true;
+};
+
+function Plane(point,normal,material){
+  this.type='plane';
+  this.point=point;
+  this.normal=V.norm(normal);
+  this.material=material;
+  /* Infinite extent — for BVH we give it a huge box */
+  this.bbox={
+    min:{x:-1e6,y:-1e6,z:-1e6},
+    max:{x:1e6,y:1e6,z:1e6}
+  };
+}
+Plane.prototype.intersect=function(ray,tMin,tMax,hit){
+  var denom=V.dot(ray.d,this.normal);
+  if(Math.abs(denom)<1e-8)return false;
+  var t=V.dot(V.sub(this.point,ray.o),this.normal)/denom;
+  if(t<tMin||t>tMax)return false;
+  hit.t=t;
+  hit.point=ray.at(t);
+  hit.front=denom<0;
+  hit.normal=hit.front?this.normal:V.neg(this.normal);
+  hit.material=this.material;
+  hit.object=this;
+  return true;
+};
+
+function Box(min,max,material){
+  this.type='box';
+  this.min=min;
+  this.max=max;
+  this.material=material;
+  this.bbox={min:min,max:max};
+}
+Box.prototype.intersect=function(ray,tMin,tMax,hit){
+  /* Slab method */
+  var t1,t2,tmp;
+  var tmin=tMin,tmax=tMax;
+  var axes=['x','y','z'];
+  var nearAxis=null,nearSign=1;
+  for(var i=0;i<3;i++){
+    var ax=axes[i];
+    var invD=1/(ray.d[ax]||1e-30);
+    t1=(this.min[ax]-ray.o[ax])*invD;
+    t2=(this.max[ax]-ray.o[ax])*invD;
+    var sign=1;
+    if(t1>t2){tmp=t1;t1=t2;t2=tmp;sign=-1;}
+    if(t1>tmin){tmin=t1;nearAxis=ax;nearSign=sign;}
+    if(t2<tmax)tmax=t2;
+    if(tmax<tmin)return false;
+  }
+  if(tmin<tMin||tmin>tMax)return false;
+  hit.t=tmin;
+  hit.point=ray.at(tmin);
+  /* Determine which face was hit */
+  var n={x:0,y:0,z:0};
+  if(nearAxis){
+    n[nearAxis]=nearSign*(ray.d[nearAxis]>0?-1:1);
+    n[nearAxis]=(ray.d[nearAxis]>0)?-1:1;
+  }else{
+    n={x:0,y:1,z:0};
+  }
+  hit.front=true;
+  hit.normal=n;
+  hit.material=this.material;
+  hit.object=this;
+  return true;
+};
+
+function Triangle(v0,v1,v2,material){
+  this.type='triangle';
+  this.v0=v0;this.v1=v1;this.v2=v2;
+  this.material=material;
+  this.e1=V.sub(v1,v0);
+  this.e2=V.sub(v2,v0);
+  this.normal=V.norm(V.cross(this.e1,this.e2));
+  /* Bounding box */
+  this.bbox={
+    min:{x:Math.min(v0.x,v1.x,v2.x),y:Math.min(v0.y,v1.y,v2.y),z:Math.min(v0.z,v1.z,v2.z)},
+    max:{x:Math.max(v0.x,v1.x,v2.x),y:Math.max(v0.y,v1.y,v2.y),z:Math.max(v0.z,v1.z,v2.z)}
+  };
+}
+Triangle.prototype.intersect=function(ray,tMin,tMax,hit){
+  /* Möller–Trumbore */
+  var h=V.cross(ray.d,this.e2);
+  var a=V.dot(this.e1,h);
+  if(Math.abs(a)<1e-8)return false;
+  var f=1/a;
+  var s=V.sub(ray.o,this.v0);
+  var u=f*V.dot(s,h);
+  if(u<0||u>1)return false;
+  var q=V.cross(s,this.e1);
+  var v=f*V.dot(ray.d,q);
+  if(v<0||u+v>1)return false;
+  var t=f*V.dot(this.e2,q);
+  if(t<tMin||t>tMax)return false;
+  hit.t=t;
+  hit.point=ray.at(t);
+  hit.front=V.dot(ray.d,this.normal)<0;
+  hit.normal=hit.front?this.normal:V.neg(this.normal);
+  hit.material=this.material;
+  hit.object=this;
+  return true;
+};
+
+/* ================================================================
+   BVH — Bounding Volume Hierarchy
+   ================================================================ */
+function BVHNode(bbox,left,right,objects){
+  this.bbox=bbox;
+  this.left=left;
+  this.right=right;
+  this.objects=objects;  /* Leaf has objects */
+  this.isLeaf=!!objects;
+}
+function bboxUnion(a,b){
+  return {
+    min:{x:Math.min(a.min.x,b.min.x),y:Math.min(a.min.y,b.min.y),z:Math.min(a.min.z,b.min.z)},
+    max:{x:Math.max(a.max.x,b.max.x),y:Math.max(a.max.y,b.max.y),z:Math.max(a.max.z,b.max.z)}
+  };
+}
+function bboxArea(b){
+  var dx=b.max.x-b.min.x;
+  var dy=b.max.y-b.min.y;
+  var dz=b.max.z-b.min.z;
+  return 2*(dx*dy+dy*dz+dz*dx);
+}
+function bboxHit(b,ray,tMin,tMax){
+  /* Slab test */
+  var invD,t1,t2;
+  var tmin=tMin,tmax=tMax;
+  /* X */
+  if(Math.abs(ray.d.x)<1e-10){
+    if(ray.o.x<b.min.x||ray.o.x>b.max.x)return false;
+  }else{
+    invD=1/ray.d.x;
+    t1=(b.min.x-ray.o.x)*invD;
+    t2=(b.max.x-ray.o.x)*invD;
+    if(t1>t2){var tmp=t1;t1=t2;t2=tmp;}
+    tmin=Math.max(tmin,t1);
+    tmax=Math.min(tmax,t2);
+    if(tmax<tmin)return false;
+  }
+  /* Y */
+  if(Math.abs(ray.d.y)<1e-10){
+    if(ray.o.y<b.min.y||ray.o.y>b.max.y)return false;
+  }else{
+    invD=1/ray.d.y;
+    t1=(b.min.y-ray.o.y)*invD;
+    t2=(b.max.y-ray.o.y)*invD;
+    if(t1>t2){var tmp2=t1;t1=t2;t2=tmp2;}
+    tmin=Math.max(tmin,t1);
+    tmax=Math.min(tmax,t2);
+    if(tmax<tmin)return false;
+  }
+  /* Z */
+  if(Math.abs(ray.d.z)<1e-10){
+    if(ray.o.z<b.min.z||ray.o.z>b.max.z)return false;
+  }else{
+    invD=1/ray.d.z;
+    t1=(b.min.z-ray.o.z)*invD;
+    t2=(b.max.z-ray.o.z)*invD;
+    if(t1>t2){var tmp3=t1;t1=t2;t2=tmp3;}
+    tmin=Math.max(tmin,t1);
+    tmax=Math.min(tmax,t2);
+    if(tmax<tmin)return false;
+  }
+  return true;
+}
+function buildBVH(objects,depth){
+  depth=depth||0;
+  if(objects.length===0)return null;
+  /* Compute bounds */
+  var bbox=objects[0].bbox;
+  for(var i=1;i<objects.length;i++)bbox=bboxUnion(bbox,objects[i].bbox);
+  /* Leaf if few objects or max depth */
+  if(objects.length<=4||depth>20){
+    return new BVHNode(bbox,null,null,objects);
+  }
+  /* Choose splitting axis (largest extent) */
+  var dx=bbox.max.x-bbox.min.x;
+  var dy=bbox.max.y-bbox.min.y;
+  var dz=bbox.max.z-bbox.min.z;
+  var axis=dx>dy?(dx>dz?'x':'z'):(dy>dz?'y':'z');
+  /* Sort by centroid along axis */
+  objects.sort(function(a,b){
+    var ac=a.bbox.min[axis]+a.bbox.max[axis];
+    var bc=b.bbox.min[axis]+b.bbox.max[axis];
+    return ac-bc;
+  });
+  var mid=Math.floor(objects.length/2);
+  var left=buildBVH(objects.slice(0,mid),depth+1);
+  var right=buildBVH(objects.slice(mid),depth+1);
+  return new BVHNode(bbox,left,right,null);
+}
+var BVH_STATS={nodes:0,leaves:0,maxDepth:0};
+function bvhIntersect(node,ray,tMin,tMax,hit){
+  if(!node)return false;
+  if(!bboxHit(node.bbox,ray,tMin,hit.t>0?hit.t:tMax))return false;
+  if(node.isLeaf){
+    var found=false;
+    var closest=hit.t>0?hit.t:tMax;
+    for(var i=0;i<node.objects.length;i++){
+      var h=hit;
+      var tmpHit=new Hit();
+      tmpHit.t=closest;
+      if(node.objects[i].intersect(ray,tMin,closest,tmpHit)){
+        closest=tmpHit.t;
+        hit.t=tmpHit.t;
+        hit.point=tmpHit.point;
+        hit.normal=tmpHit.normal;
+        hit.front=tmpHit.front;
+        hit.material=tmpHit.material;
+        hit.object=tmpHit.object;
+        found=true;
+      }
+    }
+    return found;
+  }
+  var hitLeft=bvhIntersect(node.left,ray,tMin,tMax,hit);
+  var hitRight=bvhIntersect(node.right,ray,tMin,tMax,hit);
+  return hitLeft||hitRight;
+}
+function countBVH(node,stats,depth){
+  if(!node)return;
+  stats.nodes++;
+  if(depth>stats.maxDepth)stats.maxDepth=depth;
+  if(node.isLeaf){stats.leaves++;return;}
+  countBVH(node.left,stats,depth+1);
+  countBVH(node.right,stats,depth+1);
+}
+
+/* ================================================================
+   SCENE
+   ================================================================ */
+function Scene(){
+  this.objects=[];
+  this.bvh=null;
+  this.background={x:0.02,y:0.02,z:0.04};
+  this.ambient={x:0.1,y:0.1,z:0.15};
+  this.lights=[];  /* Emissive objects also act as lights in path tracing */
+}
+Scene.prototype.add=function(obj){this.objects.push(obj);};
+Scene.prototype.build=function(){
+  this.bvh=buildBVH(this.objects.slice(),0);
+  BVH_STATS={nodes:0,leaves:0,maxDepth:0};
+  countBVH(this.bvh,BVH_STATS,0);
+};
+Scene.prototype.intersect=function(ray,tMin,tMax){
+  var hit=new Hit();
+  hit.t=tMax;
+  if(!this.bvh)return null;
+  if(bvhIntersect(this.bvh,ray,tMin,tMax,hit))return hit;
+  return null;
+};
+Scene.prototype.hitAny=function(ray,tMin,tMax){
+  /* For shadow rays — early exit */
+  return this.intersect(ray,tMin,tMax)!==null;
+};
+</script>
+<script>
+/* ================================================================
+   RENDER STATE
+   ================================================================ */
+var RENDER={
+  width:0,
+  height:0,
+  resolutionScale:0.5,
+  samplesPerPixel:0,
+  maxDepth:5,
+  minT:0.001,
+  maxT:1000,
+  mode:'path',         /* path, whitted, normals, depth, heat */
+  background:null,
+  cam:null,
+  scene:null,
+  imageData:null,
+  accum:null,
+  running:false,
+  rayCount:0,
+  startTime:0,
+  raysPerSec:0,
+  /* Progressive render in bands */
+  band:0,
+  totalBands:32,
+  /* Stats */
+  bvhNodes:0
+};
+
+/* ================================================================
+   CAMERA
+   ================================================================ */
+function Camera(){
+  this.position={x:0,y:1,z:3};
+  this.target={x:0,y:0.5,z:0};
+  this.up={x:0,y:1,z:0};
+  this.fov=45;         /* degrees */
+  this.aspect=1;
+  this.aperture=0.02;
+  this.focusDistance=3;
+  this.yaw=0;
+  this.pitch=0;
+  this.distance=3;
+  this.orbitCenter={x:0,y:0.5,z:0};
+}
+Camera.prototype.updateBasis=function(){
+  var w=V.norm(V.sub(this.position,this.target));
+  var u=V.norm(V.cross(this.up,w));
+  var v=V.cross(w,u);
+  this.w=w;this.u=u;this.v=v;
+};
+Camera.prototype.orbit=function(dYaw,dPitch){
+  this.yaw+=dYaw;
+  this.pitch=clamp(this.pitch+dPitch,-Math.PI/2+0.01,Math.PI/2-0.01);
+  var cp=Math.cos(this.pitch);
+  this.position={
+    x:this.orbitCenter.x+this.distance*cp*Math.sin(this.yaw),
+    y:this.orbitCenter.y+this.distance*Math.sin(this.pitch),
+    z:this.orbitCenter.z+this.distance*cp*Math.cos(this.yaw)
+  };
+  this.target=this.orbitCenter;
+  this.updateBasis();
+};
+Camera.prototype.ray=function(s,t,frameX,frameY){
+  var theta=Math.tan(this.fov*Math.PI/360);
+  var halfHeight=theta;
+  var halfWidth=this.aspect*halfHeight;
+  var px=(2*s-1)*halfWidth;
+  var py=(1-2*t)*halfHeight;
+  var dir=V.norm(V.add(V.add(V.scale(this.u,px),V.scale(this.v,py)),V.neg(this.w)));
+  var origin=this.position;
+  /* Depth of field: sample random point on aperture disk */
+  if(this.aperture>0&&frameX!==undefined){
+    var r=this.aperture*Math.sqrt(frameX);
+    var phi=2*Math.PI*frameY;
+    var offset=V.add(V.scale(this.u,r*Math.cos(phi)),V.scale(this.v,r*Math.sin(phi)));
+    origin=V.add(this.position,offset);
+  }
+  return new Ray(origin,dir);
+};
+
+/* ================================================================
+   RAY TRACER
+   ================================================================ */
+function tracePath(ray,scene,depth){
+  RENDER.rayCount++;
+  var color={x:0,y:0,z:0};
+  var attenuation={x:1,y:1,z:1};
+  var currentRay=ray;
+  var bounces=0;
+  var isInside=false;
+  while(bounces<RENDER.maxDepth){
+    var hit=scene.intersect(currentRay,RENDER.minT,RENDER.maxT);
+    if(!hit)break;
+    var mat=hit.material;
+    if(!mat)break;
+    /* Emissive contribution */
+    if(mat.type===MAT_TYPE.EMISSIVE){
+      var em=V.scale(mat.emission,mat.emissionStrength);
+      color=V.add(color,V.mul(attenuation,em));
+      /* Also can scatter from emissive objects if they have albedo */
+      if(mat.albedo&&(mat.albedo.x+mat.albedo.y+mat.albedo.z)>0.001){
+        /* Path tracing: emissive objects also scatter, but for simplicity we terminate */
+      }
+      break;
+    }
+    /* Russian roulette for deep paths */
+    if(bounces>3){
+      var p=Math.max(Math.max(attenuation.x,attenuation.y),attenuation.z);
+      if(Math.random()>p)break;
+      attenuation=V.scale(attenuation,1/p);
+    }
+    /* Check inside for dielectric */
+    var inside=hit.front===false&&mat.type===MAT_TYPE.GLASS;
+    var sc=mat.scatter(currentRay,hit,scene,depth+bounces,inside);
+    if(!sc.scattered)break;
+    attenuation=V.mul(attenuation,sc.attenuation);
+    currentRay=sc.ray;
+    bounces++;
+  }
+  /* Add ambient */
+  color=V.add(color,V.mul(attenuation,V.mul(scene.background,{x:1,y:1,z:1})));
+  return color;
+}
+
+/* Simple direct lighting (Whitted-style with one bounce) */
+function traceWhitted(ray,scene,depth){
+  RENDER.rayCount++;
+  var hit=scene.intersect(ray,RENDER.minT,RENDER.maxT);
+  if(!hit)return scene.background;
+  var mat=hit.material;
+  if(!mat)return scene.background;
+  var local={x:0,y:0,z:0};
+  /* Emissive */
+  if(mat.type===MAT_TYPE.EMISSIVE){
+    return V.scale(mat.emission,mat.emissionStrength);
+  }
+  /* Ambient */
+  local=V.mul(mat.albedo,scene.ambient);
+  /* Accumulate light contributions from all emissive objects */
+  for(var i=0;i<scene.objects.length;i++){
+    var lightObj=scene.objects[i];
+    if(!lightObj.material||lightObj.material.type!==MAT_TYPE.EMISSIVE)continue;
+    /* Sample a point on the light */
+    var lightPos=lightObj.center||{x:0,y:0,z:0};
+    var toLight=V.sub(lightPos,hit.point);
+    var distToLight=V.len(toLight);
+    var L=V.norm(toLight);
+    var NdotL=V.dot(hit.normal,L);
+    if(NdotL<=0)continue;
+    /* Shadow ray */
+    var shadowRay=new Ray(V.add(hit.point,V.scale(hit.normal,0.001)),L);
+    var inShadow=false;
+    var shadowHit=scene.intersect(shadowRay,0.001,distToLight-0.01);
+    if(shadowHit)inShadow=true;
+    if(inShadow)continue;
+    var lightColor=lightObj.material.emission;
+    var lightStrength=lightObj.material.emissionStrength;
+    var radius=lightObj.radius||0.1;
+    var attenuation=1/(distToLight*distToLight);
+    var contribution=NdotL*attenuation*radius*radius;
+    local=V.add(local,V.scale(V.mul(mat.albedo,lightColor),contribution*lightStrength));
+  }
+  /* Reflection */
+  if(depth<RENDER.maxDepth){
+    if(mat.type===MAT_TYPE.METAL){
+      var reflected=V.reflect(V.norm(ray.d),hit.normal);
+      var reflRay=new Ray(hit.point,V.add(reflected,V.scale(V.randomUnit(),mat.fuzz)));
+      if(V.dot(reflRay.d,hit.normal)>0){
+        var rc=traceWhitted(reflRay,scene,depth+1);
+        local=V.add(local,V.mul(mat.albedo,rc));
+      }
+    } else if(mat.type===MAT_TYPE.GLASS){
+      var rr=1/mat.ior;
+      var cos_theta=Math.min(V.dot(V.neg(V.norm(ray.d)),hit.normal),1);
+      var sin_theta=Math.sqrt(1-cos_theta*cos_theta);
+      var cannot=rr*sin_theta>1;
+      var refDir;
+      if(cannot)refDir=V.reflect(V.norm(ray.d),hit.normal);
+      else refDir=V.refract(V.norm(ray.d),hit.normal,hit.front?rr:1/rr);
+      var refRay=new Ray(hit.point,refDir);
+      local=V.add(local,V.scale(traceWhitted(refRay,scene,depth+1),0.9));
+    }
+  }
+  return local;
+}
+
+/* Normals visualization */
+function traceNormal(ray,scene){
+  var hit=scene.intersect(ray,RENDER.minT,RENDER.maxT);
+  if(!hit)return scene.background;
+  return {x:(hit.normal.x+1)*0.5,y:(hit.normal.y+1)*0.5,z:(hit.normal.z+1)*0.5};
+}
+/* Depth visualization */
+function traceDepth(ray,scene){
+  var hit=scene.intersect(ray,RENDER.minT,RENDER.maxT);
+  if(!hit)return {x:0,y:0,z:0};
+  var d=hit.t/20;
+  d=clamp(d,0,1);
+  /* Heat colormap */
+  var r=clamp(1.5-d*2,0,1);
+  var g=clamp(1-Math.abs(d-0.5)*2,0,1);
+  var b=clamp(d*2-0.5,0,1);
+  return {x:r,y:g,z:b};
+}
+function traceRay(ray,scene){
+  if(RENDER.mode==='normals')return traceNormal(ray,scene);
+  if(RENDER.mode==='depth')return traceDepth(ray,scene);
+  if(RENDER.mode==='whitted')return traceWhitted(ray,scene,0);
+  return tracePath(ray,scene,0);
+}
+
+/* ================================================================
+   TONE MAPPING + GAMMA
+   ================================================================ */
+function tonemapReinhard(c,exposure){
+  exposure=exposure||1.0;
+  var r=c.x*exposure,g=c.y*exposure,b=c.z*exposure;
+  r=r/(1+r);g=g/(1+g);b=b/(1+b);
+  return {x:r,y:g,z:b};
+}
+function tonemapACES(c,exposure){
+  exposure=exposure||1.0;
+  function aces(x){
+    x*=exposure*0.6;
+    var a=2.51,b=0.03,cc=2.43,d=0.59,e=0.14;
+    return clamp((x*(a*x+b))/(x*(cc*x+d)+e),0,1);
+  }
+  return {x:aces(c.x),y:aces(c.y),z:aces(c.z)};
+}
+function gammaCorrect(c,gamma){
+  gamma=gamma||2.2;
+  return {
+    x:Math.pow(clamp(c.x,0,1),1/gamma),
+    y:Math.pow(clamp(c.y,0,1),1/gamma),
+    z:Math.pow(clamp(c.z,0,1),1/gamma)
+  };
+}
+function toSRGB(c){
+  return gammaCorrect(c,2.2);
+}
+
+/* ================================================================
+   PROGRESSIVE RENDERER
+   ================================================================ */
+function resetAccum(){
+  RENDER.samplesPerPixel=0;
+  RENDER.band=0;
+  RENDER.rayCount=0;
+  RENDER.startTime=performance.now();
+  if(RENDER.width>0&&RENDER.height>0){
+    RENDER.accum=new Float32Array(RENDER.width*RENDER.height*3);
+    RENDER.imageData=CANVAS_CTX.createImageData(RENDER.width,RENDER.height);
+  }
+  updateStatusBar();
+  renderRightPanel();
+}
+
+function renderBand(){
+  if(!RENDER.scene||!RENDER.cam)return false;
+  var w=RENDER.width;
+  var h=RENDER.height;
+  if(w===0||h===0)return false;
+  var bandH=Math.ceil(h/RENDER.totalBands);
+  var y0=RENDER.band*bandH;
+  var y1=Math.min(y0+bandH,h);
+  if(y0>=h){
+    /* Finished a sample pass */
+    RENDER.samplesPerPixel++;
+    RENDER.band=0;
+    updateStatusBar();
+    if(RENDER.samplesPerPixel>=TARGET_SPP){
+      RENDER.running=false;
+      $('btnRender').classList.remove('rendering');
+      $('btnRender').textContent='▶';
+      $('sbState').textContent='Done';
+      toast('Render complete: '+TARGET_SPP+' spp','success',3000);
+      return false;
+    }
+    return true;
+  }
+  /* Render this band */
+  var scene=RENDER.scene;
+  var cam=RENDER.cam;
+  var accum=RENDER.accum;
+  var data=RENDER.imageData.data;
+  var rayStart=RENDER.rayCount;
+  var timeStart=performance.now();
+  for(var y=y0;y<y1;y++){
+    for(var x=0;x<w;x++){
+      var idx=(y*w+x)*3;
+      /* Subpixel jitter */
+      var jx=Math.random();
+      var jy=Math.random();
+      var s=(x+jx)/w;
+      var t=(y+jy)/h;
+      /* Depth of field frame */
+      var fx=Math.random(),fy=Math.random();
+      var ray=cam.ray(s,t,fx,fy);
+      var c=traceRay(ray,scene);
+      /* Accumulate */
+      accum[idx]+=c.x;
+      accum[idx+1]+=c.y;
+      accum[idx+2]+=c.z;
+    }
+  }
+  /* Copy to display for this band */
+  var samples=RENDER.samplesPerPixel+1;
+  var invSamples=1/samples;
+  for(var y2=y0;y2<y1;y2++){
+    for(var x2=0;x2<w;x2++){
+      var idx2=(y2*w+x2)*3;
+      var r=accum[idx2]*invSamples;
+      var g=accum[idx2+1]*invSamples;
+      var b=accum[idx2+2]*invSamples;
+      /* Tonemap */
+      var tm=tonemapACES({x:r,y:g,z:b},RENDER.exposure||1);
+      var srgb=toSRGB(tm);
+      var didx=(y2*w+x2)*4;
+      data[didx]=Math.round(srgb.x*255);
+      data[didx+1]=Math.round(srgb.y*255);
+      data[didx+2]=Math.round(srgb.z*255);
+      data[didx+3]=255;
+    }
+  }
+  /* Push to canvas */
+  var tmp=document.createElement('canvas');
+  tmp.width=w;tmp.height=h;
+  tmp.getContext('2d').putImageData(RENDER.imageData,0,0);
+  CANVAS_CTX.imageSmoothingEnabled=false;
+  CANVAS_CTX.drawImage(tmp,0,0,CANVAS_W,CANVAS_H);
+  RENDER.band++;
+  /* Update rays/s */
+  var elapsed=performance.now()-timeStart;
+  var rays=RENDER.rayCount-rayStart;
+  if(elapsed>0)RENDER.raysPerSec=Math.round(rays/elapsed*1000);
+  return true;
+}
+
+var TARGET_SPP=200;
+var CANVAS_CTX=null;
+var CANVAS_W=0,CANVAS_H=0;
+var RENDER_CANVAS=null;
+function initRenderCanvas(){
+  RENDER_CANVAS=$('renderCanvas');
+  CANVAS_CTX=RENDER_CANVAS.getContext('2d');
+  resizeRenderCanvas();
+  window.addEventListener('resize',resizeRenderCanvas);
+}
+function resizeRenderCanvas(){
+  var wrap=RENDER_CANVAS.parentElement;
+  var dpr=window.devicePixelRatio||1;
+  CANVAS_W=wrap.clientWidth;
+  CANVAS_H=wrap.clientHeight;
+  RENDER_CANVAS.width=CANVAS_W;
+  RENDER_CANVAS.height=CANVAS_H;
+  RENDER_CANVAS.style.width=CANVAS_W+'px';
+  RENDER_CANVAS.style.height=CANVAS_H+'px';
+  /* Compute render resolution */
+  RENDER.width=Math.max(60,Math.floor(CANVAS_W*RENDER.resolutionScale));
+  RENDER.height=Math.max(60,Math.floor(CANVAS_H*RENDER.resolutionScale));
+  if(RENDER.cam)RENDER.cam.aspect=RENDER.width/RENDER.height;
+  resetAccum();
+}
+function startRender(){
+  if(!RENDER.scene||!RENDER.cam)return;
+  RENDER.running=true;
+  RENDER.startTime=performance.now();
+  $('btnRender').classList.add('rendering');
+  $('btnRender').textContent='⏸';
+  $('sbState').textContent='Rendering';
+  $('roProgress').style.display='block';
+  requestAnimationFrame(renderLoop);
+}
+function toggleRender(){
+  if(RENDER.running){
+    RENDER.running=false;
+    $('btnRender').classList.remove('rendering');
+    $('btnRender').textContent='▶';
+    $('sbState').textContent='Paused';
+  } else {
+    if(RENDER.samplesPerPixel>=TARGET_SPP)resetAccum();
+    startRender();
+  }
+}
+var lastRenderFrameTime=0;
+function renderLoop(now){
+  if(!RENDER.running)return;
+  if(!lastRenderFrameTime)lastRenderFrameTime=now;
+  /* Render multiple bands per frame based on budget */
+  var budget=30; /* ms */
+  var frameStart=performance.now();
+  var cont=true;
+  while(cont&&performance.now()-frameStart<budget){
+    cont=renderBand();
+  }
+  /* Update UI */
+  var total=RENDER.samplesPerPixel/RENDER.totalBands+RENDER.band/RENDER.totalBands;
+  var pct=RENDER.samplesPerPixel/TARGET_SPP*100;
+  var pf=$('roProgFill');
+  if(pf)pf.style.width=pct.toFixed(1)+'%';
+  var pl=$('roProgLabel');
+  if(pl)pl.textContent='Sample '+(RENDER.samplesPerPixel+1)+'/'+TARGET_SPP+' · '+Math.round(pct)+'%';
+  updateStatusBar();
+  renderRightPanel();
+  if(RENDER.running)requestAnimationFrame(renderLoop);
+}
+function updateStatusBar(){
+  if(!RENDER.samplesPerPixel&&!RENDER.rayCount)return;
+  var s=$('sbSamples');if(s)s.textContent=RENDER.samplesPerPixel;
+  var r=$('sbRays');if(r){
+    if(RENDER.rayCount>1e6)r.textContent=(RENDER.rayCount/1e6).toFixed(1)+'M';
+    else if(RENDER.rayCount>1e3)r.textContent=(RENDER.rayCount/1e3).toFixed(1)+'k';
+    else r.textContent=RENDER.rayCount;
+  }
+  var t=$('sbTime');if(t&&RENDER.startTime)t.textContent=((performance.now()-RENDER.startTime)/1000).toFixed(1)+'s';
+  var rps=$('sbRaysPerSec');if(rps){
+    if(RENDER.raysPerSec>1e6)rps.textContent=(RENDER.raysPerSec/1e6).toFixed(1)+'M';
+    else if(RENDER.raysPerSec>1e3)rps.textContent=(RENDER.raysPerSec/1e3).toFixed(1)+'k';
+    else rps.textContent=RENDER.raysPerSec;
+  }
+  var b=$('sbBVH');if(b)b.textContent=BVH_STATS.nodes;
+  var d=$('sbDepth');if(d)d.textContent=RENDER.maxDepth;
+  $('tbSPP').textContent=RENDER.samplesPerPixel;
+  $('tbRes').textContent=RENDER.width+'×'+RENDER.height;
+  $('tbObjs').textContent=RENDER.scene?RENDER.scene.objects.length:0;
+  $('tbMode').textContent=RENDER.mode.charAt(0).toUpperCase()+RENDER.mode.slice(1);
+  var e=$('roStats');if(e&&RENDER.scene){
+    e.innerHTML=
+      '<div>Samples: '+RENDER.samplesPerPixel+'</div>'+
+      '<div>Rays: '+(RENDER.rayCount>1e6?(RENDER.rayCount/1e6).toFixed(1)+'M':RENDER.rayCount>1e3?(RENDER.rayCount/1e3).toFixed(1)+'k':RENDER.rayCount)+'</div>'+
+      '<div>BVH: '+BVH_STATS.nodes+' nodes</div>'+
+      '<div>Depth: '+BVH_STATS.maxDepth+'</div>';
+  }
+}
+</script>
+<script>
+/* ================================================================
+   PRESET SCENES
+   ================================================================ */
+var PRESETS={};
+
+PRESETS.cornell={
+  name:'Cornell Box',
+  desc:'Classic test scene — two colored walls, spheres, box',
+  build:function(){
+    var scene=new Scene();
+    scene.background={x:0.03,y:0.03,z:0.03};
+    scene.ambient={x:0.05,y:0.05,z:0.05};
+    /* White floor and ceiling */
+    var white=new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.73,y:0.73,z:0.73}});
+    var red=new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.65,y:0.05,z:0.05}});
+    var green=new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.12,y:0.45,z:0.15}});
+    /* Room dimensions: 555 x 555 x 555 with origin at corner */
+    var s=2;
+    scene.add(new Plane({x:0,y:0,z:0},{x:0,y:1,z:0},white));
+    scene.add(new Plane({x:0,y:s,z:0},{x:0,y:-1,z:0},white));
+    scene.add(new Plane({x:0,y:0,z:0},{x:0,y:0,z:1},white));
+    scene.add(new Plane({x:0,y:0,z:-s},{x:0,y:0,z:-1},white));
+    scene.add(new Plane({x:-s,y:0,z:0},{x:1,y:0,z:0},red));
+    scene.add(new Plane({x:s,y:0,z:0},{x:-1,y:0,z:0},green));
+    /* Ceiling light */
+    var light=new Material({
+      type:MAT_TYPE.EMISSIVE,
+      albedo:{x:0,y:0,z:0},
+      emission:{x:1,y:0.95,z:0.85},
+      emissionStrength:15
+    });
+    scene.add(new Sphere({x:0,y:s-0.1,z:-s/2},0.15,light));
+    /* Metallic sphere */
+    var chrome=new Material({type:MAT_TYPE.METAL,albedo:{x:0.9,y:0.9,z:0.9},fuzz:0.02});
+    scene.add(new Sphere({x:-0.7,y:0.5,z:-1},0.5,chrome));
+    /* Glass sphere */
+    var glass=new Material({type:MAT_TYPE.GLASS,albedo:{x:1,y:1,z:1},ior:1.5});
+    scene.add(new Sphere({x:0.7,y:0.5,z:-0.9},0.5,glass));
+    /* Diffuse sphere */
+    var diffuse=new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.8,y:0.4,z:0.2}});
+    scene.add(new Sphere({x:0,y:0.3,z:-0.3},0.3,diffuse));
+    scene.build();
+    return scene;
+  },
+  camera:{yaw:0.6,pitch:0.2,distance:5.5,center:{x:0,y:1,z:-1},fov:55}
+};
+
+PRESETS.spheres={
+  name:'Metal & Glass',
+  desc:'Three spheres on a checker floor',
+  build:function(){
+    var scene=new Scene();
+    scene.background={x:0.1,y:0.15,z:0.25};
+    scene.ambient={x:0.15,y:0.15,z:0.15};
+    var checker=new Material({type:MAT_TYPE.CHECKER,albedo:{x:0.9,y:0.9,z:0.9},albedo2:{x:0.15,y:0.15,z:0.15},checkerScale:1.5});
+    scene.add(new Plane({x:0,y:0,z:0},{x:0,y:1,z:0},checker));
+    /* Chrome sphere */
+    scene.add(new Sphere({x:-1.2,y:0.6,z:0},0.6,new Material({type:MAT_TYPE.METAL,albedo:{x:0.95,y:0.95,z:0.95},fuzz:0.01})));
+    /* Gold sphere */
+    scene.add(new Sphere({x:0,y:0.6,z:0},0.6,new Material({type:MAT_TYPE.METAL,albedo:{x:1,y:0.77,z:0.34},fuzz:0.15})));
+    /* Glass sphere */
+    scene.add(new Sphere({x:1.2,y:0.6,z:0},0.6,new Material({type:MAT_TYPE.GLASS,ior:1.5})));
+    /* Emissive */
+    scene.add(new Sphere({x:0,y:4,z:-1},0.5,new Material({type:MAT_TYPE.EMISSIVE,emission:{x:1,y:0.95,z:0.85},emissionStrength:10})));
+    scene.build();
+    return scene;
+  },
+  camera:{yaw:0.5,pitch:0.25,distance:5,center:{x:0,y:0.7,z:0},fov:45}
+};
+
+PRESETS.planets={
+  name:'Solar System',
+  desc:'Emissive sun with orbiting planets',
+  build:function(){
+    var scene=new Scene();
+    scene.background={x:0.005,y:0.005,z:0.02};
+    scene.ambient={x:0.02,y:0.02,z:0.03};
+    /* Sun */
+    scene.add(new Sphere({x:0,y:0,z:0},0.8,new Material({
+      type:MAT_TYPE.EMISSIVE,emission:{x:1,y:0.7,z:0.3},emissionStrength:20
+    })));
+    /* Planets */
+    var colors=[
+      {x:0.6,y:0.6,z:0.7},{x:0.9,y:0.5,z:0.2},{x:0.3,y:0.6,z:0.9},
+      {x:0.9,y:0.3,z:0.3},{x:0.8,y:0.7,z:0.4},{x:0.5,y:0.4,z:0.3}
+    ];
+    var radii=[0.15,0.25,0.22,0.35,0.4,0.35];
+    var orbits=[1.5,2.2,3.0,3.9,5.0,6.2];
+    for(var i=0;i<colors.length;i++){
+      var ang=(i/colors.length)*Math.PI*2+rndF(-0.3,0.3);
+      var x=Math.cos(ang)*orbits[i];
+      var z=Math.sin(ang)*orbits[i];
+      scene.add(new Sphere({x:x,y:rndF(-0.3,0.3),z:z},radii[i],
+        new Material({type:MAT_TYPE.LAMBERT,albedo:colors[i]})));
+    }
+    /* Ring around one planet */
+    scene.add(new Sphere({x:Math.cos(0.7)*5.0,y:0.1,z:Math.sin(0.7)*5.0},0.35,
+      new Material({type:MAT_TYPE.METAL,albedo:{x:0.9,y:0.75,z:0.4},fuzz:0.3})));
+    scene.build();
+    return scene;
+  },
+  camera:{yaw:0.8,pitch:0.6,distance:14,center:{x:0,y:0,z:0},fov:50}
+};
+
+PRESETS.materials={
+  name:'Material Gallery',
+  desc:'Showcase of all material types',
+  build:function(){
+    var scene=new Scene();
+    scene.background={x:0.05,y:0.05,z:0.08};
+    scene.ambient={x:0.1,y:0.1,z:0.1};
+    /* Floor */
+    var floor=new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.5,y:0.5,z:0.55}});
+    scene.add(new Plane({x:0,y:0,z:0},{x:0,y:1,z:0},floor));
+    /* Row of spheres with different materials */
+    var mats=[
+      new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.9,y:0.4,z:0.3}}),
+      new Material({type:MAT_TYPE.METAL,albedo:{x:0.95,y:0.95,z:0.95},fuzz:0}),
+      new Material({type:MAT_TYPE.METAL,albedo:{x:1,y:0.77,z:0.34},fuzz:0.1}),
+      new Material({type:MAT_TYPE.GLASS,ior:1.5}),
+      new Material({type:MAT_TYPE.GLASS,ior:2.4,albedo:{x:0.9,y:0.7,z:0.9}}),
+      new Material({type:MAT_TYPE.CHECKER,albedo:{x:0.9,y:0.9,z:0.9},albedo2:{x:0.1,y:0.1,z:0.15},checkerScale:8}),
+      new Material({type:MAT_TYPE.VELVET,albedo:{x:0.7,y:0.1,z:0.2}})
+    ];
+    for(var i=0;i<mats.length;i++){
+      var x=(i-mats.length/2)*1.3;
+      scene.add(new Sphere({x:x,y:0.5,z:0},0.5,mats[i]));
+    }
+    /* Light */
+    scene.add(new Sphere({x:0,y:4,z:1},0.5,new Material({
+      type:MAT_TYPE.EMISSIVE,emission:{x:1,y:1,z:1},emissionStrength:12
+    })));
+    scene.build();
+    return scene;
+  },
+  camera:{yaw:0.3,pitch:0.25,distance:8,center:{x:0,y:0.5,z:0},fov:50}
+};
+
+PRESETS.depthfield={
+  name:'Depth of Field',
+  desc:'Focus demo with many small spheres',
+  build:function(){
+    var scene=new Scene();
+    scene.background={x:0.02,y:0.02,z:0.05};
+    scene.ambient={x:0.1,y:0.1,z:0.15};
+    scene.add(new Plane({x:0,y:0,z:0},{x:0,y:1,z:0},
+      new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.15,y:0.15,z:0.2}})));
+    /* Many small spheres at different depths */
+    for(var i=0;i<15;i++){
+      var x=rndF(-3,3);
+      var z=rndF(-5,1);
+      var r=rndF(0.15,0.35);
+      var hue=Math.random();
+      var albedo=hslToRgb(hue,0.6,0.55);
+      scene.add(new Sphere({x:x,y:r,z:z},r,new Material({type:MAT_TYPE.METAL,albedo:albedo,fuzz:0.05})));
+    }
+    scene.add(new Sphere({x:0,y:5,z:0},0.6,new Material({
+      type:MAT_TYPE.EMISSIVE,emission:{x:1,y:0.9,z:0.8},emissionStrength:8
+    })));
+    scene.build();
+    return scene;
+  },
+  camera:{yaw:0,pitch:0.15,distance:6,center:{x:0,y:0.5,z:-1.5},fov:45}
+};
+
+PRESETS.primitives={
+  name:'Primitives',
+  desc:'Showcase of geometric primitives',
+  build:function(){
+    var scene=new Scene();
+    scene.background={x:0.04,y:0.04,z:0.08};
+    scene.ambient={x:0.12,y:0.12,z:0.15};
+    scene.add(new Plane({x:0,y:0,z:0},{x:0,y:1,z:0},
+      new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.4,y:0.4,z:0.45}})));
+    /* Sphere */
+    scene.add(new Sphere({x:-2,y:0.5,z:0},0.5,new Material({type:MAT_TYPE.METAL,albedo:{x:0.9,y:0.9,z:0.9},fuzz:0})));
+    /* Box */
+    scene.add(new Box({x:-0.6,y:0,z:-0.6},{x:0.4,y:1,z:0.4},
+      new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.9,y:0.4,z:0.3}})));
+    /* Triangle */
+    scene.add(new Triangle(
+      {x:1,y:0,z:0.5},{x:2,y:0,z:-0.5},{x:1.5,y:1,z:0},
+      new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.3,y:0.7,z:0.4}})));
+    /* Glass sphere */
+    scene.add(new Sphere({x:2.5,y:0.5,z:0.5},0.5,new Material({type:MAT_TYPE.GLASS,ior:1.5})));
+    /* Light */
+    scene.add(new Sphere({x:0,y:5,z:2},0.6,new Material({
+      type:MAT_TYPE.EMISSIVE,emission:{x:1,y:0.95,z:0.85},emissionStrength:10
+    })));
+    scene.build();
+    return scene;
+  },
+  camera:{yaw:0.4,pitch:0.3,distance:8,center:{x:0,y:0.7,z:0},fov:50}
+};
+
+PRESETS.veach={
+  name:'Veach MIS Test',
+  desc:'Challenging geometry with sharp lighting',
+  build:function(){
+    var scene=new Scene();
+    scene.background={x:0.01,y:0.01,z:0.01};
+    scene.ambient={x:0.02,y:0.02,z:0.03};
+    scene.add(new Plane({x:0,y:0,z:0},{x:0,y:1,z:0},
+      new Material({type:MAT_TYPE.LAMBERT,albedo:{x:0.5,y:0.5,z:0.5}})));
+    /* Various glossy spheres */
+    for(var i=0;i<6;i++){
+      var ang=(i/6)*Math.PI*2;
+      scene.add(new Sphere({x:Math.cos(ang)*1.8,y:0.4,z:Math.sin(ang)*1.8},0.4,
+        new Material({type:MAT_TYPE.METAL,albedo:{x:0.6+Math.random()*0.4,y:0.6,z:0.9},fuzz:0.2})));
+    }
+    scene.add(new Sphere({x:0,y:0.6,z:0},0.6,new Material({type:MAT_TYPE.METAL,albedo:{x:0.9,y:0.9,z:0.9},fuzz:0})));
+    scene.add(new Sphere({x:0,y:6,z:0},0.4,new Material({
+      type:MAT_TYPE.EMISSIVE,emission:{x:1,y:1,z:1},emissionStrength:20
+    })));
+    scene.build();
+    return scene;
+  },
+  camera:{yaw:0,pitch:0.4,distance:7,center:{x:0,y:0.5,z:0},fov:45}
+};
+
+function hslToRgb(h,s,l){
+  var r,g,b;
+  if(s===0){r=g=b=l;}
+  else{
+    var hue2rgb=function(p,q,t){
+      if(t<0)t+=1;if(t>1)t-=1;
+      if(t<1/6)return p+(q-p)*6*t;
+      if(t<1/2)return q;
+      if(t<2/3)return p+(q-p)*(2/3-t)*6;
+      return p;
+    };
+    var q=l<0.5?l*(1+s):l+s-l*s;
+    var p=2*l-q;
+    r=hue2rgb(p,q,h+1/3);
+    g=hue2rgb(p,q,h);
+    b=hue2rgb(p,q,h-1/3);
+  }
+  return {x:r,y:g,z:b};
+}
+
+/* ================================================================
+   SCENE MANAGEMENT
+   ================================================================ */
+function loadPreset(key){
+  var preset=PRESETS[key];
+  if(!preset)return;
+  RENDER.scene=preset.build();
+  RENDER.cam=new Camera();
+  RENDER.cam.orbitCenter=preset.camera.center;
+  RENDER.cam.yaw=preset.camera.yaw;
+  RENDER.cam.pitch=preset.camera.pitch;
+  RENDER.cam.distance=preset.camera.distance;
+  RENDER.cam.fov=preset.camera.fov;
+  RENDER.cam.aspect=RENDER.width/RENDER.height;
+  RENDER.cam.orbit(0,0);
+  RENDER.sceneName=preset.name;
+  STATE.selectedPreset=key;
+  STATE.selectedObj=-1;
+  resetAccum();
+  renderLeftPanel();
+  renderRightPanel();
+  toast('Loaded: '+preset.name,'success',1800);
+  if(RENDER.autoRender!==false)startRender();
+}
+
+/* ================================================================
+   CAMERA CONTROLS
+   ================================================================ */
+var CAM_INPUT={dragging:false,x:0,y:0};
+function camDown(e){
+  CAM_INPUT.dragging=true;
+  CAM_INPUT.x=e.clientX;
+  CAM_INPUT.y=e.clientY;
+  RENDER_CANVAS.classList.add('dragging');
+}
+function camMove(e){
+  if(!CAM_INPUT.dragging)return;
+  var dx=e.clientX-CAM_INPUT.x;
+  var dy=e.clientY-CAM_INPUT.y;
+  CAM_INPUT.x=e.clientX;
+  CAM_INPUT.y=e.clientY;
+  if(!RENDER.cam)return;
+  RENDER.cam.orbit(dx*0.008,dy*0.008);
+  resetAccum();
+  if(RENDER.running)startRender();
+}
+function camUp(e){
+  CAM_INPUT.dragging=false;
+  RENDER_CANVAS.classList.remove('dragging');
+}
+function camWheel(e){
+  e.preventDefault();
+  if(!RENDER.cam)return;
+  RENDER.cam.distance=clamp(RENDER.cam.distance*(e.deltaY<0?0.9:1.1),0.5,50);
+  RENDER.cam.orbit(0,0);
+  resetAccum();
+  if(RENDER.running)startRender();
+}
+function camTouchStart(e){
+  if(e.touches.length===1){
+    CAM_INPUT.dragging=true;
+    CAM_INPUT.x=e.touches[0].clientX;
+    CAM_INPUT.y=e.touches[0].clientY;
+  }
+  e.preventDefault();
+}
+function camTouchMove(e){
+  if(e.touches.length===1){
+    var dx=e.touches[0].clientX-CAM_INPUT.x;
+    var dy=e.touches[0].clientY-CAM_INPUT.y;
+    CAM_INPUT.x=e.touches[0].clientX;
+    CAM_INPUT.y=e.touches[0].clientY;
+    if(!RENDER.cam)return;
+    RENDER.cam.orbit(dx*0.01,dy*0.01);
+    resetAccum();
+    if(RENDER.running)startRender();
+  }
+  e.preventDefault();
+}
+function camTouchEnd(e){
+  CAM_INPUT.dragging=false;
+  e.preventDefault();
+}
+</script>
+<script>
+/* ================================================================
+   APPLICATION STATE
+   ================================================================ */
+var STATE={
+  currentTab:'render',
+  currentRp:'inspector',
+  theme:'lumen',
+  selectedPreset:'cornell',
+  selectedObj:-1,
+  screenshotFps:60,
+  fps:60
+};
+
+/* ================================================================
+   TABS
+   ================================================================ */
+var TABS=[
+  {key:'render',icon:'🎬',label:'Render'},
+  {key:'presets',icon:'🎭',label:'Presets'},
+  {key:'materials',icon:'🎨',label:'Materials'},
+  {key:'bvhtree',icon:'🌳',label:'BVH Tree'},
+  {key:'stats',icon:'📊',label:'Stats'},
+  {key:'about',icon:'ℹ️',label:'About'}
+];
+function buildTabs(){
+  var tabs=$('tbTabs');
+  tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(el2){el2.classList.toggle('active',el2.getAttribute('data-tab')===key)});
+  renderLeftPanel();
+  /* Restore canvas for render tab */
+  if(key!=='render'&&key!=='stats'&&key!=='about'){
+    /* Keep the canvas rendering in background */
+  }
+  renderContent();
+}
+function switchRp(name,el2){
+  STATE.currentRp=name;
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active');});
+  el2.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active');});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+  renderRightPanel();
+}
+
+/* ================================================================
+   LEFT PANEL
+   ================================================================ */
+function renderLeftPanel(){
+  var body=$('lpBody');
+  if(!body)return;
+  var html='';
+  if(STATE.currentTab==='render'){
+    /* Preset selector */
+    html+='<div class="sec"><h4>Scene <span class="badge">'+Object.keys(PRESETS).length+'</span></h4>';
+    html+='<div class="list">';
+    Object.keys(PRESETS).forEach(function(k){
+      var p=PRESETS[k];
+      html+='<div class="li'+(STATE.selectedPreset===k?' active':'')+'" onclick="loadPreset(\''+k+'\')">'+
+        '<span>'+esc(p.name)+'</span></div>';
+    });
+    html+='</div></div>';
+    /* Render settings */
+    html+='<div class="sec"><h4>Render Settings</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Mode</span></div>';
+    html+='<select onchange="RENDER.mode=this.value;resetAccum();startRender()">';
+    [['path','Path Tracing (PBR)'],['whitted','Whitted Ray Tracing'],['normals','Normals'],['depth','Depth (Heat)']].forEach(function(m){
+      html+='<option value="'+m[0]+'"'+(RENDER.mode===m[0]?' selected':'')+'>'+m[1]+'</option>';
+    });
+    html+='</select></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Max bounces</span><span id="mdLabel">'+RENDER.maxDepth+'</span></div>';
+    html+='<input type="range" min="1" max="10" step="1" value="'+RENDER.maxDepth+'" oninput="RENDER.maxDepth=parseInt(this.value);document.getElementById(\'mdLabel\').textContent=this.value;resetAccum()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Target SPP</span><span id="sppLabel">'+TARGET_SPP+'</span></div>';
+    html+='<input type="range" min="10" max="2000" step="10" value="'+TARGET_SPP+'" oninput="TARGET_SPP=parseInt(this.value);document.getElementById(\'sppLabel\').textContent=this.value"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Resolution scale</span><span id="rsLabel">'+fmt(RENDER.resolutionScale,2)+'×</span></div>';
+    html+='<input type="range" min="0.15" max="1" step="0.05" value="'+RENDER.resolutionScale+'" oninput="RENDER.resolutionScale=parseFloat(this.value);document.getElementById(\'rsLabel\').textContent=Number(this.value).toFixed(2)+\'×\';resizeRenderCanvas()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Exposure</span><span id="exLabel">'+fmt(RENDER.exposure||1,2)+'</span></div>';
+    html+='<input type="range" min="0.1" max="3" step="0.05" value="'+(RENDER.exposure||1)+'" oninput="RENDER.exposure=parseFloat(this.value);document.getElementById(\'exLabel\').textContent=Number(this.value).toFixed(2)"></div>';
+    html+='</div>';
+    /* Actions */
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn full primary" onclick="'+(RENDER.running?'toggleRender()':'startRender()')+'">'+(RENDER.running?'⏸ Pause':'▶ Render')+'</button>';
+    html+='<button class="btn full sm" style="margin-top:6px" onclick="resetAccum();startRender()">🔄 Restart</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="exportImage()">⬇ Export PNG</button>';
+    html+='</div>';
+  }
+  else if(STATE.currentTab==='presets'){
+    html+='<div class="sec"><h4>Preset Scenes</h4>';
+    Object.keys(PRESETS).forEach(function(k){
+      var p=PRESETS[k];
+      html+='<div class="li'+(STATE.selectedPreset===k?' active':'')+'" onclick="loadPreset(\''+k+'\');switchTab(\'render\')">'+
+        '<span class="name">'+esc(p.name)+'</span></div>';
+    });
+    html+='</div>';
+  }
+  else if(STATE.currentTab==='bvhtree'){
+    html+='<div class="sec"><h4>BVH Info</h4>';
+    html+='<div class="kv">';
+    html+='<div class="row"><span class="k">Nodes</span><span class="v">'+BVH_STATS.nodes+'</span></div>';
+    html+='<div class="row"><span class="k">Leaves</span><span class="v">'+BVH_STATS.leaves+'</span></div>';
+    html+='<div class="row"><span class="k">Max depth</span><span class="v">'+BVH_STATS.maxDepth+'</span></div>';
+    html+='<div class="row"><span class="k">Objects</span><span class="v">'+(RENDER.scene?RENDER.scene.objects.length:0)+'</span></div>';
+    html+='</div></div>';
+  }
+  else if(STATE.currentTab==='materials'){
+    html+='<div class="sec"><h4>Object List</h4>';
+    html+='<div class="list">';
+    if(RENDER.scene){
+      RENDER.scene.objects.forEach(function(o,i){
+        var color='rgb('+Math.round(o.material.albedo.x*255)+','+Math.round(o.material.albedo.y*255)+','+Math.round(o.material.albedo.z*255)+')';
+        html+='<div class="li'+(STATE.selectedObj===i?' active':'')+'" onclick="selectObject('+i+')">'+
+          '<span class="swatch" style="background:'+color+'"></span>'+
+          '<span class="name">'+o.type+' #'+i+'</span>'+
+          '<span class="meta">'+o.material.type+'</span>'+
+          '</div>';
+      });
+    }
+    html+='</div></div>';
+  }
+  body.innerHTML=html;
+}
+
+/* ================================================================
+   CONTENT AREA (info panels)
+   ================================================================ */
+function renderContent(){
+  /* Content area is the render canvas, so we only swap overlays */
+  if(STATE.currentTab==='about'){
+    showAbout();
+    return;
+  }
+  if(STATE.currentTab==='stats'){
+    showStatsOverlay();
+    return;
+  }
+  /* For other tabs, ensure canvas is visible */
+  hideOverlays();
+}
+
+var OVERLAY_EL=null;
+function hideOverlays(){
+  if(OVERLAY_EL){OVERLAY_EL.remove();OVERLAY_EL=null;}
+}
+function showStatsOverlay(){
+  hideOverlays();
+  var html='<div style="position:absolute;inset:0;background:var(--bg2);overflow:auto;padding:24px;z-index:50">';
+  html+='<div style="max-width:900px;margin:0 auto">';
+  html+='<h2 style="font-size:1.5rem;font-weight:800;background:var(--g1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:var(--disp);letter-spacing:2px;margin-bottom:20px">📊 RENDER STATISTICS</h2>';
+  html+='<div class="stats-grid">';
+  html+='<div class="stat"><div class="sv">'+RENDER.samplesPerPixel+'</div><div class="sl">Samples</div></div>';
+  html+='<div class="stat c2"><div class="sv">'+fmt(RENDER.rayCount/1e6,2)+'M</div><div class="sl">Rays traced</div></div>';
+  html+='<div class="stat c3"><div class="sv">'+BVH_STATS.nodes+'</div><div class="sl">BVH nodes</div></div>';
+  html+='<div class="stat c5"><div class="sv">'+BVH_STATS.maxDepth+'</div><div class="sl">BVH depth</div></div>';
+  html+='<div class="stat"><div class="sv">'+RENDER.width+'×'+RENDER.height+'</div><div class="sl">Resolution</div></div>';
+  html+='<div class="stat c2"><div class="sv">'+RENDER.maxDepth+'</div><div class="sl">Max bounces</div></div>';
+  html+='<div class="stat c3"><div class="sv">'+(RENDER.scene?RENDER.scene.objects.length:0)+'</div><div class="sl">Objects</div></div>';
+  html+='<div class="stat c5"><div class="sv">'+(RENDER.raysPerSec>1e6?(RENDER.raysPerSec/1e6).toFixed(1)+'M':RENDER.raysPerSec>1e3?(RENDER.raysPerSec/1e3).toFixed(0)+'k':RENDER.raysPerSec)+'</div><div class="sl">Rays/sec</div></div>';
+  html+='</div>';
+  html+='<div class="sec"><h4>Ray Tracing Pipeline</h4>';
+  html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">1. Camera ray</b> — Generate primary ray through pixel (with optional DoF aperture sampling)<br>'+
+    '<b class="text-c1">2. BVH traversal</b> — Test ray against bounding boxes hierarchically<br>'+
+    '<b class="text-c1">3. Primitive intersect</b> — Analytic intersection with sphere/plane/box/triangle<br>'+
+    '<b class="text-c1">4. Material scatter</b> — BSDF sampling: Lambert (cosine-weighted), Metal (reflect + fuzz), Glass (Fresnel + Snell), Emissive<br>'+
+    '<b class="text-c1">5. Recurse</b> — Follow scattered ray up to max depth with Russian roulette<br>'+
+    '<b class="text-c1">6. Accumulate</b> — Progressive average into HDR accumulation buffer<br>'+
+    '<b class="text-c1">7. Tonemap</b> — ACES curve + sRGB gamma for display'+
+    '</div></div>';
+  html+='<div class="sec"><h4>BVH Structure</h4>';
+  html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.8;color:var(--tx2)">'+
+    'The BVH (Bounding Volume Hierarchy) is built top-down by sorting objects along the largest extent axis of the current bounding box, then splitting at the median. Each leaf contains ≤ 4 objects.<br><br>'+
+    'Tree: <b class="text-c3">'+BVH_STATS.nodes+'</b> nodes · <b class="text-c3">'+BVH_STATS.leaves+'</b> leaves · depth <b class="text-c3">'+BVH_STATS.maxDepth+'</b><br>'+
+    'Without BVH, each ray would test all '+(RENDER.scene?RENDER.scene.objects.length:0)+' objects. With BVH, only ~log('+(RENDER.scene?RENDER.scene.objects.length:0)+') are visited on average.'+
+    '</div></div>';
+  html+='<div class="sec"><h4>Sampling Algorithm</h4>';
+  html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.8;color:var(--tx2)">'+
+    'Path tracing uses <b>Monte Carlo integration</b>. Each pixel value is an average of many independently traced paths. With N samples, the noise decreases as O(1/√N). Progressive rendering accumulates one additional sample per pass, so the image refines over time — the first few samples are noisy, but hundreds of samples converge to a smooth image.'+
+    '</div></div>';
+  html+='</div></div>';
+  OVERLAY_EL=el('div',{style:{position:'absolute',inset:'0',background:'var(--bg2)',overflow:'auto',zIndex:'50'},html:html});
+  $('workspace').appendChild(OVERLAY_EL);
+}
+function showAbout(){
+  hideOverlays();
+  var html='<div style="position:absolute;inset:0;background:var(--bg2);overflow:auto;padding:24px;z-index:50">';
+  html+='<div style="max-width:850px;margin:0 auto">';
+  html+='<h1 style="font-size:2.2rem;font-weight:900;letter-spacing:8px;background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:holo 4s linear infinite;font-family:var(--disp);margin-bottom:6px">LUMEN</h1>';
+  html+='<p style="font-size:.75rem;color:var(--tx3);letter-spacing:4px;font-family:var(--mono);margin-bottom:24px">RAY TRACING & RENDERING STUDIO</p>';
+  html+='<p style="font-size:.78rem;color:var(--tx2);line-height:1.85;margin-bottom:20px">A complete ray tracer written from scratch in JavaScript. It performs real Monte Carlo path tracing with physically-based materials, a BVH acceleration structure, progressive sample accumulation, and ACES tone mapping.</p>';
+  html+='<div class="sec"><h4>Real Algorithms</h4>';
+  html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">Ray-primitive intersection</b> — Analytic solutions for sphere, plane, box (slab method), triangle (Möller–Trumbore)<br>'+
+    '<b class="text-c1">BVH construction</b> — Median-split binary tree with AABB<br>'+
+    '<b class="text-c1">BVH traversal</b> — Recursive slab test with early termination<br>'+
+    '<b class="text-c1">Monte Carlo integration</b> — Random sampling of BSDFs<br>'+
+    '<b class="text-c1">Fresnel (Schlick)</b> — Reflectance depends on angle and IOR<br>'+
+    '<b class="text-c1">Snell\'s law</b> — Refraction through glass<br>'+
+    '<b class="text-c1">Russian roulette</b> — Unbiased path termination for efficiency<br>'+
+    '<b class="text-c1">ACES tone mapping</b> — Filmic curve for HDR to LDR<br>'+
+    '<b class="text-c1">sRGB gamma</b> — Correct display encoding'+
+    '</div></div>';
+  html+='<div class="sec"><h4>Materials</h4>';
+  html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">Lambert</b> — Pure diffuse; cosine-weighted hemisphere sampling<br>'+
+    '<b class="text-c1">Metal</b> — Specular reflection with optional microfacet fuzz<br>'+
+    '<b class="text-c1">Glass</b> — Fresnel-weighted reflect/refract with IOR<br>'+
+    '<b class="text-c1">Emissive</b> — Light-emitting surfaces<br>'+
+    '<b class="text-c1">Checker</b> — Procedural 3D checkerboard pattern<br>'+
+    '<b class="text-c1">Velvet</b> — Retroreflective sheen'+
+    '</div></div>';
+  html+='<div class="sec"><h4>How to Use</h4>';
+  html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.85;color:var(--tx2)">'+
+    '• <b class="text-c1">Drag on canvas</b> — Orbit camera<br>'+
+    '• <b class="text-c1">Scroll / pinch</b> — Zoom camera<br>'+
+    '• <b class="text-c1">Space</b> — Toggle render on/off<br>'+
+    '• <b class="text-c1">R</b> — Reset samples (restart progressive render)<br>'+
+    '• <b class="text-c1">Presets tab</b> — Switch between 7 scenes<br>'+
+    '• <b class="text-c1">Materials tab</b> — Inspect and edit any object'+
+    '</div></div>';
+  html+='<div class="sec"><h4>Performance Notes</h4>';
+  html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.85;color:var(--tx2)">'+
+    'The default render is at a scaled-down resolution for immediate feedback. Once the first samples are drawn, the image refines progressively. With higher resolution scale (1.0×) and hundreds of samples, output becomes very clean. On a modern CPU you\'ll get ~100k–1M rays/sec.<br><br>'+
+    'Real production renderers use GPUs, SIMD, and importance sampling for hundreds of millions of rays/sec. This studio demonstrates the algorithms on CPU in pure JavaScript — no WebGL, no WebGPU, no libraries.'+
+    '</div></div>';
+  html+='</div></div>';
+  OVERLAY_EL=el('div',{style:{position:'absolute',inset:'0',background:'var(--bg2)',overflow:'auto',zIndex:'50'},html:html});
+  $('workspace').appendChild(OVERLAY_EL);
+}
+
+/* ================================================================
+   RIGHT PANEL
+   ================================================================ */
+function renderRightPanel(){
+  renderInspectorPane();
+  renderMaterialPane();
+  renderCameraPane();
+  renderStatsPane();
+}
+function renderInspectorPane(){
+  var p=$('rpInspector');
+  if(!p)return;
+  var scene=RENDER.scene;
+  if(!scene){p.innerHTML='<div class="empty">No scene loaded</div>';return;}
+  var html='<div class="sec"><h4>Scene Info</h4>';
+  html+='<div class="kv">';
+  html+='<div class="row"><span class="k">Name</span><span class="v">'+esc(RENDER.sceneName||'—')+'</span></div>';
+  html+='<div class="row"><span class="k">Objects</span><span class="v">'+scene.objects.length+'</span></div>';
+  html+='<div class="row"><span class="k">BVH nodes</span><span class="v">'+BVH_STATS.nodes+'</span></div>';
+  html+='<div class="row"><span class="k">Max depth</span><span class="v">'+BVH_STATS.maxDepth+'</span></div>';
+  html+='<div class="row"><span class="k">Background</span><span class="v">'+fmt(scene.background.x,2)+', '+fmt(scene.background.y,2)+', '+fmt(scene.background.z,2)+'</span></div>';
+  html+='</div></div>';
+  html+='<div class="sec"><h4>Selected Object</h4>';
+  if(STATE.selectedObj>=0&&scene.objects[STATE.selectedObj]){
+    var o=scene.objects[STATE.selectedObj];
+    html+='<div class="kv">';
+    html+='<div class="row"><span class="k">Type</span><span class="v">'+o.type+'</span></div>';
+    if(o.center)html+='<div class="row"><span class="k">Center</span><span class="v">'+fmt(o.center.x,2)+', '+fmt(o.center.y,2)+', '+fmt(o.center.z,2)+'</span></div>';
+    if(o.radius)html+='<div class="row"><span class="k">Radius</span><span class="v">'+fmt(o.radius,2)+'</span></div>';
+    if(o.min&&o.max){
+      html+='<div class="row"><span class="k">Min</span><span class="v">'+fmt(o.min.x,2)+', '+fmt(o.min.y,2)+', '+fmt(o.min.z,2)+'</span></div>';
+      html+='<div class="row"><span class="k">Max</span><span class="v">'+fmt(o.max.x,2)+', '+fmt(o.max.y,2)+', '+fmt(o.max.z,2)+'</span></div>';
+    }
+    html+='</div>';
+  } else {
+    html+='<div class="empty" style="padding:14px;font-size:.62rem">Click an object in Materials tab</div>';
+  }
+  html+='</div>';
+  p.innerHTML=html;
+}
+function renderMaterialPane(){
+  var p=$('rpMaterial');
+  if(!p)return;
+  var scene=RENDER.scene;
+  if(!scene){p.innerHTML='<div class="empty">No scene</div>';return;}
+  if(STATE.selectedObj<0||!scene.objects[STATE.selectedObj]){
+    p.innerHTML='<div class="empty"><div class="e-icon">🎨</div><div>Select an object from the left panel</div></div>';
+    return;
+  }
+  var o=scene.objects[STATE.selectedObj];
+  var m=o.material;
+  var html='<div class="sec"><h4>Object '+STATE.selectedObj+'</h4>';
+  html+='<div class="kv">';
+  html+='<div class="row"><span class="k">Type</span><span class="v">'+o.type+'</span></div>';
+  html+='</div></div>';
+  html+='<div class="sec"><h4>Material</h4>';
+  html+='<div class="ctrl"><label class="lbl">Type</label>';
+  html+='<select onchange="setMaterialType(this.value)">';
+  [['lambert','Lambert (Diffuse)'],['metal','Metal'],['glass','Glass (Dielectric)'],['emissive','Emissive'],['checker','Checker'],['velvet','Velvet']].forEach(function(t){
+    html+='<option value="'+t[0]+'"'+(m.type===t[0]?' selected':'')+'>'+t[1]+'</option>';
+  });
+  html+='</select></div>';
+  html+='<div class="ctrl"><label class="lbl">Albedo</label>';
+  html+='<input type="color" value="'+rgbToHex(m.albedo)+'" oninput="setAlbedo(this.value)"></div>';
+  if(m.type==='checker'){
+    html+='<div class="ctrl"><label class="lbl">Albedo 2</label>';
+    html+='<input type="color" value="'+rgbToHex(m.albedo2)+'" oninput="setAlbedo2(this.value)"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Checker scale</span><span id="csLbl">'+fmt(m.checkerScale,1)+'</span></div>';
+    html+='<input type="range" min="0.5" max="20" step="0.5" value="'+m.checkerScale+'" oninput="m=null;STATE;\"><script>0</script></div>';
+  }
+  if(m.type==='emissive'){
+    html+='<div class="ctrl"><label class="lbl">Emission color</label>';
+    html+='<input type="color" value="'+rgbToHex(m.emission)+'" oninput="setEmission(this.value)"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Strength</span><span id="emsLbl">'+fmt(m.emissionStrength,1)+'</span></div>';
+    html+='<input type="range" min="0.5" max="50" step="0.5" value="'+m.emissionStrength+'" oninput="setEmissionStrength(this.value)"></div>';
+  }
+  if(m.type==='metal'){
+    html+='<div class="ctrl"><div class="lbl"><span>Fuzz</span><span id="fzLbl">'+fmt(m.fuzz,2)+'</span></div>';
+    html+='<input type="range" min="0" max="1" step="0.02" value="'+m.fuzz+'" oninput="setFuzz(this.value)"></div>';
+  }
+  if(m.type==='glass'){
+    html+='<div class="ctrl"><div class="lbl"><span>IOR</span><span id="iorLbl">'+fmt(m.ior,2)+'</span></div>';
+    html+='<input type="range" min="1.0" max="2.5" step="0.02" value="'+m.ior+'" oninput="setIOR(this.value)"></div>';
+  }
+  html+='</div>';
+  p.innerHTML=html;
+}
+function renderCameraPane(){
+  var p=$('rpCamera');
+  if(!p)return;
+  var cam=RENDER.cam;
+  if(!cam){p.innerHTML='<div class="empty">No camera</div>';return;}
+  var html='<div class="sec"><h4>Camera Position</h4>';
+  html+='<div class="kv">';
+  html+='<div class="row"><span class="k">X</span><span class="v">'+fmt(cam.position.x,2)+'</span></div>';
+  html+='<div class="row"><span class="k">Y</span><span class="v">'+fmt(cam.position.y,2)+'</span></div>';
+  html+='<div class="row"><span class="k">Z</span><span class="v">'+fmt(cam.position.z,2)+'</span></div>';
+  html+='</div></div>';
+  html+='<div class="sec"><h4>Orbit Parameters</h4>';
+  html+='<div class="ctrl"><div class="lbl"><span>Yaw</span><span>'+fmt(cam.yaw*180/Math.PI,0)+'°</span></div>';
+  html+='<input type="range" min="-3.14" max="3.14" step="0.05" value="'+cam.yaw+'" oninput="RENDER.cam.yaw=parseFloat(this.value);RENDER.cam.orbit(0,0);resetAccum()"></div>';
+  html+='<div class="ctrl"><div class="lbl"><span>Pitch</span><span>'+fmt(cam.pitch*180/Math.PI,0)+'°</span></div>';
+  html+='<input type="range" min="-1.5" max="1.5" step="0.05" value="'+cam.pitch+'" oninput="RENDER.cam.pitch=parseFloat(this.value);RENDER.cam.orbit(0,0);resetAccum()"></div>';
+  html+='<div class="ctrl"><div class="lbl"><span>Distance</span><span>'+fmt(cam.distance,2)+'</span></div>';
+  html+='<input type="range" min="0.5" max="30" step="0.1" value="'+cam.distance+'" oninput="RENDER.cam.distance=parseFloat(this.value);RENDER.cam.orbit(0,0);resetAccum()"></div>';
+  html+='<div class="ctrl"><div class="lbl"><span>FOV</span><span>'+fmt(cam.fov,0)+'°</span></div>';
+  html+='<input type="range" min="15" max="120" step="1" value="'+cam.fov+'" oninput="RENDER.cam.fov=parseFloat(this.value);resetAccum()"></div>';
+  html+='</div>';
+  html+='<div class="sec"><h4>Depth of Field</h4>';
+  html+='<div class="ctrl"><div class="lbl"><span>Aperture</span><span>'+fmt(cam.aperture,3)+'</span></div>';
+  html+='<input type="range" min="0" max="0.3" step="0.005" value="'+cam.aperture+'" oninput="RENDER.cam.aperture=parseFloat(this.value);resetAccum()"></div>';
+  html+='</div>';
+  p.innerHTML=html;
+}
+function renderStatsPane(){
+  var p=$('rpStats');
+  if(!p)return;
+  var html='<div class="sec"><h4>Render Statistics</h4>';
+  html+='<div class="stats-grid">';
+  html+='<div class="stat"><div class="sv">'+RENDER.samplesPerPixel+'</div><div class="sl">Samples</div></div>';
+  html+='<div class="stat c2"><div class="sv">'+(RENDER.rayCount>1e6?(RENDER.rayCount/1e6).toFixed(1)+'M':RENDER.rayCount>1e3?(RENDER.rayCount/1e3).toFixed(0)+'k':RENDER.rayCount)+'</div><div class="sl">Rays</div></div>';
+  html+='<div class="stat c3"><div class="sv">'+BVH_STATS.nodes+'</div><div class="sl">BVH</div></div>';
+  html+='<div class="stat c5"><div class="sv">'+RENDER.maxDepth+'</div><div class="sl">Max bounces</div></div>';
+  html+='</div>';
+  html+='<div class="kv">';
+  html+='<div class="row"><span class="k">Resolution</span><span class="v">'+RENDER.width+'×'+RENDER.height+'</span></div>';
+  html+='<div class="row"><span class="k">Rays per second</span><span class="v">'+RENDER.raysPerSec.toLocaleString()+'</span></div>';
+  html+='<div class="row"><span class="k">Rays per sample</span><span class="v">'+Math.round(RENDER.rayCount/Math.max(1,RENDER.samplesPerPixel))+'</span></div>';
+  html+='<div class="row"><span class="k">Total rays</span><span class="v">'+RENDER.rayCount.toLocaleString()+'</span></div>';
+  html+='<div class="row"><span class="k">Mode</span><span class="v">'+RENDER.mode+'</span></div>';
+  html+='<div class="row"><span class="k">Objects</span><span class="v">'+(RENDER.scene?RENDER.scene.objects.length:0)+'</span></div>';
+  html+='</div></div>';
+  /* Progress bar */
+  var pct=RENDER.samplesPerPixel/TARGET_SPP*100;
+  html+='<div class="sec"><h4>Progress</h4>';
+  html+='<div class="progress" style="height:8px;background:var(--panel4);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:var(--g1);transition:width .3s;box-shadow:0 0 8px var(--c1)"></div></div>';
+  html+='<div style="text-align:center;font-family:var(--mono);font-size:.68rem;margin-top:6px;color:var(--c1)">'+RENDER.samplesPerPixel+' / '+TARGET_SPP+' spp · '+Math.round(pct)+'%</div>';
+  html+='</div>';
+  p.innerHTML=html;
+}
+
+/* ================================================================
+   OBJECT / MATERIAL EDITING
+   ================================================================ */
+function selectObject(i){
+  STATE.selectedObj=i;
+  switchRp('material',$$('.rp-tab')[1]);
+  renderLeftPanel();
+  renderMaterialPane();
+}
+function rgbToHex(c){
+  var r=Math.round(clamp(c.x,0,1)*255);
+  var g=Math.round(clamp(c.y,0,1)*255);
+  var b=Math.round(clamp(c.z,0,1)*255);
+  return '#'+[r,g,b].map(function(v){return v.toString(16).padStart(2,'0')}).join('');
+}
+function hexToRgb(hex){
+  var r=parseInt(hex.substr(1,2),16)/255;
+  var g=parseInt(hex.substr(3,2),16)/255;
+  var b=parseInt(hex.substr(5,2),16)/255;
+  return {x:r,y:g,z:b};
+}
+function setMaterialType(t){
+  var o=RENDER.scene.objects[STATE.selectedObj];
+  o.material.type=t;
+  if(t==='emissive'){
+    o.material.emission={x:1,y:0.9,z:0.8};
+    o.material.emissionStrength=10;
+    o.material.albedo={x:0,y:0,z:0};
+  }
+  resetAccum();
+  startRender();
+  renderMaterialPane();
+}
+function setAlbedo(hex){
+  var o=RENDER.scene.objects[STATE.selectedObj];
+  o.material.albedo=hexToRgb(hex);
+  resetAccum();
+  startRender();
+  renderLeftPanel();
+}
+function setAlbedo2(hex){
+  var o=RENDER.scene.objects[STATE.selectedObj];
+  o.material.albedo2=hexToRgb(hex);
+  resetAccum();
+  startRender();
+}
+function setEmission(hex){
+  var o=RENDER.scene.objects[STATE.selectedObj];
+  o.material.emission=hexToRgb(hex);
+  resetAccum();
+  startRender();
+}
+function setEmissionStrength(v){
+  var o=RENDER.scene.objects[STATE.selectedObj];
+  o.material.emissionStrength=parseFloat(v);
+  resetAccum();
+  startRender();
+}
+function setFuzz(v){
+  var o=RENDER.scene.objects[STATE.selectedObj];
+  o.material.fuzz=parseFloat(v);
+  resetAccum();
+  startRender();
+}
+function setIOR(v){
+  var o=RENDER.scene.objects[STATE.selectedObj];
+  o.material.ior=parseFloat(v);
+  resetAccum();
+  startRender();
+}
+
+/* ================================================================
+   PANEL TOGGLES / THEME
+   ================================================================ */
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['lumen','dark','light','vaporwave'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  var next=THEMES[(i+1)%THEMES.length];
+  document.documentElement.setAttribute('data-theme',next);
+  STATE.theme=next;
+  toast('Theme: '+next,'success');
+}
+
+/* ================================================================
+   SAVE / LOAD / EXPORT
+   ================================================================ */
+function saveScene(){
+  try{
+    var data={
+      version:'1.0',
+      preset:STATE.selectedPreset,
+      timestamp:Date.now()
+    };
+    localStorage.setItem('lumen-scene',JSON.stringify(data));
+    toast('Scene saved','success');
+  }catch(e){toast('Save failed','error')}
+}
+function loadScene(){
+  try{
+    var raw=localStorage.getItem('lumen-scene');
+    if(!raw){toast('No saved scene','warn');return}
+    var d=JSON.parse(raw);
+    loadPreset(d.preset);
+    toast('Scene loaded','success');
+  }catch(e){toast('Load failed','error')}
+}
+function exportImage(){
+  if(!RENDER.imageData){toast('Nothing to export','warn');return}
+  var tmp=document.createElement('canvas');
+  tmp.width=RENDER.width;
+  tmp.height=RENDER.height;
+  tmp.getContext('2d').putImageData(RENDER.imageData,0,0);
+  tmp.toBlob(function(blob){
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download='lumen-render.png';a.click();
+    setTimeout(function(){URL.revokeObjectURL(url)},500);
+    toast('Image exported','success');
+  });
+}
+function screenshot(){
+  try{
+    var url=RENDER_CANVAS.toDataURL('image/png');
+    var a=document.createElement('a');
+    a.href=url;a.download='lumen-screenshot.png';a.click();
+    toast('Screenshot saved','success');
+  }catch(e){toast('Screenshot failed','error')}
+}
+
+/* ================================================================
+   HELP
+   ================================================================ */
+function showHelp(){
+  openModal('❓ LUMEN — Help',
+    '<div class="sec"><h4>🎬 About</h4><div class="text-xs" style="line-height:1.75;color:var(--tx2);font-family:var(--mono)">A complete ray tracer written from scratch in JavaScript. Real Monte Carlo path tracing with a BVH acceleration structure, physically-based materials, progressive sample accumulation, and ACES tone mapping.</div></div>'+
+    '<div class="sec"><h4>🖱️ Controls</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">Drag</b> — Orbit camera around scene<br>'+
+    '<b class="text-c1">Scroll / pinch</b> — Zoom in and out<br>'+
+    '<b class="text-c1">Space</b> — Toggle render on/off<br>'+
+    '<b class="text-c1">R</b> — Reset samples (restart render)<br>'+
+    '<b class="text-c1">T</b> — Cycle theme<br>'+
+    '<b class="text-c1">?</b> — This help'+
+    '</div></div>'+
+    '<div class="sec"><h4>🎨 Render Modes</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">Path</b> — Full Monte Carlo path tracing (PBR)<br>'+
+    '<b class="text-c1">Whitted</b> — Classic recursive ray tracing with direct lighting<br>'+
+    '<b class="text-c1">Normals</b> — Surface normal visualization<br>'+
+    '<b class="text-c1">Depth</b> — Hit distance heatmap'+
+    '</div></div>'+
+    '<div class="sec"><h4>🔬 How It Works</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    'The ray tracer builds a BVH tree over all scene objects. Each ray traverses this tree, testing against hierarchically-organized bounding boxes so that only a small fraction of objects are visited. At each hit, the material BSDF samples a new ray direction, and recursion continues up to a maximum depth.<br><br>'+
+    'The renderer draws in bands across frames, accumulating results in an HDR buffer. Each additional frame adds one more sample per pixel. The final image is tone-mapped with ACES and gamma-corrected to sRGB.'+
+    '</div></div>'+
+    '<div class="sec"><h4>💡 Tips</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '• Increase <b class="text-c1">Resolution scale</b> for higher quality (slower)<br>'+
+    '• Increase <b class="text-c1">Target SPP</b> for cleaner images (slower)<br>'+
+    '• Camera movement resets samples automatically<br>'+
+    '• Adjust <b class="text-c1">Exposure</b> for brightness<br>'+
+    '• Try <b class="text-c1">Depth of Field</b> with a small aperture for bokeh'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',
+    {size:'lg'});
+}
+
+/* ================================================================
+   KEYBOARD
+   ================================================================ */
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'){e.preventDefault();toggleRender();}
+  else if(e.key==='r'||e.key==='R'){resetAccum();if(RENDER.running)startRender();}
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal();
+});
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  initRenderCanvas();
+  /* Camera controls */
+  RENDER_CANVAS.addEventListener('mousedown',camDown);
+  RENDER_CANVAS.addEventListener('mousemove',camMove);
+  RENDER_CANVAS.addEventListener('mouseup',camUp);
+  RENDER_CANVAS.addEventListener('mouseleave',camUp);
+  RENDER_CANVAS.addEventListener('wheel',camWheel,{passive:false});
+  RENDER_CANVAS.addEventListener('touchstart',camTouchStart,{passive:false});
+  RENDER_CANVAS.addEventListener('touchmove',camTouchMove,{passive:false});
+  RENDER_CANVAS.addEventListener('touchend',camTouchEnd,{passive:false});
+  RENDER.exposure=1;
+  TARGET_SPP=200;
+  buildTabs();
+  /* Load default preset */
+  loadPreset('cornell');
+  renderLeftPanel();
+  renderRightPanel();
+  updateStatusBar();
+  bootSequence();
+  logMsg&&logMsg('LUMEN initialized','success');
+});
+function logMsg(m,t){/* no-op */}
+
+/* ================================================================
+   BOOT SEQUENCE
+   ================================================================ */
+var BOOT_STEPS=[
+  'Initializing vector library...',
+  'Loading primitive intersection routines...',
+  'Preparing BVH construction...',
+  'Building scene geometry...',
+  'Compiling material BSDFs...',
+  'Initializing Monte Carlo sampler...',
+  'Allocating progressive accumulator...',
+  'Starting ACES tone mapping...',
+  'Ready to render.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  var iv=setInterval(function(){
+    pct+=rnd(6,14);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('LUMEN ready · Press ? for help','success',3500);
+      },400);
+    }
+  },150);
+}
+
+console.log('%c LUMEN ','background:linear-gradient(90deg,#ff9040,#40a0ff);color:#08080c;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cRay Tracing & Rendering Studio','color:#ff9040;font-weight:600');
+console.log('%cBVH · Monte Carlo · PBR · Progressive Accumulation','color:#40a0ff');
+console.log('%cPress Space to toggle render · Drag to orbit camera','color:#a0a0b8');
+</script>
+</body></html>

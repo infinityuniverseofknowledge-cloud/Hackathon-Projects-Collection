@@ -1,0 +1,2585 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="scope">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>SIGNAL — DSP Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+
+:root{
+  --bg:#05100a;--bg2:#08180f;--bg3:#0c2014;--bg4:#10281a;
+  --panel:#08180f;--panel2:#0c2014;--panel3:#10281a;--panel4:#183424;
+  --bd:#143824;--bd2:#205030;--bd3:#308050;
+  --tx:#d8f0e0;--tx2:#80b090;--tx3:#507860;--mu:#305040;
+  --c1:#40ff80;--c1h:#80ffb0;--c1l:#20c060;
+  --c2:#ffe040;--c2h:#fff080;--c2l:#c0a020;
+  --c3:#40d0ff;--c3h:#80e0ff;--c3l:#20a0c0;
+  --c4:#ff5060;--c4h:#ff90a0;--c4l:#c03040;
+  --c5:#ff9040;--c5h:#ffb080;--c5l:#c06020;
+  --c6:#ff40ff;--c6h:#ff80ff;--c6l:#c020c0;
+  --c7:#a060ff;--c7h:#c090ff;--c7l:#7030c0;
+  --c8:#40ffd0;--c8h:#80ffe0;--c8l:#20c090;
+  --ok:#40ff80;--warn:#ffe040;--err:#ff5060;--info:#40d0ff;
+  --g1:linear-gradient(135deg,#40ff80,#40d0ff);
+  --g2:linear-gradient(135deg,#ffe040,#ff9040);
+  --gHolo:linear-gradient(120deg,#40ff80,#40d0ff,#ffe040,#ff9040,#40ff80);
+  --r:10px;--rs:7px;--rxs:5px;--rf:9999px;
+  --sh:0 8px 32px rgba(0,0,0,.75);
+  --sh2:0 16px 48px rgba(0,0,0,.95);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .14s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="amber"]{--bg:#100a05;--bg2:#180f08;--bg3:#20140c;--panel:#180f08;--panel2:#20140c;
+  --bd:#382814;--bd2:#503820;--tx:#f0e0c8;--tx2:#b09080;--tx3:#806050;
+  --c1:#ffb040;--c2:#40ff80;--c3:#40c0ff;--c4:#ff4060;
+  --g1:linear-gradient(135deg,#ffb040,#ff5060)}
+[data-theme="light"]{--bg:#f8faf5;--bg2:#f0f5ec;--bg3:#e0ead8;--panel:#fff;--panel2:#f8faf5;--panel3:#f0f5ec;--panel4:#e0ead8;
+  --bd:#c8d8c0;--bd2:#a0b8a0;--tx:#0a1810;--tx2:#385840;--tx3:#687888;
+  --c1:#008040;--c2:#c08000;--c3:#0060c0;--c4:#c00040;
+  --g1:linear-gradient(135deg,#008040,#0060c0)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* BOOT */
+#boot{position:fixed;inset:0;background:#05100a;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px}
+#boot.hidden{opacity:0;pointer-events:none}
+.boot-wave{width:280px;height:100px;margin-bottom:24px}
+.boot-wave svg{width:100%;height:100%}
+.boot-wave path{fill:none;stroke:#40ff80;stroke-width:2;filter:drop-shadow(0 0 8px #40ff80)}
+.boot-wave .wave2{stroke:#ffe040;animation:wv 2s linear infinite}
+.boot-wave .wave3{stroke:#40d0ff;animation:wv 2s linear infinite reverse}
+@keyframes wv{0%{stroke-dashoffset:0}100%{stroke-dashoffset:300}}
+.boot-logo{font-family:var(--disp);font-size:3.2rem;font-weight:900;letter-spacing:14px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:8px}
+.boot-sub{font-size:.7rem;color:#40ff80;letter-spacing:10px;margin-bottom:32px;opacity:.75}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#10281a;border-radius:2px;overflow:hidden;margin-bottom:12px}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #40ff80}
+.boot-pct{font-size:.7rem;color:#40ff80;margin-bottom:16px}
+.boot-log{font-size:.6rem;color:#507860;text-align:left;width:min(440px,90vw);height:120px;overflow:hidden;line-height:1.7}
+.boot-log .ok{color:#40ff80}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+/* TOPBAR */
+#topbar{height:50px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:6px;font-size:1rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:32px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#05100a;box-shadow:0 0 14px rgba(64,255,128,.4)}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.tb-btn{width:32px;height:32px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-btn.active{background:var(--g1);color:#05100a;border-color:transparent}
+.tb-status{font-family:var(--mono);font-size:.62rem;padding:4px 10px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tb-status .dot{width:8px;height:8px;border-radius:50%;background:#10281a;transition:var(--t1)}
+.tb-status .dot.on{background:var(--c1);box-shadow:0 0 10px var(--c1);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:290px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.6rem;text-transform:uppercase;letter-spacing:1.6px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#020806;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.co-badge{background:rgba(8,24,15,.9);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 10px;font-family:var(--mono);font-size:.62rem;color:var(--c1);pointer-events:auto;max-width:320px}
+.co-badge.stats{color:var(--c3);display:flex;flex-direction:column;gap:3px;align-items:flex-end;text-align:right;line-height:1.5}
+
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:32px}
+.rp-tab{flex:1;padding:6px;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+#statusbar{height:28px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;font-family:var(--mono);font-size:.62rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}.sb-val.c5{color:var(--c5)}
+
+.sec{margin-bottom:14px}
+.sec h4{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);margin-bottom:8px;font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.6rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);text-transform:none;letter-spacing:0}
+.ctrl{margin-bottom:10px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=number],.ctrl select,.ctrl textarea,.ctrl input[type=text]{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 9px;color:var(--tx);font-size:.68rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(64,255,128,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1h)}
+.btn.primary{background:var(--g1);color:#05100a;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 16px rgba(64,255,128,.5)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:4px 8px;font-size:.6rem}
+
+.chip-row{display:flex;gap:4px;flex-wrap:wrap}
+.chip{padding:4px 9px;background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rf);cursor:pointer;font-size:.6rem;font-family:var(--mono);transition:var(--t1);color:var(--tx2)}
+.chip:hover{border-color:var(--c1);color:var(--c1)}
+.chip.active{background:var(--g1);color:#05100a;border-color:transparent;font-weight:700}
+
+.kv{font-family:var(--mono);font-size:.62rem;line-height:1.75}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3);white-space:nowrap}
+.kv .v{color:var(--c1);text-align:right;word-break:break-all}
+
+.empty{text-align:center;padding:30px 20px;color:var(--tx3);font-size:.7rem;font-family:var(--mono)}
+.empty .e-icon{font-size:2.5rem;opacity:.3;margin-bottom:10px}
+
+.data-table{width:100%;font-family:var(--mono);font-size:.62rem;border-collapse:collapse}
+.data-table th{text-align:left;padding:5px 8px;background:var(--panel3);font-size:.55rem;text-transform:uppercase;letter-spacing:.9px;color:var(--tx3);font-weight:700;border-bottom:1px solid var(--bd)}
+.data-table td{padding:4px 8px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+.data-table td.c1{color:var(--c1)}.data-table td.c2{color:var(--c2)}.data-table td.c3{color:var(--c3)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.9rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:20px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:26px;height:26px;border-radius:var(--rxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+#toasts{position:fixed;bottom:44px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:10px 16px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.7rem;font-weight:500;max-width:340px;min-width:180px;animation:tin .3s;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c1)}.toast.warn{border-left-color:var(--c2)}.toast.error{border-left-color:var(--c4)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:1000px){#leftPanel{width:250px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel{width:0;overflow:hidden}#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-wave">
+    <svg viewBox="0 0 280 100">
+      <path d="M0,50 Q20,10 40,50 T80,50 T120,50 T160,50 T200,50 T240,50 T280,50"/>
+      <path class="wave2" d="M0,50 Q10,20 20,50 T40,50 T60,50 T80,50 T100,50 T120,50 T140,50 T160,50 T180,50 T200,50 T220,50 T240,50 T260,50 T280,50" stroke-dasharray="300"/>
+      <path class="wave3" d="M0,70 L10,30 L20,70 L30,30 L40,70 L50,30 L60,70 L70,30 L80,70 L90,30 L100,70 L110,30 L120,70 L130,30 L140,70 L150,30 L160,70 L170,30 L180,70 L190,30 L200,70 L210,30 L220,70 L230,30 L240,70 L250,30 L260,70 L270,30 L280,70" stroke-dasharray="300"/>
+    </svg>
+  </div>
+  <div class="boot-logo">SIGNAL</div>
+  <div class="boot-sub">DSP STUDIO</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('waveform')">SIGNAL</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus">
+      <span class="dot" id="tbDot"></span>
+      <span id="tbText">ready</span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="togglePlay()" title="Play/Pause (Space)">▶</button>
+      <button class="tb-btn" onclick="resetModule()" title="Reset (R)">↺</button>
+      <button class="tb-btn" onclick="exportState()" title="Export">⬇</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div id="canvasOverlay">
+          <div class="co-badge" id="coBadge">Ready</div>
+          <div class="co-badge stats" id="coStats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+        <div class="rp-tab" data-tab="help" onclick="switchRp('help',this)">ℹ️<span>Info</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpState"></div>
+        <div class="rp-pane" id="rpMath"></div>
+        <div class="rp-pane" id="rpLogs"></div>
+        <div class="rp-pane" id="rpHelp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Fs</span><span class="sb-val c2" id="sbFs">1000 Hz</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">N</span><span class="sb-val c3" id="sbN">512</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Peak</span><span class="sb-val c4" id="sbPeak">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">RMS</span><span class="sb-val c5" id="sbRms">—</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">Waveform</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function rndN(){var u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?3:d;if(!isFinite(n))return '—';return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2400;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:1rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   FFT — Cooley-Tukey radix-2 (in-place)
+   Arrays re[] and im[] must have length 2^k
+   ================================================================ */
+function fft(re,im){
+  var n=re.length;
+  /* Bit reversal */
+  for(var i=1,j=0;i<n;i++){
+    var bit=n>>1;
+    for(;j&bit;bit>>=1)j^=bit;
+    j^=bit;
+    if(i<j){var t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}
+  }
+  /* Butterfly stages */
+  for(var len=2;len<=n;len<<=1){
+    var half=len>>1;
+    var ang=-2*Math.PI/len;
+    var wRe=Math.cos(ang),wIm=Math.sin(ang);
+    for(var i2=0;i2<n;i2+=len){
+      var curRe=1,curIm=0;
+      for(var k=0;k<half;k++){
+        var aRe=re[i2+k],aIm=im[i2+k];
+        var bIdx=i2+k+half;
+        var bRe=re[bIdx],bIm=im[bIdx];
+        var tRe=bRe*curRe-bIm*curIm;
+        var tIm=bRe*curIm+bIm*curRe;
+        re[i2+k]=aRe+tRe;im[i2+k]=aIm+tIm;
+        re[bIdx]=aRe-tRe;im[bIdx]=aIm-tIm;
+        var nCurRe=curRe*wRe-curIm*wIm;
+        curIm=curRe*wIm+curIm*wRe;
+        curRe=nCurRe;
+      }
+    }
+  }
+}
+function ifft(re,im){
+  var n=re.length;
+  for(var i=0;i<n;i++)im[i]=-im[i];
+  fft(re,im);
+  for(var i2=0;i2<n;i2++){re[i2]/=n;im[i2]=-im[i2]/n;}
+}
+function nextPow2(n){var p=1;while(p<n)p<<=1;return p}
+
+/* Compute magnitude spectrum in dB */
+function magnitudeDB(re,im){
+  var n=re.length;
+  var half=(n>>1)+1;
+  var mag=new Float64Array(half);
+  for(var i=0;i<half;i++){
+    var m=Math.sqrt(re[i]*re[i]+im[i]*im[i]);
+    /* Normalize by N */
+    mag[i]=20*Math.log10(Math.max(m/n,1e-10));
+  }
+  return mag;
+}
+
+/* ================================================================
+   WINDOW FUNCTIONS
+   ================================================================ */
+var WINDOWS={
+  rect:{name:'Rectangular',fn:function(n,N){return 1}},
+  hann:{name:'Hann',fn:function(n,N){return 0.5-0.5*Math.cos(2*Math.PI*n/(N-1))}},
+  hamming:{name:'Hamming',fn:function(n,N){return 0.54-0.46*Math.cos(2*Math.PI*n/(N-1))}},
+  blackman:{name:'Blackman',fn:function(n,N){return 0.42-0.5*Math.cos(2*Math.PI*n/(N-1))+0.08*Math.cos(4*Math.PI*n/(N-1))}},
+  bartlett:{name:'Bartlett',fn:function(n,N){return 1-Math.abs((n-(N-1)/2)/((N-1)/2))}},
+  welch:{name:'Welch',fn:function(n,N){var v=(n-(N-1)/2)/((N-1)/2);return 1-v*v}}
+};
+function applyWindow(signal,winName){
+  var N=signal.length;
+  var w=WINDOWS[winName]||WINDOWS.hann;
+  var out=new Float64Array(N);
+  for(var i=0;i<N;i++)out[i]=signal[i]*w.fn(i,N);
+  return out;
+}
+
+/* ================================================================
+   SIGNAL GENERATORS
+   ================================================================ */
+var SIGNALS={
+  sine:{name:'Sine',fn:function(t,f){return Math.sin(2*Math.PI*f*t)}},
+  square:{name:'Square',fn:function(t,f){return Math.sign(Math.sin(2*Math.PI*f*t))}},
+  sawtooth:{name:'Sawtooth',fn:function(t,f){var x=(f*t)%1;return 2*x-1}},
+  triangle:{name:'Triangle',fn:function(t,f){var x=(f*t)%1;return 4*Math.abs(x-0.5)-1}},
+  impulse:{name:'Impulse Train',fn:function(t,f){return ((f*t)%1<0.02)?1:0}},
+  noise:{name:'White Noise',fn:function(t,f,seed){return rndN()*0.3}}
+};
+
+/* ================================================================
+   FILTERS
+   ================================================================ */
+/* FIR windowed-sinc lowpass. Returns coefficients array of length M+1. */
+function designFIRLowpass(fc,M,winName){
+  var h=new Float64Array(M+1);
+  var w=WINDOWS[winName]||WINDOWS.hamming;
+  for(var n=0;n<=M;n++){
+    var x=n-M/2;
+    var sinc=x===0?2*fc:Math.sin(2*Math.PI*fc*x)/(Math.PI*x);
+    h[n]=sinc*w.fn(n,M+1);
+  }
+  return h;
+}
+function designFIRHighpass(fc,M,winName){
+  var h=designFIRLowpass(fc,M,winName);
+  for(var n=0;n<h.length;n++){
+    h[n]=-h[n];
+    if(n===M/2)h[n]+=1;
+  }
+  return h;
+}
+function designFIRBandpass(f1,f2,M,winName){
+  var lp1=designFIRLowpass(f1,M,winName);
+  var lp2=designFIRLowpass(f2,M,winName);
+  var h=new Float64Array(M+1);
+  for(var n=0;n<=M;n++)h[n]=lp2[n]-lp1[n];
+  return h;
+}
+
+/* Apply FIR filter: y[n] = Σ h[k] x[n-k] (causal) */
+function applyFIR(x,h){
+  var y=new Float64Array(x.length);
+  var M=h.length;
+  for(var n=0;n<x.length;n++){
+    var s=0;
+    for(var k=0;k<M&&k<=n;k++)s+=h[k]*x[n-k];
+    y[n]=s;
+  }
+  return y;
+}
+
+/* Biquad filter (2nd-order IIR)
+   y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] - a1·y[n-1] - a2·y[n-2]
+   Coefficients normalized so a0=1. */
+function Biquad(b0,b1,b2,a1,a2){
+  this.b=[b0,b1,b2];
+  this.a=[1,a1,a2];
+  this.x1=0;this.x2=0;this.y1=0;this.y2=0;
+}
+Biquad.prototype.process=function(x){
+  var y=this.b[0]*x+this.b[1]*this.x1+this.b[2]*this.x2-this.a[1]*this.y1-this.a[2]*this.y2;
+  this.x2=this.x1;this.x1=x;
+  this.y2=this.y1;this.y1=y;
+  return y;
+};
+Biquad.prototype.reset=function(){this.x1=this.x2=this.y1=this.y2=0};
+Biquad.prototype.freqResponse=function(w){
+  /* H(e^jw) = (b0 + b1 e^-jw + b2 e^-2jw) / (1 + a1 e^-jw + a2 e^-2jw) */
+  var cw=Math.cos(w),sw=Math.sin(w);
+  var cw2=Math.cos(2*w),sw2=Math.sin(2*w);
+  var numRe=this.b[0]+this.b[1]*cw+this.b[2]*cw2;
+  var numIm=-this.b[1]*sw-this.b[2]*sw2;
+  var denRe=1+this.a[1]*cw+this.a[2]*cw2;
+  var denIm=-this.a[1]*sw-this.a[2]*sw2;
+  var den2=denRe*denRe+denIm*denIm;
+  var re=(numRe*denRe+numIm*denIm)/den2;
+  var im=(numIm*denRe-numRe*denIm)/den2;
+  return {re:re,im:im,mag:Math.sqrt(re*re+im*im)};
+};
+
+/* Butterworth 2nd-order lowpass via bilinear transform with pre-warping */
+function butterworthLP2(fc,Fs){
+  var wc=2*Math.PI*fc/Fs;
+  var K=Math.tan(wc/2);
+  var K2=K*K;
+  var sqrt2=Math.SQRT2;
+  var a0=1+sqrt2*K+K2;
+  var b0=K2/a0;
+  var b1=2*b0;
+  var b2=b0;
+  var a1=(2*(K2-1))/a0;
+  var a2=(1-sqrt2*K+K2)/a0;
+  return new Biquad(b0,b1,b2,a1,a2);
+}
+function butterworthHP2(fc,Fs){
+  var wc=2*Math.PI*fc/Fs;
+  var K=Math.tan(wc/2);
+  var K2=K*K;
+  var sqrt2=Math.SQRT2;
+  var a0=1+sqrt2*K+K2;
+  var b0=1/a0;
+  var b1=-2*b0;
+  var b2=b0;
+  var a1=(2*(K2-1))/a0;
+  var a2=(1-sqrt2*K+K2)/a0;
+  return new Biquad(b0,b1,b2,a1,a2);
+}
+
+/* ================================================================
+   STATISTICS
+   ================================================================ */
+function signalStats(x){
+  var s=0,pk=0;
+  for(var i=0;i<x.length;i++){s+=x[i]*x[i];if(Math.abs(x[i])>pk)pk=Math.abs(x[i]);}
+  return {rms:Math.sqrt(s/x.length),peak:pk};
+}
+
+/* ================================================================
+   LOG
+   ================================================================ */
+var LOG=[];
+function logMsg(msg,type){
+  type=type||'info';
+  LOG.push({t:Date.now(),msg:msg,type:type});
+  if(LOG.length>200)LOG.shift();
+  if(STATE.currentRp==='logs')renderLogs();
+}
+</script>
+<script>
+/* ================================================================
+   MODULATION
+   ================================================================ */
+function modulateAM(message,fc,Fs,depth){
+  var n=message.length;
+  var out=new Float64Array(n);
+  for(var i=0;i<n;i++){
+    var t=i/Fs;
+    out[i]=(1+depth*message[i])*Math.cos(2*Math.PI*fc*t);
+  }
+  return out;
+}
+function modulateFM(message,fc,Fs,kf){
+  var n=message.length;
+  var out=new Float64Array(n);
+  var phase=0;
+  for(var i=0;i<n;i++){
+    var t=i/Fs;
+    phase+=2*Math.PI*(fc+kf*message[i])/Fs;
+    out[i]=Math.cos(phase);
+  }
+  return out;
+}
+function modulateBPSK(bits,fc,Fs,sps){
+  var n=bits.length*sps;
+  var out=new Float64Array(n);
+  for(var i=0;i<bits.length;i++){
+    for(var j=0;j<sps;j++){
+      var t=(i*sps+j)/Fs;
+      out[i*sps+j]=bits[i]===1?Math.cos(2*Math.PI*fc*t):-Math.cos(2*Math.PI*fc*t);
+    }
+  }
+  return out;
+}
+function modulateQPSK(symbols,fc,Fs,sps){
+  /* symbols: array of [I, Q] in {-1, 1} */
+  var n=symbols.length*sps;
+  var out=new Float64Array(n);
+  for(var i=0;i<symbols.length;i++){
+    for(var j=0;j<sps;j++){
+      var t=(i*sps+j)/Fs;
+      out[i*sps+j]=symbols[i][0]*Math.cos(2*Math.PI*fc*t)-symbols[i][1]*Math.sin(2*Math.PI*fc*t);
+    }
+  }
+  return out;
+}
+function modulateQAM16(symbols,fc,Fs,sps){
+  var n=symbols.length*sps;
+  var out=new Float64Array(n);
+  for(var i=0;i<symbols.length;i++){
+    for(var j=0;j<sps;j++){
+      var t=(i*sps+j)/Fs;
+      out[i*sps+j]=symbols[i][0]*Math.cos(2*Math.PI*fc*t)-symbols[i][1]*Math.sin(2*Math.PI*fc*t);
+    }
+  }
+  return out;
+}
+function bitsToSymbols(bits,type){
+  var syms=[];
+  if(type==='bpsk'){
+    for(var i=0;i<bits.length;i++)syms.push([bits[i]===1?1:-1,0]);
+  } else if(type==='qpsk'){
+    for(var i2=0;i2+1<bits.length;i2+=2){
+      var I=bits[i2]===1?1:-1;
+      var Q=bits[i2+1]===1?1:-1;
+      syms.push([I,Q]);
+    }
+  } else if(type==='qam16'){
+    for(var i3=0;i3+3<bits.length;i3+=4){
+      /* Map 2 bits to I, 2 bits to Q */
+      var iBits=(bits[i3]<<1)|bits[i3+1];
+      var qBits=(bits[i3+2]<<1)|bits[i3+3];
+      var Imap=[-3,-1,1,3];
+      syms.push([Imap[iBits]/3,Imap[qBits]/3]);
+    }
+  }
+  return syms;
+}
+
+/* ================================================================
+   SPECTROGRAM — STFT
+   ================================================================ */
+function spectrogram(signal,windowSize,hopSize,winName){
+  var N=signal.length;
+  var numFrames=Math.floor((N-windowSize)/hopSize)+1;
+  if(numFrames<1)return {data:null,numFrames:0,numBins:0};
+  var numBins=(windowSize>>1)+1;
+  var data=new Float64Array(numFrames*numBins);
+  var win=WINDOWS[winName]||WINDOWS.hann;
+  for(var f=0;f<numFrames;f++){
+    var re=new Float64Array(windowSize);
+    var im=new Float64Array(windowSize);
+    for(var i=0;i<windowSize;i++)re[i]=signal[f*hopSize+i]*win.fn(i,windowSize);
+    fft(re,im);
+    for(var k=0;k<numBins;k++){
+      var mag=Math.sqrt(re[k]*re[k]+im[k]*im[k])/windowSize;
+      data[f*numBins+k]=20*Math.log10(Math.max(mag,1e-10));
+    }
+  }
+  return {data:data,numFrames:numFrames,numBins:numBins,windowSize:windowSize,hopSize:hopSize};
+}
+
+/* ================================================================
+   CONVOLUTION
+   ================================================================ */
+function convolveLinear(x,h){
+  var y=new Float64Array(x.length+h.length-1);
+  for(var n=0;n<x.length;n++)for(var k=0;k<h.length;k++)y[n+k]+=x[n]*h[k];
+  return y;
+}
+function convolveCircular(x,h){
+  var N=x.length;
+  var y=new Float64Array(N);
+  for(var n=0;n<N;n++)for(var k=0;k<N;k++)y[(n+k)%N]+=x[n]*h[k];
+  return y;
+}
+
+/* ================================================================
+   APPLICATION STATE
+   ================================================================ */
+var STATE={
+  currentTab:'waveform',
+  currentRp:'state',
+  theme:'scope',
+  playing:true,
+  time:0,
+  steps:0,
+  Fs:1000,
+  N:512,
+  /* Waveform generator */
+  waveform:{
+    components:[
+      {type:'sine',freq:5,amp:1.0,phase:0},
+      {type:'sine',freq:13,amp:0.4,phase:0.5}
+    ],
+    noise:0,
+    zoom:1,
+    cursorX:0.5,
+    showFFT:true,
+    window:'hann'
+  },
+  /* Spectrum analyzer */
+  spectrum:{
+    source:'components',
+    window:'hann',
+    avgCount:0,
+    avgSpec:null,
+    showPeaks:true,
+    peakThreshold:-40,
+    autoPeak:true
+  },
+  /* Filter designer */
+  filter:{
+    type:'fir-lp',   /* fir-lp | fir-hp | fir-bp | iir-lp | iir-hp */
+    fc:0.15,
+    fc2:0.35,
+    order:32,
+    window:'hamming',
+    inputSignal:'noise',
+    inputFreq:0.08,
+    inputNoise:0.1,
+    showResponse:true,
+    showFiltered:true,
+    impulse:null,
+    response:null,
+    responseFreq:null
+  },
+  /* Spectrogram */
+  spectrogram:{
+    windowSize:128,
+    hopSize:32,
+    window:'hann',
+    source:'chirp',
+    colormap:'viridis',
+    freqRange:'linear'
+  },
+  /* Modulation */
+  modulation:{
+    type:'am',
+    fc:0.15,
+    mfreq:0.01,
+    depth:0.8,
+    kf:0.4,
+    bits:[],
+    sps:32,
+    showConstellation:true,
+    showSpectrum:true
+  },
+  /* Convolution */
+  convolution:{
+    signalA:'impulse',
+    signalB:'decay',
+    circular:false,
+    showFR:true
+  },
+  /* Pole-Zero */
+  polezero:{
+    poles:[],
+    zeros:[],
+    gain:1,
+    drag:null,
+    showResponse:true,
+    showUnitCircle:true
+  }
+};
+STATE.polezero.poles=[{re:0.6,im:0.4},{re:0.6,im:-0.4}];
+STATE.polezero.zeros=[{re:-1,im:0}];
+
+/* ================================================================
+   CANVAS
+   ================================================================ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');
+  CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('wheel',onWheel,{passive:false});
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){
+  var wrap=CANV.canvas.parentElement;
+  CANV.dpr=window.devicePixelRatio||1;
+  CANV.W=wrap.clientWidth;CANV.H=wrap.clientHeight;
+  CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);
+  CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);
+  CANV.canvas.style.width=CANV.W+'px';
+  CANV.canvas.style.height=CANV.H+'px';
+  CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0);
+}
+var INPUT={mouseX:0,mouseY:0,down:false,lastX:0,lastY:0};
+function canvasPos(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=canvasPos(e);INPUT.down=true;INPUT.mouseX=p.x;INPUT.mouseY=p.y;INPUT.lastX=p.x;INPUT.lastY=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p,e);}
+function onMove(e){var p=canvasPos(e);INPUT.mouseX=p.x;INPUT.mouseY=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,e);}
+function onUp(e){INPUT.down=false;var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp(e);}
+function onWheel(e){e.preventDefault();var m=MODULES[STATE.currentTab];if(m&&m.onWheel)m.onWheel(e);}
+function onTouchStart(e){if(e.touches.length===1){var t=e.touches[0];onDown({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchMove(e){if(e.touches.length===1){var t=e.touches[0];onMove({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchEnd(e){onUp({});e.preventDefault();}
+
+var MODULES={};
+function registerModule(key,def){def.key=key;MODULES[key]=def;}
+
+/* ================================================================
+   RENDER HELPERS
+   ================================================================ */
+function setStatsHTML(h){var e=$('coStats');if(e)e.innerHTML=h}
+function updateBadge(t){var e=$('coBadge');if(e)e.textContent=t}
+function drawAxesGrid(ctx,x,y,w,h,color){
+  ctx.strokeStyle=color||'rgba(64,255,128,.1)';
+  ctx.lineWidth=1;
+  for(var i=0;i<=4;i++){
+    ctx.beginPath();ctx.moveTo(x+i*w/4,y);ctx.lineTo(x+i*w/4,y+h);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y+i*h/4);ctx.lineTo(x+w,y+i*h/4);ctx.stroke();
+  }
+}
+function plotSignal(ctx,x,y,w,h,signal,color,opts){
+  opts=opts||{};
+  ctx.strokeStyle=color||'#40ff80';
+  ctx.lineWidth=opts.lw||1.5;
+  if(opts.fill){
+    ctx.fillStyle=opts.fill;
+    ctx.beginPath();
+    ctx.moveTo(x,y+h/2);
+    for(var i=0;i<signal.length;i++){
+      var px=x+(i/(signal.length-1))*w;
+      var py=y+h/2-signal[i]*h*0.45;
+      ctx.lineTo(px,py);
+    }
+    ctx.lineTo(x+w,y+h/2);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.beginPath();
+  for(var i2=0;i2<signal.length;i2++){
+    var px2=x+(i2/(signal.length-1))*w;
+    var py2=y+h/2-signal[i2]*h*0.45;
+    if(i2===0)ctx.moveTo(px2,py2);else ctx.lineTo(px2,py2);
+  }
+  ctx.stroke();
+}
+function plotCurve(ctx,x,y,w,h,curve,color,opts){
+  opts=opts||{};
+  var minY=opts.min!=null?opts.min:Math.min.apply(null,Array.from(curve));
+  var maxY=opts.max!=null?opts.max:Math.max.apply(null,Array.from(curve));
+  if(maxY-minY<1e-9)maxY=minY+1;
+  ctx.strokeStyle=color||'#40ff80';
+  ctx.lineWidth=opts.lw||1.5;
+  if(opts.fill){
+    ctx.fillStyle=opts.fill;
+    ctx.beginPath();
+    for(var i=0;i<curve.length;i++){
+      var px=x+(i/(curve.length-1))*w;
+      var py=y+h-((curve[i]-minY)/(maxY-minY))*h;
+      if(i===0)ctx.moveTo(px,y+h);else ctx.lineTo(px,py);
+    }
+    ctx.lineTo(x+w,y+h);ctx.closePath();ctx.fill();
+  }
+  ctx.beginPath();
+  for(var i2=0;i2<curve.length;i2++){
+    var px2=x+(i2/(curve.length-1))*w;
+    var py2=y+h-((curve[i2]-minY)/(maxY-minY))*h;
+    if(i2===0)ctx.moveTo(px2,py2);else ctx.lineTo(px2,py2);
+  }
+  ctx.stroke();
+  return {minY:minY,maxY:maxY};
+}
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;
+  };
+}
+
+/* Generate composite signal from components */
+function generateWaveform(){
+  var wf=STATE.waveform;
+  var N=STATE.N,Fs=STATE.Fs;
+  var x=new Float64Array(N);
+  for(var i=0;i<N;i++){
+    var t=i/Fs;
+    var s=0;
+    wf.components.forEach(function(c){
+      s+=c.amp*SIGNALS[c.type].fn(t+c.phase/(2*Math.PI*c.freq),c.freq);
+    });
+    if(wf.noise>0)s+=rndN()*wf.noise;
+    x[i]=s;
+  }
+  return x;
+}
+</script>
+<script>
+/* ================================================================
+   MODULE: WAVEFORM
+   ================================================================ */
+registerModule('waveform',{
+  title:'Waveform Generator',
+  icon:'🌊',
+  desc:'Synthesize signals from sine/noise components and view the time domain and FFT spectrum live.',
+  init:function(){},
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var wf=STATE.waveform;
+    var sig=generateWaveform();
+    /* Time domain on top */
+    var pad=40;
+    var timeH=H*0.4;
+    var timeY=pad;
+    var timeW=W-pad*2;
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,255,128,.3)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(pad,timeY,timeW,timeH,6);ctx.fill();ctx.stroke();
+    drawAxesGrid(ctx,pad,timeY,timeW,timeH);
+    /* Zero line */
+    ctx.strokeStyle='rgba(64,255,128,.2)';
+    ctx.beginPath();ctx.moveTo(pad,timeY+timeH/2);ctx.lineTo(pad+timeW,timeY+timeH/2);ctx.stroke();
+    plotSignal(ctx,pad,timeY,timeW,timeH,sig,'#40ff80',{fill:'rgba(64,255,128,.1)',lw:2});
+    /* Label */
+    ctx.fillStyle='#40ff80';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('TIME DOMAIN — '+sig.length+' samples @ '+STATE.Fs+' Hz',pad+8,timeY+14);
+    /* Cursor */
+    var cx=pad+wf.cursorX*timeW;
+    ctx.strokeStyle='rgba(255,224,64,.6)';
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(cx,timeY);ctx.lineTo(cx,timeY+timeH);ctx.stroke();
+    ctx.setLineDash([]);
+    var cursorIdx=Math.floor(wf.cursorX*(sig.length-1));
+    ctx.fillStyle='#ffe040';
+    ctx.font='10px monospace';
+    ctx.fillText('t='+fmt(cursorIdx/STATE.Fs*1000,1)+'ms  x='+fmt(sig[cursorIdx],3),pad+8,timeY+timeH-8);
+    /* FFT spectrum */
+    if(wf.showFFT){
+      var specY=timeY+timeH+30;
+      var specH=H-specY-pad-40;
+      ctx.fillStyle='rgba(8,24,15,.5)';
+      ctx.strokeStyle='rgba(64,208,255,.3)';
+      ctx.beginPath();ctx.roundRect(pad,specY,timeW,specH,6);ctx.fill();ctx.stroke();
+      var Np2=nextPow2(sig.length);
+      var re=new Float64Array(Np2),im=new Float64Array(Np2);
+      var win=WINDOWS[wf.window];
+      for(var i=0;i<sig.length;i++)re[i]=sig[i]*win.fn(i,sig.length);
+      fft(re,im);
+      var mag=magnitudeDB(re,im);
+      /* Draw spectrum */
+      var half=mag.length;
+      ctx.strokeStyle='#40d0ff';
+      ctx.lineWidth=1.5;
+      ctx.fillStyle='rgba(64,208,255,.15)';
+      ctx.beginPath();
+      ctx.moveTo(pad,specY+specH);
+      var minDB=-90;
+      for(var k=0;k<half;k++){
+        var px=pad+(k/(half-1))*timeW;
+        var py=specY+specH-clamp((mag[k]-minDB)/(0-minDB),0,1)*specH;
+        ctx.lineTo(px,py);
+      }
+      ctx.lineTo(pad+timeW,specY+specH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      /* Frequency axis labels */
+      ctx.fillStyle='rgba(80,120,96,.9)';
+      ctx.font='9px monospace';
+      ctx.textAlign='center';
+      for(var f=0;f<=5;f++){
+        var freq=f*STATE.Fs/2/5;
+        ctx.fillText(freq.toFixed(0)+'Hz',pad+f*timeW/5,specY+specH+14);
+      }
+      ctx.textAlign='left';
+      ctx.fillStyle='#40d0ff';
+      ctx.font='bold 11px monospace';
+      ctx.fillText('SPECTRUM — '+(wf.window)+' window',pad+8,specY+14);
+      /* Peak detection */
+      var peaks=[];
+      for(var k2=2;k2<half-2;k2++){
+        if(mag[k2]>mag[k2-1]&&mag[k2]>mag[k2+1]&&mag[k2]>mag[k2-2]&&mag[k2]>mag[k2+2]&&mag[k2]>-50){
+          peaks.push({bin:k2,freq:k2*STATE.Fs/Np2,db:mag[k2]});
+        }
+      }
+      peaks.sort(function(a,b){return b.db-a.db});
+      peaks.slice(0,5).forEach(function(p){
+        var px=pad+(p.bin/(half-1))*timeW;
+        ctx.fillStyle='#ffe040';
+        ctx.beginPath();ctx.arc(px,specY+specH-clamp((p.db-minDB)/(0-minDB),0,1)*specH,4,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ffe040';
+        ctx.font='9px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(fmt(p.freq,1)+'Hz',px,specY+specH-clamp((p.db-minDB)/(0-minDB),0,1)*specH-8);
+      });
+    }
+    /* Stats */
+    var st=signalStats(sig);
+    setStatsHTML(
+      '<div>Samples: '+sig.length+'</div>'+
+      '<div>Peak: '+fmt(st.peak,3)+'</div>'+
+      '<div>RMS: '+fmt(st.rms,3)+'</div>'+
+      '<div>Components: '+wf.components.length+'</div>'
+    );
+    updateBadge('🌊 Waveform Generator · '+wf.components.length+' components');
+    $('sbFs').textContent=STATE.Fs+' Hz';
+    $('sbN').textContent=STATE.N;
+    $('sbPeak').textContent=fmt(st.peak,3);
+    $('sbRms').textContent=fmt(st.rms,3);
+    $('sbMode').textContent='Waveform';
+  },
+  onDown:function(p){
+    /* Move cursor */
+    var pad=40,timeW=CANV.W-pad*2;
+    STATE.waveform.cursorX=clamp((p.x-pad)/timeW,0,1);
+  },
+  onMove:function(p){if(INPUT.down)this.onDown(p);},
+  onUp:function(){},
+  controls:function(){
+    var wf=STATE.waveform;
+    var html='';
+    html+='<div class="sec"><h4>Components</h4>';
+    wf.components.forEach(function(c,i){
+      html+='<div style="background:var(--panel3);padding:6px;border-radius:var(--rxs);margin-bottom:6px">';
+      html+='<div class="flex-between" style="margin-bottom:4px"><span style="font-family:var(--mono);color:var(--c1);font-size:.62rem">#'+(i+1)+'</span><button class="btn sm danger" style="padding:2px 6px" onclick="STATE.waveform.components.splice('+i+',1);renderLeftPanel()">✕</button></div>';
+      html+='<select class="ctrl" style="width:100%;margin-bottom:4px" onchange="STATE.waveform.components['+i+'].type=this.value">';
+      Object.keys(SIGNALS).forEach(function(k){
+        html+='<option value="'+k+'"'+(c.type===k?' selected':'')+'>'+SIGNALS[k].name+'</option>';
+      });
+      html+='</select>';
+      html+='<div class="lbl"><span>Freq</span><span>'+fmt(c.freq,1)+' Hz</span></div>';
+      html+='<input type="range" min="0.5" max="60" step="0.5" value="'+c.freq+'" oninput="STATE.waveform.components['+i+'].freq=parseFloat(this.value);this.previousElementSibling.children[1].textContent=this.value+\' Hz\'">';
+      html+='<div class="lbl" style="margin-top:4px"><span>Amp</span><span>'+fmt(c.amp,2)+'</span></div>';
+      html+='<input type="range" min="0" max="1" step="0.05" value="'+c.amp+'" oninput="STATE.waveform.components['+i+'].amp=parseFloat(this.value);this.previousElementSibling.children[1].textContent=parseFloat(this.value).toFixed(2)">';
+      html+='</div>';
+    });
+    html+='<button class="btn full sm" onclick="STATE.waveform.components.push({type:\'sine\',freq:20,amp:0.3,phase:0});renderLeftPanel()">+ Add Component</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Noise</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>σ</span><span>'+fmt(wf.noise,3)+'</span></div>';
+    html+='<input type="range" min="0" max="0.5" step="0.01" value="'+wf.noise+'" oninput="STATE.waveform.noise=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Analysis</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Window</span></div>';
+    html+='<select onchange="STATE.waveform.window=this.value;renderLeftPanel()">';
+    Object.keys(WINDOWS).forEach(function(k){
+      html+='<option value="'+k+'"'+(wf.window===k?' selected':'')+'>'+WINDOWS[k].name+'</option>';
+    });
+    html+='</select></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>N samples</span><span>'+STATE.N+'</span></div>';
+    html+='<input type="range" min="128" max="2048" step="128" value="'+STATE.N+'" oninput="STATE.N=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Sample rate</span><span>'+STATE.Fs+' Hz</span></div>';
+    html+='<input type="range" min="100" max="2000" step="50" value="'+STATE.Fs+'" oninput="STATE.Fs=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4>';
+    html+='<button class="btn full sm" onclick="waveformPreset(\'pure\')">Pure tone</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="waveformPreset(\'chord\')">Musical chord</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="waveformPreset(\'harmonics\')">Harmonics</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="waveformPreset(\'pulse\')">Pulse train</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    return '<div class="sec"><h4>Synthesis</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      'x(t) = Σ Aᵢ·f(type, fᵢ, t) + n(t)<br><br>'+
+      'Each component uses a waveform type (sine, square, saw, triangle, impulse) at a given frequency and amplitude.'+
+      '</div></div>'+
+      '<div class="sec"><h4>FFT</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      'X[k] = Σ<sub>n=0</sub><sup>N-1</sup> x[n]·e<sup>−j2πkn/N</sup><br><br>'+
+      'Cooley-Tukey radix-2 in O(N log N). Frequency bin: Δf = Fs/N'+
+      '</div></div>';
+  }
+});
+function waveformPreset(name){
+  var wf=STATE.waveform;
+  if(name==='pure')wf.components=[{type:'sine',freq:10,amp:1,phase:0}];
+  else if(name==='chord')wf.components=[
+    {type:'sine',freq:8,amp:0.6,phase:0},
+    {type:'sine',freq:10,amp:0.6,phase:0},
+    {type:'sine',freq:12,amp:0.6,phase:0}
+  ];
+  else if(name==='harmonics')wf.components=[
+    {type:'sine',freq:5,amp:1,phase:0},
+    {type:'sine',freq:10,amp:0.5,phase:0},
+    {type:'sine',freq:15,amp:0.33,phase:0},
+    {type:'sine',freq:20,amp:0.25,phase:0}
+  ];
+  else if(name==='pulse')wf.components=[{type:'impulse',freq:20,amp:1,phase:0}];
+  renderLeftPanel();
+}
+
+/* ================================================================
+   MODULE: SPECTRUM ANALYZER
+   ================================================================ */
+registerModule('spectrum',{
+  title:'Spectrum Analyzer',
+  icon:'📊',
+  desc:'Real-time FFT with windowing, averaging, and peak detection. Compare window leakage and dynamic range.',
+  init:function(){
+    STATE.spectrum.avgSpec=null;
+    STATE.spectrum.avgCount=0;
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var sp=STATE.spectrum;
+    var pad=40;
+    /* Get signal */
+    var sig;
+    if(sp.source==='components')sig=generateWaveform();
+    else if(sp.source==='noise'){
+      sig=new Float64Array(STATE.N);
+      for(var i=0;i<STATE.N;i++)sig[i]=rndN();
+    } else sig=generateWaveform();
+    /* FFT with window */
+    var Np2=nextPow2(sig.length);
+    var re=new Float64Array(Np2),im=new Float64Array(Np2);
+    var win=WINDOWS[sp.window];
+    for(var i2=0;i2<sig.length;i2++)re[i2]=sig[i2]*win.fn(i2,sig.length);
+    fft(re,im);
+    var mag=magnitudeDB(re,im);
+    /* Average */
+    if(!sp.avgSpec||sp.avgSpec.length!==mag.length){
+      sp.avgSpec=new Float64Array(mag.length);
+      for(var k=0;k<mag.length;k++)sp.avgSpec[k]=mag[k];
+      sp.avgCount=1;
+    } else {
+      var alpha=0.85;
+      for(var k2=0;k2<mag.length;k2++)sp.avgSpec[k2]=alpha*sp.avgSpec[k2]+(1-alpha)*mag[k2];
+      sp.avgCount++;
+    }
+    /* Big spectrum plot */
+    var plotX=pad,plotY=pad+30,plotW=W-pad*2,plotH=H-pad*2-80;
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,255,128,.3)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(plotX,plotY,plotW,plotH,6);ctx.fill();ctx.stroke();
+    /* Grid */
+    ctx.strokeStyle='rgba(64,255,128,.08)';
+    for(var gi=0;gi<=8;gi++){
+      ctx.beginPath();ctx.moveTo(plotX+gi*plotW/8,plotY);ctx.lineTo(plotX+gi*plotW/8,plotY+plotH);ctx.stroke();
+    }
+    for(var gj=0;gj<=4;gj++){
+      ctx.beginPath();ctx.moveTo(plotX,plotY+gj*plotH/4);ctx.lineTo(plotX+plotW,plotY+gj*plotH/4);ctx.stroke();
+    }
+    /* Labels */
+    ctx.fillStyle='#507860';
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    for(var f=0;f<=5;f++){
+      ctx.fillText((f*STATE.Fs/2/5).toFixed(0)+'Hz',plotX+f*plotW/5,plotY+plotH+14);
+    }
+    ctx.textAlign='right';
+    for(var db=0;db>=4;db--){
+      var dbv=-db*20;
+      if(dbv<-100)continue;
+      ctx.fillText(dbv+'dB',plotX-4,plotY+db*plotH/4+4);
+    }
+    ctx.textAlign='left';
+    /* Raw spectrum */
+    var minDB=-90;
+    var half=mag.length;
+    ctx.strokeStyle='rgba(64,208,255,.4)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    for(var k3=0;k3<half;k3++){
+      var px=plotX+(k3/(half-1))*plotW;
+      var py=plotY+plotH-clamp((mag[k3]-minDB)/(0-minDB),0,1)*plotH;
+      if(k3===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    /* Averaged spectrum */
+    ctx.strokeStyle='#40ff80';
+    ctx.lineWidth=2;
+    ctx.fillStyle='rgba(64,255,128,.1)';
+    ctx.beginPath();
+    ctx.moveTo(plotX,plotY+plotH);
+    for(var k4=0;k4<half;k4++){
+      var px2=plotX+(k4/(half-1))*plotW;
+      var py2=plotY+plotH-clamp((sp.avgSpec[k4]-minDB)/(0-minDB),0,1)*plotH;
+      ctx.lineTo(px2,py2);
+    }
+    ctx.lineTo(plotX+plotW,plotY+plotH);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    for(var k5=0;k5<half;k5++){
+      var px3=plotX+(k5/(half-1))*plotW;
+      var py3=plotY+plotH-clamp((sp.avgSpec[k5]-minDB)/(0-minDB),0,1)*plotH;
+      if(k5===0)ctx.moveTo(px3,py3);else ctx.lineTo(px3,py3);
+    }
+    ctx.stroke();
+    /* Peak detection */
+    if(sp.showPeaks){
+      var peaks=[];
+      for(var k6=3;k6<half-3;k6++){
+        if(sp.avgSpec[k6]>sp.avgSpec[k6-1]&&sp.avgSpec[k6]>sp.avgSpec[k6+1]&&
+           sp.avgSpec[k6]>sp.avgSpec[k6-2]&&sp.avgSpec[k6]>sp.avgSpec[k6+2]&&
+           sp.avgSpec[k6]>sp.peakThreshold){
+          peaks.push({bin:k6,freq:k6*STATE.Fs/Np2,db:sp.avgSpec[k6]});
+        }
+      }
+      peaks.sort(function(a,b){return b.db-a.db});
+      peaks.slice(0,8).forEach(function(p,i){
+        var px=plotX+(p.bin/(half-1))*plotW;
+        var py=plotY+plotH-clamp((p.db-minDB)/(0-minDB),0,1)*plotH;
+        ctx.fillStyle='#ffe040';
+        ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='rgba(255,224,64,.3)';
+        ctx.setLineDash([3,3]);
+        ctx.beginPath();ctx.moveTo(px,plotY);ctx.lineTo(px,py);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle='#ffe040';
+        ctx.font='9px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(fmt(p.freq,1)+'Hz',px,plotY-4);
+        ctx.fillText(fmt(p.db,1)+'dB',px,plotY-14);
+      });
+      /* Peak list table */
+      ctx.textAlign='left';
+    }
+    /* Header */
+    ctx.fillStyle='#40ff80';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('SPECTRUM ANALYZER',plotX,plotY-10);
+    setStatsHTML(
+      '<div>Window: '+sp.window+'</div>'+
+      '<div>N: '+sig.length+'</div>'+
+      '<div>Frames: '+sp.avgCount+'</div>'+
+      '<div>Resolution: '+fmt(STATE.Fs/Np2,3)+' Hz</div>'
+    );
+    updateBadge('📊 Spectrum Analyzer · '+sp.window+' window');
+    $('sbMode').textContent='Spectrum';
+    $('sbN').textContent=sig.length;
+  },
+  onDown:function(){},
+  onUp:function(){},
+  controls:function(){
+    var sp=STATE.spectrum;
+    var html='';
+    html+='<div class="sec"><h4>Source</h4>';
+    html+='<div class="chip-row">';
+    [['components','Waveform'],['noise','White noise']].forEach(function(s){
+      html+='<div class="chip '+(sp.source===s[0]?'active':'')+'" onclick="STATE.spectrum.source=\''+s[0]+'\';MODULES.spectrum.init();renderLeftPanel()">'+s[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Window</h4>';
+    html+='<div class="chip-row">';
+    Object.keys(WINDOWS).forEach(function(k){
+      html+='<div class="chip '+(sp.window===k?'active':'')+'" onclick="STATE.spectrum.window=\''+k+'\';MODULES.spectrum.init();renderLeftPanel()">'+WINDOWS[k].name+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Detection</h4>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Show peaks</span><div class="chip '+(sp.showPeaks?'active':'')+'" onclick="STATE.spectrum.showPeaks=!STATE.spectrum.showPeaks;renderLeftPanel()">'+(sp.showPeaks?'ON':'OFF')+'</div></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Threshold</span><span>'+sp.peakThreshold+' dB</span></div>';
+    html+='<input type="range" min="-80" max="-20" step="1" value="'+sp.peakThreshold+'" oninput="STATE.spectrum.peakThreshold=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn full sm" onclick="STATE.spectrum.avgSpec=null;STATE.spectrum.avgCount=0">↺ Reset average</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var Wn=WINDOWS[STATE.spectrum.window];
+    return '<div class="sec"><h4>DFT</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'X[k] = Σ<sub>n</sub> w[n]·x[n]·e<sup>−j2πkn/N</sup><br>'+
+      '|X[k]| normalized, converted to dB:<br>'+
+      '|X[k]|<sub>dB</sub> = 20·log₁₀(|X[k]|/N)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Window: '+Wn.name+'</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      (STATE.spectrum.window==='rect'?'No tapering. Narrow main lobe, but large sidelobes (−13 dB). Best for transient-free periodic signals.':
+       STATE.spectrum.window==='hann'?'Raised cosine. Sidelobes at −31 dB. Good general purpose.':
+       STATE.spectrum.window==='hamming'?'Modified raised cosine. Sidelobes at −43 dB. Lower first sidelobe than Hann.':
+       STATE.spectrum.window==='blackman'?'Triple cosine. Sidelobes at −58 dB. Wider main lobe but very low leakage.':
+       STATE.spectrum.window==='bartlett'?'Triangular. Similar to Hann but with higher sidelobes.':
+       'Parabolic taper. Similar to Bartlett.')+
+      '</div></div>'+
+      '<div class="sec"><h4>Averaging</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Exponential moving average:<br>'+
+      'S̄[k] ← α·S̄[k] + (1−α)·|X[k]|<br>'+
+      'α = 0.85 (heavier smoothing over time)'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE: FILTER DESIGN
+   ================================================================ */
+registerModule('filter',{
+  title:'Filter Designer',
+  icon:'🎚️',
+  desc:'Design FIR (windowed sinc) and IIR (Butterworth biquad) filters. View the frequency response and apply to test signals.',
+  init:function(){
+    this.compute();
+  },
+  compute:function(){
+    var f=STATE.filter;
+    var M=f.order;
+    var h;
+    if(f.type==='fir-lp')h=designFIRLowpass(f.fc,M,f.window);
+    else if(f.type==='fir-hp')h=designFIRHighpass(f.fc,M,f.window);
+    else if(f.type==='fir-bp')h=designFIRBandpass(Math.min(f.fc,f.fc2),Math.max(f.fc,f.fc2),M,f.window);
+    else if(f.type==='iir-lp'){
+      var bq=butterworthLP2(f.fc*STATE.Fs/2,STATE.Fs);
+      f.biquad=bq;
+      h=null;
+    } else if(f.type==='iir-hp'){
+      var bq2=butterworthHP2(f.fc*STATE.Fs/2,STATE.Fs);
+      f.biquad=bq2;
+      h=null;
+    }
+    f.impulse=h;
+    /* Frequency response */
+    var Fs=STATE.Fs;
+    var numPts=256;
+    var resp=new Float64Array(numPts);
+    var respFreq=new Float64Array(numPts);
+    for(var i=0;i<numPts;i++){
+      var w=Math.PI*i/(numPts-1);
+      respFreq[i]=w*Fs/(2*Math.PI);
+      var mag;
+      if(f.type==='iir-lp'||f.type==='iir-hp'){
+        var H=f.biquad.freqResponse(w);
+        mag=H.mag;
+      } else {
+        /* FIR: H(e^jw) = Σ h[n] e^{-jwn} */
+        var re2=0,im2=0;
+        for(var n=0;n<h.length;n++){
+          re2+=h[n]*Math.cos(w*n);
+          im2-=h[n]*Math.sin(w*n);
+        }
+        mag=Math.sqrt(re2*re2+im2*im2);
+      }
+      resp[i]=20*Math.log10(Math.max(mag,1e-10));
+    }
+    f.response=resp;
+    f.responseFreq=respFreq;
+  },
+  getInput:function(){
+    var f=STATE.filter;
+    var N=STATE.N,Fs=STATE.Fs;
+    var x=new Float64Array(N);
+    var type=f.inputSignal;
+    if(type==='noise')for(var i=0;i<N;i++)x[i]=rndN()*0.3;
+    else if(type==='sine')for(var i2=0;i2<N;i2++)x[i2]=Math.sin(2*Math.PI*f.inputFreq*Fs*i2/Fs);
+    else if(type==='chirp'){
+      var T=N/Fs;
+      for(var i3=0;i3<N;i3++){
+        var t=i3/Fs;
+        x[i3]=Math.sin(2*Math.PI*(0.01*Fs*t+0.4*Fs*t*t/(2*T)));
+      }
+    } else if(type==='square')for(var i4=0;i4<N;i4++)x[i4]=Math.sign(Math.sin(2*Math.PI*f.inputFreq*Fs*i4/Fs));
+    else if(type==='mixed'){
+      for(var i5=0;i5<N;i5++){
+        var t2=i5/Fs;
+        x[i5]=Math.sin(2*Math.PI*20*t2)+0.5*Math.sin(2*Math.PI*150*t2)+rndN()*0.1;
+      }
+    }
+    return x;
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var f=STATE.filter;
+    var pad=40;
+    /* Frequency response on top */
+    var respH=H*0.3;
+    var respY=pad;
+    var respW=W-pad*2;
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,208,255,.3)';
+    ctx.beginPath();ctx.roundRect(pad,respY,respW,respH,6);ctx.fill();ctx.stroke();
+    if(f.response){
+      ctx.strokeStyle='rgba(64,255,128,.08)';
+      for(var i=0;i<=8;i++){ctx.beginPath();ctx.moveTo(pad+i*respW/8,respY);ctx.lineTo(pad+i*respW/8,respY+respH);ctx.stroke();}
+      for(var j=0;j<=4;j++){ctx.beginPath();ctx.moveTo(pad,respY+j*respH/4);ctx.lineTo(pad+respW,respY+j*respH/4);ctx.stroke();}
+      /* Magnitude response */
+      var resp=f.response;
+      var minDB=-80,maxDB=10;
+      ctx.strokeStyle='#40ff80';
+      ctx.lineWidth=2;
+      ctx.fillStyle='rgba(64,255,128,.1)';
+      ctx.beginPath();
+      ctx.moveTo(pad,respY+respH);
+      for(var k=0;k<resp.length;k++){
+        var px=pad+(k/(resp.length-1))*respW;
+        var py=respY+respH-clamp((resp[k]-minDB)/(maxDB-minDB),0,1)*respH;
+        ctx.lineTo(px,py);
+      }
+      ctx.lineTo(pad+respW,respY+respH);
+      ctx.closePath();ctx.fill();
+      ctx.beginPath();
+      for(var k2=0;k2<resp.length;k2++){
+        var px2=pad+(k2/(resp.length-1))*respW;
+        var py2=respY+respH-clamp((resp[k2]-minDB)/(maxDB-minDB),0,1)*respH;
+        if(k2===0)ctx.moveTo(px2,py2);else ctx.lineTo(px2,py2);
+      }
+      ctx.stroke();
+      /* -3dB line */
+      ctx.strokeStyle='rgba(255,224,64,.4)';
+      ctx.setLineDash([4,3]);
+      var db3y=respY+respH-clamp((-3-minDB)/(maxDB-minDB),0,1)*respH;
+      ctx.beginPath();ctx.moveTo(pad,db3y);ctx.lineTo(pad+respW,db3y);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#ffe040';
+      ctx.font='9px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('-3dB',pad+4,db3y-4);
+    }
+    /* Labels */
+    ctx.fillStyle='#40ff80';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('FREQUENCY RESPONSE (magnitude)',pad+8,respY+14);
+    ctx.fillStyle='#507860';
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    for(var fr=0;fr<=5;fr++){
+      ctx.fillText((fr*STATE.Fs/2/5).toFixed(0)+'Hz',pad+fr*respW/5,respY+respH+14);
+    }
+    /* Impulse response (if FIR) or filter structure (if IIR) */
+    var irY=respY+respH+40;
+    var irH=H*0.22;
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,255,128,.3)';
+    ctx.beginPath();ctx.roundRect(pad,irY,respW,irH,6);ctx.fill();ctx.stroke();
+    if(f.impulse){
+      var h=f.impulse;
+      var mx=0;for(var i2=0;i2<h.length;i2++)mx=Math.max(mx,Math.abs(h[i2]));
+      mx=mx||1;
+      ctx.strokeStyle='#ffe040';
+      ctx.lineWidth=1;
+      var stepW=respW/(h.length*2);
+      ctx.beginPath();
+      for(var n=0;n<h.length;n++){
+        var x0=pad+(n+0.5)*stepW*2;
+        var y0=irY+irH/2;
+        ctx.moveTo(x0,y0);
+        ctx.lineTo(x0,y0-h[n]/mx*(irH/2-8));
+      }
+      ctx.stroke();
+      ctx.fillStyle='#ffe040';
+      ctx.font='bold 11px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('IMPULSE RESPONSE h[n] (M='+(h.length-1)+' taps)',pad+8,irY+14);
+    } else {
+      ctx.fillStyle='#40d0ff';
+      ctx.font='bold 11px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('IIR BIQUAD COEFFICIENTS',pad+8,irY+14);
+      ctx.font='10px monospace';
+      ctx.fillStyle='#80b090';
+      var b=f.biquad.b,a=f.biquad.a;
+      ctx.fillText('b = ['+fmt(b[0],4)+', '+fmt(b[1],4)+', '+fmt(b[2],4)+']',pad+8,irY+32);
+      ctx.fillText('a = [1, '+fmt(a[1],4)+', '+fmt(a[2],4)+']',pad+8,irY+48);
+      ctx.fillText('y[n] = b0·x[n] + b1·x[n-1] + b2·x[n-2] - a1·y[n-1] - a2·y[n-2]',pad+8,irY+68);
+    }
+    /* Input/output waveforms */
+    var wfY=irY+irH+30;
+    var wfH=(H-wfY-pad)/2-10;
+    var input=this.getInput();
+    /* Original */
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,255,128,.3)';
+    ctx.beginPath();ctx.roundRect(pad,wfY,respW,wfH,6);ctx.fill();ctx.stroke();
+    plotSignal(ctx,pad,wfY,respW,wfH,input,'rgba(64,208,255,.8)',{lw:1});
+    ctx.fillStyle='#40d0ff';
+    ctx.font='10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('INPUT — '+f.inputSignal,pad+8,wfY+12);
+    /* Filtered */
+    var output;
+    if(f.impulse)output=applyFIR(input,f.impulse);
+    else {
+      var bq=new Biquad(f.biquad.b[0],f.biquad.b[1],f.biquad.b[2],f.biquad.a[1],f.biquad.a[2]);
+      output=new Float64Array(input.length);
+      for(var i3=0;i3<input.length;i3++)output[i3]=bq.process(input[i3]);
+    }
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,255,128,.3)';
+    ctx.beginPath();ctx.roundRect(pad,wfY+wfH+10,respW,wfH,6);ctx.fill();ctx.stroke();
+    plotSignal(ctx,pad,wfY+wfH+10,respW,wfH,output,'#40ff80',{lw:1});
+    ctx.fillStyle='#40ff80';
+    ctx.font='10px monospace';
+    ctx.fillText('OUTPUT — filtered',pad+8,wfY+wfH+22);
+    setStatsHTML(
+      '<div>Type: '+f.type+'</div>'+
+      '<div>'+(f.impulse?'Order: '+f.order:'Biquad (2nd)')+'</div>'+
+      '<div>Cutoff: '+fmt(f.fc*STATE.Fs/2,1)+' Hz</div>'+
+      (f.impulse?'<div>Window: '+f.window+'</div>':'')
+    );
+    updateBadge('🎚️ Filter Designer · '+f.type);
+    $('sbMode').textContent='Filter';
+  },
+  onDown:function(){},
+  onUp:function(){},
+  onWheel:function(){},
+  controls:function(){
+    var f=STATE.filter;
+    var html='';
+    html+='<div class="sec"><h4>Filter Type</h4>';
+    html+='<div class="chip-row">';
+    [['fir-lp','FIR LP'],['fir-hp','FIR HP'],['fir-bp','FIR BP'],['iir-lp','IIR LP'],['iir-hp','IIR HP']].forEach(function(t){
+      html+='<div class="chip '+(f.type===t[0]?'active':'')+'" onclick="STATE.filter.type=\''+t[0]+'\';MODULES.filter.init();renderLeftPanel()">'+t[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Design</h4>';
+    if(f.type==='fir-bp'){
+      html+='<div class="ctrl"><div class="lbl"><span>Lower cutoff</span><span>'+fmt(f.fc,3)+'</span></div>';
+      html+='<input type="range" min="0.02" max="0.4" step="0.005" value="'+f.fc+'" oninput="STATE.filter.fc=parseFloat(this.value);MODULES.filter.compute();renderLeftPanel()"></div>';
+      html+='<div class="ctrl"><div class="lbl"><span>Upper cutoff</span><span>'+fmt(f.fc2,3)+'</span></div>';
+      html+='<input type="range" min="0.1" max="0.48" step="0.005" value="'+f.fc2+'" oninput="STATE.filter.fc2=parseFloat(this.value);MODULES.filter.compute();renderLeftPanel()"></div>';
+    } else {
+      html+='<div class="ctrl"><div class="lbl"><span>Cutoff (norm)</span><span>'+fmt(f.fc,3)+'</span></div>';
+      html+='<input type="range" min="0.02" max="0.48" step="0.005" value="'+f.fc+'" oninput="STATE.filter.fc=parseFloat(this.value);MODULES.filter.compute();renderLeftPanel()"></div>';
+    }
+    if(f.type.indexOf('fir')===0){
+      html+='<div class="ctrl"><div class="lbl"><span>Order M</span><span>'+f.order+'</span></div>';
+      html+='<input type="range" min="4" max="96" step="2" value="'+f.order+'" oninput="STATE.filter.order=parseInt(this.value);MODULES.filter.compute();renderLeftPanel()"></div>';
+      html+='<div class="ctrl"><div class="lbl"><span>Window</span></div>';
+      html+='<select onchange="STATE.filter.window=this.value;MODULES.filter.compute();renderLeftPanel()">';
+      Object.keys(WINDOWS).forEach(function(k){
+        html+='<option value="'+k+'"'+(f.window===k?' selected':'')+'>'+WINDOWS[k].name+'</option>';
+      });
+      html+='</select></div>';
+    }
+    html+='</div>';
+    html+='<div class="sec"><h4>Test Signal</h4>';
+    html+='<div class="chip-row">';
+    [['sine','Sine'],['chirp','Chirp'],['noise','Noise'],['square','Square'],['mixed','Mixed']].forEach(function(s){
+      html+='<div class="chip '+(f.inputSignal===s[0]?'active':'')+'" onclick="STATE.filter.inputSignal=\''+s[0]+'\';renderLeftPanel()">'+s[1]+'</div>';
+    });
+    html+='</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var f=STATE.filter;
+    var html='<div class="sec"><h4>FIR design</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Ideal lowpass: h<sub>ideal</sub>[n] = 2f<sub>c</sub>·sinc(2f<sub>c</sub>(n−M/2))<br><br>'+
+      'Windowed: h[n] = h<sub>ideal</sub>[n]·w[n]<br><br>'+
+      'The sinc is truncated by a window (M+1 taps). The window tames the Gibbs phenomenon.'+
+      '</div></div>';
+    html+='<div class="sec"><h4>IIR design</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Butterworth 2nd-order analog prototype:<br>'+
+      'H(s) = ωc² / (s² + √2·ωc·s + ωc²)<br><br>'+
+      'Bilinear transform with pre-warping:<br>'+
+      's = (1−z⁻¹)/(1+z⁻¹)·ωc/tan(ωc/2)<br><br>'+
+      'Gives biquad difference equation:'+
+      '</div></div>';
+    if(f.biquad){
+      html+='<div class="sec"><h4>Coefficients</h4><div class="kv">';
+      html+='<div class="row"><span class="k">b0</span><span class="v">'+fmt(f.biquad.b[0],5)+'</span></div>';
+      html+='<div class="row"><span class="k">b1</span><span class="v">'+fmt(f.biquad.b[1],5)+'</span></div>';
+      html+='<div class="row"><span class="k">b2</span><span class="v">'+fmt(f.biquad.b[2],5)+'</span></div>';
+      html+='<div class="row"><span class="k">a1</span><span class="v">'+fmt(f.biquad.a[1],5)+'</span></div>';
+      html+='<div class="row"><span class="k">a2</span><span class="v">'+fmt(f.biquad.a[2],5)+'</span></div>';
+      html+='</div></div>';
+    }
+    return html;
+  }
+});
+</script>
+<script>
+/* ================================================================
+   MODULE: SPECTROGRAM
+   ================================================================ */
+registerModule('spectrogram',{
+  title:'Spectrogram',
+  icon:'🌈',
+  desc:'Short-time Fourier transform. Visualize how frequency content evolves over time — a waterfall of the spectrum.',
+  init:function(){
+    var s=STATE.spectrogram;
+    var N=STATE.N;
+    s.signal=generateSpectrogramSignal(s.source,4*N,STATE.Fs);
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var s=STATE.spectrogram;
+    if(!s.signal)return;
+    var pad=40;
+    var specH=H*0.5;
+    var specY=pad+20;
+    var specW=W-pad*2;
+    /* Compute STFT */
+    var result=spectrogram(s.signal,s.windowSize,s.hopSize,s.window);
+    if(!result.data)return;
+    var numFrames=result.numFrames;
+    var numBins=result.numBins;
+    /* Draw heatmap */
+    var cellW=specW/numFrames;
+    var cellH=specH/numBins;
+    var minDB=-100,maxDB=-10;
+    for(var f=0;f<numFrames;f++){
+      for(var b=0;b<numBins;b++){
+        var v=result.data[f*numBins+b];
+        var norm=clamp((v-minDB)/(maxDB-minDB),0,1);
+        /* Colormap */
+        var col=colormap(norm,s.colormap);
+        ctx.fillStyle='rgb('+col[0]+','+col[1]+','+col[2]+')';
+        /* Draw bottom-up (low freq at bottom) */
+        var px=pad+f*cellW;
+        var py=specY+specH-(b+1)*cellH;
+        ctx.fillRect(px,py,cellW+0.5,cellH+0.5);
+      }
+    }
+    ctx.strokeStyle='rgba(64,255,128,.5)';
+    ctx.lineWidth=1;
+    ctx.strokeRect(pad,specY,specW,specH);
+    /* Axis labels */
+    ctx.fillStyle='#507860';
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    for(var t=0;t<=4;t++){
+      ctx.fillText(fmt(t*s.signal.length/STATE.Fs/4,2)+'s',pad+t*specW/4,specY+specH+14);
+    }
+    ctx.textAlign='right';
+    for(var fr=0;fr<=4;fr++){
+      ctx.fillText(fmt(fr*STATE.Fs/2/4,0)+'Hz',pad-4,specY+specH-fr*specH/4);
+    }
+    /* Header */
+    ctx.fillStyle='#40ff80';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('SPECTROGRAM — STFT window='+s.windowSize+' hop='+s.hopSize,pad,pad);
+    /* Time-domain preview */
+    var tdY=specY+specH+40;
+    var tdH=H-tdY-pad-60;
+    if(tdH>40){
+      ctx.fillStyle='rgba(8,24,15,.5)';
+      ctx.strokeStyle='rgba(64,255,128,.3)';
+      ctx.beginPath();ctx.roundRect(pad,tdY,specW,tdH,6);ctx.fill();ctx.stroke();
+      plotSignal(ctx,pad,tdY,specW,tdH,s.signal,'rgba(64,208,255,.7)',{lw:1});
+      ctx.fillStyle='#40d0ff';
+      ctx.font='10px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('TIME DOMAIN — '+s.source,pad+8,tdY+12);
+    }
+    /* Colorbar */
+    var cbX=W-20,cbY=specY+20,cbW=12,cbH=specH-40;
+    for(var i=0;i<cbH;i++){
+      var col2=colormap(1-i/cbH,s.colormap);
+      ctx.fillStyle='rgb('+col2[0]+','+col2[1]+','+col2[2]+')';
+      ctx.fillRect(cbX,cbY+i,cbW,1);
+    }
+    ctx.strokeStyle='rgba(64,255,128,.4)';
+    ctx.strokeRect(cbX,cbY,cbW,cbH);
+    ctx.fillStyle='#507860';
+    ctx.font='8px monospace';
+    ctx.textAlign='right';
+    ctx.fillText('0dB',cbX-4,cbY+4);
+    ctx.fillText('-100',cbX-4,cbY+cbH);
+    setStatsHTML(
+      '<div>Frames: '+numFrames+'</div>'+
+      '<div>Bins: '+numBins+'</div>'+
+      '<div>Window: '+s.windowSize+'</div>'+
+      '<div>Hop: '+s.hopSize+'</div>'
+    );
+    updateBadge('🌈 Spectrogram · '+s.source);
+    $('sbMode').textContent='Spectrogram';
+  },
+  onDown:function(){},
+  onUp:function(){},
+  controls:function(){
+    var s=STATE.spectrogram;
+    var html='';
+    html+='<div class="sec"><h4>Signal Source</h4>';
+    html+='<div class="chip-row">';
+    [['chirp','Chirp'],['am','AM tone'],['fm','FM tone'],['burst','Bursts'],['harmonics','Harmonics']].forEach(function(src){
+      html+='<div class="chip '+(s.source===src[0]?'active':'')+'" onclick="STATE.spectrogram.source=\''+src[0]+'\';MODULES.spectrogram.init();renderLeftPanel()">'+src[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>STFT Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Window size</span><span>'+s.windowSize+'</span></div>';
+    html+='<input type="range" min="32" max="512" step="32" value="'+s.windowSize+'" oninput="STATE.spectrogram.windowSize=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Hop size</span><span>'+s.hopSize+'</span></div>';
+    html+='<input type="range" min="4" max="128" step="4" value="'+s.hopSize+'" oninput="STATE.spectrogram.hopSize=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Window function</span></div>';
+    html+='<select onchange="STATE.spectrogram.window=this.value;renderLeftPanel()">';
+    Object.keys(WINDOWS).forEach(function(k){
+      html+='<option value="'+k+'"'+(s.window===k?' selected':'')+'>'+WINDOWS[k].name+'</option>';
+    });
+    html+='</select></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Colormap</h4>';
+    html+='<div class="chip-row">';
+    ['viridis','inferno','plasma','magma','gray'].forEach(function(c){
+      html+='<div class="chip '+(s.colormap===c?'active':'')+'" onclick="STATE.spectrogram.colormap=\''+c+'\';renderLeftPanel()">'+c+'</div>';
+    });
+    html+='</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    return '<div class="sec"><h4>STFT</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'X[m, k] = Σ<sub>n</sub> w[n]·x[n + m·H]·e<sup>−j2πkn/N</sup><br><br>'+
+      'm = frame index<br>H = hop size<br>N = window size<br>w[n] = analysis window'+
+      '</div></div>'+
+      '<div class="sec"><h4>Time-frequency trade-off</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      'Large N → good frequency resolution, poor time resolution.<br>'+
+      'Small N → good time resolution, poor frequency resolution.<br><br>'+
+      'This is the uncertainty principle for signals.'+
+      '</div></div>';
+  }
+});
+function generateSpectrogramSignal(type,N,Fs){
+  var x=new Float64Array(N);
+  var T=N/Fs;
+  for(var i=0;i<N;i++){
+    var t=i/Fs;
+    if(type==='chirp'){
+      x[i]=Math.sin(2*Math.PI*(50*t+(1500/T)*t*t/2));
+    } else if(type==='am'){
+      x[i]=(0.5+0.5*Math.sin(2*Math.PI*3*t))*Math.sin(2*Math.PI*100*t);
+    } else if(type==='fm'){
+      x[i]=Math.sin(2*Math.PI*80*t+5*Math.sin(2*Math.PI*2*t));
+    } else if(type==='burst'){
+      var ph=(t*4)%1;
+      if(ph<0.25)x[i]=Math.sin(2*Math.PI*(60+200*ph)*t);
+      else x[i]=0;
+    } else if(type==='harmonics'){
+      x[i]=Math.sin(2*Math.PI*40*t)+0.4*Math.sin(2*Math.PI*80*t)+0.2*Math.sin(2*Math.PI*120*t);
+    }
+  }
+  return x;
+}
+function colormap(v,name){
+  v=clamp(v,0,1);
+  /* Simple polynomial approximations */
+  if(name==='viridis'){
+    var r=Math.floor(68+v*(253-68));
+    var g=Math.floor(1+v*(231-1));
+    var b=Math.floor(84+v*(37-84));
+    if(v<0.5){r=Math.floor(68+v*2*(150-68));g=Math.floor(1+v*2*(180-1));b=Math.floor(84+v*2*(120-84));}
+    else{r=Math.floor(150+(v-0.5)*2*(253-150));g=Math.floor(180+(v-0.5)*2*(231-180));b=Math.floor(120+(v-0.5)*2*(37-120));}
+    return [r,g,b];
+  } else if(name==='inferno'){
+    if(v<0.25)return [Math.floor(v*4*80),0,Math.floor(v*4*80)];
+    if(v<0.5)return [Math.floor(80+(v-0.25)*4*150),Math.floor((v-0.25)*4*30),Math.floor(80+(v-0.25)*4*40)];
+    if(v<0.75)return [Math.floor(230+(v-0.5)*4*25),Math.floor(30+(v-0.5)*4*130),Math.floor(120-(v-0.5)*4*100)];
+    return [255,Math.floor(160+(v-0.75)*4*95),Math.floor(20+(v-0.75)*4*30)];
+  } else if(name==='plasma'){
+    var r2=Math.floor(13+v*(240-13));
+    var g2=Math.floor(8+v*(200-8)*Math.sin(v*Math.PI));
+    var b2=Math.floor(135+v*(60-135));
+    return [r2,g2,b2];
+  } else if(name==='magma'){
+    return [Math.floor(252*v+10),Math.floor(100*v*v),Math.floor(120*v+40)];
+  } else {
+    var gv=Math.floor(v*255);
+    return [gv,gv,gv];
+  }
+}
+
+/* ================================================================
+   MODULE: MODULATION
+   ================================================================ */
+registerModule('modulation',{
+  title:'Digital Modulation',
+  icon:'📡',
+  desc:'Explore AM, FM, BPSK, QPSK, and 16-QAM. See the waveform, spectrum, and constellation diagram.',
+  init:function(){
+    var m=STATE.modulation;
+    /* Generate random bits */
+    m.bits=[];
+    for(var i=0;i<32;i++)m.bits.push(Math.random()<0.5?0:1);
+    this.compute();
+  },
+  compute:function(){
+    var m=STATE.modulation;
+    var Fs=STATE.Fs,N=STATE.N;
+    var sig;
+    if(m.type==='am'){
+      var msg=new Float64Array(N);
+      for(var i=0;i<N;i++)msg[i]=Math.sin(2*Math.PI*m.mfreq*Fs*i/Fs);
+      sig=modulateAM(msg,m.fc*Fs,Fs,m.depth);
+    } else if(m.type==='fm'){
+      var msg2=new Float64Array(N);
+      for(var i2=0;i2<N;i2++)msg2[i2]=Math.sin(2*Math.PI*m.mfreq*Fs*i2/Fs);
+      sig=modulateFM(msg2,m.fc*Fs,Fs,m.kf*Fs);
+    } else if(m.type==='bpsk'){
+      sig=modulateBPSK(m.bits,m.fc*Fs,Fs,m.sps);
+    } else if(m.type==='qpsk'){
+      var syms=bitsToSymbols(m.bits,'qpsk');
+      sig=modulateQPSK(syms,m.fc*Fs,Fs,m.sps);
+      m.symbols=syms;
+    } else if(m.type==='qam16'){
+      var syms2=bitsToSymbols(m.bits,'qam16');
+      sig=modulateQAM16(syms2,m.fc*Fs,Fs,m.sps);
+      m.symbols=syms2;
+    }
+    m.signal=sig;
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var m=STATE.modulation;
+    if(!m.signal)return;
+    var pad=40;
+    /* Time domain top */
+    var tdH=H*0.25;
+    var tdY=pad;
+    var tdW=W-pad*2;
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,255,128,.3)';
+    ctx.beginPath();ctx.roundRect(pad,tdY,tdW,tdH,6);ctx.fill();ctx.stroke();
+    plotSignal(ctx,pad,tdY,tdW,tdH,m.signal,'#40ff80',{lw:1.2});
+    ctx.fillStyle='#40ff80';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('MODULATED WAVEFORM — '+m.type.toUpperCase(),pad+8,tdY+14);
+    /* Spectrum middle */
+    var spY=tdY+tdH+20;
+    var spH=H*0.25;
+    var Np2=nextPow2(m.signal.length);
+    var re=new Float64Array(Np2),im=new Float64Array(Np2);
+    for(var i=0;i<m.signal.length;i++)re[i]=m.signal[i]*(0.5-0.5*Math.cos(2*Math.PI*i/(m.signal.length-1)));
+    fft(re,im);
+    var mag=magnitudeDB(re,im);
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,208,255,.3)';
+    ctx.beginPath();ctx.roundRect(pad,spY,tdW,spH,6);ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#40d0ff';
+    ctx.lineWidth=1.5;
+    ctx.fillStyle='rgba(64,208,255,.15)';
+    ctx.beginPath();
+    ctx.moveTo(pad,spY+spH);
+    var minDB=-90;
+    var half=mag.length;
+    for(var k=0;k<half;k++){
+      var px=pad+(k/(half-1))*tdW;
+      var py=spY+spH-clamp((mag[k]-minDB)/(0-minDB),0,1)*spH;
+      ctx.lineTo(px,py);
+    }
+    ctx.lineTo(pad+tdW,spY+spH);
+    ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40d0ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('SPECTRUM',pad+8,spY+14);
+    /* Constellation */
+    if(m.showConstellation&&m.type!=='am'&&m.type!=='fm'){
+      var cx=W*0.7,cy=spY+spH+80;
+      var cs=Math.min(H-spY-spH-140,W*0.35);
+      ctx.fillStyle='rgba(8,24,15,.5)';
+      ctx.strokeStyle='rgba(255,224,64,.3)';
+      ctx.beginPath();ctx.roundRect(cx-cs/2,cy-cs/2,cs,cs,6);ctx.fill();ctx.stroke();
+      /* Axes */
+      ctx.strokeStyle='rgba(80,120,96,.4)';
+      ctx.beginPath();ctx.moveTo(cx-cs/2,cy);ctx.lineTo(cx+cs/2,cy);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cx,cy-cs/2);ctx.lineTo(cx,cy+cs/2);ctx.stroke();
+      /* Grid lines */
+      ctx.strokeStyle='rgba(80,120,96,.15)';
+      for(var g=-3;g<=3;g++){
+        if(g===0)continue;
+        ctx.beginPath();ctx.moveTo(cx+g*cs/8,cy-cs/2);ctx.lineTo(cx+g*cs/8,cy+cs/2);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx-cs/2,cy+g*cs/8);ctx.lineTo(cx+cs/2,cy+g*cs/8);ctx.stroke();
+      }
+      /* Ideal constellation */
+      var idealPts=[];
+      if(m.type==='bpsk'){idealPts=[[-1,0],[1,0]];}
+      else if(m.type==='qpsk'){idealPts=[[-1,-1],[-1,1],[1,-1],[1,1]];}
+      else if(m.type==='qam16'){
+        var Im=[-3,-1,1,3];
+        for(var ii=0;ii<4;ii++)for(var qq=0;qq<4;qq++)idealPts.push([Im[ii]/3,Im[qq]/3]);
+      }
+      idealPts.forEach(function(p){
+        ctx.fillStyle='rgba(255,224,64,.2)';
+        ctx.beginPath();ctx.arc(cx+p[0]*cs/4,cy-p[1]*cs/4,10,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#ffe040';ctx.lineWidth=1.5;ctx.stroke();
+      });
+      /* Actual symbols */
+      if(m.symbols){
+        m.symbols.forEach(function(sym){
+          ctx.fillStyle='#40ff80';
+          ctx.beginPath();ctx.arc(cx+sym[0]*cs/4,cy-sym[1]*cs/4,4,0,Math.PI*2);ctx.fill();
+        });
+      }
+      ctx.fillStyle='#ffe040';
+      ctx.font='bold 10px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('CONSTELLATION',cx-cs/2+6,cy-cs/2+14);
+      ctx.fillStyle='#507860';
+      ctx.font='9px monospace';
+      ctx.fillText('I',cx+cs/2-6,cy+12);
+      ctx.fillText('Q',cx+6,cy-cs/2+6);
+    }
+    setStatsHTML(
+      '<div>Type: '+m.type.toUpperCase()+'</div>'+
+      '<div>Carrier: '+fmt(m.fc*STATE.Fs,0)+' Hz</div>'+
+      (m.symbols?'<div>Symbols: '+m.symbols.length+'</div>':'')
+    );
+    updateBadge('📡 Digital Modulation · '+m.type.toUpperCase());
+    $('sbMode').textContent='Modulation';
+  },
+  onDown:function(){},
+  onUp:function(){},
+  controls:function(){
+    var m=STATE.modulation;
+    var html='';
+    html+='<div class="sec"><h4>Scheme</h4>';
+    html+='<div class="chip-row">';
+    [['am','AM'],['fm','FM'],['bpsk','BPSK'],['qpsk','QPSK'],['qam16','16-QAM']].forEach(function(t){
+      html+='<div class="chip '+(m.type===t[0]?'active':'')+'" onclick="STATE.modulation.type=\''+t[0]+'\';MODULES.modulation.init();renderLeftPanel()">'+t[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Carrier freq</span><span>'+fmt(m.fc*STATE.Fs,0)+' Hz</span></div>';
+    html+='<input type="range" min="0.02" max="0.3" step="0.005" value="'+m.fc+'" oninput="STATE.modulation.fc=parseFloat(this.value);MODULES.modulation.compute();renderLeftPanel()"></div>';
+    if(m.type==='am'||m.type==='fm'){
+      html+='<div class="ctrl"><div class="lbl"><span>Message freq</span><span>'+fmt(m.mfreq*STATE.Fs,1)+' Hz</span></div>';
+      html+='<input type="range" min="0.001" max="0.05" step="0.001" value="'+m.mfreq+'" oninput="STATE.modulation.mfreq=parseFloat(this.value);MODULES.modulation.compute();renderLeftPanel()"></div>';
+    }
+    if(m.type==='am'){
+      html+='<div class="ctrl"><div class="lbl"><span>Modulation depth</span><span>'+fmt(m.depth,2)+'</span></div>';
+      html+='<input type="range" min="0" max="1.5" step="0.02" value="'+m.depth+'" oninput="STATE.modulation.depth=parseFloat(this.value);MODULES.modulation.compute();renderLeftPanel()"></div>';
+    }
+    if(m.type==='fm'){
+      html+='<div class="ctrl"><div class="lbl"><span>Freq deviation (kf)</span><span>'+fmt(m.kf,2)+'</span></div>';
+      html+='<input type="range" min="0" max="2" step="0.05" value="'+m.kf+'" oninput="STATE.modulation.kf=parseFloat(this.value);MODULES.modulation.compute();renderLeftPanel()"></div>';
+    }
+    if(m.type!=='am'&&m.type!=='fm'){
+      html+='<div class="ctrl"><div class="lbl"><span>Samples per symbol</span><span>'+m.sps+'</span></div>';
+      html+='<input type="range" min="8" max="64" step="4" value="'+m.sps+'" oninput="STATE.modulation.sps=parseInt(this.value);MODULES.modulation.compute();renderLeftPanel()"></div>';
+    }
+    html+='</div>';
+    if(m.type!=='am'&&m.type!=='fm'){
+      html+='<div class="sec"><h4>Bit Stream</h4>';
+      html+='<div style="font-family:var(--mono);font-size:.6rem;letter-spacing:2px;color:var(--c1);line-height:1.8;word-break:break-all">'+m.bits.join('')+'</div>';
+      html+='<button class="btn full sm" style="margin-top:6px" onclick="MODULES.modulation.init()">🎲 New random bits</button>';
+      html+='</div>';
+    }
+    return html;
+  },
+  mathPanel:function(){
+    var m=STATE.modulation;
+    var html='<div class="sec"><h4>'+m.type.toUpperCase()+'</h4>';
+    var formulas={
+      'am':'s(t) = [1 + μ·m(t)]·cos(2πf<sub>c</sub>t)<br><br>Amplitude of carrier varies with message. μ is modulation depth.',
+      'fm':'s(t) = cos(2πf<sub>c</sub>t + k<sub>f</sub>·∫m(τ)dτ)<br><br>Instantaneous frequency varies with message.',
+      'bpsk':'s(t) = ±cos(2πf<sub>c</sub>t)<br><br>Two phases (0° and 180°) represent 0 and 1. 1 bit/symbol.',
+      'qpsk':'s(t) = I·cos(2πf<sub>c</sub>t) − Q·sin(2πf<sub>c</sub>t)<br>where (I,Q) ∈ {−1,+1}²<br><br>2 bits/symbol.',
+      'qam16':'s(t) = I·cos(2πf<sub>c</sub>t) − Q·sin(2πf<sub>c</sub>t)<br>where (I,Q) ∈ {−3,−1,+1,+3}/3<br><br>4 bits/symbol.'
+    };
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+(formulas[m.type]||'')+'</div>';
+    html+='</div>';
+    return html;
+  }
+});
+
+/* ================================================================
+   MODULE: CONVOLUTION
+   ================================================================ */
+registerModule('convolution',{
+  title:'Convolution',
+  icon:'⊗',
+  desc:'Convolve two signals. Watch how linear convolution corresponds to multiplication in the frequency domain.',
+  init:function(){this.compute()},
+  compute:function(){
+    var c=STATE.convolution;
+    var N=STATE.N;
+    var x=new Float64Array(N);
+    var h=new Float64Array(N);
+    if(c.signalA==='impulse'){
+      x[Math.floor(N/2)]=1;
+    } else if(c.signalA==='sine'){
+      for(var i=0;i<N;i++)x[i]=Math.sin(2*Math.PI*10*i/STATE.Fs);
+    } else if(c.signalA==='square'){
+      for(var i2=0;i2<N;i2++)x[i2]=(Math.floor(i2/16)%2)?1:-1;
+    } else if(c.signalA==='noise'){
+      for(var i3=0;i3<N;i3++)x[i3]=rndN()*0.5;
+    }
+    if(c.signalB==='decay'){
+      var M=16;
+      for(var n=0;n<M;n++)h[n]=Math.exp(-n/4);
+      /* Normalize */
+      var s=0;for(var k=0;k<M;k++)s+=h[k];
+      for(var k2=0;k2<M;k2++)h[k2]/=s;
+    } else if(c.signalB==='boxcar'){
+      var M2=16;
+      for(var n2=0;n2<M2;n2++)h[n2]=1/M2;
+    } else if(c.signalB==='gauss'){
+      var M3=32,sigma=5;
+      var s2=0;
+      for(var n3=0;n3<M3;n3++){
+        var x3=n3-M3/2;
+        h[n3]=Math.exp(-x3*x3/(2*sigma*sigma));
+        s2+=h[n3];
+      }
+      for(var k3=0;k3<M3;k3++)h[k3]/=s2;
+    } else if(c.signalB==='sine'){
+      for(var n4=0;n4<N;n4++)h[n4]=Math.sin(2*Math.PI*15*n4/STATE.Fs);
+    }
+    c.x=x;c.h=h;
+    if(c.circular){
+      /* Pad/truncate to same length */
+      var Nmin=Math.min(N,N);
+      c.y=convolveCircular(x,h);
+    } else {
+      c.y=convolveLinear(x,h);
+    }
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var c=STATE.convolution;
+    if(!c.y)return;
+    var pad=40;
+    /* Input A */
+    var h1=(H-pad*4)/3;
+    var y1=pad;
+    var w1=W-pad*2;
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,255,128,.3)';
+    ctx.beginPath();ctx.roundRect(pad,y1,w1,h1,6);ctx.fill();ctx.stroke();
+    plotSignal(ctx,pad,y1,w1,h1,c.x,'rgba(64,208,255,.9)',{fill:'rgba(64,208,255,.1)',lw:1.5});
+    ctx.fillStyle='#40d0ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('INPUT x[n] — '+c.signalA,pad+8,y1+14);
+    /* Input B */
+    var y2=y1+h1+16;
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,255,128,.3)';
+    ctx.beginPath();ctx.roundRect(pad,y2,w1,h1,6);ctx.fill();ctx.stroke();
+    plotSignal(ctx,pad,y2,w1,h1,c.h,'#ffe040',{fill:'rgba(255,224,64,.1)',lw:1.5});
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 11px monospace';
+    ctx.fillText('IMPULSE RESPONSE h[n] — '+c.signalB,pad+8,y2+14);
+    /* Output */
+    var y3=y2+h1+16;
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,255,128,.3)';
+    ctx.beginPath();ctx.roundRect(pad,y3,w1,h1,6);ctx.fill();ctx.stroke();
+    plotSignal(ctx,pad,y3,w1,h1,c.y,'#40ff80',{fill:'rgba(64,255,128,.15)',lw:1.8});
+    ctx.fillStyle='#40ff80';
+    ctx.font='bold 11px monospace';
+    ctx.fillText('OUTPUT y[n] = x[n] ∗ h[n] — '+c.y.length+' samples',pad+8,y3+14);
+    /* Info */
+    var infoY=y3+h1+10;
+    ctx.fillStyle='#507860';
+    ctx.font='10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('Type: '+(c.circular?'circular (periodic, N='+c.x.length+')':'linear (length '+c.y.length+')'),pad,infoY+12);
+    setStatsHTML(
+      '<div>N input: '+c.x.length+'</div>'+
+      '<div>N IR: '+(c.signalB==='decay'?16:c.signalB==='boxcar'?16:c.signalB==='gauss'?32:c.h.length)+'</div>'+
+      '<div>N output: '+c.y.length+'</div>'+
+      '<div>Mode: '+(c.circular?'circular':'linear')+'</div>'
+    );
+    updateBadge('⊗ Convolution · '+(c.circular?'circular':'linear'));
+    $('sbMode').textContent='Convolution';
+  },
+  onDown:function(){},
+  onUp:function(){},
+  controls:function(){
+    var c=STATE.convolution;
+    var html='';
+    html+='<div class="sec"><h4>Input x[n]</h4>';
+    html+='<div class="chip-row">';
+    [['impulse','Impulse'],['sine','Sine'],['square','Square'],['noise','Noise']].forEach(function(s){
+      html+='<div class="chip '+(c.signalA===s[0]?'active':'')+'" onclick="STATE.convolution.signalA=\''+s[0]+'\';MODULES.convolution.init();renderLeftPanel()">'+s[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Impulse response h[n]</h4>';
+    html+='<div class="chip-row">';
+    [['decay','Exp decay'],['boxcar','Boxcar'],['gauss','Gaussian'],['sine','Sine']].forEach(function(s){
+      html+='<div class="chip '+(c.signalB===s[0]?'active':'')+'" onclick="STATE.convolution.signalB=\''+s[0]+'\';MODULES.convolution.init();renderLeftPanel()">'+s[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Mode</h4>';
+    html+='<div class="chip-row">';
+    html+='<div class="chip '+(c.circular?'':'active')+'" onclick="STATE.convolution.circular=false;MODULES.convolution.compute();renderLeftPanel()">Linear</div>';
+    html+='<div class="chip '+(c.circular?'active':'')+'" onclick="STATE.convolution.circular=true;MODULES.convolution.compute();renderLeftPanel()">Circular</div>';
+    html+='</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    return '<div class="sec"><h4>Convolution</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'y[n] = (x ∗ h)[n] = Σ<sub>k</sub> x[k]·h[n−k]<br><br>'+
+      '<b class="text-c1">Convolution theorem:</b><br>'+
+      'F{x ∗ h} = F{x}·F{h}<br><br>'+
+      'So convolution in time = multiplication in frequency.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Linear vs circular</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      '<b>Linear:</b> output has length N+M−1. Standard for FIR filtering.<br><br>'+
+      '<b>Circular:</b> output has same length N. Equivalent to linear convolution with time-aliasing wrap-around. Used with FFT for fast convolution.'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE: POLE-ZERO
+   ================================================================ */
+registerModule('polezero',{
+  title:'Pole-Zero Plot',
+  icon:'⊙',
+  desc:'Place poles and zeros on the z-plane. Drag them around and see the frequency response and stability change live.',
+  init:function(){this.compute()},
+  compute:function(){
+    var pz=STATE.polezero;
+    /* Compute frequency response from poles and zeros */
+    var numPts=256;
+    var resp=new Float64Array(numPts);
+    for(var i=0;i<numPts;i++){
+      var w=Math.PI*i/(numPts-1);
+      var cw=Math.cos(w),sw=Math.sin(w);
+      /* H(e^jw) = K · Π(e^jw - zᵢ) / Π(e^jw - pᵢ) */
+      var numRe=pz.gain,numIm=0;
+      pz.zeros.forEach(function(z){
+        var dr=cw-z.re,di=sw-z.im;
+        var nr=numRe*dr-numIm*di;
+        numIm=numRe*di+numIm*dr;
+        numRe=nr;
+      });
+      var denRe=1,denIm=0;
+      pz.poles.forEach(function(p){
+        var dr2=cw-p.re,di2=sw-p.im;
+        var nr2=denRe*dr2-denIm*di2;
+        denIm=denRe*di2+denIm*dr2;
+        denRe=nr2;
+      });
+      var den2=denRe*denRe+denIm*denIm;
+      var re=(numRe*denRe+numIm*denIm)/den2;
+      var im=(numIm*denRe-numRe*denIm)/den2;
+      var mag=Math.sqrt(re*re+im*im);
+      resp[i]=20*Math.log10(Math.max(mag,1e-10));
+    }
+    pz.response=resp;
+    /* Stability */
+    var stable=true;
+    pz.poles.forEach(function(p){
+      var m=Math.sqrt(p.re*p.re+p.im*p.im);
+      if(m>=1)stable=false;
+    });
+    pz.stable=stable;
+  },
+  tick:function(dt){STATE.time+=dt},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var pz=STATE.polezero;
+    /* Left half: z-plane */
+    var planeW=Math.min(W*0.5,H-40);
+    var cx=40+planeW/2;
+    var cy=H/2;
+    var R=planeW/2-20;
+    /* Background */
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.beginPath();ctx.arc(cx,cy,R+10,0,Math.PI*2);ctx.fill();
+    /* Unit circle */
+    ctx.strokeStyle='rgba(64,255,128,.5)';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();
+    /* Axes */
+    ctx.strokeStyle='rgba(80,120,96,.5)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx-R-10,cy);ctx.lineTo(cx+R+10,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy-R-10);ctx.lineTo(cx,cy+R+10);ctx.stroke();
+    /* Angle markers */
+    ctx.fillStyle='rgba(80,120,96,.7)';
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('Re',cx+R+2,cy+14);
+    ctx.fillText('Im',cx+10,cy-R-2);
+    ctx.fillText('(1,0)',cx+R,cy+14);
+    ctx.fillText('(-1,0)',cx-R,cy+14);
+    /* Stability region shading */
+    ctx.fillStyle='rgba(64,255,128,.05)';
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.fill();
+    /* Grid lines */
+    ctx.strokeStyle='rgba(80,120,96,.15)';
+    for(var gi=-2;gi<=2;gi++){
+      ctx.beginPath();ctx.moveTo(cx+gi*R/2,cy-R);ctx.lineTo(cx+gi*R/2,cy+R);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cx-R,cy+gi*R/2);ctx.lineTo(cx+R,cy+gi*R/2);ctx.stroke();
+    }
+    /* Poles */
+    pz.poles.forEach(function(p,i){
+      var px=cx+p.re*R,py=cy-p.im*R;
+      var mag=Math.sqrt(p.re*p.re+p.im*p.im);
+      var color=mag>=1?'#ff5060':'#40ff80';
+      ctx.strokeStyle=color;
+      ctx.lineWidth=2.5;
+      ctx.beginPath();
+      ctx.moveTo(px-7,py-7);ctx.lineTo(px+7,py+7);
+      ctx.moveTo(px-7,py+7);ctx.lineTo(px+7,py-7);
+      ctx.stroke();
+      if(i===pz.drag&&pz.dragType==='pole'){
+        ctx.strokeStyle='#ffe040';
+        ctx.beginPath();ctx.arc(px,py,12,0,Math.PI*2);ctx.stroke();
+      }
+    });
+    /* Zeros */
+    pz.zeros.forEach(function(z,i){
+      var zx=cx+z.re*R,zy=cy-z.im*R;
+      ctx.strokeStyle='#40d0ff';
+      ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.arc(zx,zy,7,0,Math.PI*2);ctx.stroke();
+      if(i===pz.drag&&pz.dragType==='zero'){
+        ctx.strokeStyle='#ffe040';
+        ctx.beginPath();ctx.arc(zx,zy,12,0,Math.PI*2);ctx.stroke();
+      }
+    });
+    /* Label */
+    ctx.fillStyle='#40ff80';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('Z-PLANE — '+(pz.stable?'STABLE':'UNSTABLE')+(pz.stable?'':' (pole outside unit circle)'),40,30);
+    /* Right half: frequency response */
+    var plotX=cx+R+40;
+    var plotY=40;
+    var plotW=W-plotX-40;
+    var plotH=H-80;
+    ctx.fillStyle='rgba(8,24,15,.5)';
+    ctx.strokeStyle='rgba(64,208,255,.3)';
+    ctx.beginPath();ctx.roundRect(plotX,plotY,plotW,plotH,6);ctx.fill();ctx.stroke();
+    /* Grid */
+    ctx.strokeStyle='rgba(80,120,96,.1)';
+    for(var gi2=0;gi2<=8;gi2++){ctx.beginPath();ctx.moveTo(plotX+gi2*plotW/8,plotY);ctx.lineTo(plotX+gi2*plotW/8,plotY+plotH);ctx.stroke();}
+    for(var gj=0;gj<=4;gj++){ctx.beginPath();ctx.moveTo(plotX,plotY+gj*plotH/4);ctx.lineTo(plotX+plotW,plotY+gj*plotH/4);ctx.stroke();}
+    /* Response */
+    if(pz.response){
+      var minDB=-60,maxDB=20;
+      ctx.strokeStyle='#40ff80';
+      ctx.lineWidth=2;
+      ctx.fillStyle='rgba(64,255,128,.1)';
+      ctx.beginPath();
+      ctx.moveTo(plotX,plotY+plotH);
+      for(var k=0;k<pz.response.length;k++){
+        var px2=plotX+(k/(pz.response.length-1))*plotW;
+        var py2=plotY+plotH-clamp((pz.response[k]-minDB)/(maxDB-minDB),0,1)*plotH;
+        ctx.lineTo(px2,py2);
+      }
+      ctx.lineTo(plotX+plotW,plotY+plotH);
+      ctx.closePath();ctx.fill();
+      ctx.beginPath();
+      for(var k2=0;k2<pz.response.length;k2++){
+        var px3=plotX+(k2/(pz.response.length-1))*plotW;
+        var py3=plotY+plotH-clamp((pz.response[k2]-minDB)/(maxDB-minDB),0,1)*plotH;
+        if(k2===0)ctx.moveTo(px3,py3);else ctx.lineTo(px3,py3);
+      }
+      ctx.stroke();
+    }
+    ctx.fillStyle='#40d0ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('|H(e^jω)| in dB',plotX+8,plotY+14);
+    ctx.fillStyle='#507860';
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    for(var fr=0;fr<=4;fr++){
+      ctx.fillText(fr===4?'π':'π·'+(fr/4).toFixed(2),plotX+fr*plotW/4,plotY+plotH+14);
+    }
+    setStatsHTML(
+      '<div>Poles: '+pz.poles.length+'</div>'+
+      '<div>Zeros: '+pz.zeros.length+'</div>'+
+      '<div>Status: '+(pz.stable?'STABLE':'UNSTABLE')+'</div>'
+    );
+    updateBadge('⊙ Pole-Zero Plot · '+(pz.stable?'stable':'unstable'));
+    $('sbMode').textContent='Pole-Zero';
+  },
+  onDown:function(p){
+    var pz=STATE.polezero;
+    var planeW=Math.min(CANV.W*0.5,CANV.H-40);
+    var cx=40+planeW/2;
+    var cy=CANV.H/2;
+    var R=planeW/2-20;
+    var wx=(p.x-cx)/R;
+    var wy=-(p.y-cy)/R;
+    /* Find nearest pole/zero */
+    var bestDist=0.2,bestIdx=-1,bestType=null;
+    pz.poles.forEach(function(pole,i){
+      var d=Math.hypot(pole.re-wx,pole.im-wy);
+      if(d<bestDist){bestDist=d;bestIdx=i;bestType='pole';}
+    });
+    pz.zeros.forEach(function(z,i){
+      var d=Math.hypot(z.re-wx,z.im-wy);
+      if(d<bestDist){bestDist=d;bestIdx=i;bestType='zero';}
+    });
+    if(bestIdx>=0){
+      pz.drag=bestIdx;
+      pz.dragType=bestType;
+    } else {
+      /* Add new pole/zero at cursor position */
+      if(Math.abs(wx)<1.5&&Math.abs(wy)<1.5){
+        if(INPUT.mouseX&&p.y<CANV.H/2){/* not used */}
+        /* Left click adds pole, shift adds zero (use Ctrl on desktop) */
+        pz.poles.push({re:wx,im:wy});
+        this.compute();
+      }
+    }
+  },
+  onMove:function(p){
+    if(!INPUT.down)return;
+    var pz=STATE.polezero;
+    if(pz.drag==null)return;
+    var planeW=Math.min(CANV.W*0.5,CANV.H-40);
+    var cx=40+planeW/2;
+    var cy=CANV.H/2;
+    var R=planeW/2-20;
+    var wx=(p.x-cx)/R;
+    var wy=-(p.y-cy)/R;
+    if(pz.dragType==='pole')pz.poles[pz.drag]={re:wx,im:wy};
+    else pz.zeros[pz.drag]={re:wx,im:wy};
+    this.compute();
+  },
+  onUp:function(){STATE.polezero.drag=null},
+  controls:function(){
+    var pz=STATE.polezero;
+    var html='';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn full sm" onclick="STATE.polezero.poles.push({re:0.5,im:0});STATE.polezero.zeros.push({re:-1,im:0});MODULES.polezero.compute();renderLeftPanel()">+ Add pole & zero</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="if(STATE.polezero.poles.length>1)STATE.polezero.poles.pop();MODULES.polezero.compute();renderLeftPanel()">− Remove pole</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="if(STATE.polezero.zeros.length>0)STATE.polezero.zeros.pop();MODULES.polezero.compute();renderLeftPanel()">− Remove zero</button>';
+    html+='<button class="btn full sm danger" style="margin-top:4px" onclick="STATE.polezero.poles=[];STATE.polezero.zeros=[];MODULES.polezero.compute();renderLeftPanel()">Clear all</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4>';
+    html+='<button class="btn full sm" onclick="pzPreset(\'lowpass\')">Lowpass (pole near +1)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="pzPreset(\'highpass\')">Highpass (pole near −1)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="pzPreset(\'notch\')">Notch (zeros on circle)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="pzPreset(\'allpass\')">Allpass</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="pzPreset(\'unstable\')">Unstable (pole outside)</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Gain</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>K</span><span>'+fmt(pz.gain,3)+'</span></div>';
+    html+='<input type="range" min="0.1" max="3" step="0.05" value="'+pz.gain+'" oninput="STATE.polezero.gain=parseFloat(this.value);MODULES.polezero.compute();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Current poles</h4>';
+    html+='<div class="kv">';
+    pz.poles.forEach(function(p,i){
+      var m=Math.sqrt(p.re*p.re+p.im*p.im);
+      html+='<div class="row"><span class="k">p'+i+'</span><span class="v">'+fmt(p.re,3)+' + j'+fmt(p.im,3)+'  |·|='+fmt(m,3)+'</span></div>';
+    });
+    html+='</div></div>';
+    html+='<div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.5;margin-top:8px">Click empty space to add a pole. Drag poles and zeros to move them.</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var pz=STATE.polezero;
+    var html='<div class="sec"><h4>Transfer function</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'H(z) = K · Π(z − z<sub>i</sub>) / Π(z − p<sub>i</sub>)<br><br>'+
+      'K = '+fmt(pz.gain,3)+'<br>'+
+      'Poles: '+pz.poles.length+'<br>'+
+      'Zeros: '+pz.zeros.length+
+      '</div></div>';
+    html+='<div class="sec"><h4>Stability</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:'+(pz.stable?'var(--c1)':'var(--c4)')+'">'+
+      (pz.stable?'✓ BIBO stable — all poles inside |z|<1':'✗ Unstable — at least one pole has |z|≥1')+
+      '</div></div>';
+    html+='<div class="sec"><h4>Frequency interpretation</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      'The frequency response is the value of H(z) evaluated along the unit circle (z = e^jω). '+
+      'Peaks occur when the path passes near a pole. Dips (nulls) occur when it passes near a zero.'+
+      '</div></div>';
+    return html;
+  }
+});
+function pzPreset(name){
+  var pz=STATE.polezero;
+  if(name==='lowpass'){
+    pz.poles=[{re:0.9,im:0}];
+    pz.zeros=[{re:-1,im:0}];
+  } else if(name==='highpass'){
+    pz.poles=[{re:-0.9,im:0}];
+    pz.zeros=[{re:1,im:0}];
+  } else if(name==='notch'){
+    var f=0.3;
+    pz.poles=[{re:0.9*Math.cos(2*Math.PI*f),im:0.9*Math.sin(2*Math.PI*f)},
+              {re:0.9*Math.cos(2*Math.PI*f),im:-0.9*Math.sin(2*Math.PI*f)}];
+    pz.zeros=[{re:Math.cos(2*Math.PI*f),im:Math.sin(2*Math.PI*f)},
+              {re:Math.cos(2*Math.PI*f),im:-Math.sin(2*Math.PI*f)}];
+  } else if(name==='allpass'){
+    pz.poles=[{re:0.6,im:0}];
+    pz.zeros=[{re:1/0.6,im:0}];
+  } else if(name==='unstable'){
+    pz.poles=[{re:1.1,im:0},{re:0.5,im:0.5}];
+    pz.zeros=[{re:-1,im:0}];
+  }
+  MODULES.polezero.compute();
+  renderLeftPanel();
+}
+
+/* ================================================================
+   TABS
+   ================================================================ */
+var TABS=[
+  {key:'waveform',icon:'🌊',label:'Waveform'},
+  {key:'spectrum',icon:'📊',label:'Spectrum'},
+  {key:'filter',icon:'🎚️',label:'Filter'},
+  {key:'spectrogram',icon:'🌈',label:'Spectrogram'},
+  {key:'modulation',icon:'📡',label:'Modulation'},
+  {key:'convolution',icon:'⊗',label:'Convolution'},
+  {key:'polezero',icon:'⊙',label:'Pole-Zero'},
+  {key:'about',icon:'ℹ️',label:'About'}
+];
+function buildTabs(){
+  var tabs=$('tbTabs');
+  tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===key)});
+  $('sbMode').textContent=(MODULES[key]&&MODULES[key].title)||key;
+  if(MODULES[key]&&MODULES[key].init)MODULES[key].init();
+  renderLeftPanel();
+  renderRightPanel();
+}
+function switchRp(name,e){
+  STATE.currentRp=name;
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active');});
+  e.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active');});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+  renderRightPanel();
+}
+function renderLeftPanel(){
+  var body=$('lpBody');
+  if(!body)return;
+  var m=MODULES[STATE.currentTab];
+  if(!m){body.innerHTML='';return;}
+  var html='';
+  html+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--c1);font-size:.72rem">'+m.icon+' '+m.title+'</h4><div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.5;margin-top:4px">'+m.desc+'</div></div>';
+  if(m.controls)html+=m.controls();
+  body.innerHTML=html;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var statePane=$('rpState');
+  if(statePane){
+    statePane.innerHTML=
+      '<div class="sec"><h4>Live</h4>'+
+      '<div class="kv">'+
+      '<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>'+
+      '<div class="row"><span class="k">Sample rate</span><span class="v">'+STATE.Fs+' Hz</span></div>'+
+      '<div class="row"><span class="k">N samples</span><span class="v">'+STATE.N+'</span></div>'+
+      '<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,2)+'s</span></div>'+
+      '</div></div>';
+  }
+  var mathPane=$('rpMath');
+  if(mathPane&&m&&m.mathPanel)mathPane.innerHTML=m.mathPanel();
+  else if(mathPane)mathPane.innerHTML='<div class="empty"><div class="e-icon">∑</div>No math panel</div>';
+  var helpPane=$('rpHelp');
+  if(helpPane&&m)helpPane.innerHTML=
+    '<div class="sec"><h4>Module</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.6;color:var(--tx2)">'+
+    '<b class="text-c1">'+m.icon+' '+m.title+'</b><br><br>'+m.desc+'</div></div>';
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){
+  var p=$('rpLogs');
+  if(!p)return;
+  var html='<div class="sec"><h4>Event Log</h4>';
+  if(!LOG.length)html+='<div class="empty" style="padding:20px;font-size:.62rem">No events</div>';
+  else LOG.slice().reverse().forEach(function(l){
+    var color=l.type==='error'?'var(--c4)':l.type==='success'?'var(--c1)':l.type==='warn'?'var(--c2)':'var(--c3)';
+    html+='<div style="padding:4px 6px;border-left:2px solid '+color+';margin-bottom:3px;font-family:var(--mono);font-size:.6rem;background:var(--panel3);border-radius:2px">'+
+      '<span style="color:var(--tx3)">'+new Date(l.t).toTimeString().substr(0,8)+'</span> '+
+      '<span style="color:'+color+'">'+esc(l.msg)+'</span></div>';
+  });
+  html+='</div>';
+  p.innerHTML=html;
+}
+
+/* ================================================================
+   ACTIONS
+   ================================================================ */
+function togglePlay(){
+  STATE.playing=!STATE.playing;
+  $('btnPlay').textContent=STATE.playing?'⏸':'▶';
+  $('tbDot').classList.toggle('on',STATE.playing);
+  toast(STATE.playing?'Playing':'Paused','info',1000);
+}
+function resetModule(){
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+    toast('Reset','success',1000);
+  }
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['scope','amber','light'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  var next=THEMES[(i+1)%THEMES.length];
+  document.documentElement.setAttribute('data-theme',next);
+  STATE.theme=next;
+  toast('Theme: '+next,'success');
+}
+function exportState(){
+  var data={
+    version:'1.0',
+    timestamp:new Date().toISOString(),
+    waveform:STATE.waveform,
+    filter:{type:STATE.filter.type,fc:STATE.filter.fc,order:STATE.filter.order},
+    modulation:{type:STATE.modulation.type,fc:STATE.modulation.fc},
+    polezero:{poles:STATE.polezero.poles,zeros:STATE.polezero.zeros,gain:STATE.polezero.gain}
+  };
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='signal-config.json';a.click();
+  setTimeout(function(){URL.revokeObjectURL(url)},500);
+  toast('Config exported','success');
+}
+
+/* ================================================================
+   HELP
+   ================================================================ */
+function showHelp(){
+  openModal('❓ SIGNAL — Help',
+    '<div class="sec"><h4>🌊 About</h4><div class="text-xs" style="line-height:1.75;color:var(--tx2);font-family:var(--mono)">A digital signal processing workbench with real FFT (Cooley-Tukey radix-2), FIR/IIR filter design, and interactive modulation. Everything runs at 60 FPS in your browser.</div></div>'+
+    '<div class="sec"><h4>📚 Modules</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">🌊 Waveform</b> — synthesizer + live FFT, click to move cursor<br>'+
+    '<b class="text-c1">📊 Spectrum</b> — FFT analyzer with 6 window functions<br>'+
+    '<b class="text-c1">🎚️ Filter</b> — FIR (sinc + window) and IIR (Butterworth biquad)<br>'+
+    '<b class="text-c1">🌈 Spectrogram</b> — STFT with tunable window/hop and colormaps<br>'+
+    '<b class="text-c1">📡 Modulation</b> — AM, FM, BPSK, QPSK, 16-QAM with constellation<br>'+
+    '<b class="text-c1">⊗ Convolution</b> — linear vs circular, uses real O(N²) algorithm<br>'+
+    '<b class="text-c1">⊙ Pole-Zero</b> — drag poles/zeros, watch stability and response change'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">Space</b> — Play/pause<br>'+
+    '<b class="text-c1">R</b> — Reset module<br>'+
+    '<b class="text-c1">1-7</b> — Jump to module<br>'+
+    '<b class="text-c1">T</b> — Cycle theme<br>'+
+    '<b class="text-c1">?</b> — This help'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',{size:'lg'});
+}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay();}
+  else if(e.key==='r'||e.key==='R')resetModule();
+  else if(e.key>='1'&&e.key<='7'){var idx=parseInt(e.key)-1;if(TABS[idx])switchTab(TABS[idx].key);}
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal();
+});
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+var BOOT_STEPS=[
+  'Initializing complex FFT engine...',
+  'Loading Cooley-Tukey radix-2 butterflies...',
+  'Preparing window functions (Hann, Hamming, Blackman)...',
+  'Warming up FIR design (windowed sinc)...',
+  'Compiling Butterworth biquad coefficients...',
+  'Preparing STFT spectrogram engine...',
+  'Loading modulation schemes (AM/FM/PSK/QAM)...',
+  'Ready.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  var iv=setInterval(function(){
+    pct+=rnd(8,18);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('SIGNAL ready · Press ? for help','success',3500);
+      },400);
+    }
+  },160);
+}
+
+/* ================================================================
+   MAIN LOOP
+   ================================================================ */
+var lastFrameTime=performance.now();
+var fpsAccum=0,fpsFrames=0;
+function mainLoop(now){
+  var dt=Math.min((now-lastFrameTime)/1000,0.05);
+  lastFrameTime=now;
+  fpsAccum+=dt;fpsFrames++;
+  if(fpsAccum>=0.5){
+    $('sbFps').textContent=Math.round(fpsFrames/fpsAccum);
+    fpsAccum=0;fpsFrames=0;
+  }
+  var m=MODULES[STATE.currentTab];
+  if(m&&m.tick){try{m.tick(dt);}catch(e){console.error(e);}}
+  if(m&&m.draw){try{m.draw(CANV.ctx);}catch(e){console.error(e);}}
+  requestAnimationFrame(mainLoop);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  buildTabs();
+  initCanvas();
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+  }
+  renderLeftPanel();
+  renderRightPanel();
+  logMsg('SIGNAL initialized','success');
+  bootSequence();
+  requestAnimationFrame(mainLoop);
+  setInterval(function(){
+    if(STATE.currentRp==='logs')renderLogs();
+  },1000);
+});
+
+console.log('%c SIGNAL ','background:linear-gradient(90deg,#40ff80,#ffe040);color:#05100a;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cDigital Signal Processing Studio','color:#40ff80;font-weight:600');
+console.log('%cFFT · FIR/IIR · Spectrogram · QAM · Convolution · Pole-Zero','color:#40d0ff');
+console.log('%cPress ? for help','color:#80b090');
+</script>
+</body></html>

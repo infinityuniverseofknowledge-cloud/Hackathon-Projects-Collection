@@ -1,0 +1,2040 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORBITALGUARD XPRIZE — Autonomous Space Resilience Platform</title>
+<style>
+:root{
+  --bg:#02040a;--bg-soft:#060b16;--panel:#0a1020;--panel-hi:#101a2e;
+  --border:#152036;--border-hi:#213257;--text:#e6edf3;--muted:#6b7a94;
+  --primary:#00d4ff;--primary-hi:#5ce1ff;--primary-lo:#0099cc;
+  --accent:#ff6b35;--success:#3fb950;--warn:#d29922;--danger:#f85149;
+  --purple:#a855f7;--pink:#ec4899;--lime:#84cc16;--yellow:#fbbf24;
+  --teal:#14b8a6;--indigo:#6366f1;--rose:#fb7185;--cyan:#06b6d4;
+  --radius:12px;--rs:8px;--rxs:6px;
+  --shadow:0 4px 20px rgba(0,0,0,.7);
+  --shadow-hi:0 12px 48px rgba(0,212,255,.2);
+  --mono:'JetBrains Mono','Fira Code','Consolas',monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --t:all .22s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"]{
+  --bg:#f0f4f8;--bg-soft:#e4ebf2;--panel:#fff;--panel-hi:#f5f8fb;
+  --border:#d0dae5;--border-hi:#b0bfd0;--text:#0f172a;--muted:#556070;
+  --primary:#0284c7;--primary-hi:#0ea5e9;--primary-lo:#075985;
+  --accent:#ea580c;--success:#10b981;--warn:#f59e0b;--danger:#ef4444;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:var(--sans);background:var(--bg);color:var(--text);
+  font-size:14px;line-height:1.5;min-height:100vh;
+  display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--primary);color:#000}
+a{color:var(--primary);text-decoration:none}
+canvas{display:block}
+
+/* ========== TOPBAR ========== */
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 18px;background:rgba(10,16,32,.92);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:200;backdrop-filter:blur(14px);
+  flex-wrap:wrap;gap:10px;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:linear-gradient(135deg,var(--primary),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  box-shadow:0 4px 18px rgba(0,212,255,.5);
+  animation:brandPulse 3s ease-in-out infinite;
+  position:relative;overflow:hidden;
+}
+.brand-icon::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.4),transparent 60%);
+}
+@keyframes brandPulse{
+  0%,100%{box-shadow:0 4px 18px rgba(0,212,255,.5)}
+  50%{box-shadow:0 4px 28px rgba(168,85,247,.7)}
+}
+.brand-name{font-size:1.05rem;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;gap:6px;line-height:1.1}
+.brand-version{font-size:.6rem;background:var(--primary);color:#000;padding:2px 6px;border-radius:100px;font-weight:800;letter-spacing:.5px}
+.brand-tag{font-size:.6rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-weight:600}
+.toolbar{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.pill{
+  display:inline-flex;align-items:center;gap:5px;padding:5px 10px;
+  border-radius:100px;font-size:.65rem;font-weight:700;
+  background:var(--bg-soft);border:1px solid var(--border);color:var(--muted);
+}
+.pill .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success);animation:pulseDot 2s infinite}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.4}}
+.btn{
+  display:inline-flex;align-items:center;gap:5px;padding:7px 12px;
+  border-radius:var(--rs);border:1px solid var(--border);
+  background:var(--panel);color:var(--text);font-weight:600;font-size:.78rem;
+  cursor:pointer;transition:var(--t);font-family:inherit;
+  text-decoration:none;white-space:nowrap;
+}
+.btn:hover{background:var(--panel-hi);border-color:var(--border-hi);transform:translateY(-1px)}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:#000}
+.btn-primary:hover{background:var(--primary-hi);box-shadow:var(--shadow-hi)}
+.btn-ghost{background:transparent;border-color:transparent}
+.btn-ghost:hover{background:var(--panel-hi);border-color:var(--border)}
+.btn-sm{padding:4px 8px;font-size:.7rem}
+.btn-xs{padding:3px 6px;font-size:.62rem;border-radius:var(--rxs)}
+.btn-danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn-success{background:var(--success);border-color:var(--success);color:#000}
+.btn-warn{background:var(--warn);border-color:var(--warn);color:#000}
+.btn-purple{background:var(--purple);border-color:var(--purple);color:#fff}
+.btn-cyan{background:var(--cyan);border-color:var(--cyan);color:#000}
+
+/* ========== LAYOUT ========== */
+.layout{display:flex;flex:1;min-height:0}
+.sidebar{
+  width:230px;background:var(--panel);border-right:1px solid var(--border);
+  padding:10px 8px;flex-shrink:0;display:flex;flex-direction:column;gap:1px;
+  overflow-y:auto;position:sticky;top:57px;height:calc(100vh - 57px);
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.nav-label{
+  font-size:.58rem;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
+  color:var(--muted);padding:11px 12px 4px;user-select:none;
+}
+.nav-item{
+  display:flex;align-items:center;gap:8px;padding:7px 11px;
+  border-radius:var(--rxs);color:var(--text);font-size:.8rem;font-weight:500;
+  cursor:pointer;transition:var(--t);border:1px solid transparent;
+  text-decoration:none;user-select:none;
+}
+.nav-item:hover{background:var(--panel-hi);border-color:var(--border);transform:translateX(2px)}
+.nav-item.active{
+  background:linear-gradient(135deg,var(--primary),var(--primary-lo));
+  color:#000;border-color:transparent;
+  box-shadow:0 3px 12px rgba(0,212,255,.35);
+}
+.nav-item .ic{font-size:1rem;width:18px;text-align:center;flex-shrink:0}
+.nav-item .cnt{margin-left:auto;font-size:.58rem;background:rgba(255,255,255,.15);padding:1px 6px;border-radius:100px;font-weight:700;min-width:16px;text-align:center}
+.nav-item.active .cnt{background:rgba(0,0,0,.25)}
+
+main{flex:1;padding:20px 24px;max-width:1600px;margin:0 auto;width:100%;overflow-y:auto}
+
+/* ========== TYPO ========== */
+h1{font-size:1.5rem;font-weight:800;letter-spacing:-.5px;margin-bottom:3px;line-height:1.25}
+h2{font-size:1rem;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;line-height:1.3}
+h3{font-size:.88rem;font-weight:600;margin-bottom:6px}
+.sub{color:var(--muted);font-size:.8rem;margin-bottom:14px}
+
+/* ========== CARDS ========== */
+.card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;margin-bottom:12px;
+  box-shadow:var(--shadow);transition:var(--t);
+}
+.card:hover{border-color:var(--border-hi)}
+.card-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.card-title h2{margin:0}
+
+/* ========== GRID ========== */
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.grid-2{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.grid-3{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.grid-4{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.grid-6{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+
+/* ========== STATS ========== */
+.stat{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px;text-align:center;transition:var(--t);position:relative;overflow:hidden;
+  cursor:pointer;
+}
+.stat::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--primary),var(--purple));
+}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-hi);border-color:var(--primary)}
+.stat .v{font-size:1.4rem;font-weight:800;color:var(--primary);line-height:1.1;letter-spacing:-.5px}
+.stat .l{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.9px;font-weight:700;margin-top:3px}
+.stat.green .v{color:var(--success)}
+.stat.red .v{color:var(--danger)}
+.stat.amber .v{color:var(--warn)}
+.stat.cyan .v{color:var(--cyan)}
+.stat.purple .v{color:var(--purple)}
+.stat.pink .v{color:var(--pink)}
+
+/* ========== FORMS ========== */
+.field{margin-bottom:10px}
+label{display:block;font-weight:600;font-size:.68rem;color:var(--muted);margin-bottom:3px;letter-spacing:.3px;text-transform:uppercase}
+input,select,textarea{
+  width:100%;padding:8px 11px;border-radius:var(--rxs);
+  border:1px solid var(--border);background:var(--bg-soft);
+  color:var(--text);font-size:.82rem;font-family:inherit;transition:var(--t);
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--primary);
+  box-shadow:0 0 0 2px rgba(0,212,255,.2);background:var(--panel);
+}
+textarea{resize:vertical;min-height:70px;font-family:var(--mono);font-size:.72rem}
+input[type="range"]{width:100%;padding:0}
+.row{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.row-between{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+
+/* ========== CODE ========== */
+pre{
+  background:#010308;color:#a5f3a5;padding:12px;
+  border-radius:var(--rs);font-family:var(--mono);
+  font-size:.72rem;overflow:auto;max-height:400px;
+  line-height:1.45;border:1px solid var(--border);
+}
+code{
+  font-family:var(--mono);background:var(--bg-soft);
+  padding:1px 4px;border-radius:3px;font-size:.78em;color:var(--primary);
+}
+
+/* ========== TERMINAL ========== */
+.terminal{
+  background:#000;color:#0f0;font-family:var(--mono);
+  padding:12px;border-radius:var(--rs);font-size:.72rem;
+  min-height:200px;max-height:440px;overflow-y:auto;
+  line-height:1.45;border:1px solid var(--border);
+}
+.terminal::-webkit-scrollbar{width:8px}
+.terminal::-webkit-scrollbar-thumb{background:#152036;border-radius:4px}
+.terminal .line{padding:1px 0;white-space:pre-wrap}
+.terminal .error{color:#f85149}
+.terminal .warn{color:#d29922}
+.terminal .ok{color:#3fb950}
+.terminal .info{color:#58a6ff}
+.terminal .prompt{color:#00d4ff;font-weight:700}
+
+/* ========== 3D CANVAS ========== */
+.canvas-3d{
+  width:100%;background:#000;border-radius:var(--rs);
+  border:1px solid var(--border);display:block;cursor:grab;
+}
+.canvas-3d:active{cursor:grabbing}
+.canvas-wrap{position:relative;margin-bottom:10px}
+.canvas-toolbar{
+  position:absolute;top:8px;right:8px;display:flex;gap:3px;
+  background:rgba(0,0,0,.65);padding:3px;border-radius:6px;
+  backdrop-filter:blur(8px);
+}
+.canvas-toolbar .btn{padding:3px 7px;font-size:.65rem;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.1);color:#fff}
+.canvas-info{
+  position:absolute;bottom:8px;left:8px;
+  background:rgba(0,0,0,.7);padding:5px 9px;border-radius:6px;
+  font-family:var(--mono);font-size:.62rem;color:#6b7a94;
+  backdrop-filter:blur(8px);
+}
+
+/* ========== TABLES ========== */
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:var(--bg-soft);color:var(--muted);font-size:.6rem;text-transform:uppercase;letter-spacing:.9px;font-weight:700}
+tr:hover td{background:var(--panel-hi)}
+td{font-size:.76rem}
+
+/* ========== CHARTS ========== */
+.chart{
+  display:flex;align-items:flex-end;gap:2px;height:150px;
+  padding:10px 10px 22px;background:var(--bg-soft);
+  border-radius:var(--rs);border:1px solid var(--border);
+}
+.bar{
+  flex:1;min-width:4px;border-radius:3px 3px 0 0;
+  background:linear-gradient(180deg,var(--primary),var(--purple));
+  transition:var(--t);cursor:pointer;position:relative;
+}
+.bar:hover{opacity:.85;transform:translateY(-2px)}
+.bar .lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:.55rem;color:var(--muted);white-space:nowrap;font-family:var(--mono)}
+.bar.green{background:linear-gradient(180deg,var(--success),var(--lime))}
+.bar.red{background:linear-gradient(180deg,var(--danger),var(--pink))}
+.bar.cyan{background:linear-gradient(180deg,var(--cyan),var(--primary))}
+.bar.amber{background:linear-gradient(180deg,var(--warn),var(--yellow))}
+.bar.purple{background:linear-gradient(180deg,var(--purple),var(--indigo))}
+
+/* ========== BADGES ========== */
+.badge{display:inline-block;padding:2px 7px;border-radius:100px;font-size:.58rem;font-weight:700;letter-spacing:.3px}
+.badge-ok{background:rgba(63,185,80,.15);color:var(--success);border:1px solid rgba(63,185,80,.3)}
+.badge-warn{background:rgba(210,153,34,.15);color:var(--warn);border:1px solid rgba(210,153,34,.3)}
+.badge-err{background:rgba(248,81,73,.15);color:var(--danger);border:1px solid rgba(248,81,73,.3)}
+.badge-info{background:rgba(0,212,255,.15);color:var(--primary);border:1px solid rgba(0,212,255,.3)}
+.badge-purple{background:rgba(168,85,247,.15);color:var(--purple);border:1px solid rgba(168,85,247,.3)}
+.badge-run{background:rgba(0,212,255,.15);color:var(--primary);border:1px solid rgba(0,212,255,.3);animation:pulseBadge 1.5s infinite}
+@keyframes pulseBadge{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ========== TOAST ========== */
+.toast{
+  position:fixed;bottom:18px;right:18px;z-index:9999;
+  padding:11px 16px;border-radius:var(--rs);
+  background:var(--panel);border:1px solid var(--border);
+  border-left:4px solid var(--primary);box-shadow:var(--shadow-hi);
+  font-weight:600;font-size:.78rem;animation:slideIn .3s;
+  max-width:320px;
+}
+.toast.success{border-left-color:var(--success)}
+.toast.error{border-left-color:var(--danger)}
+.toast.warn{border-left-color:var(--warn)}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ========== SECTIONS ========== */
+.section{display:none}
+.section.active{display:block;animation:fadeUp .25s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ========== MISC ========== */
+.empty{color:var(--muted);font-style:italic;padding:12px 0;text-align:center;font-size:.78rem}
+.activity{font-family:var(--mono);font-size:.7rem;line-height:1.6;max-height:320px;overflow-y:auto}
+.activity .item{display:flex;gap:6px;padding:2px 0;border-bottom:1px dashed var(--border)}
+.activity .ts{color:var(--muted);flex-shrink:0}
+.activity .src{color:var(--primary);font-weight:700;flex-shrink:0;min-width:80px}
+
+.pipeline{display:flex;align-items:center;gap:5px;padding:12px;background:var(--bg-soft);border-radius:var(--rs);border:1px solid var(--border);overflow-x:auto}
+.stage{min-width:100px;padding:9px;text-align:center;border-radius:var(--rs);background:var(--panel);border:2px solid var(--border);transition:var(--t);position:relative;flex-shrink:0}
+.stage.running{border-color:var(--primary);box-shadow:0 0 18px rgba(0,212,255,.4)}
+.stage.success{border-color:var(--success);background:rgba(63,185,80,.08)}
+.stage.failed{border-color:var(--danger);background:rgba(248,81,73,.08)}
+.stage.pending{opacity:.5}
+.stage-name{font-weight:700;font-size:.72rem;margin-bottom:2px}
+.stage-status{font-size:.55rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.arrow{color:var(--muted);font-size:1rem;flex-shrink:0}
+
+.host-card{background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--rs);padding:9px;display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;transition:var(--t)}
+.host-card:hover{border-color:var(--primary);transform:translateX(2px)}
+.host-card .name{font-weight:700;font-size:.8rem}
+.host-card .meta{font-size:.62rem;color:var(--muted);font-family:var(--mono);margin-top:1px}
+
+.metric-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px}
+.metric-fill{height:100%;border-radius:3px;transition:width .5s;background:linear-gradient(90deg,var(--primary),var(--purple))}
+.metric-fill.green{background:linear-gradient(90deg,var(--success),var(--lime))}
+.metric-fill.red{background:linear-gradient(90deg,var(--danger),var(--pink))}
+.metric-fill.amber{background:linear-gradient(90deg,var(--warn),var(--yellow))}
+
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--border)}
+.timeline-item{position:relative;margin-bottom:10px;padding:4px 0}
+.timeline-item::before{content:'';position:absolute;left:-19px;top:7px;width:9px;height:9px;border-radius:50%;background:var(--primary);border:2px solid var(--panel)}
+.timeline-time{font-size:.6rem;color:var(--muted);font-family:var(--mono);font-weight:600}
+
+.tabs{display:flex;gap:2px;margin-bottom:8px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.tab{padding:6px 11px;border-radius:var(--rxs) var(--rxs) 0 0;cursor:pointer;background:transparent;border:1px solid transparent;border-bottom:none;font-size:.72rem;font-weight:600;transition:var(--t);color:var(--muted)}
+.tab:hover{color:var(--text);background:var(--panel-hi)}
+.tab.active{background:var(--panel);color:var(--primary);border-color:var(--border);border-bottom:1px solid var(--panel);margin-bottom:-1px}
+
+.gauge{position:relative;width:100px;height:100px;margin:0 auto}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .val{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:1.3rem;font-weight:800;color:var(--primary)}
+
+@media(max-width:900px){
+  .sidebar{position:fixed;left:-250px;top:57px;bottom:0;z-index:150;transition:left .3s;box-shadow:var(--shadow-hi);width:230px}
+  .sidebar.open{left:0}
+  main{padding:14px 12px}
+  h1{font-size:1.2rem}
+  .brand-tag{display:none}
+}
+.menu-btn{display:none}
+@media(max-width:900px){.menu-btn{display:inline-flex}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">🛰️</div>
+    <div>
+      <div class="brand-name">ORBITALGUARD <span class="brand-version">XPRIZE</span></div>
+      <div class="brand-tag">Autonomous Space Resilience Platform · Multi-Hackathon Edition</div>
+    </div>
+  </div>
+  <div class="toolbar">
+    <span class="pill"><span class="dot"></span><span id="clusterStatus">Orbit Nominal</span></span>
+    <span class="pill" id="liveClock">--:--:--</span>
+    <button class="btn btn-ghost menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+    <button class="btn btn-ghost" onclick="toggleTheme()">🌓</button>
+    <button class="btn btn-ghost" onclick="exportAll()">📤</button>
+    <button class="btn btn-ghost" onclick="clearAll()">🗑</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="nav-label">Mission Control</div>
+    <a class="nav-item active" data-tab="dashboard"><span class="ic">📊</span>Dashboard</a>
+    <a class="nav-item" data-tab="globe"><span class="ic">🌍</span>3D Orbital Globe</a>
+    <a class="nav-item" data-tab="activity"><span class="ic">📋</span>Activity</a>
+
+    <div class="nav-label">Space Systems</div>
+    <a class="nav-item" data-tab="constellation"><span class="ic">🛰</span>Constellation</a>
+    <a class="nav-item" data-tab="groundstation"><span class="ic">📡</span>Ground Stations</a>
+    <a class="nav-item" data-tab="signals"><span class="ic">📶</span>Signal Integrity</a>
+    <a class="nav-item" data-tab="cyber"><span class="ic">🛡</span>Space Cybersecurity</a>
+    <a class="nav-item" data-tab="debris"><span class="ic">💫</span>Debris Tracker</a>
+
+    <div class="nav-label">Earth Observation</div>
+    <a class="nav-item" data-tab="copernicus"><span class="ic">🌊</span>Water Monitoring</a>
+    <a class="nav-item" data-tab="disaster"><span class="ic">🌪</span>Disaster Response</a>
+    <a class="nav-item" data-tab="crisis"><span class="ic">🚨</span>Crisis Mapping</a>
+    <a class="nav-item" data-tab="crops"><span class="ic">🌾</span>Agriculture</a>
+
+    <div class="nav-label">Navigation</div>
+    <a class="nav-item" data-tab="galileo"><span class="ic">🧭</span>GNSS Integrity</a>
+    <a class="nav-item" data-tab="routes"><span class="ic">🚚</span>Route Planning</a>
+
+    <div class="nav-label">AI Stack</div>
+    <a class="nav-item" data-tab="aiagents"><span class="ic">🤖</span>AI Agents</a>
+    <a class="nav-item" data-tab="finetune"><span class="ic">🧠</span>Fine-Tuning</a>
+    <a class="nav-item" data-tab="vision"><span class="ic">👁</span>Vision Models</a>
+
+    <div class="nav-label">Operations</div>
+    <a class="nav-item" data-tab="cron"><span class="ic">⏰</span>Schedules</a>
+    <a class="nav-item" data-tab="backup"><span class="ic">💾</span>Backups</a>
+    <a class="nav-item" data-tab="dr"><span class="ic">🌊</span>Disaster Recovery</a>
+    <a class="nav-item" data-tab="chaos"><span class="ic">🎲</span>Chaos Engineering</a>
+
+    <div class="nav-label">Development</div>
+    <a class="nav-item" data-tab="shell"><span class="ic">💻</span>Shell</a>
+    <a class="nav-item" data-tab="configs"><span class="ic">⚙️</span>Configs</a>
+    <a class="nav-item" data-tab="iac"><span class="ic">📐</span>IaC</a>
+
+    <div class="nav-label">About</div>
+    <a class="nav-item" data-tab="about"><span class="ic">ℹ️</span>About</a>
+  </aside>
+
+  <main>
+    <section id="s-dashboard" class="section active">
+      <h1>Mission Control</h1>
+      <p class="sub">Autonomous space resilience platform. Real-time 3D simulation. Prepared for XPRIZE, NASA Space Apps, CASSINI.</p>
+      <div class="grid-4" id="dash-stats"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><h2>🛰️ Constellation Health</h2></div>
+          <div id="dash-constellation-chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><h2>📡 Signal Integrity (live)</h2></div>
+          <div id="dash-signal-chart" class="chart"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><h2>🌍 3D Orbital Preview</h2></div>
+          <div class="canvas-wrap">
+            <canvas id="dash-globe" class="canvas-3d" height="360"></canvas>
+            <div class="canvas-toolbar">
+              <button class="btn" onclick="camGlobe.rotate(-0.2)">↺</button>
+              <button class="btn" onclick="camGlobe.rotate(0.2)">↻</button>
+              <button class="btn" onclick="camGlobe.zoom(0.9)">+</button>
+              <button class="btn" onclick="camGlobe.zoom(1.1)">−</button>
+              <button class="btn" onclick="camGlobe.reset()">⟲</button>
+            </div>
+            <div class="canvas-info" id="dash-globe-info">Loading orbital simulation...</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><h2>🔔 Active Alerts</h2></div>
+          <div id="dash-alerts"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h2>⚡ Mission Actions</h2></div>
+        <div class="row">
+          <button class="btn btn-primary" onclick="runOrbitalCheck()">🛰️ Run orbital check</button>
+          <button class="btn btn-purple" onclick="runCyberScan()">🛡 Cyber scan</button>
+          <button class="btn btn-cyan" onclick="runWaterAnalysis()">🌊 Water analysis</button>
+          <button class="btn btn-warn" onclick="runChaos()">🎲 Chaos experiment</button>
+          <button class="btn" onclick="showTab('globe')">🌍 Open 3D Globe</button>
+          <button class="btn" onclick="showTab('shell')">💻 Shell</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="s-globe" class="section">
+      <h1>3D Orbital Globe</h1>
+      <p class="sub">Interactive 3D Earth with satellite constellation, ground stations, and real-time orbital mechanics.</p>
+      <div class="card">
+        <div class="canvas-wrap">
+          <canvas id="globe-3d" class="canvas-3d" height="520"></canvas>
+          <div class="canvas-toolbar">
+            <button class="btn" onclick="camGlobeMain.rotate(-0.2)">↺</button>
+            <button class="btn" onclick="camGlobeMain.rotate(0.2)">↻</button>
+            <button class="btn" onclick="camGlobeMain.pitch(-0.1)">↑</button>
+            <button class="btn" onclick="camGlobeMain.pitch(0.1)">↓</button>
+            <button class="btn" onclick="camGlobeMain.zoom(0.9)">+</button>
+            <button class="btn" onclick="camGlobeMain.zoom(1.1)">−</button>
+            <button class="btn" onclick="camGlobeMain.reset()">⟲</button>
+            <button class="btn" onclick="toggleOrbitPaths()">🛸 Paths</button>
+          </div>
+          <div class="canvas-info" id="globe-3d-info">Drag to rotate · Scroll to zoom</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><h2>Selected Object</h2></div>
+          <div id="globe-object-info" class="empty">Click a satellite or station to inspect.</div>
+        </div>
+        <div class="card">
+          <div class="card-title"><h2>Live Telemetry</h2></div>
+          <div id="globe-telemetry"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s-activity" class="section">
+      <h1>Activity Log</h1>
+      <p class="sub">Complete audit trail of all operations.</p>
+      <div class="card">
+        <div class="row-between" style="margin-bottom:10px">
+          <input id="act-filter" placeholder="Filter events..." style="flex:1;max-width:400px" oninput="renderActivity()">
+          <div class="row">
+            <button class="btn btn-sm btn-danger" onclick="clearActivity()">🗑 Clear</button>
+            <button class="btn btn-sm" onclick="exportActivity()">📤 Export</button>
+          </div>
+        </div>
+        <div class="activity" id="activity"></div>
+      </div>
+    </section>
+
+    <section id="s-constellation" class="section">
+      <h1>Satellite Constellation</h1>
+      <p class="sub">Full constellation management with orbital mechanics.</p>
+      <div class="grid" id="constellation-stats"></div>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="launchSatellite()">🚀 Launch satellite</button>
+          <button class="btn" onclick="launchSatellite(5)">⚡ 5 batch</button>
+          <button class="btn btn-danger" onclick="deorbitAll()">🗑 Deorbit all</button>
+        </div>
+        <div id="constellation-list"></div>
+      </div>
+    </section>
+
+    <section id="s-groundstation" class="section">
+      <h1>Ground Stations</h1>
+      <p class="sub">Global network of ground stations with coverage tracking.</p>
+      <div class="card">
+        <div class="canvas-wrap">
+          <canvas id="ground-3d" class="canvas-3d" height="320"></canvas>
+          <div class="canvas-toolbar">
+            <button class="btn" onclick="camGround.rotate(-0.2)">↺</button>
+            <button class="btn" onclick="camGround.rotate(0.2)">↻</button>
+            <button class="btn" onclick="camGround.zoom(0.9)">+</button>
+            <button class="btn" onclick="camGround.zoom(1.1)">−</button>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div id="groundstation-list"></div></div>
+    </section>
+
+    <section id="s-signals" class="section">
+      <h1>Signal Integrity</h1>
+      <p class="sub">Real-time signal monitoring, jamming detection, spoofing analysis.</p>
+      <div class="grid-4" id="signal-stats"></div>
+      <div class="grid-2">
+        <div class="card"><h2>Signal Strength (dB)</h2><div id="signal-strength" class="chart"></div></div>
+        <div class="card"><h2>Interference Events</h2><div id="signal-interference"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><h2>Signal Analysis</h2></div>
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="runSignalAnalysis()">📡 Analyze signals</button>
+          <button class="btn btn-warn" onclick="detectJamming()">⚠️ Detect jamming</button>
+          <button class="btn btn-danger" onclick="detectSpoofing()">🚨 Detect spoofing</button>
+        </div>
+        <div id="signal-analysis-out"></div>
+      </div>
+    </section>
+
+    <section id="s-cyber" class="section">
+      <h1>Space Cybersecurity</h1>
+      <p class="sub">Cyber resilience for space-based strategic enablers (CASSINI theme).</p>
+      <div class="grid" id="cyber-stats"></div>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="runCyberScan()">🛡 Full cyber scan</button>
+          <button class="btn" onclick="checkCompliance('CASSINI')">✔ CASSINI compliance</button>
+        </div>
+        <div id="cyber-results"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><h2>Threat Timeline</h2></div>
+        <div class="timeline" id="cyber-timeline"></div>
+      </div>
+    </section>
+
+    <section id="s-debris" class="section">
+      <h1>Space Debris Tracker</h1>
+      <p class="sub">Real-time tracking of orbital debris with collision prediction.</p>
+      <div class="grid" id="debris-stats"></div>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="addDebris()">💫 Add debris</button>
+          <button class="btn" onclick="addDebris(10)">⚡ 10 batch</button>
+          <button class="btn btn-warn" onclick="predictCollisions()">⚠️ Predict collisions</button>
+        </div>
+        <div id="debris-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><h2>Collision Predictions</h2></div>
+        <div id="collision-predictions"></div>
+      </div>
+    </section>
+
+    <section id="s-copernicus" class="section">
+      <h1>Water Resource Monitoring</h1>
+      <p class="sub">Copernicus-based water quality and resource management (CASSINI theme).</p>
+      <div class="grid-4" id="water-stats"></div>
+      <div class="card">
+        <div class="canvas-wrap">
+          <canvas id="water-3d" class="canvas-3d" height="340"></canvas>
+          <div class="canvas-toolbar">
+            <button class="btn" onclick="camWater.rotate(-0.2)">↺</button>
+            <button class="btn" onclick="camWater.rotate(0.2)">↻</button>
+            <button class="btn" onclick="camWater.zoom(0.9)">+</button>
+            <button class="btn" onclick="camWater.zoom(1.1)">−</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="runWaterAnalysis()">🌊 Run water analysis</button>
+          <button class="btn" onclick="generateWaterReport()">📄 Generate report</button>
+        </div>
+        <div id="water-analysis-out"></div>
+      </div>
+    </section>
+
+    <section id="s-disaster" class="section">
+      <h1>Disaster Response</h1>
+      <p class="sub">Earth observation for crisis response and civil resilience.</p>
+      <div class="grid-4" id="disaster-stats"></div>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-danger" onclick="triggerDisaster('flood')">🌊 Flood</button>
+          <button class="btn btn-warn" onclick="triggerDisaster('fire')">🔥 Wildfire</button>
+          <button class="btn btn-warn" onclick="triggerDisaster('earthquake')">🌍 Earthquake</button>
+          <button class="btn btn-danger" onclick="triggerDisaster('conflict')">⚠️ Conflict</button>
+        </div>
+        <div id="disaster-output"></div>
+      </div>
+    </section>
+
+    <section id="s-crisis" class="section">
+      <h1>Crisis Mapping</h1>
+      <p class="sub">Map conflict damage, routes for goods and people, civilian infrastructure.</p>
+      <div class="card">
+        <div class="grid-3">
+          <div class="field"><label>Region</label>
+            <select id="crisis-region"><option>Ukraine</option><option>Gaza</option><option>Sudan</option><option>Yemen</option></select>
+          </div>
+          <div class="field"><label>Analysis Type</label>
+            <select id="crisis-type"><option>damage-assessment</option><option>route-planning</option><option>infrastructure</option></select>
+          </div>
+          <div class="field"><label>Priority</label>
+            <select id="crisis-priority"><option>critical</option><option>high</option><option>medium</option></select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="runCrisisMapping()">🗺️ Run analysis</button>
+        <div id="crisis-output" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section id="s-crops" class="section">
+      <h1>Agricultural Intelligence</h1>
+      <p class="sub">Crop monitoring, yield prediction, drought risk.</p>
+      <div class="grid-4" id="crop-stats"></div>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="runCropAnalysis()">🌾 Analyze crops</button>
+          <button class="btn" onclick="generateCropReport()">📄 Report</button>
+        </div>
+        <div id="crop-output"></div>
+      </div>
+    </section>
+
+    <section id="s-galileo" class="section">
+      <h1>GNSS Integrity</h1>
+      <p class="sub">Galileo/EGNOS signal validation and integrity monitoring.</p>
+      <div class="grid-4" id="gnss-stats"></div>
+      <div class="card">
+        <div class="canvas-wrap">
+          <canvas id="gnss-3d" class="canvas-3d" height="320"></canvas>
+          <div class="canvas-toolbar">
+            <button class="btn" onclick="camGnss.rotate(-0.2)">↺</button>
+            <button class="btn" onclick="camGnss.rotate(0.2)">↻</button>
+            <button class="btn" onclick="camGnss.zoom(0.9)">+</button>
+            <button class="btn" onclick="camGnss.zoom(1.1)">−</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="runGNSSIntegrity()">🧭 Validate signals</button>
+        </div>
+        <div id="gnss-output"></div>
+      </div>
+    </section>
+
+    <section id="s-routes" class="section">
+      <h1>Route Planning</h1>
+      <p class="sub">Galileo-based route planning for goods and people in crisis zones.</p>
+      <div class="card">
+        <div class="grid-3">
+          <div class="field"><label>Origin</label><input id="route-origin" value="Kyiv"></div>
+          <div class="field"><label>Destination</label><input id="route-dest" value="Lviv"></div>
+          <div class="field"><label>Priority</label><select id="route-priority"><option>humanitarian</option><option>commercial</option><option>medical</option></select></div>
+        </div>
+        <button class="btn btn-primary" onclick="planRoute()">🚚 Plan route</button>
+        <div id="route-output" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section id="s-aiagents" class="section">
+      <h1>AI Agents</h1>
+      <p class="sub">Autonomous multi-agent workflows (AMD/xpRIZE track).</p>
+      <div class="grid" id="ai-stats"></div>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="runAIAgent()">🤖 Run agent</button>
+          <button class="btn btn-purple" onclick="runMultiAgent()">🧠 Multi-agent</button>
+          <button class="btn btn-cyan" onclick="showAgentLog()">📋 Agent log</button>
+        </div>
+        <div id="ai-agent-output"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><h2>Agent Registry</h2></div>
+        <div id="agent-registry"></div>
+      </div>
+    </section>
+
+    <section id="s-finetune" class="section">
+      <h1>Fine-Tuning</h1>
+      <p class="sub">Domain-specific model fine-tuning simulation (AMD MI300X track).</p>
+      <div class="grid-3">
+        <div class="field"><label>Base Model</label>
+          <select id="ft-model"><option>Qwen 9B</option><option>Qwen 27B</option><option>Llama 3.1 8B</option></select>
+        </div>
+        <div class="field"><label>Dataset</label><input id="ft-dataset" value="space-cyber-corpus"></div>
+        <div class="field"><label>Method</label><select id="ft-method"><option>QLoRA</option><option>LoRA</option><option>Full</option></select></div>
+      </div>
+      <button class="btn btn-primary" onclick="runFineTune()">🧠 Start fine-tune</button>
+      <div class="terminal" id="ft-terminal" style="margin-top:10px;min-height:240px"></div>
+    </section>
+
+    <section id="s-vision" class="section">
+      <h1>Vision Models</h1>
+      <p class="sub">Multimodal satellite imagery analysis (AMD Vision track).</p>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="runVisionAnalysis('flood')">🌊 Flood detection</button>
+          <button class="btn" onclick="runVisionAnalysis('fire')">🔥 Fire detection</button>
+          <button class="btn" onclick="runVisionAnalysis('damage')">🏚 Damage assessment</button>
+          <button class="btn" onclick="runVisionAnalysis('crops')">🌾 Crop health</button>
+        </div>
+        <div id="vision-output"></div>
+      </div>
+    </section>
+
+    <section id="s-cron" class="section">
+      <h1>Scheduled Operations</h1>
+      <p class="sub">Cron jobs for orbital checks, backups, analytics.</p>
+      <div class="card">
+        <div class="grid-3">
+          <div class="field"><label>Name</label><input id="cron-name" value="orbital-check"></div>
+          <div class="field"><label>Expression</label><input id="cron-expr" value="*/15 * * * *"></div>
+          <div class="field"><label>Command</label><input id="cron-cmd" value="check-orbit.sh"></div>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary" onclick="addCron()">⏰ Schedule</button>
+          <button class="btn btn-sm" onclick="explainCron(document.getElementById('cron-expr').value)">Explain</button>
+        </div>
+        <div id="cron-explained" style="margin-top:8px;color:var(--muted);font-size:.75rem"></div>
+        <div id="cron-list" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section id="s-backup" class="section">
+      <h1>Backups</h1>
+      <p class="sub">Mission data backup and restore.</p>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-primary" onclick="runBackup()">💾 Run backup</button>
+          <select id="backup-target" style="max-width:200px">
+            <option value="telemetry">Telemetry</option>
+            <option value="imagery">Imagery</option>
+            <option value="configs">Configs</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div id="backups-list"></div>
+      </div>
+    </section>
+
+    <section id="s-dr" class="section">
+      <h1>Disaster Recovery</h1>
+      <p class="sub">RTO/RPO, failover procedures, drills.</p>
+      <div class="grid" id="dr-stats"></div>
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <button class="btn btn-danger" onclick="simulateDisaster()">🌊 Simulate disaster</button>
+          <button class="btn btn-success" onclick="runDRDrill()">✅ Run drill</button>
+        </div>
+        <div id="dr-output"></div>
+      </div>
+    </section>
+
+    <section id="s-chaos" class="section">
+      <h1>Chaos Engineering</h1>
+      <p class="sub">Controlled failure experiments on space systems.</p>
+      <div class="card">
+        <div class="grid-3">
+          <div class="field"><label>Type</label>
+            <select id="chaos-type">
+              <option value="satellite-failure">Satellite Failure</option>
+              <option value="ground-station-loss">Ground Station Loss</option>
+              <option value="signal-jamming">Signal Jamming</option>
+              <option value="cyber-attack">Cyber Attack</option>
+              <option value="debris-impact">Debris Impact</option>
+            </select>
+          </div>
+          <div class="field"><label>Duration (s)</label><input id="chaos-duration" type="number" value="30"></div>
+          <div class="field"><label>Target</label><input id="chaos-target" value="constellation/alpha"></div>
+        </div>
+        <button class="btn btn-warn" onclick="runChaos()">🎲 Run experiment</button>
+        <div id="chaos-output" style="margin-top:10px"></div>
+      </div>
+      <div class="card"><h2>History</h2><div id="chaos-history"></div></div>
+    </section>
+
+    <section id="s-shell" class="section">
+      <h1>Mission Shell</h1>
+      <p class="sub">Command-line interface for mission control.</p>
+      <div class="card">
+        <div class="terminal" id="shell-terminal" style="min-height:400px"></div>
+        <div class="row" style="margin-top:10px">
+          <span style="color:var(--primary);font-family:var(--mono);font-weight:700">$</span>
+          <input id="shell-input" placeholder="Type a command (try 'help')" style="flex:1;font-family:var(--mono)" onkeydown="if(event.key==='Enter')runShellCmd()">
+          <button class="btn btn-primary" onclick="runShellCmd()">↵</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="s-configs" class="section">
+      <h1>Configs</h1>
+      <p class="sub">Ready-to-use configuration files for space infrastructure.</p>
+      <div class="card">
+        <div class="tabs" id="config-tabs">
+          <div class="tab active" data-cfg="docker">Docker</div>
+          <div class="tab" data-cfg="k8s">K8s</div>
+          <div class="tab" data-cfg="terraform">Terraform</div>
+          <div class="tab" data-cfg="ansible">Ansible</div>
+          <div class="tab" data-cfg="prometheus">Prometheus</div>
+        </div>
+        <div id="config-name" style="margin-bottom:6px;color:var(--muted);font-size:.72rem"></div>
+        <pre id="config-content"></pre>
+        <div class="row" style="margin-top:10px">
+          <button class="btn btn-sm btn-primary" onclick="downloadCurrentConfig()">⬇ Download</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="s-iac" class="section">
+      <h1>Infrastructure as Code</h1>
+      <p class="sub">Terraform, Pulumi, Ansible for space infrastructure.</p>
+      <div class="card">
+        <div class="tabs" id="iac-tabs">
+          <div class="tab active" data-iac="terraform">Terraform</div>
+          <div class="tab" data-iac="pulumi">Pulumi</div>
+          <div class="tab" data-iac="ansible">Ansible</div>
+        </div>
+        <pre id="iac-content"></pre>
+      </div>
+    </section>
+
+    <section id="s-about" class="section">
+      <h1>About</h1>
+      <div class="card">
+        <h2>ORBITALGUARD XPRIZE</h2>
+        <p>Autonomous space resilience platform designed for major hackathons.</p>
+        <p style="margin-top:10px"><strong>Target Hackathons:</strong></p>
+        <ul style="margin-top:6px;padding-left:20px;line-height:1.9">
+          <li><strong>XPRIZE Build with Gemini</strong> — $2M pool, $500K grand prize</li>
+          <li><strong>NASA Space Apps Challenge</strong> — Nov 14-15, 2026</li>
+          <li><strong>CASSINI Hackathon</strong> — Nov 27-29, 2026 (space cybersecurity)</li>
+          <li><strong>AMD AI DevMaster</strong> — $30K, agentic/multimodal/physical AI</li>
+          <li><strong>Hack-Nation Global</strong> — $30K+, MIT AI Conference pathway</li>
+        </ul>
+        <p style="margin-top:12px"><strong>Features:</strong></p>
+        <ul style="columns:2;margin-top:6px;padding-left:20px;line-height:1.9">
+          <li>3D orbital globe with satellites</li>
+          <li>Constellation management</li>
+          <li>Signal integrity monitoring</li>
+          <li>Space cybersecurity</li>
+          <li>Debris tracking</li>
+          <li>Water resource monitoring</li>
+          <li>Disaster response</li>
+          <li>Crisis mapping</li>
+          <li>GNSS integrity</li>
+          <li>Route planning</li>
+          <li>AI agents</li>
+          <li>Fine-tuning simulation</li>
+          <li>Vision models</li>
+          <li>Chaos engineering</li>
+          <li>Mission shell</li>
+        </ul>
+        <p style="margin-top:12px;color:var(--muted)">100% offline. localStorage. Zero dependencies. Ready to present.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+// ============================================================
+// ORBITALGUARD XPRIZE — Core
+// ============================================================
+
+// ============ STATE ============
+const S = {
+  satellites: JSON.parse(localStorage.getItem('og_satellites') || '[]'),
+  groundStations: JSON.parse(localStorage.getItem('og_groundstations') || '[]'),
+  debris: JSON.parse(localStorage.getItem('og_debris') || '[]'),
+  alerts: JSON.parse(localStorage.getItem('og_alerts') || '[]'),
+  incidents: JSON.parse(localStorage.getItem('og_incidents') || '[]'),
+  events: JSON.parse(localStorage.getItem('og_events') || '[]'),
+  audit: JSON.parse(localStorage.getItem('og_audit') || '[]'),
+  crons: JSON.parse(localStorage.getItem('og_crons') || '[]'),
+  backups: JSON.parse(localStorage.getItem('og_backups') || '[]'),
+  chaos: JSON.parse(localStorage.getItem('og_chaos') || '[]'),
+  agents: JSON.parse(localStorage.getItem('og_agents') || '[]'),
+  metricsHistory: { signal:[], satellites:[], debris:[], latency:[] },
+  logsRunning: false,
+  logsTimer: null,
+  start: Date.now()
+};
+
+// ============ UTIL ============
+function toast(msg, type='info'){
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function save(k){ localStorage.setItem('og_' + k, JSON.stringify(S[k])); }
+function now(){ return new Date().toISOString(); }
+function fmtTime(ts){ return new Date(ts).toLocaleTimeString('en-US'); }
+function downloadFile(name, content, mime){
+  const blob = new Blob([content], {type: mime || 'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function logEvent(src, msg){
+  S.events.unshift({t: now(), src, msg});
+  if (S.events.length > 500) S.events.pop();
+  save('events');
+  S.audit.unshift({t: now(), user: 'mission-control', action: src, detail: msg});
+  if (S.audit.length > 500) S.audit.pop();
+  save('audit');
+  renderActivity();
+}
+
+// ============ THEME / NAV ============
+function toggleTheme(){
+  const h = document.documentElement;
+  h.setAttribute('data-theme', h.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  localStorage.setItem('og_theme', h.getAttribute('data-theme'));
+}
+(function(){
+  const s = localStorage.getItem('og_theme');
+  if (s) document.documentElement.setAttribute('data-theme', s);
+})();
+
+function showTab(id){
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
+  const sec = document.getElementById('s-' + id);
+  if (sec) sec.classList.add('active');
+  const nav = document.querySelector('.nav-item[data-tab="' + id + '"]');
+  if (nav) nav.classList.add('active');
+  document.querySelector('.sidebar').classList.remove('open');
+  // Lazy init 3D
+  setTimeout(() => {
+    if (id === 'dashboard') initDashGlobe();
+    if (id === 'globe') initMainGlobe();
+    if (id === 'groundstation') initGround3D();
+    if (id === 'copernicus') initWater3D();
+    if (id === 'galileo') initGnss3D();
+  }, 50);
+  if (id === 'shell') initShell();
+  if (id === 'configs') showConfig('docker');
+  if (id === 'iac') showIac('terraform');
+  if (id === 'backup') renderBackups();
+  if (id === 'cron') renderCrons();
+  if (id === 'dr') renderDR();
+  if (id === 'chaos') renderChaosHistory();
+  if (id === 'constellation') renderConstellation();
+  if (id === 'groundstation') renderGroundStations();
+  if (id === 'debris') renderDebris();
+  if (id === 'signals') renderSignalStats();
+  if (id === 'cyber') renderCyberStats();
+  if (id === 'copernicus') renderWaterStats();
+  if (id === 'disaster') renderDisasterStats();
+  if (id === 'crops') renderCropStats();
+  if (id === 'galileo') renderGnssStats();
+  if (id === 'aiagents') renderAIStats();
+}
+document.querySelectorAll('.nav-item').forEach(a => {
+  a.addEventListener('click', () => showTab(a.dataset.tab));
+});
+
+// ============ CLOCK ============
+setInterval(() => {
+  const el = document.getElementById('liveClock');
+  if (el) el.textContent = new Date().toLocaleTimeString('en-US');
+}, 1000);
+
+/* ============================================================
+   MICRO 3D ENGINE (Canvas-based, WebGL-free)
+   ============================================================ */
+class Camera3D {
+  constructor(canvas, opts = {}){
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.angle = opts.angle || 0;
+    this.pitch = opts.pitch !== undefined ? opts.pitch : 0.3;
+    this.distance = opts.distance || 8;
+    this.fov = opts.fov || 600;
+    this.objects = [];
+    this.running = false;
+    this.autoRotate = opts.autoRotate !== false;
+    this.highlight = null;
+    this.onClick = null;
+    this.showPaths = opts.showPaths !== false;
+    this._setupInteractions();
+    this._resize();
+    window.addEventListener('resize', () => this._resize());
+  }
+  _resize(){
+    const rect = this.canvas.getBoundingClientRect();
+    const h = parseInt(this.canvas.getAttribute('height') || 320);
+    this.canvas.width = rect.width * window.devicePixelRatio;
+    this.canvas.height = h * window.devicePixelRatio;
+    this.ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+    this.W = rect.width;
+    this.H = h;
+  }
+  _setupInteractions(){
+    let dragging = false;
+    let lx = 0, ly = 0;
+    this.canvas.addEventListener('mousedown', e => { dragging = true; lx = e.clientX; ly = e.clientY; });
+    window.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      this.angle += (e.clientX - lx) * 0.01;
+      this.pitch = Math.max(-0.3, Math.min(1.2, this.pitch + (e.clientY - ly) * 0.005));
+      lx = e.clientX; ly = e.clientY;
+    });
+    window.addEventListener('mouseup', () => dragging = false);
+    this.canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      this.distance = Math.max(2.5, Math.min(20, this.distance + e.deltaY * 0.005));
+    }, {passive:false});
+    this.canvas.addEventListener('click', e => {
+      const rect = this.canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const hit = this._pick(mx, my);
+      if (hit && this.onClick) this.onClick(hit);
+    });
+  }
+  _pick(mx, my){
+    let best = null, bestDist = 25;
+    this.objects.forEach(obj => {
+      if (!obj._projected || !obj.visible) return;
+      const d = Math.hypot(obj._projected.x - mx, obj._projected.y - my);
+      if (d < bestDist){ bestDist = d; best = obj; }
+    });
+    return best;
+  }
+  rotate(d){ this.angle += d; }
+  pitch3d(d){ this.pitch = Math.max(-0.3, Math.min(1.2, this.pitch + d)); }
+  zoom(f){ this.distance = Math.max(2.5, Math.min(20, this.distance * f)); }
+  reset(){ this.angle = 0; this.pitch = 0.3; this.distance = 8; }
+  project(p){
+    const cos = Math.cos(this.angle), sin = Math.sin(this.angle);
+    const cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    let x = p.x * cos - p.z * sin;
+    let z = p.x * sin + p.z * cos;
+    let y = p.y * cp - z * sp;
+    z = p.y * sp + z * cp;
+    z += this.distance;
+    if (z <= 0.1) return null;
+    const scale = this.fov / z;
+    return { x: this.W/2 + x * scale, y: this.H/2 - y * scale, z, scale };
+  }
+  add(obj){ this.objects.push(obj); }
+  clear(){ this.objects = []; }
+  start(){
+    if (this.running) return;
+    this.running = true;
+    const loop = () => {
+      if (!this.running) return;
+      if (this.autoRotate) this.angle += 0.004;
+      this.render();
+      requestAnimationFrame(loop);
+    };
+    loop();
+  }
+  render(){
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.W, this.H);
+    // Background gradient
+    const grad = ctx.createRadialGradient(this.W/2, this.H/2, 0, this.W/2, this.H/2, Math.max(this.W,this.H));
+    grad.addColorStop(0, '#02040a');
+    grad.addColorStop(1, '#000308');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, this.W, this.H);
+    // Stars
+    if (!this._stars){
+      this._stars = Array.from({length: 80}, () => ({
+        x: Math.random() * this.W,
+        y: Math.random() * this.H,
+        r: Math.random() * 1.2,
+        a: 0.3 + Math.random() * 0.7      }));
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    this._stars.forEach(s => {
+      ctx.globalAlpha = s.a;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    // Objects sorted by depth
+    const sorted = this.objects.filter(o => o.visible !== false).map(o => {
+      const proj = this.project(o.position);
+      o._projected = proj;
+      return {o, proj};
+    }).filter(x => x.proj).sort((a, b) => b.proj.z - a.proj.z);
+    // Edges (paths)
+    if (this.showPaths){
+      ctx.lineWidth = 1.2;
+      sorted.forEach(({o}) => {
+        if (!o.edges) return;
+        o.edges.forEach(([a, b]) => {
+          const p1 = this.objects[a];
+          const p2 = this.objects[b];
+          if (!p1 || !p2 || !p1._projected || !p2._projected) return;
+          ctx.strokeStyle = o.edgeColor || 'rgba(0,212,255,0.35)';
+          ctx.beginPath();
+          ctx.moveTo(p1._projected.x, p1._projected.y);
+          ctx.lineTo(p2._projected.x, p2._projected.y);
+          ctx.stroke();
+        });
+      });
+    }
+    // Orbit rings for satellites
+    sorted.forEach(({o, proj}) => {
+      if (o.orbitRadius && o.orbitRing){
+        // Draw orbital ring as ellipse
+        const steps = 40;
+        ctx.strokeStyle = o.orbitColor || 'rgba(0,212,255,0.12)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        for (let i = 0; i <= steps; i++){
+          const theta = (i / steps) * Math.PI * 2;
+          const p = { x: Math.cos(theta) * o.orbitRadius, y: o.position.y, z: Math.sin(theta) * o.orbitRadius };
+          const pp = this.project(p);
+          if (pp){
+            if (i === 0) ctx.moveTo(pp.x, pp.y);
+            else ctx.lineTo(pp.x, pp.y);
+          }
+        }
+        ctx.stroke();
+      }
+    });
+    // Nodes
+    sorted.forEach(({o, proj}) => {
+      const r = (o.size || 0.3) * proj.scale;
+      const isHighlight = this.highlight === o;
+      // Glow
+      if (o.glow || isHighlight){
+        ctx.beginPath();
+        ctx.arc(proj.x, proj.y, r * 2.2, 0, Math.PI * 2);
+        const g = ctx.createRadialGradient(proj.x, proj.y, 0, proj.x, proj.y, r * 2.2);
+        g.addColorStop(0, (o.color || '#00d4ff') + 'AA');
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+      // Sphere
+      const grd = ctx.createRadialGradient(proj.x - r*0.3, proj.y - r*0.3, 0, proj.x, proj.y, r);
+      grd.addColorStop(0, o.color || '#00d4ff');
+      grd.addColorStop(1, (o.color2 || o.color || '#0a1020'));
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+      ctx.strokeStyle = isHighlight ? '#fff' : 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = isHighlight ? 2 : 1;
+      ctx.stroke();
+      // Label
+      if (o.label && proj.scale > 25){
+        ctx.fillStyle = '#e6edf3';
+        ctx.font = 'bold ' + Math.min(11, Math.max(8, proj.scale * 0.13)) + 'px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText(o.label, proj.x, proj.y + r + 12);
+      }
+    });
+  }
+}
+
+// ============ 3D SCENES ============
+let camGlobe, camGlobeMain, camGround, camWater, camGnss;
+
+function initDashGlobe(){
+  const canvas = document.getElementById('dash-globe');
+  if (!canvas || camGlobe) return;
+  camGlobe = new Camera3D(canvas, {autoRotate: true, distance: 6, pitch: 0.4});
+  const satCount = 8;
+  for (let i = 0; i < satCount; i++){
+    const angle = (i / satCount) * Math.PI * 2;
+    const radius = 2.5;
+    camGlobe.add({
+      id: 'sat' + i,
+      label: 'SAT-' + i,
+      position: { x: Math.cos(angle) * radius, y: (Math.random() - 0.5) * 0.8, z: Math.sin(angle) * radius },
+      color: '#00d4ff',
+      size: 0.18,
+      glow: true,
+      visible: true,
+      edges: [],
+      orbitRadius: radius,
+      orbitRing: true,
+      orbitColor: 'rgba(0,212,255,0.1)'
+    });
+  }
+  camGlobe.add({
+    id: 'earth', label: 'Earth',
+    position: { x: 0, y: 0, z: 0 },
+    color: '#0284c7', size: 1.0, glow: true, visible: true, edges: []
+  });
+  camGlobe.start();
+  const info = document.getElementById('dash-globe-info');
+  if (info) info.textContent = satCount + ' satellites in orbit';
+}
+
+function initMainGlobe(){
+  const canvas = document.getElementById('globe-3d');
+  if (!canvas || camGlobeMain) return;
+  camGlobeMain = new Camera3D(canvas, {autoRotate: true, distance: 9, pitch: 0.35, showPaths: true});
+  // Earth
+  camGlobeMain.add({
+    id: 'earth', label: 'Earth',
+    position: { x: 0, y: 0, z: 0 },
+    color: '#0284c7', color2: '#0c1a3a',
+    size: 1.4, glow: true, visible: true, edges: []
+  });
+  // Satellites in 3 orbital planes
+  const planes = [0, Math.PI/3, 2*Math.PI/3];
+  planes.forEach((planeAngle, pi) => {
+    const satPerPlane = 4;
+    for (let i = 0; i < satPerPlane; i++){
+      const angle = (i / satPerPlane) * Math.PI * 2 + planeAngle;
+      const radius = 3 + pi * 0.6;
+      camGlobeMain.add({
+        id: 'sat_' + pi + '_' + i,
+        label: 'SAT-' + (pi * satPerPlane + i + 1),
+        position: { x: Math.cos(angle) * radius, y: Math.sin(angle) * 0.5, z: Math.sin(angle) * radius },
+        color: ['#00d4ff', '#a855f7', '#3fb950'][pi % 3],
+        size: 0.2, glow: true, visible: true, edges: [],
+        orbitRadius: radius, orbitRing: true,
+        orbitColor: ['rgba(0,212,255,0.15)', 'rgba(168,85,247,0.15)', 'rgba(63,185,80,0.15)'][pi % 3]
+      });
+    }
+  });
+  // Ground stations
+  const stationPositions = [
+    { name: 'Svalbard', x: 2.0, y: -0.8, z: 1.5 },
+    { name: 'Punta Arenas', x: -1.8, y: -0.9, z: -1.8 },
+    { name: 'Perth', x: -2.2, y: -0.5, z: 1.6 },
+    { name: 'Fairbanks', x: 1.8, y: -0.7, z: -1.9 }
+  ];
+  stationPositions.forEach((s, i) => {
+    camGlobeMain.add({
+      id: 'gs_' + i, label: s.name,
+      position: { x: s.x, y: s.y, z: s.z },
+      color: '#ff6b35', size: 0.24, glow: true, visible: true, edges: []
+    });
+  });
+  camGlobeMain.onClick = (obj) => {
+    const info = document.getElementById('globe-object-info');
+    if (info) info.innerHTML = '<div class="card" style="margin:0"><h3>' + obj.label + '</h3>' +
+      '<p style="color:var(--muted);font-size:.75rem">ID: <code>' + obj.id + '</code></p>' +
+      '<p style="color:var(--muted);font-size:.75rem">Position: (' + obj.position.x.toFixed(2) + ', ' + obj.position.y.toFixed(2) + ', ' + obj.position.z.toFixed(2) + ')</p>' +
+      '<p style="color:var(--muted);font-size:.75rem">Connections: ' + (obj.edges ? obj.edges.length : 0) + '</p></div>';
+    camGlobeMain.highlight = obj;
+  };
+  camGlobeMain.start();
+  const info = document.getElementById('globe-3d-info');
+  if (info) info.textContent = camGlobeMain.objects.length + ' objects in scene';
+  // Live telemetry
+  setInterval(updateGlobeTelemetry, 2000);
+}
+function updateGlobeTelemetry(){
+  const el = document.getElementById('globe-telemetry');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="host-card"><div><div class="name">Latency</div><div class="meta">Ground → Satellite</div></div><span class="badge badge-ok">' + (20 + Math.random() * 30).toFixed(0) + ' ms</span></div>' +
+    '<div class="host-card"><div><div class="name">Signal Strength</div><div class="meta">Average</div></div><span class="badge badge-ok">-' + (60 + Math.random() * 20).toFixed(0) + ' dBm</span></div>' +
+    '<div class="host-card"><div><div class="name">Bandwidth</div><div class="meta">Current</div></div><span class="badge badge-info">' + (100 + Math.random() * 400).toFixed(0) + ' Mbps</span></div>' +
+    '<div class="host-card"><div><div class="name">Packet Loss</div><div class="meta">Last minute</div></div><span class="badge badge-ok">0.0' + (Math.random() * 9).toFixed(0) + '%</span></div>';
+}
+function toggleOrbitPaths(){
+  if (camGlobeMain){ camGlobeMain.showPaths = !camGlobeMain.showPaths; toast('Orbit paths: ' + (camGlobeMain.showPaths ? 'ON' : 'OFF'), 'info'); }
+}
+
+function initGround3D(){
+  const canvas = document.getElementById('ground-3d');
+  if (!canvas || camGround) return;
+  camGround = new Camera3D(canvas, {autoRotate: true, distance: 7, pitch: 0.4});
+  camGround.add({ id: 'earth', label: 'Earth', position: {x:0,y:0,z:0}, color: '#0284c7', size: 1.2, glow: true, visible: true, edges: [] });
+  const stations = ['Svalbard', 'Punta Arenas', 'Perth', 'Fairbanks', 'Hartebeesthoek', 'Goldstone'];
+  stations.forEach((name, i) => {
+    const angle = (i / stations.length) * Math.PI * 2;
+    camGround.add({
+      id: 'gs_' + i, label: name,
+      position: { x: Math.cos(angle) * 2.5, y: -0.5, z: Math.sin(angle) * 2.5 },
+      color: '#ff6b35', size: 0.3, glow: true, visible: true, edges: []
+    });
+  });
+  camGround.start();
+}
+
+function initWater3D(){
+  const canvas = document.getElementById('water-3d');
+  if (!canvas || camWater) return;
+  camWater = new Camera3D(canvas, {autoRotate: true, distance: 6, pitch: 0.5});
+  // Water body visualization with waves
+  camWater.add({ id: 'water', label: 'Water Body', position: {x:0,y:0,z:0}, color: '#0ea5e9', size: 1.5, glow: true, visible: true, edges: [] });
+  // Monitoring buoys
+  for (let i = 0; i < 6; i++){
+    const angle = (i / 6) * Math.PI * 2;
+    camWater.add({
+      id: 'buoy_' + i, label: 'B' + i,
+      position: { x: Math.cos(angle) * 2.2, y: 0.3, z: Math.sin(angle) * 2.2 },
+      color: '#3fb950', size: 0.18, glow: true, visible: true, edges: []
+    });
+  }
+  camWater.start();
+}
+
+function initGnss3D(){
+  const canvas = document.getElementById('gnss-3d');
+  if (!canvas || camGnss) return;
+  camGnss = new Camera3D(canvas, {autoRotate: true, distance: 7, pitch: 0.3});
+  camGnss.add({ id: 'earth', label: 'Earth', position: {x:0,y:0,z:0}, color: '#0284c7', size: 1.2, glow: true, visible: true, edges: [] });
+  const sats = 12;
+  for (let i = 0; i < sats; i++){
+    const angle = (i / sats) * Math.PI * 2;
+    const radius = 2.8;
+    camGnss.add({
+      id: 'gnss_' + i, label: 'G' + i,
+      position: { x: Math.cos(angle) * radius, y: Math.sin(i) * 0.8, z: Math.sin(angle) * radius },
+      color: '#00d4ff', size: 0.15, glow: true, visible: true, edges: []
+    });
+  }
+  camGnss.start();
+}
+
+/* ============ DASHBOARD ============ */
+function renderDashboard(){
+  const el = document.getElementById('dash-stats');
+  if (!el) return;
+  const up = Math.round((Date.now() - S.start) / 1000);
+  const activeAlerts = S.alerts.filter(a => a.status === 'active').length;
+  el.innerHTML =
+    '<div class="stat" onclick="showTab(\'constellation\')"><div class="v">' + S.satellites.length + '</div><div class="l">Satellites</div></div>' +
+    '<div class="stat green" onclick="showTab(\'groundstation\')"><div class="v">' + S.groundStations.length + '</div><div class="l">Ground Stations</div></div>' +
+    '<div class="stat amber" onclick="showTab(\'debris\')"><div class="v">' + S.debris.length + '</div><div class="l">Debris Tracked</div></div>' +
+    '<div class="stat red" onclick="showTab(\'alerts\')"><div class="v">' + activeAlerts + '</div><div class="l">Alerts</div></div>' +
+    '<div class="stat cyan" onclick="showTab(\'incidents\')"><div class="v">' + S.incidents.length + '</div><div class="l">Incidents</div></div>' +
+    '<div class="stat purple" onclick="showTab(\'aiagents\')"><div class="v">' + S.agents.length + '</div><div class="l">AI Agents</div></div>' +
+    '<div class="stat pink" onclick="showTab(\'chaos\')"><div class="v">' + S.chaos.length + '</div><div class="l">Chaos Runs</div></div>' +
+    '<div class="stat"><div class="v">' + up + 's</div><div class="l">Mission Uptime</div></div>';
+
+  const cChart = document.getElementById('dash-constellation-chart');
+  if (cChart) {
+    const active = S.satellites.filter(s => s.status === 'active').length;
+    const degraded = S.satellites.filter(s => s.status === 'degraded').length;
+    const failed = S.satellites.filter(s => s.status === 'failed').length;
+    const total = Math.max(1, active + degraded + failed);
+    cChart.innerHTML = '<div class="chart">' +
+      '<div class="bar green" style="height:' + (active/total*100) + '%"><span class="lbl">Active ' + active + '</span></div>' +
+      '<div class="bar amber" style="height:' + (degraded/total*100) + '%"><span class="lbl">Degraded ' + degraded + '</span></div>' +
+      '<div class="bar red" style="height:' + (failed/total*100) + '%"><span class="lbl">Failed ' + failed + '</span></div>' +
+      '</div>';
+  }
+
+  const sChart = document.getElementById('dash-signal-chart');
+  if (sChart) {
+    const hist = S.metricsHistory.signal.slice(-30);
+    sChart.innerHTML = hist.map(v => '<div class="bar" style="height:' + v + '%"></div>').join('') || '<div class="empty">Awaiting data...</div>';
+  }
+
+  const alEl = document.getElementById('dash-alerts');
+  if (alEl) {
+    const active = S.alerts.filter(a => a.status === 'active').slice(0, 4);
+    alEl.innerHTML = active.length ? active.map(a =>
+      '<div class="host-card"><div><div class="name">' + escapeHtml(a.message) + '</div>' +
+      '<div class="meta">' + fmtTime(a.time) + '</div></div>' +
+      '<span class="badge ' + (a.severity === 'critical' ? 'badge-err' : a.severity === 'warning' ? 'badge-warn' : 'badge-info') + '">' + a.severity + '</span></div>'
+    ).join('') : '<div class="empty">All systems nominal.</div>';
+  }
+}
+
+// ============ ACTIVITY ============
+function renderActivity(){
+  const el = document.getElementById('activity');
+  if (!el) return;
+  const f = (document.getElementById('act-filter')?.value || '').toLowerCase();
+  const filtered = f ? S.events.filter(e => (e.src + ' ' + e.msg).toLowerCase().includes(f)) : S.events;
+  if (!filtered.length){ el.innerHTML = '<div class="empty">No activity.</div>'; return; }
+  el.innerHTML = filtered.slice(0, 100).map(e =>
+    '<div class="item"><span class="ts">' + fmtTime(e.t) + '</span>' +
+    '<span class="src">' + e.src + '</span>' +
+    '<span class="msg">' + escapeHtml(e.msg) + '</span></div>').join('');
+}
+function clearActivity(){ S.events = []; S.audit = []; save('events'); save('audit'); renderActivity(); }
+function exportActivity(){ downloadFile('orbitalguard_activity.log', S.events.map(e => '[' + e.t + '] ' + e.src + ': ' + e.msg).join('\n'), 'text/plain'); }
+
+/* ============ CONSTELLATION ============ */
+function launchSatellite(count){
+  count = count || 1;
+  const names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa'];
+  for (let i = 0; i < count; i++){
+    S.satellites.unshift({
+      id: 'SAT-' + Math.random().toString(16).slice(2, 8).toUpperCase(),
+      name: 'OrbitalGuard ' + names[Math.floor(Math.random() * names.length)],
+      status: 'active',
+      altitude: 500 + Math.random() * 800,
+      inclination: Math.random() * 90,
+      battery: 80 + Math.random() * 20,
+      signal: 70 + Math.random() * 30,
+      launched: now(),
+      orbitType: ['LEO', 'MEO', 'SSO', 'GEO'][Math.floor(Math.random() * 4)]
+    });
+  }
+  save('satellites'); renderConstellation(); renderDashboard();
+  logEvent('constellation', count + ' satellites launched');
+  toast(count + ' satellite(s) launched', 'success');
+}
+function renderConstellation(){
+  const statsEl = document.getElementById('constellation-stats');
+  const listEl = document.getElementById('constellation-list');
+  if (!statsEl) return;
+  const active = S.satellites.filter(s => s.status === 'active').length;
+  const degraded = S.satellites.filter(s => s.status === 'degraded').length;
+  const failed = S.satellites.filter(s => s.status === 'failed').length;
+  const avgBattery = S.satellites.length ? (S.satellites.reduce((a, s) => a + s.battery, 0) / S.satellites.length).toFixed(0) : 0;
+  statsEl.innerHTML =
+    '<div class="stat green"><div class="v">' + active + '</div><div class="l">Active</div></div>' +
+    '<div class="stat amber"><div class="v">' + degraded + '</div><div class="l">Degraded</div></div>' +
+    '<div class="stat red"><div class="v">' + failed + '</div><div class="l">Failed</div></div>' +
+    '<div class="stat cyan"><div class="v">' + avgBattery + '%</div><div class="l">Avg Battery</div></div>';
+  if (!S.satellites.length){ listEl.innerHTML = '<div class="empty">No satellites. Launch one to begin.</div>'; return; }
+  listEl.innerHTML = S.satellites.map((sat, i) =>
+    '<div class="host-card"><div><div class="name">' + escapeHtml(sat.name) + ' <code>' + sat.id + '</code></div>' +
+    '<div class="meta">' + sat.orbitType + ' · ' + sat.altitude.toFixed(0) + 'km · ' + sat.inclination.toFixed(1) + '° · Battery ' + sat.battery.toFixed(0) + '%</div></div>' +
+    '<div style="display:flex;gap:5px;align-items:center">' +
+    '<span class="badge ' + (sat.status === 'active' ? 'badge-ok' : sat.status === 'degraded' ? 'badge-warn' : 'badge-err') + '">' + sat.status.toUpperCase() + '</span>' +
+    '<button class="btn btn-xs" onclick="toggleSatellite(' + i + ')">' + (sat.status === 'active' ? '⏸' : '▶') + '</button>' +
+    '<button class="btn btn-xs btn-danger" onclick="deorbitSatellite(' + i + ')">🗑</button>' +
+    '</div></div>'
+  ).join('');
+}
+function toggleSatellite(i){
+  S.satellites[i].status = S.satellites[i].status === 'active' ? 'degraded' : 'active';
+  save('satellites'); renderConstellation(); renderDashboard();
+}
+function deorbitSatellite(i){
+  const s = S.satellites[i];
+  S.satellites.splice(i, 1);
+  save('satellites'); renderConstellation(); renderDashboard();
+  logEvent('constellation', 'deorbited ' + s.id);
+}
+function deorbitAll(){ S.satellites = []; save('satellites'); renderConstellation(); renderDashboard(); }
+
+/* ============ GROUND STATIONS ============ */
+function renderGroundStations(){
+  const el = document.getElementById('groundstation-list');
+  if (!el) return;
+  const stations = [
+    { name: 'Svalbard', country: 'Norway', lat: 78.2, lon: 15.6, status: 'online', passes: 42 },
+    { name: 'Punta Arenas', country: 'Chile', lat: -53.1, lon: -70.9, status: 'online', passes: 38 },
+    { name: 'Perth', country: 'Australia', lat: -31.9, lon: 115.8, status: 'online', passes: 51 },
+    { name: 'Fairbanks', country: 'USA', lat: 64.8, lon: -147.7, status: 'online', passes: 47 },
+    { name: 'Hartebeesthoek', country: 'South Africa', lat: -25.9, lon: 27.7, status: 'degraded', passes: 29 },
+    { name: 'Goldstone', country: 'USA', lat: 35.4, lon: -116.9, status: 'online', passes: 44 }
+  ];
+  el.innerHTML = stations.map(s =>
+    '<div class="host-card"><div><div class="name">' + s.name + ' <span class="badge badge-info">' + s.country + '</span></div>' +
+    '<div class="meta">' + s.lat.toFixed(1) + '°, ' + s.lon.toFixed(1) + '° · ' + s.passes + ' passes/day</div></div>' +
+    '<span class="badge ' + (s.status === 'online' ? 'badge-ok' : 'badge-warn') + '">' + s.status.toUpperCase() + '</span></div>'
+  ).join('');
+}
+
+/* ============ SIGNAL INTEGRITY ============ */
+function renderSignalStats(){
+  const el = document.getElementById('signal-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat green"><div class="v">99.97%</div><div class="l">Uptime</div></div>' +
+    '<div class="stat"><div class="v">-' + (55 + Math.random() * 15).toFixed(0) + '</div><div class="l">Avg dBm</div></div>' +
+    '<div class="stat amber"><div class="v">' + Math.floor(Math.random() * 5) + '</div><div class="l">Interference</div></div>' +
+    '<div class="stat cyan"><div class="v">' + (0.02 + Math.random() * 0.05).toFixed(3) + '%</div><div class="l">Packet Loss</div></div>';
+  const sChart = document.getElementById('signal-strength');
+  if (sChart){
+    const data = Array.from({length: 30}, () => 60 + Math.random() * 30);
+    const max = Math.max(...data);
+    sChart.innerHTML = data.map(v => '<div class="bar cyan" style="height:' + (v/max*100) + '%"></div>').join('');
+  }
+  const iEl = document.getElementById('signal-interference');
+  if (iEl){
+    iEl.innerHTML = Array.from({length: 4}, (_, i) =>
+      '<div class="host-card"><div><div class="name">Interference ' + (i+1) + '</div><div class="meta">' + (Math.random() * 60).toFixed(0) + 's ago</div></div><span class="badge badge-warn">-' + (70 + Math.random() * 20).toFixed(0) + ' dBm</span></div>'
+    ).join('');
+  }
+}
+function runSignalAnalysis(){
+  document.getElementById('signal-analysis-out').innerHTML = '<pre>[signal] Analyzing...\nBand: Ka (26.5-40 GHz)\nSNR: 18.4 dB (nominal)\nBit error rate: 1e-9\nModulation: QPSK\nModcod: 22\nCarrier lock: LOCKED\n✓ All parameters within spec</pre>';
+  logEvent('signal', 'analysis complete');
+}
+function detectJamming(){
+  document.getElementById('signal-analysis-out').innerHTML = '<pre>[jamming] Scanning for jamming patterns...\nScanning 12,000 frequencies...\nAnomaly detected at 28.4 GHz (power +12dB above baseline)\nDuration: 3.2s\nSource: local (interference)\nConfidence: 76%\n⚠ Candidate jamming event — not confirmed</pre>';
+  logEvent('signal', 'jamming scan');
+  toast('Jamming candidate detected', 'warn');
+}
+function detectSpoofing(){
+  document.getElementById('signal-analysis-out').innerHTML = '<pre>[spoofing] Checking signal authenticity...\nVerifying cryptographic signatures...\nC/A code verification: PASS\nP(Y) code verification: PASS\nTimestamp check: PASS\nPosition consistency: PASS\n✓ No spoofing detected</pre>';
+  logEvent('signal', 'spoofing check');
+}
+
+/* ============ CYBER ============ */
+function renderCyberStats(){
+  const el = document.getElementById('cyber-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat green"><div class="v">98</div><div class="l">Security Score</div></div>' +
+    '<div class="stat"><div class="v">0</div><div class="l">Active Threats</div></div>' +
+    '<div class="stat cyan"><div class="v">24/7</div><div class="l">Monitoring</div></div>' +
+    '<div class="stat purple"><div class="v">100%</div><div class="l">Encrypted Links</div></div>';
+  const tl = document.getElementById('cyber-timeline');
+  if (tl){
+    tl.innerHTML = [
+      {t: now(), e: 'Encryption keys rotated'},
+      {t: now(), e: 'Firewall rules updated'},
+      {t: now(), e: 'Anomaly detection scan passed'},
+      {t: now(), e: 'Certificate validation OK'},
+      {t: now(), e: 'Anti-jamming system active'}
+    ].map(x => '<div class="timeline-item"><div class="timeline-time">' + fmtTime(x.t) + '</div><div>' + x.e + '</div></div>').join('');
+  }
+}
+function runCyberScan(){
+  document.getElementById('cyber-results').innerHTML = '<pre>[cyber] Running full scan...\n✓ Cryptographic keys: valid\n✓ TLS certificates: valid\n✓ Signal authentication: verified\n✓ Firewall: active\n✓ IDS/IPS: monitoring\n✓ Anti-jamming: enabled\n✓ Telemetry encryption: AES-256\n✗ 2 medium-severity findings\n\nScan complete: 98/100 security score</pre>';
+  logEvent('cyber', 'full scan complete');
+  toast('Cyber scan complete', 'success');
+}
+function checkCompliance(framework){
+  document.getElementById('cyber-results').innerHTML = '<pre>[compliance] Checking ' + framework + '...\n✓ Signal integrity verification\n✓ Cryptographic protection\n✓ Anomaly detection\n✓ Access control\n✓ Incident response\nCompliance: 96%</pre>';
+}
+
+/* ============ DEBRIS ============ */
+function addDebris(count){
+  count = count || 1;
+  for (let i = 0; i < count; i++){
+    S.debris.unshift({
+      id: 'DEB-' + Math.random().toString(16).slice(2, 8).toUpperCase(),
+      size: (0.1 + Math.random() * 2).toFixed(2) + 'm',
+      altitude: 400 + Math.random() * 1200,
+      velocity: (7 + Math.random() * 2).toFixed(2) + ' km/s',
+      risk: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)],
+      detected: now()
+    });
+  }
+  save('debris'); renderDebris(); renderDashboard();
+  logEvent('debris', count + ' debris added');
+}
+function renderDebris(){
+  const statsEl = document.getElementById('debris-stats');
+  const listEl = document.getElementById('debris-list');
+  if (!statsEl) return;
+  const high = S.debris.filter(d => d.risk === 'high').length;
+  const medium = S.debris.filter(d => d.risk === 'medium').length;
+  const low = S.debris.filter(d => d.risk === 'low').length;
+  statsEl.innerHTML =
+    '<div class="stat red"><div class="v">' + high + '</div><div class="l">High Risk</div></div>' +
+    '<div class="stat amber"><div class="v">' + medium + '</div><div class="l">Medium Risk</div></div>' +
+    '<div class="stat green"><div class="v">' + low + '</div><div class="l">Low Risk</div></div>' +
+    '<div class="stat"><div class="v">' + S.debris.length + '</div><div class="l">Total</div></div>';
+  if (!S.debris.length){ listEl.innerHTML = '<div class="empty">No debris tracked.</div>'; return; }
+  listEl.innerHTML = S.debris.slice(0, 30).map(d =>
+    '<div class="host-card"><div><div class="name"><code>' + d.id + '</code></div>' +
+    '<div class="meta">Size ' + d.size + ' · ' + d.altitude.toFixed(0) + 'km · ' + d.velocity + '</div></div>' +
+    '<span class="badge ' + (d.risk === 'high' ? 'badge-err' : d.risk === 'medium' ? 'badge-warn' : 'badge-ok') + '">' + d.risk.toUpperCase() + '</span></div>'
+  ).join('');
+}
+function predictCollisions(){
+  const predictions = [];
+  for (let i = 0; i < Math.min(5, S.debris.length); i++){
+    predictions.push({
+      debris: S.debris[i].id,
+      satellite: S.satellites[i % Math.max(1, S.satellites.length)]?.id || 'SAT-UNKNOWN',
+      tca: new Date(Date.now() + Math.random() * 86400000 * 3).toISOString(),
+      probability: (Math.random() * 0.1).toFixed(4),
+      distance: (Math.random() * 5).toFixed(2) + ' km'
+    });
+  }
+  document.getElementById('collision-predictions').innerHTML = predictions.length ?
+    '<table><tr><th>Debris</th><th>Satellite</th><th>TCA</th><th>Probability</th><th>Distance</th></tr>' +
+    predictions.map(p => '<tr><td><code>' + p.debris + '</code></td><td><code>' + p.satellite + '</code></td>' +
+      '<td>' + fmtTime(p.tca) + '</td><td>' + p.probability + '</td><td>' + p.distance + '</td></tr>').join('') + '</table>' :
+    '<div class="empty">No collision predictions.</div>';
+  logEvent('debris', 'collision prediction run');
+}
+
+/* ============ WATER / DISASTER / CRISIS / CROPS ============ */
+function renderWaterStats(){
+  const el = document.getElementById('water-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat cyan"><div class="v">78%</div><div class="l">Quality Index</div></div>' +
+    '<div class="stat green"><div class="v">12</div><div class="l">Monitored Sites</div></div>' +
+    '<div class="stat amber"><div class="v">3</div><div class="l">Pollution Alerts</div></div>' +
+    '<div class="stat purple"><div class="v">2.4M</div><div class="l">People Served</div></div>';
+}
+function runWaterAnalysis(){
+  document.getElementById('water-analysis-out').innerHTML = '<pre>[water] Analyzing Copernicus data...\nSentinel-2 imagery processed\n12 water bodies detected\nTurbidity: 4.2 NTU (good)\nChlorophyll-a: 8.1 µg/L (moderate)\nTemperature: 18.4°C\nAnomalies: 3 sites with elevated contamination\nRecommendation: deploy field sensors at sites 4, 7, 11\n✓ Analysis complete</pre>';
+  logEvent('water', 'analysis complete');
+}
+function generateWaterReport(){
+  document.getElementById('water-analysis-out').innerHTML = '<pre>WATER RESOURCE REPORT\n======================\nGenerated: ' + now() + '\n\nQuality Index: 78/100\nMonitored Sites: 12\nAlerts: 3\n\nRecommendations:\n1. Deploy sensors at sites 4, 7, 11\n2. Increase sampling frequency at coastal sites\n3. Coordinate with local authorities</pre>';
+}
+function renderDisasterStats(){
+  const el = document.getElementById('disaster-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat green"><div class="v">0</div><div class="l">Active Emergencies</div></div>' +
+    '<div class="stat cyan"><div class="v">14</div><div class="l">Monitored Regions</div></div>' +
+    '<div class="stat purple"><div class="v">24/7</div><div class="l">EO Coverage</div></div>' +
+    '<div class="stat amber"><div class="v">3</div><div class="l">Recent Events</div></div>';
+}
+function triggerDisaster(type){
+  const responses = {
+    flood: '[flood] Detecting flood extent...\nSentinel-1 SAR imagery\nFlooded area: 142 km²\nAffected population: ~38,000\nInfrastructure: 12 roads, 3 bridges\nRoute planning activated\n✓ Analysis complete',
+    fire: '[fire] Wildfire detection...\nSentinel-2 + MODIS\nActive fire fronts: 7\nBurned area: 89 km²\nWind direction: NE 22 km/h\nEvacuation routes calculated\n✓ Analysis complete',
+    earthquake: '[earthquake] Damage assessment...\nSentinel-1 InSAR\nDeformation: 12cm vertical\nBuilding damage: 240 structures\nAccess routes: 8 viable paths identified\n✓ Analysis complete',
+    conflict: '[conflict] Conflict damage mapping...\nVery High Resolution imagery\nDamaged structures: 1,240\nInfrastructure: 34 roads, 12 power, 8 water\nHumanitarian corridors: 3 routes identified\n✓ Analysis complete'
+  };
+  document.getElementById('disaster-output').innerHTML = '<pre>' + (responses[type] || 'Unknown disaster type') + '</pre>';
+  logEvent('disaster', type + ' triggered');
+  toast(type + ' analysis complete', 'warn');
+}
+function runCrisisMapping(){
+  const region = document.getElementById('crisis-region').value;
+  const type = document.getElementById('crisis-type').value;
+  document.getElementById('crisis-output').innerHTML = '<pre>[crisis] ' + region + ' — ' + type + '\nProcessing satellite imagery...\nDamage assessment: ' + (Math.random() * 100).toFixed(0) + '% affected\nRoute planning: ' + Math.floor(Math.random() * 8 + 3) + ' viable routes\nInfrastructure: ' + Math.floor(Math.random() * 50 + 10) + ' assets mapped\nPriority: ' + document.getElementById('crisis-priority').value + '\n✓ Analysis complete</pre>';
+  logEvent('crisis', region + ' mapped');
+}
+function renderCropStats(){
+  const el = document.getElementById('crop-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat green"><div class="v">92%</div><div class="l">Crop Health</div></div>' +
+    '<div class="stat"><div class="v">1,240</div><div class="l">Fields Monitored</div></div>' +
+    '<div class="stat amber"><div class="v">8%</div><div class="l">Drought Risk</div></div>' +
+    '<div class="stat cyan"><div class="v">+4.2%</div><div class="l">Yield Forecast</div></div>';
+}
+function runCropAnalysis(){
+  document.getElementById('crop-output').innerHTML = '<pre>[crops] Analyzing NDVI...\nFields: 1,240\nHealthy: 1,140 (92%)\nStressed: 82 (6.6%)\nFailed: 18 (1.5%)\nYield forecast: +4.2% vs last season\nIrrigation recommendation: 42 fields need additional water\n✓ Complete</pre>';
+}
+function generateCropReport(){
+  document.getElementById('crop-output').innerHTML = '<pre>AGRICULTURAL INTELLIGENCE REPORT\n================================\nDate: ' + now() + '\n\nFields: 1,240\nHealth: 92%\nYield forecast: +4.2%\n\nPriority actions:\n1. Irrigation for 42 fields\n2. Pest monitoring in sector 7\n3. Harvest planning begins in 3 weeks</pre>';
+}
+
+/* ============ GNSS / ROUTES ============ */
+function renderGnssStats(){
+  const el = document.getElementById('gnss-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat green"><div class="v">18</div><div class="l">Visible Sats</div></div>' +
+    '<div class="stat"><div class="v">1.2m</div><div class="l">Horizontal Accuracy</div></div>' +
+    '<div class="stat cyan"><div class="v">2.4m</div><div class="l">Vertical Accuracy</div></div>' +
+    '<div class="stat purple"><div class="v">99.9%</div><div class="l">Integrity</div></div>';
+}
+function runGNSSIntegrity(){
+  document.getElementById('gnss-output').innerHTML = '<pre>[gnss] Galileo/EGNOS integrity check...\nConstellations: Galileo (12), GPS (8), EGNOS (3)\nSignal quality: GOOD\nHorizontal accuracy: 1.2m\nVertical accuracy: 2.4m\nIonospheric delay: 3.8m (corrected)\nMultipath: LOW\nIntegrity: NOMINAL\n✓ All systems validated</pre>';
+  logEvent('gnss', 'integrity validated');
+}
+function planRoute(){
+  const origin = document.getElementById('route-origin').value;
+  const dest = document.getElementById('route-dest').value;
+  const priority = document.getElementById('route-priority').value;
+  document.getElementById('route-output').innerHTML = '<pre>[routes] Planning ' + origin + ' → ' + dest + '\nPriority: ' + priority + '\n\nOptimizing route with Galileo...\nDistance: ' + (Math.random() * 500 + 100).toFixed(0) + ' km\nEst. time: ' + (Math.random() * 8 + 2).toFixed(1) + ' hours\nWaypoints: ' + Math.floor(Math.random() * 5 + 2) + '\nRisk zones: ' + Math.floor(Math.random() * 3) + '\n\nAlternative routes:\n1. Northern corridor — 3h 42m (recommended)\n2. Southern corridor — 5h 12m (safer)\n3. Central route — 4h 18m (balanced)\n\n✓ Route planning complete</pre>';
+  logEvent('routes', origin + ' → ' + dest);
+}
+
+/* ============ AI AGENTS ============ */
+function renderAIStats(){
+  const el = document.getElementById('ai-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat green"><div class="v">6</div><div class="l">Active Agents</div></div>' +
+    '<div class="stat cyan"><div class="v">42</div><div class="l">Tasks Executed</div></div>' +
+    '<div class="stat purple"><div class="v">99.2%</div><div class="l">Success Rate</div></div>' +
+    '<div class="stat amber"><div class="v">' + (Math.random() * 200).toFixed(0) + 'ms</div><div class="l">Avg Latency</div></div>';
+  const regEl = document.getElementById('agent-registry');
+  if (regEl){
+    const agents = [
+      {name: 'Orbital Guardian', role: 'Orbital mechanics', status: 'active'},
+      {name: 'Signal Sentinel', role: 'Signal monitoring', status: 'active'},
+      {name: 'Cyber Warden', role: 'Cybersecurity', status: 'active'},
+      {name: 'Debris Tracker', role: 'Collision prediction', status: 'active'},
+      {name: 'Water Watch', role: 'Resource monitoring', status: 'active'},
+      {name: 'Crisis Mapper', role: 'Emergency response', status: 'active'}
+    ];
+    regEl.innerHTML = agents.map(a =>
+      '<div class="host-card"><div><div class="name">' + a.name + '</div>' +
+      '<div class="meta">' + a.role + '</div></div>' +
+      '<span class="badge badge-ok">' + a.status.toUpperCase() + '</span></div>'
+    ).join('');
+  }
+}
+function runAIAgent(){
+  document.getElementById('ai-agent-output').innerHTML = '<pre>[agent] Orbital Guardian running...\n\nAnalyzing constellation state...\nCalculating orbital trajectories...\nChecking collision risks...\nEvaluating power budgets...\nOptimizing transmission windows...\n\n✓ Agent task complete\nRecommendation: schedule station pass at 14:42 UTC\nConfidence: 0.94</pre>';
+  S.agents.unshift({task: 'Orbital check', time: now(), status: 'complete'});
+  save('agents');
+  logEvent('ai-agent', 'Orbital Guardian executed');
+}
+function runMultiAgent(){
+  document.getElementById('ai-agent-output').innerHTML = '<pre>[multi-agent] Coordinating 6 agents...\n\n→ Orbital Guardian: trajectory analysis\n→ Signal Sentinel: link quality\n→ Cyber Warden: threat assessment\n→ Debris Tracker: collision risks\n→ Water Watch: resource status\n→ Crisis Mapper: emergency detection\n\nConsensus reached: 6/6 agents reporting nominal\nFinal recommendation: maintain current orbit\n\n✓ Multi-agent coordination complete</pre>';
+  logEvent('multi-agent', 'coordination complete');
+  toast('Multi-agent complete', 'success');
+}
+function showAgentLog(){
+  document.getElementById('ai-agent-output').innerHTML = '<pre>AGENT EXECUTION LOG\n===================\n' + S.agents.slice(0, 20).map(a => '[' + fmtTime(a.time) + '] ' + a.task + ' — ' + a.status).join('\n') + '</pre>';
+}
+
+/* ============ FINE-TUNE / VISION ============ */
+function runFineTune(){
+  const model = document.getElementById('ft-model').value;
+  const dataset = document.getElementById('ft-dataset').value;
+  const method = document.getElementById('ft-method').value;
+  const term = document.getElementById('ft-terminal');
+  term.innerHTML = '';
+  const lines = [
+    '[fine-tune] Starting...',
+    'Model: ' + model,
+    'Dataset: ' + dataset,
+    'Method: ' + method,
+    '',
+    'Loading base model...',
+    'Configuring QLoRA adapters...',
+    'Preparing dataset: 48,200 samples',
+    'Epoch 1/3... loss=0.42',
+    'Epoch 2/3... loss=0.28',
+    'Epoch 3/3... loss=0.19',
+    '',
+    'Evaluating...',
+    'Accuracy: 94.2%',
+    'F1: 0.927',
+    'Saving model...',
+    '✓ Fine-tune complete',
+    'Model published to HF Hub'
+  ];
+  lines.forEach((l, i) => setTimeout(() => appendTermLine(term, l, l.includes('✓') ? 'ok' : ''), i * 200));
+  logEvent('finetune', model + ' trained');
+  toast('Fine-tune complete', 'success');
+}
+function runVisionAnalysis(type){
+  const outputs = {
+    flood: '[vision] Flood detection\nProcessing Sentinel-1 SAR...\nFlooded area: 142 km²\nWater depth est: 0.8-2.4m\nBuildings affected: 340\nRoads affected: 18\n✓ Complete',
+    fire: '[vision] Fire detection\nProcessing MODIS + Sentinel-2...\nActive fires: 7\nBurned area: 89 km²\nSmoke plume: 42km NE\n✓ Complete',
+    damage: '[vision] Damage assessment\nProcessing VHR imagery...\nDamaged structures: 1,240\nSevere: 412\nModerate: 628\nMinor: 200\n✓ Complete',
+    crops: '[vision] Crop health\nProcessing multispectral...\nHealthy: 92%\nStressed: 6.6%\nFailed: 1.4%\nYield forecast: +4.2%\n✓ Complete'
+  };
+  document.getElementById('vision-output').innerHTML = '<pre>' + outputs[type] + '</pre>';
+  logEvent('vision', type + ' analyzed');
+}
+
+/* ============ CRON / BACKUP / DR / CHAOS ============ */
+function addCron(){
+  const name = document.getElementById('cron-name').value;
+  const expr = document.getElementById('cron-expr').value;
+  const cmd = document.getElementById('cron-cmd').value;
+  if (!name || !expr){ toast('Name and expression required', 'error'); return; }
+  S.crons.unshift({name, expr, cmd, time: now(), status: 'active'});
+  save('crons'); renderCrons();
+}
+function renderCrons(){
+  const el = document.getElementById('cron-list');
+  if (!el) return;
+  if (!S.crons.length){ el.innerHTML = '<div class="empty">No schedules.</div>'; return; }
+  el.innerHTML = '<table><tr><th>Name</th><th>Expression</th><th>Command</th><th></th></tr>' +
+    S.crons.map((c, i) =>
+      '<tr><td>' + escapeHtml(c.name) + '</td><td><code>' + c.expr + '</code></td>' +
+      '<td><code>' + escapeHtml(c.cmd) + '</code></td>' +
+      '<td><button class="btn btn-xs btn-danger" onclick="removeCron(' + i + ')">🗑</button></td></tr>'
+    ).join('') + '</table>';
+}
+function removeCron(i){ S.crons.splice(i, 1); save('crons'); renderCrons(); }
+function explainCron(expr){
+  const parts = expr.split(/\s+/);
+  if (parts.length !== 5){ document.getElementById('cron-explained').textContent = 'Invalid expression (need 5 fields).'; return; }
+  document.getElementById('cron-explained').textContent = 'Runs at minute ' + parts[0] + ', hour ' + parts[1] + ', day ' + parts[2] + ', month ' + parts[3] + ', weekday ' + parts[4] + '.';
+}
+function runBackup(){
+  const target = document.getElementById('backup-target')?.value || 'telemetry';
+  const b = {id: 'bk-' + Math.random().toString(16).slice(2, 8), target, size: (Math.random() * 500 + 50).toFixed(0) + ' MB', status: 'RUNNING', time: now()};
+  S.backups.unshift(b);
+  save('backups'); renderBackups();
+  setTimeout(() => { b.status = 'SUCCESS'; save('backups'); renderBackups(); }, 2000);
+}
+function renderBackups(){
+  const el = document.getElementById('backups-list');
+  if (!el) return;
+  if (!S.backups.length){ el.innerHTML = '<div class="empty">No backups.</div>'; return; }
+  el.innerHTML = '<table><tr><th>ID</th><th>Target</th><th>Size</th><th>Status</th><th>Time</th></tr>' +
+    S.backups.slice(0, 20).map(b =>
+      '<tr><td><code>' + b.id + '</code></td><td>' + b.target + '</td><td>' + b.size + '</td>' +
+      '<td><span class="badge ' + (b.status === 'SUCCESS' ? 'badge-ok' : 'badge-run') + '">' + b.status + '</span></td>' +
+      '<td>' + fmtTime(b.time) + '</td></tr>'
+    ).join('') + '</table>';
+}
+function renderDR(){
+  const el = document.getElementById('dr-stats');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="stat green"><div class="v">5 min</div><div class="l">RTO</div></div>' +
+    '<div class="stat green"><div class="v">1 min</div><div class="l">RPO</div></div>' +
+    '<div class="stat"><div class="v">2</div><div class="l">Regions</div></div>' +
+    '<div class="stat cyan"><div class="v">99.99%</div><div class="l">Availability</div></div>';
+}
+function simulateDisaster(){
+  document.getElementById('dr-output').innerHTML = '<pre>[DR] Simulating primary region failure...\nRegion: orbit-control-1\nStatus: FAILED\n\nInitiating failover...\nBackup region: orbit-control-2\nGround station handoff: OK\nConstellation control: OK\nTelemetry stream: OK\n✓ Failover completed in 45s</pre>';
+  logEvent('dr', 'disaster simulated');
+}
+function runDRDrill(){
+  document.getElementById('dr-output').innerHTML = '<pre>[DR] Running full drill...\n1. Snapshot ✓\n2. Simulate failure ✓\n3. Failover ✓\n4. Validate ✓\n5. Restore ✓\n✓ Drill complete in 12m 34s</pre>';
+  logEvent('dr', 'drill complete');
+}
+function runChaos(){
+  const type = document.getElementById('chaos-type')?.value || 'satellite-failure';
+  const duration = parseInt(document.getElementById('chaos-duration')?.value) || 30;
+  const target = document.getElementById('chaos-target')?.value || 'constellation/alpha';
+  const exp = {id: 'ch-' + Math.random().toString(16).slice(2, 8), type, duration, target, status: 'RUNNING', time: now()};
+  S.chaos.unshift(exp);
+  save('chaos'); renderChaosHistory();
+  document.getElementById('chaos-output').innerHTML = '<pre>[chaos] Experiment ' + exp.id + '\nType: ' + type + '\nTarget: ' + target + '\nDuration: ' + duration + 's\nStatus: running...</pre>';
+  logEvent('chaos', 'started ' + type);
+  setTimeout(() => {
+    exp.status = 'FINISHED';
+    save('chaos'); renderChaosHistory();
+    document.getElementById('chaos-output').innerHTML += '<pre>[chaos] ' + exp.id + ' FINISHED\nImpact: ' + (Math.random() > 0.3 ? 'Detected' : 'None') + '\nRecovered: ' + (Math.random() > 0.2 ? 'Yes' : 'No') + '\nAlerts triggered: ' + Math.floor(Math.random() * 3) + '</pre>';
+  }, duration * 100);
+}
+function renderChaosHistory(){
+  const el = document.getElementById('chaos-history');
+  if (!el) return;
+  if (!S.chaos.length){ el.innerHTML = '<div class="empty">No experiments yet.</div>'; return; }
+  el.innerHTML = '<table><tr><th>ID</th><th>Type</th><th>Target</th><th>Duration</th><th>Status</th><th>Time</th></tr>' +
+    S.chaos.slice(0, 20).map(c =>
+      '<tr><td><code>' + c.id + '</code></td><td>' + c.type + '</td><td>' + c.target + '</td>' +
+      '<td>' + c.duration + 's</td>' +
+      '<td><span class="badge ' + (c.status === 'FINISHED' ? 'badge-ok' : 'badge-run') + '">' + c.status + '</span></td>' +
+      '<td>' + fmtTime(c.time) + '</td></tr>'
+    ).join('') + '</table>';
+}
+
+/* ============ SHELL ============ */
+let shellInit = false;
+function initShell(){
+  const term = document.getElementById('shell-terminal');
+  if (!term || shellInit) return;
+  shellInit = true;
+  const banner = document.createElement('div');
+  banner.className = 'line info';
+  banner.textContent = 'ORBITALGUARD XPRIZE Shell — type "help" for commands.';
+  term.appendChild(banner);
+}
+function runShellCmd(){
+  const input = document.getElementById('shell-input');
+  const cmd = input.value.trim();
+  if (!cmd) return;
+  const term = document.getElementById('shell-terminal');
+  const prompt = document.createElement('div');
+  prompt.className = 'line';
+  prompt.innerHTML = '<span class="prompt">mission@orbitalguard:~$</span> ' + escapeHtml(cmd);
+  term.appendChild(prompt);
+  input.value = '';
+  const output = shellExecute(cmd);
+  if (output){
+    output.split('\n').forEach(line => {
+      const d = document.createElement('div');
+      d.className = 'line ' + (line.startsWith('error:') ? 'error' : line.startsWith('✓') ? 'ok' : '');
+      d.textContent = line;
+      term.appendChild(d);
+    });
+  }
+  term.scrollTop = term.scrollHeight;
+}
+function shellExecute(cmd){
+  const parts = cmd.split(/\s+/);
+  const c = parts[0];
+  switch(c){
+    case 'help': return 'Commands:\n  help status satellites ground debris alerts agents chaos uptime version whoami date clear';
+    case 'status': return 'Satellites: ' + S.satellites.length + '\nGround stations: ' + S.groundStations.length + '\nDebris: ' + S.debris.length + '\nAlerts: ' + S.alerts.length + '\nAgents: ' + S.agents.length;
+    case 'satellites': return S.satellites.length ? S.satellites.map(s => s.id + ' ' + s.name + ' ' + s.status).join('\n') : 'No satellites.';
+    case 'ground': return 'Svalbard, Norway\nPunta Arenas, Chile\nPerth, Australia\nFairbanks, USA\nHartebeesthoek, South Africa\nGoldstone, USA';
+    case 'debris': return S.debris.length ? S.debris.slice(0, 10).map(d => d.id + ' ' + d.size + ' ' + d.risk).join('\n') : 'No debris.';
+    case 'alerts': return S.alerts.length ? S.alerts.map(a => '[' + a.severity + '] ' + a.message).join('\n') : 'No alerts.';
+    case 'agents': return 'Orbital Guardian (active)\nSignal Sentinel (active)\nCyber Warden (active)\nDebris Tracker (active)\nWater Watch (active)\nCrisis Mapper (active)';
+    case 'chaos': document.getElementById('chaos-type').value = parts[1] || 'satellite-failure'; runChaos(); return '✓ Chaos experiment started';
+    case 'uptime': return 'Mission up ' + Math.round((Date.now() - S.start) / 1000) + 's';
+    case 'version': return 'OrbitalGuard XPRIZE v1.0.0';
+    case 'whoami': return 'mission-control';
+    case 'date': return new Date().toString();
+    case 'clear': document.getElementById('shell-terminal').innerHTML = ''; return '';
+    default: return 'error: command not found: ' + c;
+  }
+}
+
+/* ============ CONFIGS ============ */
+const CONFIGS = {
+  docker: {name: 'Dockerfile', content: 'FROM python:3.12-alpine\nWORKDIR /app\nCOPY requirements.txt .\nRUN pip install -r requirements.txt\nCOPY . .\nEXPOSE 8080\nCMD ["python", "main.py"]'},
+  k8s: {name: 'deployment.yaml', content: 'apiVersion: apps/v1\nkind: Deployment\nmetadata: { name: orbitalguard }\nspec:\n  replicas: 3\n  selector: { matchLabels: { app: og } }\n  template:\n    metadata: { labels: { app: og } }\n    spec:\n      containers:\n      - name: og\n        image: orbitalguard:v1.0\n        ports: [{ containerPort: 8080 }]'},
+  terraform: {name: 'main.tf', content: 'terraform {\n  required_providers { aws = { source = "hashicorp/aws" } }\n}\nprovider "aws" { region = "us-east-1" }\nresource "aws_instance" "og" {\n  ami = "ami-0c55b159cbfafe1f0"\n  instance_type = "t3.medium"\n  tags = { Name = "orbitalguard" }\n}'},
+  ansible: {name: 'playbook.yml', content: '- hosts: orbital_servers\n  become: yes\n  tasks:\n    - name: Install deps\n      apt: { name: python3-pip, state: present }\n    - name: Deploy\n      copy: { src: app/, dest: /opt/og/ }'},
+  prometheus: {name: 'prometheus.yml', content: 'global:\n  scrape_interval: 15s\nscrape_configs:\n  - job_name: orbitalguard\n    static_configs:\n      - targets: ["localhost:8080"]'}
+};
+function showConfig(key){
+  document.querySelectorAll('#config-tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.cfg === key));
+  const cfg = CONFIGS[key];
+  if (!cfg) return;
+  document.getElementById('config-name').textContent = cfg.name;
+  document.getElementById('config-content').textContent = cfg.content;
+  window._currentConfig = cfg;
+}
+document.querySelectorAll('#config-tabs .tab').forEach(t => t.addEventListener('click', () => showConfig(t.dataset.cfg)));
+function downloadCurrentConfig(){
+  if (window._currentConfig){ downloadFile(window._currentConfig.name, window._currentConfig.content, 'text/plain'); toast('Download started', 'success'); }
+}
+
+/* ============ IAC ============ */
+const IAC = {
+  terraform: 'resource "aws_vpc" "main" { cidr_block = "10.0.0.0/16" }\nresource "aws_subnet" "public" { count = 3 vpc_id = aws_vpc.main.id }',
+  pulumi: 'const vpc = new aws.ec2.Vpc("main", { cidrBlock: "10.0.0.0/16" });',
+  ansible: '- hosts: all\n  become: yes\n  tasks:\n    - name: Ping\n      ping:'
+};
+function showIac(key){
+  document.querySelectorAll('#iac-tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.iac === key));
+  document.getElementById('iac-content').textContent = IAC[key];
+}
+document.querySelectorAll('#iac-tabs .tab').forEach(t => t.addEventListener('click', () => showIac(t.dataset.iac)));
+
+/* ============ METRICS TICK ============ */
+function tickMetrics(){
+  const signal = Math.round(60 + Math.random() * 35);
+  S.metricsHistory.signal.push(signal);
+  if (S.metricsHistory.signal.length > 60) S.metricsHistory.signal.shift();
+  renderDashboard();
+}
+setInterval(tickMetrics, 2000);
+
+/* ============ GLOBAL ============ */
+function exportAll(){
+  const data = {satellites: S.satellites, groundStations: S.groundStations, debris: S.debris, alerts: S.alerts, incidents: S.incidents, events: S.events, audit: S.audit, crons: S.crons, backups: S.backups, chaos: S.chaos, agents: S.agents, exportedAt: now(), version: '1.0.0'};
+  downloadFile('orbitalguard_export.json', JSON.stringify(data, null, 2), 'application/json');
+  toast('Exported', 'success');
+}
+function clearAll(){
+  if (!confirm('Erase all mission data?')) return;
+  ['satellites','groundStations','debris','alerts','incidents','events','audit','crons','backups','chaos','agents'].forEach(k => { S[k] = []; save(k); });
+  renderAll();
+  toast('All data cleared', 'success');
+}
+function runOrbitalCheck(){ toast('Orbital check running...', 'info'); logEvent('orbital', 'check initiated'); setTimeout(() => toast('Orbital check complete — nominal', 'success'), 1500); }
+function runCyberScan(){ showTab('cyber'); }
+function runWaterAnalysis(){ showTab('copernicus'); }
+function runChaos(){ /* handled in chaos section */ }
+
+/* ============ INIT ============ */
+setTimeout(() => {
+  // Bootstrap demo data
+  if (!S.satellites.length) for (let i = 0; i < 6; i++) launchSatellite();
+  if (!S.groundStations.length){
+    S.groundStations = [
+      { id: 'gs1', name: 'Svalbard', country: 'Norway' },
+      { id: 'gs2', name: 'Punta Arenas', country: 'Chile' },
+      { id: 'gs3', name: 'Perth', country: 'Australia' },
+      { id: 'gs4', name: 'Fairbanks', country: 'USA' }
+    ];
+    save('groundStations');
+  }
+  if (!S.debris.length) for (let i = 0; i < 8; i++) addDebris();
+  tickMetrics();
+  renderDashboard();
+  renderActivity();
+  renderConstellation();
+  renderGroundStations();
+  renderDebris();
+  renderSignalStats();
+  renderCyberStats();
+  renderWaterStats();
+  renderDisasterStats();
+  renderCropStats();
+  renderGnssStats();
+  renderAIStats();
+  renderCrons();
+  renderBackups();
+  renderDR();
+  renderChaosHistory();
+  logEvent('system', 'ORBITALGUARD XPRIZE initialized');
+  setTimeout(initDashGlobe, 200);
+}, 100);
+
+setInterval(() => renderDashboard(), 3000);
+
+/* ============ RENDER ALL ============ */
+function renderAll(){
+  renderDashboard();
+  renderActivity();
+  renderConstellation();
+  renderGroundStations();
+  renderDebris();
+  renderSignalStats();
+  renderCyberStats();
+  renderWaterStats();
+  renderDisasterStats();
+  renderCropStats();
+  renderGnssStats();
+  renderAIStats();
+  renderCrons();
+  renderBackups();
+  renderDR();
+  renderChaosHistory();
+}
+</script>
+</body>
+</html>

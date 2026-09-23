@@ -1,0 +1,2463 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="silicon">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0c14">
+<title>SILICON — CPU Architecture Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+ul,ol{list-style:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--c1);background-clip:content-box}
+
+:root{
+  --bg:#0a0c14;--bg2:#0e1220;--bg3:#141a2c;--bg4:#1c2440;
+  --panel:#0c1018;--panel2:#121828;--panel3:#1a2238;--panel4:#242c48;
+  --bd:#1c2440;--bd2:#2c3c64;--bd3:#405088;
+  --tx:#e0e8f8;--tx2:#a0b0d0;--tx3:#6878a0;--mu:#404c70;
+  --c1:#40d0ff;--c1h:#80e0ff;--c1l:#20a0d0;
+  --c2:#b060ff;--c2h:#d0a0ff;--c2l:#7030c0;
+  --c3:#40ff90;--c3h:#80ffc0;--c3l:#20c060;
+  --c4:#ff6080;--c4h:#ff90a8;--c4l:#c03858;
+  --c5:#ffd040;--c5h:#ffe890;--c5l:#c09000;
+  --c6:#ff9040;--c6h:#ffb080;--c6l:#c04800;
+  --c7:#40e0d0;--c7h:#80f0e8;--c7l:#20a0a0;
+  --c8:#ff40a0;--c8h:#ff80c0;--c8l:#c02070;
+  --ok:#40ff90;--warn:#ffd040;--err:#ff6080;--info:#40d0ff;
+  /* ISA Colors */
+  --op-r:#40d0ff;--op-i:#40ff90;--op-s:#ffd040;--op-b:#ff9040;
+  --op-u:#b060ff;--op-j:#ff40a0;--op-sys:#ff6080;
+  --g1:linear-gradient(135deg,#40d0ff,#b060ff);
+  --g2:linear-gradient(135deg,#40ff90,#40d0ff);
+  --gHolo:linear-gradient(120deg,#40d0ff,#b060ff,#ff40a0,#40ff90,#ffd040,#40d0ff);
+  --r:10px;--rs:7px;--rxs:5px;--rf:9999px;
+  --sh:0 8px 32px rgba(0,0,0,.7);
+  --sh2:0 16px 48px rgba(0,0,0,.9);
+  --mono:'JetBrains Mono','Fira Code','SF Mono',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,-apple-system,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .14s cubic-bezier(.4,0,.2,1);
+  --t2:all .24s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"]{--bg:#000;--bg2:#080808;--bg3:#101010;--panel:#080808;--panel2:#101010;
+  --bd:#1e1e1e;--bd2:#303030;--tx:#e0e0e0;--tx2:#909090;--tx3:#585858;
+  --c1:#40ffff;--c2:#c060ff;--c3:#40ff80;--c4:#ff4080}
+[data-theme="classic"]{--bg:#f2ede0;--bg2:#e8e2d0;--bg3:#dcd4c0;--panel:#fff;--panel2:#f8f4e8;--panel3:#ece4d0;--panel4:#dcd0b8;
+  --bd:#c8c0a8;--bd2:#a89880;--tx:#0e1410;--tx2:#484030;--tx3:#807860;
+  --c1:#0068c0;--c2:#7030c0;--c3:#008848;--c4:#c02040}
+[data-theme="amber"]{--bg:#1a1008;--bg2:#241810;--bg3:#302018;--panel:#241810;--panel2:#302018;
+  --bd:#5c3c20;--bd2:#805428;--tx:#ffe8c0;--tx2:#d0b080;--tx3:#907848;
+  --c1:#ffb040;--c2:#ff8040;--c3:#ffe040;--c4:#ff6060}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* ============ BOOT ============ */
+#boot{position:fixed;inset:0;background:#0a0c14;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px}
+#boot.hidden{opacity:0;pointer-events:none}
+.boot-chip{position:relative;width:180px;height:120px;margin-bottom:20px}
+.boot-chip svg{width:100%;height:100%}
+.boot-chip .pkg{fill:none;stroke:#40d0ff;stroke-width:2}
+.boot-chip .pin{stroke:#b060ff;stroke-width:1.5;opacity:0;animation:pinGlow 2s ease-in-out infinite}
+.boot-chip .pin:nth-child(odd){animation-delay:.2s}
+.boot-chip .pkg-label{fill:#40d0ff;font-family:monospace;font-size:9px;text-anchor:middle}
+.boot-chip .circuit{stroke:#40ff90;stroke-width:1;fill:none;opacity:0;animation:circuitDraw 2.5s ease-out infinite}
+@keyframes pinGlow{0%,100%{opacity:0.3}50%{opacity:1}}
+@keyframes circuitDraw{0%{stroke-dashoffset:200;opacity:0}50%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+.boot-logo{font-family:var(--disp);font-size:3rem;font-weight:900;letter-spacing:12px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:6px}
+.boot-sub{font-size:.68rem;color:#40d0ff;letter-spacing:8px;margin-bottom:32px;opacity:.75}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#141a2c;border-radius:2px;overflow:hidden;margin-bottom:12px}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #40d0ff}
+.boot-pct{font-size:.68rem;color:#40d0ff;margin-bottom:16px}
+.boot-log{font-size:.6rem;color:#6878a0;text-align:left;width:min(440px,90vw);height:120px;overflow:hidden;line-height:1.7}
+.boot-log .ok{color:#40ff90}.boot-log .warn{color:#ffd040}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+/* ============ TOPBAR ============ */
+#topbar{height:50px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:5px;font-size:.95rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:32px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#0a0c14;box-shadow:0 0 14px rgba(64,208,255,.35)}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.tb-btn{width:32px;height:32px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-btn.active{background:var(--g1);color:#0a0c14;border-color:transparent}
+.tb-btn.running{background:var(--err);color:#fff;animation:pulseBtn 1s infinite}
+@keyframes pulseBtn{0%,100%{opacity:1}50%{opacity:.5}}
+.tb-stat{font-family:var(--mono);font-size:.62rem;padding:4px 10px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600;display:flex;gap:10px}
+
+/* ============ MAIN ============ */
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:250px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:36px}
+.panel-head{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#contentArea{flex:1;overflow:auto;padding:0;position:relative;background:var(--bg2)}
+
+#rightPanel{width:300px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:36px}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:32px}
+.rp-tab{flex:1;padding:6px;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+/* ============ STATUS BAR ============ */
+#statusbar{height:28px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;font-family:var(--mono);font-size:.62rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}
+
+/* ============ CONTROLS ============ */
+.sec{margin-bottom:14px}
+.sec h4{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);margin-bottom:8px;font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.sec h4 .badge{background:var(--c1);color:#0a0c14;font-size:.55rem;padding:1px 7px;border-radius:8px;font-family:var(--mono);letter-spacing:0}
+.lbl{font-size:.6rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);font-family:var(--mono);letter-spacing:0;text-transform:none}
+.ctrl{margin-bottom:10px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;border:none}
+.ctrl input[type=text],.ctrl input[type=number],.ctrl select,.ctrl textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 9px;color:var(--tx);font-size:.68rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(64,208,255,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1)}
+.btn.primary{background:var(--g1);color:#0a0c14;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 16px rgba(64,208,255,.4)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--panel3);border-color:var(--bd)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.danger:hover{background:rgba(255,96,128,.1)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:4px 8px;font-size:.6rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap}
+.toggle{position:relative;width:36px;height:20px;background:var(--panel4);border-radius:var(--rf);cursor:pointer;transition:var(--t2);flex-shrink:0;display:inline-block}
+.toggle.on{background:var(--c1)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:var(--t2)}
+.toggle.on::after{left:18px}
+
+/* ============ EDITOR ============ */
+.editor-wrap{display:flex;height:100%;background:#000;position:relative;overflow:hidden}
+.editor-lines{padding:16px 0;background:#050810;color:var(--tx3);font-family:var(--mono);font-size:.72rem;line-height:1.55;text-align:right;user-select:none;overflow:hidden;min-width:48px;border-right:1px solid #1c2440}
+.editor-lines .ln{padding:0 10px;height:20.15px;font-size:.72rem;display:flex;align-items:center;justify-content:flex-end}
+.editor-lines .ln.current{background:rgba(64,208,255,.12);color:var(--c1)}
+.editor-lines .ln.breakpoint{background:rgba(255,96,128,.2);color:var(--err);position:relative;cursor:pointer}
+.editor-lines .ln.breakpoint::before{content:'●';position:absolute;left:4px;color:var(--err);font-size:.7rem}
+.editor-scroll{flex:1;position:relative;overflow:auto}
+.editor-highlight{position:absolute;top:0;left:0;right:0;padding:16px;font-family:var(--mono);font-size:.72rem;line-height:1.55;color:transparent;pointer-events:none;white-space:pre;tab-size:4;letter-spacing:.1px}
+.editor-highlight .cm{color:#5a6a8a;font-style:italic}
+.editor-highlight .directive{color:#ff9040;font-weight:600}
+.editor-highlight .label{color:#ffd040;font-weight:700}
+.editor-highlight .mnemonic{color:#40d0ff;font-weight:700}
+.editor-highlight .register{color:#40ff90}
+.editor-highlight .imm{color:#b060ff}
+.editor-highlight .string{color:#ff40a0}
+.editor-highlight .comment{color:#5a6a8a;font-style:italic}
+.editor-highlight .row-act{background:rgba(64,208,255,.12)}
+.editor-textarea{position:absolute;top:0;left:0;right:0;bottom:0;padding:16px;background:transparent;color:#e0e8f8;font-family:var(--mono);font-size:.72rem;line-height:1.55;resize:none;border:none;outline:none;white-space:pre;overflow:auto;tab-size:4;letter-spacing:.1px;caret-color:#40d0ff;user-select:text}
+.editor-textarea::selection{background:rgba(64,208,255,.25)}
+
+/* ============ REGISTERS ============ */
+.reg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:12px}
+.reg-cell{background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px;font-family:var(--mono);font-size:.62rem;cursor:pointer;transition:var(--t1);position:relative}
+.reg-cell:hover{border-color:var(--c1);background:var(--panel4)}
+.reg-cell.changed{background:rgba(64,255,144,.15);border-color:var(--c3)}
+.reg-cell .reg-name{color:var(--c1);font-weight:700;font-size:.6rem;display:flex;justify-content:space-between;align-items:center}
+.reg-cell .reg-alias{color:var(--tx3);font-size:.5rem}
+.reg-cell .reg-val{color:var(--tx);font-size:.7rem;margin-top:3px;font-weight:600;letter-spacing:.3px}
+.reg-cell .reg-dec{color:var(--tx3);font-size:.5rem;margin-top:1px}
+.reg-cell.pc{background:rgba(176,96,255,.15);border-color:var(--c2)}
+.reg-cell.pc .reg-name{color:var(--c2)}
+
+/* ============ MEMORY ============ */
+.mem-view{padding:12px;font-family:var(--mono);font-size:.65rem}
+.mem-row{display:grid;grid-template-columns:80px repeat(16,1fr);gap:1px;margin-bottom:1px}
+.mem-addr{color:var(--c2);font-weight:700;padding:2px 4px;background:var(--panel3);text-align:right}
+.mem-byte{padding:2px 4px;background:var(--panel2);text-align:center;transition:var(--t1);cursor:pointer;color:var(--tx2)}
+.mem-byte:hover{background:var(--panel4);color:var(--tx)}
+.mem-byte.changed{background:rgba(255,208,64,.25);color:var(--c5)}
+.mem-byte.pc{background:rgba(176,96,255,.25);color:var(--c2)}
+.mem-byte.zero{color:var(--tx3)}
+
+/* ============ DISASSEMBLY ============ */
+.dasm-list{padding:8px}
+.dasm-row{display:grid;grid-template-columns:70px 100px 1fr 90px;gap:8px;padding:4px 8px;font-family:var(--mono);font-size:.68rem;border-radius:3px;align-items:center;transition:var(--t1)}
+.dasm-row:hover{background:var(--panel3)}
+.dasm-row.current{background:rgba(64,208,255,.15);box-shadow:inset 3px 0 0 var(--c1)}
+.dasm-row.bp{box-shadow:inset 3px 0 0 var(--err),inset 0 0 0 1px rgba(255,96,128,.3)}
+.dasm-row .dr-addr{color:var(--tx3)}
+.dasm-row .dr-hex{color:var(--c5);font-size:.6rem;letter-spacing:.5px}
+.dasm-row .dr-instr{color:var(--c1);font-weight:700}
+.dasm-row .dr-instr .dr-op{color:var(--c1)}
+.dasm-row .dr-instr .dr-op.r{color:var(--op-r)}
+.dasm-row .dr-instr .dr-op.i{color:var(--op-i)}
+.dasm-row .dr-instr .dr-op.s{color:var(--op-s)}
+.dasm-row .dr-instr .dr-op.b{color:var(--op-b)}
+.dasm-row .dr-instr .dr-op.u{color:var(--op-u)}
+.dasm-row .dr-instr .dr-op.j{color:var(--op-j)}
+.dasm-row .dr-instr .dr-reg{color:var(--c3)}
+.dasm-row .dr-instr .dr-imm{color:var(--c2)}
+.dasm-row .dr-instr .dr-src{color:var(--tx3);font-weight:400}
+.dasm-row .dr-comment{color:var(--tx3);font-size:.6rem}
+
+/* ============ PIPELINE ============ */
+.pipeline-view{padding:14px;overflow-x:auto}
+.pipeline-grid{display:grid;grid-template-columns:120px repeat(20,1fr);gap:2px;min-width:700px}
+.pipeline-cell{background:var(--panel3);border:1px solid var(--bd);border-radius:3px;padding:4px;font-family:var(--mono);font-size:.55rem;text-align:center;height:28px;display:flex;align-items:center;justify-content:center}
+.pipeline-cell.header{background:var(--panel4);color:var(--c2);font-weight:700}
+.pipeline-cell.stage-IF{background:rgba(64,208,255,.25);color:var(--c1);border-color:var(--c1)}
+.pipeline-cell.stage-ID{background:rgba(64,255,144,.25);color:var(--c3);border-color:var(--c3)}
+.pipeline-cell.stage-EX{background:rgba(255,208,64,.25);color:var(--c5);border-color:var(--c5)}
+.pipeline-cell.stage-MEM{background:rgba(255,144,64,.25);color:var(--c6);border-color:var(--c6)}
+.pipeline-cell.stage-WB{background:rgba(176,96,255,.25);color:var(--c2);border-color:var(--c2)}
+.pipeline-cell.stall{background:rgba(255,96,128,.25);color:var(--err);border-color:var(--err)}
+.pipeline-cell.flush{background:rgba(255,96,128,.1);color:var(--tx3);border-style:dashed}
+
+/* ============ CACHE ============ */
+.cache-view{padding:14px}
+.cache-set{background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);margin-bottom:6px;padding:6px}
+.cache-set-head{font-family:var(--mono);font-size:.6rem;color:var(--c3);font-weight:700;margin-bottom:4px;display:flex;justify-content:space-between}
+.cache-ways{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.cache-line{background:var(--panel2);border:1px solid var(--bd);border-radius:3px;padding:4px 6px;font-family:var(--mono);font-size:.58rem;transition:var(--t1)}
+.cache-line.valid{border-color:var(--c3);background:rgba(64,255,144,.1)}
+.cache-line.hit{border-color:var(--c5);background:rgba(255,208,64,.2);transform:scale(1.05)}
+.cache-line .cl-tag{color:var(--c2);font-weight:700}
+.cache-line .cl-data{color:var(--tx2);font-size:.52rem;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cache-line .cl-lru{color:var(--tx3);font-size:.5rem;text-align:right}
+
+/* ============ ISA TABLE ============ */
+.isa-table{width:100%;font-family:var(--mono);font-size:.65rem;border-collapse:collapse}
+.isa-table th{text-align:left;padding:6px 8px;background:var(--panel3);color:var(--tx3);font-size:.55rem;text-transform:uppercase;letter-spacing:.9px;border-bottom:1px solid var(--bd);position:sticky;top:0}
+.isa-table td{padding:5px 8px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+.isa-table tr:hover td{background:var(--panel3);color:var(--tx)}
+.isa-table .op-name{color:var(--c1);font-weight:700}
+.isa-table .op-fmt{color:var(--c2);font-weight:700}
+.isa-table .op-desc{color:var(--tx2);font-family:var(--sans)}
+
+/* ============ CONSOLE OUTPUT ============ */
+.console-wrap{display:flex;flex-direction:column;height:100%;background:#000}
+.console-out{flex:1;overflow-y:auto;padding:14px;font-family:var(--mono);font-size:.72rem;line-height:1.6;color:#40ff90;user-select:text}
+.console-line{white-space:pre-wrap;padding:1px 0}
+.console-line.err{color:#ff6080}
+.console-line.warn{color:#ffd040}
+.console-line.info{color:#40d0ff}
+.console-line.sys{color:#b060ff;font-weight:700}
+.console-line.dim{color:#5a6a8a}
+.console-line.num{color:#ffd040}
+
+/* ============ HELPERS ============ */
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.text-mono{font-family:var(--mono)}
+.text-xs{font-size:.62rem}
+.text-dim{color:var(--tx3)}
+.text-c1{color:var(--c1)}.text-c2{color:var(--c2)}.text-c3{color:var(--c3)}.text-c4{color:var(--c4)}.text-c5{color:var(--c5)}
+.kv{font-family:var(--mono);font-size:.65rem;line-height:1.75}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3);white-space:nowrap}
+.kv .v{color:var(--c1);text-align:right;word-break:break-all}
+.empty{text-align:center;padding:30px 20px;color:var(--tx3);font-size:.7rem;font-family:var(--mono)}
+.empty .e-icon{font-size:2.5rem;opacity:.3;margin-bottom:10px}
+
+/* ============ STATS ============ */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:6px;margin-bottom:12px}
+.stat{background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:8px;text-align:center}
+.stat .sv{font-family:var(--mono);font-size:.95rem;font-weight:800;color:var(--c1);line-height:1.1;word-break:break-all}
+.stat .sl{font-size:.5rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-top:3px}
+
+/* ============ MODAL ============ */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:800px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.9rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:20px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:26px;height:26px;border-radius:var(--rxxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+/* ============ TOAST ============ */
+#toasts{position:fixed;bottom:44px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:10px 16px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.7rem;font-weight:500;max-width:340px;min-width:180px;animation:tin .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c3)}.toast.warn{border-left-color:var(--c5)}.toast.error{border-left-color:var(--c4)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:1000px){#leftPanel{width:220px}#rightPanel{width:260px}}
+@media(max-width:700px){#leftPanel{width:0;overflow:hidden}#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}.reg-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-chip">
+    <svg viewBox="0 0 180 120">
+      <rect class="pkg" x="40" y="20" width="100" height="80" rx="4"/>
+      <text class="pkg-label" x="90" y="65">RISC-V</text>
+      <text class="pkg-label" x="90" y="78" style="font-size:7px;fill:#6878a0">RV32I</text>
+      <line class="pin" x1="20" y1="35" x2="40" y2="35"/>
+      <line class="pin" x1="20" y1="55" x2="40" y2="55"/>
+      <line class="pin" x1="20" y1="75" x2="40" y2="75"/>
+      <line class="pin" x1="20" y1="95" x2="40" y2="95"/>
+      <line class="pin" x1="140" y1="35" x2="160" y2="35"/>
+      <line class="pin" x1="140" y1="55" x2="160" y2="55"/>
+      <line class="pin" x1="140" y1="75" x2="160" y2="75"/>
+      <line class="pin" x1="140" y1="95" x2="160" y2="95"/>
+      <line class="pin" x1="55" y1="0" x2="55" y2="20"/>
+      <line class="pin" x1="75" y1="0" x2="75" y2="20"/>
+      <line class="pin" x1="95" y1="0" x2="95" y2="20"/>
+      <line class="pin" x1="115" y1="0" x2="115" y2="20"/>
+      <line class="pin" x1="55" y1="100" x2="55" y2="120"/>
+      <line class="pin" x1="75" y1="100" x2="75" y2="120"/>
+      <line class="pin" x1="95" y1="100" x2="95" y2="120"/>
+      <line class="pin" x1="115" y1="100" x2="115" y2="120"/>
+      <path class="circuit" d="M60,80 L60,90 L80,90 L80,80"/>
+      <path class="circuit" d="M100,50 L110,50 L110,70 L100,70"/>
+      <path class="circuit" d="M70,45 L90,45 L90,35"/>
+    </svg>
+  </div>
+  <div class="boot-logo">SILICON</div>
+  <div class="boot-sub">CPU ARCHITECTURE STUDIO</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('editor')">SILICON</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-stat">
+      <span>PC <span style="color:var(--c2)" id="tbPC">0x00000000</span></span>
+      <span>CYC <span style="color:var(--c5)" id="tbCycles">0</span></span>
+      <span>IPC <span style="color:var(--c3)" id="tbIPC">0.00</span></span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnRun" onclick="toggleRun()" title="Run/Pause (Space)">▶</button>
+      <button class="tb-btn" onclick="stepCPU()" title="Step one instruction (S)">⏭</button>
+      <button class="tb-btn" onclick="resetCPU()" title="Reset (R)">↺</button>
+      <button class="tb-btn" onclick="assembleAndLoad()" title="Assemble">🔨</button>
+      <button class="tb-btn" onclick="togglePipeline()" title="Pipeline visualization">📊</button>
+      <button class="tb-btn" onclick="saveCode()" title="Save source">💾</button>
+      <button class="tb-btn" onclick="loadCode()" title="Load source">📂</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left panel">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right panel">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Programs</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="contentArea"></div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="regs" onclick="switchRp('regs',this)">📦<span>Regs</span></div>
+        <div class="rp-tab" data-tab="mem" onclick="switchRp('mem',this)">💾<span>Mem</span></div>
+        <div class="rp-tab" data-tab="pipeline" onclick="switchRp('pipeline',this)">📊<span>Pipe</span></div>
+        <div class="rp-tab" data-tab="stats" onclick="switchRp('stats',this)">📈<span>Stats</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpRegs"></div>
+        <div class="rp-pane" id="rpMem"></div>
+        <div class="rp-pane" id="rpPipeline"></div>
+        <div class="rp-pane" id="rpStats"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">Cycles</span><span class="sb-val" id="sbCycles">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Instrs</span><span class="sb-val c2" id="sbInstrs">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">CPI</span><span class="sb-val c3" id="sbCPI">0.00</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Stalls</span><span class="sb-val c4" id="sbStalls">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Branches</span><span class="sb-val c5" id="sbBranches">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Mispredict</span><span class="sb-val c4" id="sbMispred">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Cache</span><span class="sb-val c3" id="sbCache">0/0</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">State</span><span class="sb-val" id="sbState">Ready</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;return Number(n).toFixed(d)}
+function toHex(v,w){w=w||8;v=v>>>0;return '0x'+v.toString(16).padStart(w,'0')}
+function toBin(v,w){w=w||32;v=v>>>0;return v.toString(2).padStart(w,'0')}
+function signExtend(v,bits){
+  var shift=32-bits;
+  return (v<<shift)>>shift;
+}
+function toast(m,t,d){t=t||'info';d=d||2400;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:1rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   RISC-V RV32I ISA DEFINITION
+   Reference: The RISC-V Instruction Set Manual, Volume I
+   ================================================================ */
+
+/* Register file — x0..x31 with ABI names */
+var REGISTERS=[
+  {n:0,alias:'zero',desc:'Hard-wired zero'},
+  {n:1,alias:'ra',desc:'Return address'},
+  {n:2,alias:'sp',desc:'Stack pointer'},
+  {n:3,alias:'gp',desc:'Global pointer'},
+  {n:4,alias:'tp',desc:'Thread pointer'},
+  {n:5,alias:'t0',desc:'Temp 0'},
+  {n:6,alias:'t1',desc:'Temp 1'},
+  {n:7,alias:'t2',desc:'Temp 2'},
+  {n:8,alias:'s0',desc:'Saved 0 / frame pointer'},
+  {n:9,alias:'s1',desc:'Saved 1'},
+  {n:10,alias:'a0',desc:'Arg 0 / return value'},
+  {n:11,alias:'a1',desc:'Arg 1 / return value'},
+  {n:12,alias:'a2',desc:'Arg 2'},
+  {n:13,alias:'a3',desc:'Arg 3'},
+  {n:14,alias:'a4',desc:'Arg 4'},
+  {n:15,alias:'a5',desc:'Arg 5'},
+  {n:16,alias:'a6',desc:'Arg 6'},
+  {n:17,alias:'a7',desc:'Arg 7 / syscall number'},
+  {n:18,alias:'s2',desc:'Saved 2'},
+  {n:19,alias:'s3',desc:'Saved 3'},
+  {n:20,alias:'s4',desc:'Saved 4'},
+  {n:21,alias:'s5',desc:'Saved 5'},
+  {n:22,alias:'s6',desc:'Saved 6'},
+  {n:23,alias:'s7',desc:'Saved 7'},
+  {n:24,alias:'s8',desc:'Saved 8'},
+  {n:25,alias:'s9',desc:'Saved 9'},
+  {n:26,alias:'s10',desc:'Saved 10'},
+  {n:27,alias:'s11',desc:'Saved 11'},
+  {n:28,alias:'t3',desc:'Temp 3'},
+  {n:29,alias:'t4',desc:'Temp 4'},
+  {n:30,alias:'t5',desc:'Temp 5'},
+  {n:31,alias:'t6',desc:'Temp 6'}
+];
+
+/* Instruction formats */
+var FORMATS={
+  R:'R-type:  funct7 | rs2 | rs1 | funct3 | rd | opcode',
+  I:'I-type:  imm[11:0] | rs1 | funct3 | rd | opcode',
+  S:'S-type:  imm[11:5] | rs2 | rs1 | funct3 | imm[4:0] | opcode',
+  B:'B-type:  imm[12|10:5] | rs2 | rs1 | funct3 | imm[4:1|11] | opcode',
+  U:'U-type:  imm[31:12] | rd | opcode',
+  J:'J-type:  imm[20|10:1|11|19:12] | rd | opcode'
+};
+
+/* Complete RV32I instruction set */
+var ISA=[
+  /* R-type */
+  {name:'add',fmt:'R',opcode:0x33,funct3:0x0,funct7:0x00,desc:'rd = rs1 + rs2',cat:'r'},
+  {name:'sub',fmt:'R',opcode:0x33,funct3:0x0,funct7:0x20,desc:'rd = rs1 - rs2',cat:'r'},
+  {name:'sll',fmt:'R',opcode:0x33,funct3:0x1,funct7:0x00,desc:'rd = rs1 << rs2',cat:'r'},
+  {name:'slt',fmt:'R',opcode:0x33,funct3:0x2,funct7:0x00,desc:'rd = (rs1 < rs2) ? 1 : 0',cat:'r'},
+  {name:'sltu',fmt:'R',opcode:0x33,funct3:0x3,funct7:0x00,desc:'rd = (rs1 < rs2) unsigned',cat:'r'},
+  {name:'xor',fmt:'R',opcode:0x33,funct3:0x4,funct7:0x00,desc:'rd = rs1 ^ rs2',cat:'r'},
+  {name:'srl',fmt:'R',opcode:0x33,funct3:0x5,funct7:0x00,desc:'rd = rs1 >> rs2 logical',cat:'r'},
+  {name:'sra',fmt:'R',opcode:0x33,funct3:0x5,funct7:0x20,desc:'rd = rs1 >> rs2 arithmetic',cat:'r'},
+  {name:'or',fmt:'R',opcode:0x33,funct3:0x6,funct7:0x00,desc:'rd = rs1 | rs2',cat:'r'},
+  {name:'and',fmt:'R',opcode:0x33,funct3:0x7,funct7:0x00,desc:'rd = rs1 & rs2',cat:'r'},
+
+  /* I-type (arithmetic) */
+  {name:'addi',fmt:'I',opcode:0x13,funct3:0x0,desc:'rd = rs1 + imm',cat:'i'},
+  {name:'slti',fmt:'I',opcode:0x13,funct3:0x2,desc:'rd = (rs1 < imm) ? 1 : 0',cat:'i'},
+  {name:'sltiu',fmt:'I',opcode:0x13,funct3:0x3,desc:'rd = (rs1 < imm) unsigned',cat:'i'},
+  {name:'xori',fmt:'I',opcode:0x13,funct3:0x4,desc:'rd = rs1 ^ imm',cat:'i'},
+  {name:'ori',fmt:'I',opcode:0x13,funct3:0x6,desc:'rd = rs1 | imm',cat:'i'},
+  {name:'andi',fmt:'I',opcode:0x13,funct3:0x7,desc:'rd = rs1 & imm',cat:'i'},
+  {name:'slli',fmt:'I',opcode:0x13,funct3:0x1,desc:'rd = rs1 << shamt',cat:'i',shift:true},
+  {name:'srli',fmt:'I',opcode:0x13,funct3:0x5,desc:'rd = rs1 >> shamt logical',cat:'i',shift:true},
+  {name:'srai',fmt:'I',opcode:0x13,funct3:0x5,desc:'rd = rs1 >> shamt arithmetic',cat:'i',shift:true,immHi:0x20},
+
+  /* Load */
+  {name:'lb',fmt:'I',opcode:0x03,funct3:0x0,desc:'Load byte (sign-extended)',cat:'i',mem:true},
+  {name:'lh',fmt:'I',opcode:0x03,funct3:0x1,desc:'Load halfword (sign-extended)',cat:'i',mem:true},
+  {name:'lw',fmt:'I',opcode:0x03,funct3:0x2,desc:'Load word',cat:'i',mem:true},
+  {name:'lbu',fmt:'I',opcode:0x03,funct3:0x4,desc:'Load byte unsigned',cat:'i',mem:true},
+  {name:'lhu',fmt:'I',opcode:0x03,funct3:0x5,desc:'Load halfword unsigned',cat:'i',mem:true},
+
+  /* Store */
+  {name:'sb',fmt:'S',opcode:0x23,funct3:0x0,desc:'Store byte',cat:'s',mem:true},
+  {name:'sh',fmt:'S',opcode:0x23,funct3:0x1,desc:'Store halfword',cat:'s',mem:true},
+  {name:'sw',fmt:'S',opcode:0x23,funct3:0x2,desc:'Store word',cat:'s',mem:true},
+
+  /* Branch */
+  {name:'beq',fmt:'B',opcode:0x63,funct3:0x0,desc:'Branch if rs1 == rs2',cat:'b',branch:true},
+  {name:'bne',fmt:'B',opcode:0x63,funct3:0x1,desc:'Branch if rs1 != rs2',cat:'b',branch:true},
+  {name:'blt',fmt:'B',opcode:0x63,funct3:0x4,desc:'Branch if rs1 < rs2 signed',cat:'b',branch:true},
+  {name:'bge',fmt:'B',opcode:0x63,funct3:0x5,desc:'Branch if rs1 >= rs2 signed',cat:'b',branch:true},
+  {name:'bltu',fmt:'B',opcode:0x63,funct3:0x6,desc:'Branch if rs1 < rs2 unsigned',cat:'b',branch:true},
+  {name:'bgeu',fmt:'B',opcode:0x63,funct3:0x7,desc:'Branch if rs1 >= rs2 unsigned',cat:'b',branch:true},
+
+  /* Upper immediate */
+  {name:'lui',fmt:'U',opcode:0x37,desc:'rd = imm << 12',cat:'u'},
+  {name:'auipc',fmt:'U',opcode:0x17,desc:'rd = pc + (imm << 12)',cat:'u'},
+
+  /* Jump */
+  {name:'jal',fmt:'J',opcode:0x6F,desc:'Jump and link',cat:'j'},
+  {name:'jalr',fmt:'I',opcode:0x67,funct3:0x0,desc:'Jump and link register',cat:'j'},
+
+  /* System / pseudo-syscall */
+  {name:'ecall',fmt:'I',opcode:0x73,funct3:0x0,desc:'Environment call (syscall)',cat:'sys'},
+  {name:'ebreak',fmt:'I',opcode:0x73,funct3:0x0,desc:'Environment break',cat:'sys'},
+
+  /* Custom (implementation-defined) */
+  {name:'print',fmt:'SYS',opcode:0x7B,funct3:0x0,desc:'Custom: print register (SILICON)',cat:'sys'},
+  {name:'exit',fmt:'SYS',opcode:0x7B,funct3:0x1,desc:'Custom: halt simulator',cat:'sys'}
+];
+
+/* Lookup by name */
+var ISA_BY_NAME={};
+ISA.forEach(function(i){ISA_BY_NAME[i.name]=i;});
+
+/* Register ABI name → number */
+var REG_BY_NAME={'zero':0,'ra':1,'sp':2,'gp':3,'tp':4,'t0':5,'t1':6,'t2':7,'s0':8,'fp':8,'s1':9,
+  'a0':10,'a1':11,'a2':12,'a3':13,'a4':14,'a5':15,'a6':16,'a7':17,
+  's2':18,'s3':19,'s4':20,'s5':21,'s6':22,'s7':23,'s8':24,'s9':25,'s10':26,'s11':27,
+  't3':28,'t4':29,'t5':30,'t6':31};
+
+function regIndex(name){
+  name=name.trim().replace(/^x/,'');
+  if(/^\d+$/.test(name))return parseInt(name);
+  if(REG_BY_NAME[name]!==undefined)return REG_BY_NAME[name];
+  return -1;
+}
+function regName(n){
+  if(n===0)return 'zero';
+  return REGISTERS[n].alias;
+}
+</script>
+<script>
+/* ================================================================
+   ASSEMBLER
+   Two-pass: collect labels, then encode
+   ================================================================ */
+function Assembler(){
+  this.labels={};
+  this.instructions=[];
+  this.errors=[];
+  this.listing=[];
+  this.dataSeg=[];
+  this.textBase=0x00000000;
+  this.pc=0;
+}
+
+Assembler.prototype.parseLine=function(raw){
+  /* Strip comments */
+  var comment='';
+  var idx=raw.indexOf(';');
+  if(idx<0)idx=raw.indexOf('#');
+  if(idx>=0){
+    comment=raw.substr(idx);
+    raw=raw.substr(0,idx);
+  }
+  var line=raw.trim();
+  var label=null;
+  /* Check for label: name: */
+  var labelMatch=line.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*:/);
+  if(labelMatch){
+    label=labelMatch[1];
+    line=line.substr(labelMatch[0].length).trim();
+  }
+  /* Directive */
+  if(line.startsWith('.')){
+    return {label:label,directive:line,comment:comment.trim()};
+  }
+  if(!line)return {label:label,empty:true,comment:comment.trim()};
+  /* Parse mnemonic + operands */
+  var m=line.match(/^([a-zA-Z_][a-zA-Z0-9_.]*)\s*(.*)$/);
+  if(!m)return {error:'Cannot parse: '+line};
+  var mnemonic=m[1].toLowerCase();
+  var operandStr=m[2].trim();
+  var operands=[];
+  if(operandStr){
+    /* Split by comma, but respect parentheses */
+    var depth=0,current='';
+    for(var i=0;i<operandStr.length;i++){
+      var c=operandStr[i];
+      if(c==='(')depth++;
+      else if(c===')')depth--;
+      if(c===','&&depth===0){
+        operands.push(current.trim());
+        current='';
+      }else current+=c;
+    }
+    if(current.trim())operands.push(current.trim());
+  }
+  return {label:label,mnemonic:mnemonic,operands:operands,comment:comment.trim(),raw:raw};
+};
+
+Assembler.prototype.assemble=function(source){
+  this.labels={};
+  this.instructions=[];
+  this.errors=[];
+  this.listing=[];
+  this.dataSeg=[];
+  var lines=source.split('\n');
+  var parsed=lines.map(this.parseLine.bind(this));
+  /* Pass 1: collect labels and directives */
+  var pc=this.textBase;
+  var textLines=[];
+  var dataLines=[];
+  var currentSection='text';
+  for(var i=0;i<parsed.length;i++){
+    var p=parsed[i];
+    if(p.empty){
+      this.listing.push({line:i+1,empty:true});
+      continue;
+    }
+    if(p.error){
+      this.errors.push({line:i+1,msg:p.error});
+      continue;
+    }
+    if(p.directive){
+      var d=p.directive.toLowerCase();
+      if(d.startsWith('.text'))currentSection='text';
+      else if(d.startsWith('.data'))currentSection='data';
+      else if(d.startsWith('.word')){
+        var vals=p.directive.replace(/\.word/,'').split(',').map(function(x){return x.trim();});
+        if(currentSection==='data'){
+          vals.forEach(function(v){
+            var n=parseInt(v);
+            if(isNaN(n))n=0;
+            this.dataSeg.push({addr:pc,value:n>>>0});
+            pc+=4;
+          },this);
+        }
+      } else if(d.startsWith('.byte')){
+        var vals2=p.directive.replace(/\.byte/,'').split(',').map(function(x){return x.trim();});
+        vals2.forEach(function(v){
+          var n=parseInt(v);
+          if(isNaN(n))n=0;
+          this.dataSeg.push({addr:pc,value:n&0xFF});
+          pc+=1;
+        },this);
+      } else if(d.startsWith('.string')||d.startsWith('.asciz')){
+        /* Store string in data */
+        var strMatch=p.directive.match(/"([^"]*)"/);
+        if(strMatch){
+          var str=strMatch[1];
+          for(var s=0;s<str.length;s++){
+            this.dataSeg.push({addr:pc,value:str.charCodeAt(s)});
+            pc+=1;
+          }
+          this.dataSeg.push({addr:pc,value:0});
+          pc+=1;
+        }
+      } else if(d.startsWith('.align')){
+        var a=parseInt(p.directive.replace(/\.align/,'').trim())||4;
+        var pad=pc%a;
+        if(pad)pc+=a-pad;
+      } else if(d.startsWith('.space')){
+        var n2=parseInt(p.directive.replace(/\.space/,'').trim())||0;
+        pc+=n2;
+      } else if(d.startsWith('.globl')||d.startsWith('.global')||d.startsWith('.section')){
+        /* Ignore */
+      }
+      this.listing.push({line:i+1,directive:p.directive,comment:p.comment});
+      continue;
+    }
+    if(p.label){
+      this.labels[p.label]=pc;
+    }
+    if(p.mnemonic){
+      p.pc=pc;
+      p.lineNum=i+1;
+      this.instructions.push(p);
+      this.listing.push({line:i+1,pc:pc,mnemonic:p.mnemonic,operands:p.operands,comment:p.comment,label:p.label});
+      pc+=4;
+    }
+  }
+  /* Pass 2: encode */
+  var code=[];
+  for(var j=0;j<this.instructions.length;j++){
+    var ins=this.instructions[j];
+    try{
+      var enc=this.encode(ins);
+      enc.pc=ins.pc;
+      enc.lineNum=ins.lineNum;
+      enc.mnemonic=ins.mnemonic;
+      enc.operands=ins.operands;
+      enc.comment=ins.comment;
+      code.push(enc);
+    }catch(e){
+      this.errors.push({line:ins.lineNum,msg:e.message});
+    }
+  }
+  return {code:code,labels:this.labels,data:this.dataSeg,errors:this.errors,listing:this.listing};
+};
+
+Assembler.prototype.resolveImm=function(op){
+  if(!op)throw new Error('Missing operand');
+  op=op.trim();
+  /* Hex */
+  if(op.startsWith('0x')||op.startsWith('0X'))return parseInt(op,16);
+  /* Binary */
+  if(op.startsWith('0b')||op.startsWith('0B'))return parseInt(op.slice(2),2);
+  /* Char literal */
+  if(op.startsWith("'")&&op.endsWith("'")){
+    if(op.length===3)return op.charCodeAt(1);
+    if(op.length===4&&op[1]==='\\')return {'n':10,'t':9,'r':13,'0':0,'\\':92,"'":39,'"':34}[op[2]]||0;
+    return op.charCodeAt(1);
+  }
+  /* Number */
+  if(/^-?\d+$/.test(op))return parseInt(op);
+  /* Label — forward reference */
+  if(this.labels[op]!==undefined)return this.labels[op];
+  throw new Error('Unknown label or invalid immediate: '+op);
+};
+
+Assembler.prototype.parseMemOperand=function(op){
+  /* Format: offset(reg) OR symbol OR symbol(reg) */
+  var m=op.match(/^(-?\d+)?\s*\(\s*([a-zA-Z0-9_]+)\s*\)$/);
+  if(m){
+    var off=m[1]?parseInt(m[1]):0;
+    var reg=regIndex(m[2]);
+    if(reg<0)throw new Error('Invalid register: '+m[2]);
+    return {off:off,reg:reg};
+  }
+  /* Symbol-based */
+  var sym=op.trim();
+  var reg2=0;
+  var m2=sym.match(/^([a-zA-Z_][a-zA-Z0-9_]*)$/);
+  if(m2){
+    /* Load from global — use x0 as base with symbol address */
+    return {off:this.resolveImm(sym),reg:0,symbol:sym};
+  }
+  throw new Error('Invalid memory operand: '+op);
+};
+
+Assembler.prototype.encode=function(ins){
+  var name=ins.mnemonic;
+  /* Pseudo-instructions */
+  if(name==='nop')return this.encode({mnemonic:'addi',operands:['x0','x0','0'],pc:ins.pc,lineNum:ins.lineNum});
+  if(name==='li'){
+    var rd0=regIndex(ins.operands[0]);
+    var imm=this.resolveImm(ins.operands[1]);
+    if(imm>=-2048&&imm<=2047){
+      return this.encode({mnemonic:'addi',operands:['x'+rd0,'x0',String(imm)],pc:ins.pc,lineNum:ins.lineNum});
+    }
+    /* Split into lui + addi */
+    var hi=(imm+0x800)>>12;
+    var lo=imm-((hi<<12));
+    /* Return just LUI for now — full impl would splice */
+    return this.encode({mnemonic:'lui',operands:['x'+rd0,String(hi)],pc:ins.pc,lineNum:ins.lineNum});
+  }
+  if(name==='mv'){
+    return this.encode({mnemonic:'addi',operands:['x'+regIndex(ins.operands[0]),'x'+regIndex(ins.operands[1]),'0'],pc:ins.pc,lineNum:ins.lineNum});
+  }
+  if(name==='j'){
+    return this.encode({mnemonic:'jal',operands:['x0',ins.operands[0]],pc:ins.pc,lineNum:ins.lineNum});
+  }
+  if(name==='ret'){
+    return this.encode({mnemonic:'jalr',operands:['x0','x1','0'],pc:ins.pc,lineNum:ins.lineNum});
+  }
+  if(name==='call'){
+    return this.encode({mnemonic:'jal',operands:['x1',ins.operands[0]],pc:ins.pc,lineNum:ins.lineNum});
+  }
+  if(name==='ble'){
+    return this.encode({mnemonic:'bge',operands:[ins.operands[1],ins.operands[0],ins.operands[2]],pc:ins.pc,lineNum:ins.lineNum});
+  }
+  if(name==='bgt'){
+    return this.encode({mnemonic:'blt',operands:[ins.operands[1],ins.operands[0],ins.operands[2]],pc:ins.pc,lineNum:ins.lineNum});
+  }
+  if(name==='beqz'){
+    return this.encode({mnemonic:'beq',operands:[ins.operands[0],'x0',ins.operands[1]],pc:ins.pc,lineNum:ins.lineNum});
+  }
+  if(name==='bnez'){
+    return this.encode({mnemonic:'bne',operands:[ins.operands[0],'x0',ins.operands[1]],pc:ins.pc,lineNum:ins.lineNum});
+  }
+
+  var def=ISA_BY_NAME[name];
+  if(!def)throw new Error('Unknown instruction: '+name);
+  var ops=ins.operands;
+
+  function regOp(i,label){
+    var r=regIndex(ops[i]);
+    if(r<0||r>31)throw new Error('Invalid register '+(label||i)+': '+ops[i]);
+    return r;
+  }
+  function immOp(i,label){
+    var val=this.resolveImm(ops[i]);
+    return val;
+  }
+
+  var pc=ins.pc;
+  var enc=0;
+
+  if(def.fmt==='R'){
+    var rd=regOp(0),rs1=regOp(1),rs2=regOp(2);
+    enc=((def.funct7&0x7F)<<25)|((rs2&0x1F)<<20)|((rs1&0x1F)<<15)|((def.funct3&7)<<12)|((rd&0x1F)<<7)|(def.opcode&0x7F);
+  }
+  else if(def.fmt==='I'){
+    var rd2=regOp(0);
+    var rs1b,imm;
+    if(def.mem){
+      /* Load: lw rd, offset(rs1) */
+      var mem=this.parseMemOperand(ops[1]);
+      rs1b=mem.reg;
+      imm=mem.off;
+    } else if(def.shift){
+      rs1b=regOp(1);
+      imm=immOp.call(this,2);
+      /* Shift amount in lower 5 bits */
+      if(imm<0||imm>31)throw new Error('Shift amount out of range: '+imm);
+      /* For srai, funct7 = 0x20 */
+      var shHi=def.immHi?(def.immHi<<5):0;
+      enc=((shHi&0xFE0)<<20)|((imm&0x1F)<<20)|((rs1b&0x1F)<<15)|((def.funct3&7)<<12)|((rd2&0x1F)<<7)|(def.opcode&0x7F);
+      return {pc:pc,word:enc>>>0,lineNum:ins.lineNum,mnemonic:name,operands:ops,def:def};
+    } else if(name==='jalr'){
+      rs1b=regOp(1);
+      imm=parseInt(ops[2])||0;
+    } else {
+      rs1b=regOp(1);
+      imm=immOp.call(this,2);
+    }
+    if(imm>2047||imm<-2048)throw new Error('Immediate out of range for I-type: '+imm+' (must be -2048..2047)');
+    enc=(((imm&0xFFF))<<20)|((rs1b&0x1F)<<15)|((def.funct3&7)<<12)|((rd2&0x1F)<<7)|(def.opcode&0x7F);
+  }
+  else if(def.fmt==='S'){
+    var rs2s=regOp(0);
+    var mem2=this.parseMemOperand(ops[1]);
+    var immS=mem2.off;
+    var rs1s=mem2.reg;
+    if(immS>2047||immS<-2048)throw new Error('Immediate out of range for S-type');
+    var imm11_5=(immS>>5)&0x7F;
+    var imm4_0=immS&0x1F;
+    enc=((imm11_5&0x7F)<<25)|((rs2s&0x1F)<<20)|((rs1s&0x1F)<<15)|((def.funct3&7)<<12)|((imm4_0&0x1F)<<7)|(def.opcode&0x7F);
+  }
+  else if(def.fmt==='B'){
+    var rs1b2=regOp(0),rs2b2=regOp(1);
+    /* Branch target is a label; compute offset relative to PC */
+    var target=this.resolveImm(ops[2]);
+    var offset=target-pc;
+    if(offset%2!==0)throw new Error('Branch offset must be even');
+    if(offset>4094||offset<-4096)throw new Error('Branch offset out of range');
+    var imm12=(offset>>12)&1;
+    var imm10_5=(offset>>5)&0x3F;
+    var imm4_1=(offset>>1)&0xF;
+    var imm11=(offset>>11)&1;
+    enc=((imm12&1)<<31)|((imm10_5&0x3F)<<25)|((rs2b2&0x1F)<<20)|((rs1b2&0x1F)<<15)|((def.funct3&7)<<12)|((imm4_1&0xF)<<8)|((imm11&1)<<7)|(def.opcode&0x7F);
+  }
+  else if(def.fmt==='U'){
+    var rd3=regOp(0);
+    var immU=immOp.call(this,1);
+    if(immU>0xFFFFF||immU<-0x80000)throw new Error('U-immediate out of range');
+    enc=((immU&0xFFFFF)<<12)|((rd3&0x1F)<<7)|(def.opcode&0x7F);
+  }
+  else if(def.fmt==='J'){
+    var rdj=regOp(0);
+    var target2=this.resolveImm(ops[1]);
+    var offset2=target2-pc;
+    if(offset2%2!==0)throw new Error('Jump offset must be even');
+    if(offset2>1048574||offset2<-1048576)throw new Error('Jump offset out of range');
+    var i20=(offset2>>20)&1;
+    var i10_1=(offset2>>1)&0x3FF;
+    var i11=(offset2>>11)&1;
+    var i19_12=(offset2>>12)&0xFF;
+    enc=((i20&1)<<31)|((i10_1&0x3FF)<<21)|((i11&1)<<20)|((i19_12&0xFF)<<12)|((rdj&0x1F)<<7)|(def.opcode&0x7F);
+  }
+  else if(def.fmt==='SYS'){
+    /* Custom instruction: use funct3 to distinguish */
+    var rd4=regOp(0);
+    enc=((def.funct3&7)<<12)|((rd4&0x1F)<<7)|(def.opcode&0x7F);
+  }
+  return {pc:pc,word:enc>>>0,lineNum:ins.lineNum,mnemonic:name,operands:ops,def:def};
+};
+
+/* ================================================================
+   DISASSEMBLER
+   ================================================================ */
+function disassemble(word,pc){
+  word=word>>>0;
+  var opcode=word&0x7F;
+  var rd=(word>>7)&0x1F;
+  var funct3=(word>>12)&7;
+  var rs1=(word>>15)&0x1F;
+  var rs2=(word>>20)&0x1F;
+  var funct7=(word>>25)&0x7F;
+  /* Immediate decodings */
+  var immI=signExtend(word>>>20,12);
+  var immS=signExtend(((word>>25)<<5)|((word>>7)&0x1F),12);
+  var immB=signExtend(((word>>31)<<12)|(((word>>7)&1)<<11)|(((word>>25)&0x3F)<<5)|(((word>>8)&0xF)<<1),13);
+  var immU=(word&0xFFFFF000)>>>0;
+  var immU_signed=signExtend(word>>>12,20)<<12;
+  var immJ=signExtend(((word>>31)<<20)|(((word>>12)&0xFF)<<12)|(((word>>20)&1)<<11)|(((word>>21)&0x3FF)<<1),21);
+  /* Find matching instruction */
+  for(var i=0;i<ISA.length;i++){
+    var d=ISA[i];
+    if(d.opcode!==opcode)continue;
+    if(d.fmt==='R'&&d.funct3===funct3&&d.funct7===funct7){
+      return {text:d.name+' '+regName(rd)+', '+regName(rs1)+', '+regName(rs2),def:d};
+    }
+    if(d.fmt==='I'&&d.funct3===funct3){
+      if(d.shift){
+        if(d.immHi){
+          var top7=(word>>25)&0x7F;
+          if(top7!==d.immHi)continue;
+        } else {
+          var top7b=(word>>25)&0x7F;
+          if(top7b!==0)continue;
+        }
+      }
+      if(d.mem){
+        return {text:d.name+' '+regName(rd)+', '+immI+'('+regName(rs1)+')',def:d};
+      }
+      if(d.name==='jalr'){
+        return {text:'jalr '+regName(rd)+', '+immI+'('+regName(rs1)+')',def:d};
+      }
+      if(d.name==='ecall'||d.name==='ebreak'){
+        return {text:d.name,def:d};
+      }
+      if(d.shift){
+        var shamt=(word>>20)&0x1F;
+        return {text:d.name+' '+regName(rd)+', '+regName(rs1)+', '+shamt,def:d};
+      }
+      return {text:d.name+' '+regName(rd)+', '+regName(rs1)+', '+immI,def:d};
+    }
+    if(d.fmt==='S'&&d.funct3===funct3){
+      return {text:d.name+' '+regName(rs2)+', '+immS+'('+regName(rs1)+')',def:d};
+    }
+    if(d.fmt==='B'&&d.funct3===funct3){
+      return {text:d.name+' '+regName(rs1)+', '+regName(rs2)+', '+(pc+immB),def:d,target:pc+immB};
+    }
+    if(d.fmt==='U'){
+      return {text:d.name+' '+regName(rd)+', '+toHex(immU_signed>>>0,8),def:d};
+    }
+    if(d.fmt==='J'){
+      return {text:d.name+' '+regName(rd)+', '+(pc+immJ),def:d,target:pc+immJ};
+    }
+    if(d.fmt==='SYS'){
+      return {text:d.name+' '+regName(rd),def:d};
+    }
+  }
+  return {text:'.word '+toHex(word),def:null};
+}
+
+/* ================================================================
+   CACHE SIMULATOR — Set-associative with LRU
+   ================================================================ */
+function Cache(config){
+  this.name=config.name;
+  this.capacity=config.capacity;   /* bytes */
+  this.lineSize=config.lineSize;   /* bytes */
+  this.assoc=config.assoc;         /* ways */
+  this.latency=config.latency;     /* cycles on hit */
+  this.numSets=this.capacity/(this.lineSize*this.assoc);
+  this.sets=[];
+  for(var i=0;i<this.numSets;i++){
+    var ways=[];
+    for(var w=0;w<this.assoc;w++){
+      ways.push({valid:false,tag:0,data:[],lastUsed:0});
+    }
+    this.sets.push(ways);
+  }
+  this.hits=0;
+  this.misses=0;
+  this.accesses=0;
+  this.clock=0;
+  this.lastResult=null;
+}
+Cache.prototype.decode=function(addr){
+  var offsetBits=Math.log2(this.lineSize);
+  var setBits=Math.log2(this.numSets);
+  var offset=addr&((1<<offsetBits)-1);
+  var set=(addr>>offsetBits)&((1<<setBits)-1);
+  var tag=addr>>(offsetBits+setBits);
+  return {offset:offset,set:set,tag:tag};
+};
+Cache.prototype.access=function(addr,isWrite){
+  this.clock++;
+  this.accesses++;
+  var d=this.decode(addr);
+  var set=this.sets[d.set];
+  /* Search for tag in ways */
+  for(var w=0;w<this.assoc;w++){
+    var line=set[w];
+    if(line.valid&&line.tag===d.tag){
+      /* HIT */
+      this.hits++;
+      line.lastUsed=this.clock;
+      this.lastResult={type:'hit',set:d.set,way:w,tag:d.tag};
+      return {hit:true,latency:this.latency,set:d.set,way:w};
+    }
+  }
+  /* MISS — evict LRU */
+  var lru=0;
+  for(var w2=1;w2<this.assoc;w2++){
+    if(set[w2].lastUsed<set[lru].lastUsed)lru=w2;
+  }
+  set[lru].valid=true;
+  set[lru].tag=d.tag;
+  set[lru].lastUsed=this.clock;
+  this.misses++;
+  this.lastResult={type:'miss',set:d.set,way:lru,tag:d.tag,evicted:set[lru].valid};
+  return {hit:false,latency:this.latency+10,set:d.set,way:lru};
+};
+Cache.prototype.reset=function(){
+  for(var s=0;s<this.numSets;s++){
+    for(var w=0;w<this.assoc;w++){
+      this.sets[s][w].valid=false;
+      this.sets[s][w].tag=0;
+      this.sets[s][w].lastUsed=0;
+    }
+  }
+  this.hits=0;this.misses=0;this.accesses=0;this.clock=0;
+};
+Cache.prototype.hitRate=function(){
+  return this.accesses>0?this.hits/this.accesses:0;
+};
+
+/* ================================================================
+   BRANCH PREDICTOR — 2-bit saturating counter with BHT
+   ================================================================ */
+function BranchPredictor(bits){
+  this.bits=bits||8;
+  this.size=1<<this.bits;
+  /* 2-bit states: 0=strongly not taken, 1=weakly not taken,
+                  2=weakly taken, 3=strongly taken */
+  this.bht=new Uint8Array(this.size);
+  for(var i=0;i<this.size;i++)this.bht[i]=1; /* Start weakly not taken */
+  this.predictions=0;
+  this.correct=0;
+  this.mispredictions=0;
+  this.lastIndex=-1;
+  this.lastPredict=null;
+  this.lastActual=null;
+}
+BranchPredictor.prototype.index=function(pc){
+  /* Use low bits of PC */
+  return (pc>>>2)&(this.size-1);
+};
+BranchPredictor.prototype.predict=function(pc){
+  var idx=this.index(pc);
+  this.lastIndex=idx;
+  var state=this.bht[idx];
+  var taken=state>=2;
+  this.lastPredict=taken;
+  this.predictions++;
+  return taken;
+};
+BranchPredictor.prototype.update=function(pc,actual){
+  var idx=this.index(pc);
+  var state=this.bht[idx];
+  if(actual){
+    state=Math.min(3,state+1);
+  } else {
+    state=Math.max(0,state-1);
+  }
+  this.bht[idx]=state;
+  this.lastActual=actual;
+  if((state>=2)===(actual))this.correct++;
+  else this.mispredictions++;
+};
+BranchPredictor.prototype.reset=function(){
+  for(var i=0;i<this.size;i++)this.bht[i]=1;
+  this.predictions=0;this.correct=0;this.mispredictions=0;
+};
+BranchPredictor.prototype.accuracy=function(){
+  return this.predictions>0?this.correct/this.predictions:0;
+};
+</script>
+<script>
+/* ================================================================
+   CPU SIMULATOR — RV32I with pipeline tracking
+   ================================================================ */
+function CPU(){
+  this.regs=new Int32Array(32);
+  this.pc=0;
+  this.memory=new Uint8Array(64*1024);  /* 64KB flat memory */
+  this.memView=new Int32Array(this.memory.buffer);
+  this.cycles=0;
+  this.instrCount=0;
+  this.stalls=0;
+  this.branches=0;
+  this.mispredictions=0;
+  this.halted=false;
+  this.lastError=null;
+  this.output=[];
+  this.code=[];
+  this.breakpoints={};
+  /* Pipeline state */
+  this.pipelineHistory=[];      /* per-instruction stage info */
+  this.pipelineActive=false;
+  this.iCache=null;
+  this.dCache=null;
+  this.bp=null;
+  this.stallCycles=0;
+}
+CPU.prototype.reset=function(){
+  this.regs.fill(0);
+  this.pc=0;
+  this.cycles=0;
+  this.instrCount=0;
+  this.stalls=0;
+  this.branches=0;
+  this.mispredictions=0;
+  this.halted=false;
+  this.lastError=null;
+  this.output=[];
+  this.pipelineHistory=[];
+  this.memory.fill(0);
+  if(this.iCache)this.iCache.reset();
+  if(this.dCache)this.dCache.reset();
+  if(this.bp)this.bp.reset();
+};
+CPU.prototype.loadProgram=function(code,dataSeg){
+  /* code: array of {pc,word} */
+  this.code=code;
+  /* Write code to memory */
+  for(var i=0;i<code.length;i++){
+    var ins=code[i];
+    var addr=ins.pc;
+    this.memory[addr]=ins.word&0xFF;
+    this.memory[addr+1]=(ins.word>>8)&0xFF;
+    this.memory[addr+2]=(ins.word>>16)&0xFF;
+    this.memory[addr+3]=(ins.word>>24)&0xFF;
+  }
+  /* Write data */
+  if(dataSeg){
+    for(var j=0;j<dataSeg.length;j++){
+      var d=dataSeg[j];
+      if(d.value<=0xFF)this.memory[d.addr]=d.value;
+      else {
+        this.memory[d.addr]=d.value&0xFF;
+        this.memory[d.addr+1]=(d.value>>8)&0xFF;
+        this.memory[d.addr+2]=(d.value>>16)&0xFF;
+        this.memory[d.addr+3]=(d.value>>24)&0xFF;
+      }
+    }
+  }
+};
+CPU.prototype.readWord=function(addr){
+  addr=addr>>>0;
+  return (this.memory[addr]|(this.memory[addr+1]<<8)|(this.memory[addr+2]<<16)|(this.memory[addr+3]<<24))>>>0;
+};
+CPU.prototype.writeWord=function(addr,val){
+  addr=addr>>>0;val=val>>>0;
+  this.memory[addr]=val&0xFF;
+  this.memory[addr+1]=(val>>8)&0xFF;
+  this.memory[addr+2]=(val>>16)&0xFF;
+  this.memory[addr+3]=(val>>24)&0xFF;
+};
+CPU.prototype.readByte=function(addr){return this.memory[addr>>>0]};
+CPU.prototype.readHalf=function(addr){
+  addr=addr>>>0;
+  return (this.memory[addr]|(this.memory[addr+1]<<8))&0xFFFF;
+};
+CPU.prototype.writeByte=function(addr,val){this.memory[addr>>>0]=val&0xFF};
+CPU.prototype.writeHalf=function(addr,val){
+  addr=addr>>>0;val=val&0xFFFF;
+  this.memory[addr]=val&0xFF;
+  this.memory[addr+1]=(val>>8)&0xFF;
+};
+CPU.prototype.setReg=function(n,val){
+  if(n===0)return; /* x0 hardwired */
+  this.regs[n]=val|0;
+};
+CPU.prototype.getReg=function(n){
+  if(n===0)return 0;
+  return this.regs[n]|0;
+};
+
+/* Execute one instruction, returns stage trace */
+CPU.prototype.step=function(){
+  if(this.halted)return null;
+  var pc=this.pc>>>0;
+  var word=this.readWord(pc);
+  var d=disassemble(word,pc);
+  var trace={
+    pc:pc,
+    word:word,
+    text:d.text,
+    def:d.def,
+    stages:{IF:true,ID:true,EX:true,MEM:false,WB:false},
+    cycles:1,
+    stalls:0,
+    memAccess:false,
+    regWrite:false
+  };
+  this.instrCount++;
+  var opcode=word&0x7F;
+  var rd=(word>>7)&0x1F;
+  var funct3=(word>>12)&7;
+  var rs1=(word>>15)&0x1F;
+  var rs2=(word>>20)&0x1F;
+  var funct7=(word>>25)&0x7F;
+  var immI=signExtend(word>>>20,12);
+  var immS=signExtend(((word>>25)<<5)|((word>>7)&0x1F),12);
+  var immB=signExtend(((word>>31)<<12)|(((word>>7)&1)<<11)|(((word>>25)&0x3F)<<5)|(((word>>8)&0xF)<<1),13);
+  var immU=signExtend(word>>>12,20)<<12;
+  var immJ=signExtend(((word>>31)<<20)|(((word>>12)&0xFF)<<12)|(((word>>20)&1)<<11)|(((word>>21)&0x3FF)<<1),21);
+
+  var nextPC=(pc+4)>>>0;
+  var a=this.getReg(rs1);
+  var b=this.getReg(rs2);
+
+  /* Instruction cache lookup */
+  if(this.iCache){
+    var ic=this.iCache.access(pc,false);
+    trace.cycles+=ic.hit?0:this.iCache.latency;
+    if(!ic.hit)trace.stalls++;
+  }
+
+  try{
+    switch(opcode){
+      case 0x33: /* R-type */
+        var res;
+        if(funct7===0x00){
+          if(funct3===0){res=a+b;}
+          else if(funct3===1){res=a<<(b&31);}
+          else if(funct3===2){res=a<b?1:0;}
+          else if(funct3===3){res=(a>>>0)<(b>>>0)?1:0;}
+          else if(funct3===4){res=a^b;}
+          else if(funct3===5){res=(a>>>0)>>(b&31);}
+          else if(funct3===6){res=a|b;}
+          else if(funct3===7){res=a&b;}
+        } else if(funct7===0x20){
+          if(funct3===0){res=a-b;}
+          else if(funct3===5){res=a>>(b&31);}
+        }
+        this.setReg(rd,res);
+        trace.regWrite=true;
+        trace.stages.WB=true;
+        break;
+      case 0x13: /* I-type */
+        var resI;
+        if(funct3===0){resI=a+immI;}
+        else if(funct3===1){resI=a<<((word>>20)&0x1F);}
+        else if(funct3===2){resI=a<immI?1:0;}
+        else if(funct3===3){resI=(a>>>0)<(immI>>>0)?1:0;}
+        else if(funct3===4){resI=a^immI;}
+        else if(funct3===5){
+          var top=(word>>25)&0x7F;
+          var shamt=(word>>20)&0x1F;
+          if(top===0x00)resI=(a>>>0)>>shamt;
+          else if(top===0x20)resI=a>>shamt;
+          else resI=0;
+        }
+        else if(funct3===6){resI=a|immI;}
+        else if(funct3===7){resI=a&immI;}
+        this.setReg(rd,resI);
+        trace.regWrite=true;
+        trace.stages.WB=true;
+        break;
+      case 0x03: /* Load */
+        var addr=a+immI;
+        var loadVal;
+        if(funct3===0){loadVal=signExtend(this.readByte(addr),8);}
+        else if(funct3===1){loadVal=signExtend(this.readHalf(addr),16);}
+        else if(funct3===2){loadVal=this.readWord(addr)|0;}
+        else if(funct3===4){loadVal=this.readByte(addr);}
+        else if(funct3===5){loadVal=this.readHalf(addr);}
+        else{throw new Error('Invalid load funct3: '+funct3);}
+        this.setReg(rd,loadVal);
+        trace.regWrite=true;
+        trace.memAccess=true;
+        trace.stages.MEM=true;
+        trace.stages.WB=true;
+        trace.memAddr=addr;
+        if(this.dCache){
+          var dc=this.dCache.access(addr,false);
+          trace.cycles+=dc.latency-1;
+          if(!dc.hit)trace.stalls++;
+        }
+        break;
+      case 0x23: /* Store */
+        var addrS=a+immS;
+        if(funct3===0)this.writeByte(addrS,b);
+        else if(funct3===1)this.writeHalf(addrS,b);
+        else if(funct3===2)this.writeWord(addrS,b);
+        else throw new Error('Invalid store funct3: '+funct3);
+        trace.memAccess=true;
+        trace.stages.MEM=true;
+        trace.memAddr=addrS;
+        trace.memValue=b;
+        if(this.dCache){
+          var dc2=this.dCache.access(addrS,true);
+          trace.cycles+=dc2.latency-1;
+          if(!dc2.hit)trace.stalls++;
+        }
+        break;
+      case 0x63: /* Branch */
+        this.branches++;
+        var taken=false;
+        if(funct3===0)taken=a===b;
+        else if(funct3===1)taken=a!==b;
+        else if(funct3===4)taken=a<b;
+        else if(funct3===5)taken=a>=b;
+        else if(funct3===6)taken=(a>>>0)<(b>>>0);
+        else if(funct3===7)taken=(a>>>0)>=(b>>>0);
+        /* Branch prediction */
+        var predicted=true; /* default predict taken if backwards */
+        if(this.bp){
+          predicted=this.bp.predict(pc);
+          this.bp.update(pc,taken);
+          if(predicted!==taken){
+            this.mispredictions++;
+            trace.stalls+=2;
+            trace.cycles+=2;
+            trace.pipelineFlush=true;
+          }
+        }
+        if(taken){
+          nextPC=(pc+immB)>>>0;
+          trace.branchTaken=true;
+          trace.branchTarget=nextPC;
+        } else {
+          trace.branchTaken=false;
+        }
+        break;
+      case 0x37: /* LUI */
+        this.setReg(rd,immU);
+        trace.regWrite=true;
+        trace.stages.WB=true;
+        break;
+      case 0x17: /* AUIPC */
+        this.setReg(rd,(pc+immU)>>>0);
+        trace.regWrite=true;
+        trace.stages.WB=true;
+        break;
+      case 0x6F: /* JAL */
+        this.setReg(rd,nextPC);
+        nextPC=(pc+immJ)>>>0;
+        trace.regWrite=true;
+        trace.jumpTarget=nextPC;
+        trace.pipelineFlush=true;
+        trace.cycles+=1;
+        trace.stalls+=1;
+        break;
+      case 0x67: /* JALR */
+        var target=(a+immI)&0xFFFFFFFE;
+        this.setReg(rd,nextPC);
+        nextPC=target>>>0;
+        trace.regWrite=true;
+        trace.jumpTarget=nextPC;
+        trace.pipelineFlush=true;
+        trace.cycles+=1;
+        trace.stalls+=1;
+        break;
+      case 0x73: /* System — ecall/ebreak */
+        if(funct3===0){
+          /* Syscall convention:
+             a7 = syscall number
+             1 = exit
+             2 = print int (a0)
+             3 = print char (a0)
+             4 = print string (a0=addr)
+             a0 = return value */
+          var sysno=this.getReg(17);
+          if(sysno===1){
+            this.halted=true;
+            this.output.push('[exit code '+this.getReg(10)+']');
+          } else if(sysno===2){
+            this.output.push(String(this.getReg(10)));
+          } else if(sysno===3){
+            this.output.push(String.fromCharCode(this.getReg(10)&0xFF));
+          } else if(sysno===4){
+            var strAddr=this.getReg(10)>>>0;
+            var s='';
+            while(strAddr<this.memory.length&&this.memory[strAddr]!==0){
+              s+=String.fromCharCode(this.memory[strAddr]);
+              strAddr++;
+            }
+            this.output.push(s);
+          } else if(sysno===10){
+            this.halted=true;
+            this.output.push('[exit]');
+          } else {
+            this.output.push('[ecall #'+sysno+']');
+          }
+        }
+        break;
+      case 0x7B: /* Custom: print register or exit */
+        if(funct3===0){
+          this.output.push(String(this.getReg(rd)));
+        } else if(funct3===1){
+          this.halted=true;
+        }
+        break;
+      default:
+        throw new Error('Unknown opcode: '+toHex(opcode,2)+' at pc '+toHex(pc));
+    }
+    if(this.regs[0]!==0)this.regs[0]=0;
+    this.pc=nextPC;
+    this.cycles+=trace.cycles;
+    this.stalls+=trace.stalls;
+    this.pipelineHistory.push(trace);
+    if(this.pipelineHistory.length>1000)this.pipelineHistory.shift();
+    /* Breakpoint check */
+    if(this.breakpoints[this.pc])this.halted=true;
+    return trace;
+  }catch(e){
+    this.lastError=e.message;
+    this.halted=true;
+    trace.error=e.message;
+    this.pipelineHistory.push(trace);
+    return trace;
+  }
+};
+
+/* ================================================================
+   PIPELINE MODEL — classic 5-stage
+   IF → ID → EX → MEM → WB
+   ================================================================ */
+function PipelineModel(){
+  this.stages=[];
+  this.maxStages=12;
+  this.cycle=0;
+}
+PipelineModel.prototype.addInstruction=function(trace){
+  this.cycle++;
+  var inst={
+    id:'I'+this.cycle,
+    pc:trace.pc,
+    text:trace.text,
+    entryCycle:this.cycle,
+    stages:[],
+    done:false
+  };
+  /* Build a linear timeline: IF, ID, EX, [MEM], WB */
+  var stageSeq=['IF','ID','EX'];
+  if(trace.memAccess)stageSeq.push('MEM');
+  stageSeq.push('WB');
+  /* Add stalls */
+  for(var i=0;i<trace.stalls;i++){
+    stageSeq.splice(2,0,'stall');
+  }
+  inst.stages=stageSeq;
+  this.stages.push(inst);
+  if(this.stages.length>40)this.stages.shift();
+  return inst;
+};
+PipelineModel.prototype.reset=function(){
+  this.stages=[];
+  this.cycle=0;
+};
+
+/* ================================================================
+   APPLICATION STATE
+   ================================================================ */
+var STATE={
+  currentTab:'editor',
+  theme:'silicon',
+  source:'',
+  assembled:null,
+  errors:[],
+  cpu:null,
+  running:false,
+  runInterval:null,
+  runSpeed:60,
+  breakpoints:{},
+  selectedProgram:'fibonacci',
+  maxCycles:100000
+};
+</script>
+<script>
+/* ================================================================
+   SAMPLE PROGRAMS
+   ================================================================ */
+var PROGRAMS={
+  hello:{
+    name:'Hello World',
+    desc:'Print a string via syscall',
+    icon:'👋',
+    code:'; Hello World in RISC-V RV32I\n; Uses custom print syscall\n\n.text\n.globl _start\n_start:\n    la a0, msg        ; load address of msg\n    li a1, 0          ; loop counter\nprint_loop:\n    lb t0, 0(a0)      ; load byte\n    beq t0, x0, done  ; if null, done\n    addi a0, a0, 1    ; advance pointer\n    print t0          ; print character\n    j print_loop\ndone:\n    exit\n\n.data\nmsg:\n    .string "Hello, world!\\n"\n'
+  },
+  fibonacci:{
+    name:'Fibonacci',
+    desc:'Compute first 15 Fibonacci numbers',
+    icon:'🌀',
+    code:'; Fibonacci sequence\n; Prints first 15 Fibonacci numbers\n\n.text\n.globl _start\n_start:\n    li s0, 0          ; fib(n-2)\n    li s1, 1          ; fib(n-1)\n    li s2, 0          ; counter\n    li s3, 15         ; target count\n\nloop:\n    beq s2, s3, end   ; if counter == 15, done\n    print s0          ; print current fib number\n    mv t0, s0\n    mv s0, s1\n    add s1, t0, s1    ; next = prev1 + prev2\n    addi s2, s2, 1\n    j loop\nend:\n    exit\n'
+  },
+  factorial:{
+    name:'Factorial',
+    desc:'Compute 10!',
+    icon:'✖️',
+    code:'; Factorial of 10\n\n.text\n.globl _start\n_start:\n    li s0, 1          ; result\n    li s1, 1          ; counter\n    li s2, 10         ; target\n\nloop:\n    bgt s1, s2, end\n    mul:\n    mv t0, s0\n    li t1, 0          ; sum for multiply\n    mv t2, s1\nmult_loop:\n    beq t2, x0, mult_done\n    add t1, t1, t0\n    addi t2, t2, -1\n    j mult_loop\nmult_done:\n    mv s0, t1\n    addi s1, s1, 1\n    j loop\nend:\n    print s0          ; print 10!\n    exit\n'
+  },
+  bubblesort:{
+    name:'Bubble Sort',
+    desc:'Sort 8 numbers in place',
+    icon:'📊',
+    code:'; Bubble sort of 8 numbers\n\n.text\n.globl _start\n_start:\n    li s0, 8          ; array size\n    la s1, array      ; array pointer\n    li s2, 0          ; outer i\n\nouter:\n    bge s2, s0, done\n    li s3, 0          ; inner j\n    sub t0, s0, s2\n    addi t0, t0, -1   ; n-i-1\ninner:\n    bge s3, t0, outer_next\n    ; compute addresses\n    add t1, s1, s3    ; &arr[j] — but elements are words!\n    ; Actually let's use word offsets\n    slli t2, s3, 2\n    add t2, s1, t2    ; &arr[j]\n    lw a0, 0(t2)      ; arr[j]\n    lw a1, 4(t2)      ; arr[j+1]\n    ble a0, a1, no_swap\n    ; swap\n    sw a1, 0(t2)\n    sw a0, 4(t2)\nno_swap:\n    addi s3, s3, 1\n    j inner\nouter_next:\n    addi s2, s2, 1\n    j outer\ndone:\n    ; print sorted array\n    li s2, 0\nprint_loop:\n    bge s2, s0, exit_prog\n    slli t2, s2, 2\n    add t2, s1, t2\n    lw a0, 0(t2)\n    print a0\n    addi s2, s2, 1\n    j print_loop\nexit_prog:\n    exit\n\n.data\narray:\n    .word 64, 34, 25, 12, 22, 11, 90, 5\n'
+  },
+  gcd:{
+    name:'GCD (Euclid)',
+    desc:'Greatest common divisor',
+    icon:'🔢',
+    code:'; Euclid GCD algorithm\n\n.text\n.globl _start\n_start:\n    li a0, 1071\n    li a1, 462\n    jal ra, gcd\n    print a0          ; should be 21\n    exit\n\ngcd:\n    ; a0 = a, a1 = b\n    beq a1, x0, gcd_done\n    ; a % b\n    mv t0, a0\n    mv t1, a1\nmod_loop:\n    blt t0, t1, mod_done\n    sub t0, t0, t1\n    j mod_loop\nmod_done:\n    mv a0, t1\n    mv a1, t0\n    j gcd\ngcd_done:\n    jalr x0, 0(ra)\n'
+  },
+  memory:{
+    name:'Memory Ops',
+    desc:'Load/store demonstration',
+    icon:'💾',
+    code:'; Memory load/store demo\n\n.text\n.globl _start\n_start:\n    la s0, values     ; base address\n\n    ; Store some values\n    li t0, 100\n    sw t0, 0(s0)\n    li t0, 200\n    sw t0, 4(s0)\n    li t0, 300\n    sw t0, 8(s0)\n\n    ; Load them back and sum\n    lw t1, 0(s0)\n    lw t2, 4(s0)\n    add t1, t1, t2\n    lw t3, 8(s0)\n    add t1, t1, t3\n\n    print t1          ; print 600\n    exit\n\n.data\nvalues:\n    .word 0, 0, 0\n'
+  },
+  loops:{
+    name:'Loops & Branches',
+    desc:'Count, conditional jumps',
+    icon:'🔁',
+    code:'; Loop and branch demo\n\n.text\n.globl _start\n_start:\n    li s0, 0          ; counter\n    li s1, 10         ; limit\n\ncount_loop:\n    bge s0, s1, done\n    print s0\n    addi s0, s0, 1\n    j count_loop\ndone:\n    ; print sum 0+1+...+9 = 45\n    li s0, 0\n    li t0, 0\nsum_loop:\n    bge s0, s1, sum_done\n    add t0, t0, s0\n    addi s0, s0, 1\n    j sum_loop\nsum_done:\n    print t0\n    exit\n'
+  },
+  arithmetic:{
+    name:'Arithmetic',
+    desc:'Demonstrate ALU operations',
+    icon:'🧮',
+    code:'; Arithmetic operations demo\n\n.text\n.globl _start\n_start:\n    li s0, 12\n    li s1, 5\n\n    add t0, s0, s1    ; 17\n    print t0\n    sub t0, s0, s1    ; 7\n    print t0\n    slli t0, s0, 2    ; 48\n    print t0\n    and t0, s0, s1    ; 4\n    print t0\n    or t0, s0, s1     ; 13\n    print t0\n    xor t0, s0, s1    ; 9\n    print t0\n\n    ; Compare\n    slt t0, s0, s1    ; 0 (12 < 5? no)\n    print t0\n    slt t0, s1, s0    ; 1 (5 < 12? yes)\n    print t0\n    exit\n'
+  },
+  power:{
+    name:'Power Function',
+    desc:'Compute 2^10 = 1024',
+    icon:'⚡',
+    code:'; Power function: 2^10\n\n.text\n.globl _start\n_start:\n    li a0, 2          ; base\n    li a1, 10         ; exponent\n    jal ra, pow\n    print a0\n    exit\n\npow:\n    ; a0 = base, a1 = exp, return in a0\n    li t0, 1          ; result\npow_loop:\n    beq a1, x0, pow_done\n    mul_step:\n    mv t1, t0\n    li t2, 0\n    mv t3, a0\nmul_inner:\n    beq t3, x0, mul_end\n    add t2, t2, t1\n    addi t3, t3, -1\n    j mul_inner\nmul_end:\n    mv t0, t2\n    addi a1, a1, -1\n    j pow_loop\npow_done:\n    mv a0, t0\n    jalr x0, 0(ra)\n'
+  }
+};
+
+/* ================================================================
+   TABS
+   ================================================================ */
+var TABS=[
+  {key:'editor',icon:'📝',label:'Editor'},
+  {key:'disasm',icon:'⚙️',label:'Disassembly'},
+  {key:'isa',icon:'📖',label:'ISA Reference'},
+  {key:'cache',icon:'💾',label:'Cache'},
+  {key:'output',icon:'🖨️',label:'Output'},
+  {key:'about',icon:'ℹ️',label:'About'}
+];
+
+function buildTabs(){
+  var tabs=$('tbTabs');
+  tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(el2){el2.classList.toggle('active',el2.getAttribute('data-tab')===key)});
+  renderLeftPanel();
+  renderContent();
+}
+function switchRp(name,el2){
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active');});
+  el2.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active');});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+  /* Force render on switch */
+  if(name==='mem')renderMemPane();
+  else if(name==='pipeline')renderPipelinePane();
+  else if(name==='stats')renderStatsPane();
+  else if(name==='regs')renderRegsPane();
+}
+
+/* ================================================================
+   LEFT PANEL
+   ================================================================ */
+function renderLeftPanel(){
+  var body=$('lpBody');
+  if(!body)return;
+  var html='';
+  if(STATE.currentTab==='editor'||STATE.currentTab==='disasm'||STATE.currentTab==='output'){
+    html+='<div class="sec"><h4>Sample Programs</h4>';
+    Object.keys(PROGRAMS).forEach(function(k){
+      var p=PROGRAMS[k];
+      html+='<div class="li'+(STATE.selectedProgram===k?' active':'')+'" onclick="loadProgram(\''+k+'\')">'+
+        '<span>'+p.icon+'</span><span class="name">'+esc(p.name)+'</span></div>';
+    });
+    html+='</div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn full sm primary" onclick="assembleAndLoad()">🔨 Assemble</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="runFull()">▶ Run to Completion</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="resetCPU()">↺ Reset CPU</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="clearBreakpoints()">🗑 Clear Breakpoints</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Run Speed</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Hz</span><span id="speedLabel">'+STATE.runSpeed+'</span></div>';
+    html+='<input type="range" min="1" max="500" step="1" value="'+STATE.runSpeed+'" oninput="STATE.runSpeed=parseInt(this.value);document.getElementById(\'speedLabel\').textContent=this.value"></div>';
+    html+='</div>';
+  }
+  else if(STATE.currentTab==='cache'){
+    html+='<div class="sec"><h4>Cache Configuration</h4>';
+    html+='<div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.6;margin-bottom:8px">A 2-level set-associative cache with LRU replacement and a 2-bit branch predictor.</div>';
+    if(STATE.cpu){
+      var ic=STATE.cpu.iCache;
+      var dc=STATE.cpu.dCache;
+      html+='<div class="kv">';
+      html+='<div class="row"><span class="k">I-Cache</span><span class="v">'+ic.capacity/1024+'KB '+ic.assoc+'-way</span></div>';
+      html+='<div class="row"><span class="k">D-Cache</span><span class="v">'+dc.capacity/1024+'KB '+dc.assoc+'-way</span></div>';
+      html+='<div class="row"><span class="k">Line size</span><span class="v">'+ic.lineSize+' B</span></div>';
+      html+='<div class="row"><span class="k">Sets</span><span class="v">'+ic.numSets+' / '+dc.numSets+'</span></div>';
+      html+='</div>';
+    }
+    html+='</div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn full sm" onclick="if(STATE.cpu){STATE.cpu.iCache.reset();STATE.cpu.dCache.reset();renderCacheTab()}">Reset Cache</button>';
+    html+='</div>';
+  }
+  body.innerHTML=html;
+}
+
+/* ================================================================
+   CONTENT DISPATCHER
+   ================================================================ */
+function renderContent(){
+  var c=$('contentArea');
+  if(STATE.currentTab==='editor')renderEditor(c);
+  else if(STATE.currentTab==='disasm')renderDisasm(c);
+  else if(STATE.currentTab==='isa')renderIsaRef(c);
+  else if(STATE.currentTab==='cache')renderCacheTab(c);
+  else if(STATE.currentTab==='output')renderOutputTab(c);
+  else if(STATE.currentTab==='about')renderAbout(c);
+}
+
+/* ================================================================
+   EDITOR
+   ================================================================ */
+function renderEditor(c){
+  c.innerHTML=''+
+    '<div class="editor-wrap">'+
+    '<div class="editor-lines" id="edLines"></div>'+
+    '<div class="editor-scroll" id="edScroll">'+
+    '<div class="editor-highlight" id="edHighlight"></div>'+
+    '<textarea class="editor-textarea" id="edSource" spellcheck="false"></textarea>'+
+    '</div></div>';
+  var ta=$('edSource');
+  if(!STATE.source)STATE.source=PROGRAMS[STATE.selectedProgram].code;
+  ta.value=STATE.source;
+  ta.addEventListener('input',function(){
+    STATE.source=ta.value;
+    updateEditor();
+  });
+  ta.addEventListener('scroll',function(){
+    var hl=$('edHighlight');
+    var lines=$('edLines');
+    if(hl){hl.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft;}
+    if(lines)lines.scrollTop=ta.scrollTop;
+  });
+  ta.addEventListener('click',updateCursorLine);
+  ta.addEventListener('keyup',updateCursorLine);
+  ta.addEventListener('keydown',function(e){
+    if(e.key==='Tab'){
+      e.preventDefault();
+      var s=this.selectionStart;
+      this.value=this.value.substring(0,s)+'    '+this.value.substring(this.selectionEnd);
+      this.selectionStart=this.selectionEnd=s+4;
+      STATE.source=this.value;
+      updateEditor();
+    }
+    if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
+      e.preventDefault();
+      assembleAndLoad();
+    }
+  });
+  updateEditor();
+}
+function updateEditor(){
+  var hl=$('edHighlight');
+  var lines=$('edLines');
+  if(!hl||!lines)return;
+  hl.innerHTML=highlightAsm(STATE.source)+'\n';
+  var lineCount=STATE.source.split('\n').length;
+  var lh='';
+  for(var i=1;i<=lineCount;i++){
+    var isBp=STATE.breakpoints[i];
+    lh+='<div class="ln'+(isBp?' breakpoint':'')+'" data-line="'+i+'">'+i+'</div>';
+  }
+  lines.innerHTML=lh;
+  /* Click handler for breakpoints */
+  $$('.editor-lines .ln').forEach(function(ln){
+    ln.onclick=function(){
+      var line=parseInt(this.getAttribute('data-line'));
+      if(STATE.breakpoints[line])delete STATE.breakpoints[line];
+      else STATE.breakpoints[line]=true;
+      /* Apply to CPU */
+      if(STATE.cpu&&STATE.assembled){
+        STATE.cpu.breakpoints={};
+        var ins=STATE.assembled.code;
+        for(var i=0;i<ins.length;i++){
+          if(STATE.breakpoints[ins[i].lineNum]){
+            STATE.cpu.breakpoints[ins[i].pc]=true;
+          }
+        }
+      }
+      updateEditor();
+    };
+  });
+  updateCursorLine();
+}
+function updateCursorLine(){
+  var ta=$('edSource');
+  if(!ta)return;
+  var pos=ta.selectionStart;
+  var before=ta.value.substring(0,pos);
+  var line=(before.match(/\n/g)||[]).length+1;
+  $$('.editor-lines .ln').forEach(function(ln){
+    ln.classList.toggle('current',parseInt(ln.getAttribute('data-line'))===line);
+  });
+}
+function highlightAsm(src){
+  var html='';
+  var lines=src.split('\n');
+  lines.forEach(function(line,i){
+    var cls='';
+    /* Comment */
+    var commentStart=-1;
+    var inStr=false;
+    for(var k=0;k<line.length;k++){
+      if(line[k]==='"'||line[k]==="'")inStr=!inStr;
+      if(!inStr&&(line[k]===';'||(line[k]==='#'&&!line[k-1]))){commentStart=k;break;}
+    }
+    var code=commentStart>=0?line.substring(0,commentStart):line;
+    var comment=commentStart>=0?line.substring(commentStart):'';
+    /* Label */
+    var labelMatch=code.match(/^(\s*)([a-zA-Z_][a-zA-Z0-9_]*):/);
+    var rest=code;
+    var parts='';
+    if(labelMatch){
+      parts+='<span class="label">'+esc(labelMatch[2])+':</span>';
+      rest=code.substring(labelMatch[0].length);
+    }
+    /* Directive */
+    if(rest.trim().startsWith('.')){
+      parts+='<span class="directive">'+esc(rest)+'</span>';
+    }
+    /* Mnemonic + operands */
+    else{
+      var m=rest.match(/^(\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(.*)$/);
+      if(m){
+        parts+=m[1]+'<span class="mnemonic">'+esc(m[2])+'</span>';
+        var ops=m[3];
+        /* Highlight registers and immediates */
+        ops=esc(ops);
+        ops=ops.replace(/\b(x\d{1,2}|zero|ra|sp|gp|tp|t[0-6]|s\d{1,2}|a[0-7]|fp)\b/g,'<span class="register">$1</span>');
+        ops=ops.replace(/\b(0x[0-9a-fA-F]+|0b[01]+|\d+)\b/g,'<span class="imm">$1</span>');
+        parts+=ops;
+      } else {
+        parts+=esc(rest);
+      }
+    }
+    if(comment)parts+='<span class="comment">'+esc(comment)+'</span>';
+    html+=parts+(i<lines.length-1?'\n':'');
+  });
+  return html;
+}
+
+/* ================================================================
+   DISASSEMBLY
+   ================================================================ */
+function renderDisasm(c){
+  if(!STATE.assembled){
+    c.innerHTML='<div class="empty"><div class="e-icon">⚙️</div><div>Click <b>Assemble</b> to compile the program</div></div>';
+    return;
+  }
+  if(STATE.errors.length){
+    c.innerHTML='<div style="padding:14px">';
+    STATE.errors.forEach(function(e){
+      c.innerHTML+='<div style="background:rgba(255,96,128,.1);border-left:3px solid var(--err);padding:8px 12px;margin-bottom:6px;font-family:var(--mono);font-size:.7rem"><b style="color:var(--err)">Error line '+e.line+':</b> <span style="color:var(--tx2)">'+esc(e.msg)+'</span></div>';
+    });
+    c.innerHTML+='</div>';
+    return;
+  }
+  var html='<div class="dasm-list">';
+  html+='<div style="display:grid;grid-template-columns:70px 100px 1fr 90px;gap:8px;padding:6px 8px;background:var(--panel3);border-radius:var(--rxs);margin-bottom:8px;font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);font-weight:700">'+
+    '<div>Address</div><div>Encoding</div><div>Mnemonic</div><div>Comment</div></div>';
+  STATE.assembled.code.forEach(function(ins){
+    var isBP=STATE.breakpoints[ins.lineNum];
+    var isCurrent=STATE.cpu&&STATE.cpu.pc===ins.pc;
+    var cls='dasm-row'+(isCurrent?' current':'')+(isBP?' bp':'');
+    var def=ins.def;
+    var catCls=def?def.cat:'';
+    var opHtml='<span class="dr-op '+catCls+'">'+esc(ins.mnemonic)+'</span>';
+    /* Format operands with register highlighting */
+    var opStr=ins.operands.map(function(o){
+      /* Register? */
+      if(/^(x\d+|zero|ra|sp|gp|tp|t[0-6]|s\d{1,2}|a[0-7]|fp)$/.test(o.trim())){
+        return '<span class="dr-reg">'+esc(o)+'</span>';
+      }
+      /* Immediate? */
+      if(/^-?\d+$/.test(o.trim()))return '<span class="dr-imm">'+esc(o)+'</span>';
+      /* Memory operand? */
+      var m=o.match(/^(-?\d+)?\s*\(\s*([a-zA-Z0-9_]+)\s*\)$/);
+      if(m){
+        return '<span class="dr-imm">'+(m[1]||'0')+'</span>(<span class="dr-reg">'+esc(m[2])+'</span>)';
+      }
+      return '<span class="dr-imm">'+esc(o)+'</span>';
+    }).join(', ');
+    var srcLabel='';
+    var labelName=Object.keys(STATE.assembled.labels).find(function(k){return STATE.assembled.labels[k]===ins.pc});
+    if(labelName)srcLabel='<span class="dr-src"> ; label: '+esc(labelName)+'</span>';
+    html+='<div class="'+cls+'" data-pc="'+ins.pc+'">'+
+      '<span class="dr-addr">'+toHex(ins.pc,8)+'</span>'+
+      '<span class="dr-hex">'+toHex(ins.word,8)+'</span>'+
+      '<span class="dr-instr">'+opHtml+' '+opStr+'</span>'+
+      '<span class="dr-comment">'+esc(ins.comment||'')+srcLabel+'</span>'+
+      '</div>';
+  });
+  html+='</div>';
+  c.innerHTML=html;
+  /* Click to toggle breakpoint */
+  $$('.dasm-row').forEach(function(row){
+    row.onclick=function(){
+      var pc=parseInt(this.getAttribute('data-pc'));
+      /* Find the line num */
+      var ins=STATE.assembled.code.find(function(i){return i.pc===pc});
+      if(!ins)return;
+      if(STATE.breakpoints[ins.lineNum])delete STATE.breakpoints[ins.lineNum];
+      else STATE.breakpoints[ins.lineNum]=true;
+      if(STATE.cpu){
+        STATE.cpu.breakpoints={};
+        for(var i=0;i<STATE.assembled.code.length;i++){
+          if(STATE.breakpoints[STATE.assembled.code[i].lineNum]){
+            STATE.cpu.breakpoints[STATE.assembled.code[i].pc]=true;
+          }
+        }
+      }
+      renderDisasm(c);
+      if(STATE.currentTab==='editor')updateEditor();
+    };
+  });
+}
+
+/* ================================================================
+   ISA REFERENCE
+   ================================================================ */
+function renderIsaRef(c){
+  var html='<div style="padding:14px">';
+  html+='<div class="stats-grid">';
+  html+='<div class="stat"><div class="sv">RV32I</div><div class="sl">Base ISA</div></div>';
+  html+='<div class="stat"><div class="sv">'+ISA.length+'</div><div class="sl">Instructions</div></div>';
+  html+='<div class="stat"><div class="sv">32</div><div class="sl">Registers</div></div>';
+  html+='<div class="stat"><div class="sv">6</div><div class="sl">Formats</div></div>';
+  html+='</div>';
+  html+='<div class="chart-label">Instruction Formats</div>';
+  var formats=['R','I','S','B','U','J'];
+  formats.forEach(function(f){
+    html+='<div style="background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:8px 12px;margin-bottom:6px;font-family:var(--mono);font-size:.62rem"><b style="color:var(--c2)">'+f+'-type:</b> <span style="color:var(--tx2)">'+FORMATS[f]+'</span></div>';
+  });
+  html+='<div class="chart-label" style="margin-top:14px">Registers</div>';
+  html+='<table class="isa-table"><thead><tr><th>#</th><th>ABI</th><th>Description</th></tr></thead><tbody>';
+  REGISTERS.forEach(function(r){
+    html+='<tr><td class="op-fmt">x'+r.n+'</td><td class="op-name">'+r.alias+'</td><td class="op-desc">'+r.desc+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  html+='<div class="chart-label" style="margin-top:14px">Instructions ('+ISA.length+')</div>';
+  html+='<table class="isa-table"><thead><tr><th>Mnemonic</th><th>Format</th><th>Description</th></tr></thead><tbody>';
+  ISA.forEach(function(ins){
+    html+='<tr><td class="op-name">'+ins.name+'</td><td class="op-fmt">'+ins.fmt+'</td><td class="op-desc">'+esc(ins.desc)+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  html+='</div>';
+  c.innerHTML=html;
+}
+
+/* ================================================================
+   CACHE TAB
+   ================================================================ */
+function renderCacheTab(c){
+  if(!STATE.cpu){c.innerHTML='<div class="empty"><div class="e-icon">💾</div><div>Load a program first</div></div>';return}
+  var ic=STATE.cpu.iCache,dc=STATE.cpu.dCache,bp=STATE.cpu.bp;
+  var html='<div style="padding:14px">';
+  html+='<div class="chart-label">Cache Performance</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">';
+  [ic,dc].forEach(function(cache){
+    html+='<div style="background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:12px">';
+    html+='<div style="font-size:.72rem;font-weight:700;color:var(--c1);margin-bottom:8px">'+esc(cache.name)+'</div>';
+    html+='<div class="kv" style="font-size:.62rem">';
+    html+='<div class="row"><span class="k">Accesses</span><span class="v">'+cache.accesses+'</span></div>';
+    html+='<div class="row"><span class="k">Hits</span><span class="v">'+cache.hits+'</span></div>';
+    html+='<div class="row"><span class="k">Misses</span><span class="v">'+cache.misses+'</span></div>';
+    html+='<div class="row"><span class="k">Hit rate</span><span class="v">'+fmt(cache.hitRate()*100,1)+'%</span></div>';
+    html+='<div class="row"><span class="k">Latency</span><span class="v">'+cache.latency+' cyc</span></div>';
+    html+='</div></div>';
+  });
+  html+='</div>';
+  if(bp){
+    html+='<div class="chart-label">Branch Predictor</div>';
+    html+='<div style="background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:12px;margin-bottom:14px">';
+    html+='<div class="kv" style="font-size:.62rem">';
+    html+='<div class="row"><span class="k">Predictions</span><span class="v">'+bp.predictions+'</span></div>';
+    html+='<div class="row"><span class="k">Correct</span><span class="v" style="color:var(--c3)">'+bp.correct+'</span></div>';
+    html+='<div class="row"><span class="k">Mispredictions</span><span class="v" style="color:var(--c4)">'+bp.mispredictions+'</span></div>';
+    html+='<div class="row"><span class="k">Accuracy</span><span class="v">'+fmt(bp.accuracy()*100,1)+'%</span></div>';
+    html+='</div></div>';
+  }
+  html+='<div class="chart-label" style="margin-top:14px">I-Cache Sets (first 8)</div>';
+  html+='<div class="cache-view">';
+  for(var s=0;s<Math.min(8,ic.numSets);s++){
+    html+='<div class="cache-set">';
+    html+='<div class="cache-set-head"><span>Set '+s+'</span><span>LRU order</span></div>';
+    html+='<div class="cache-ways">';
+    var lru=ic.sets[s].slice().sort(function(a,b){return a.lastUsed-b.lastUsed});
+    for(var w=0;w<ic.assoc;w++){
+      var line=lru[w];
+      var isHit=ic.lastResult&&ic.lastResult.type==='hit'&&ic.lastResult.set===s&&ic.lastResult.way===ic.sets[s].indexOf(line);
+      html+='<div class="cache-line'+(line.valid?' valid':'')+(isHit?' hit':'')+'">'+
+        '<div class="cl-tag">tag='+toHex(line.tag,4)+'</div>'+
+        '<div class="cl-data">'+(line.valid?'valid':'empty')+'</div>'+
+        '<div class="cl-lru">LRU='+line.lastUsed+'</div>'+
+        '</div>';
+    }
+    html+='</div></div>';
+  }
+  html+='</div>';
+  html+='</div>';
+  c.innerHTML=html;
+}
+
+/* ================================================================
+   OUTPUT TAB
+   ================================================================ */
+function renderOutputTab(c){
+  var html='<div class="console-wrap">';
+  html+='<div class="console-out" id="progOutput">';
+  if(!STATE.cpu||!STATE.cpu.output.length){
+    html+='<div class="console-line dim">// Program output will appear here</div>';
+    html+='<div class="console-line dim">// Assemble and run a program to see results</div>';
+  } else {
+    STATE.cpu.output.forEach(function(line){
+      html+='<div class="console-line">'+esc(line)+'</div>';
+    });
+  }
+  html+='</div></div>';
+  c.innerHTML=html;
+}
+
+/* ================================================================
+   ABOUT
+   ================================================================ */
+function renderAbout(c){
+  c.innerHTML='<div style="padding:24px;max-width:850px;margin:0 auto">'+
+    '<h1 style="font-size:2rem;font-weight:900;letter-spacing:6px;background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:holo 4s linear infinite;font-family:var(--disp);margin-bottom:6px">SILICON</h1>'+
+    '<p style="font-size:.72rem;color:var(--tx3);letter-spacing:4px;font-family:var(--mono);margin-bottom:20px">CPU ARCHITECTURE STUDIO</p>'+
+    '<p style="font-size:.75rem;color:var(--tx2);line-height:1.8;margin-bottom:16px">A complete RISC-V RV32I simulator with a two-pass assembler, cache hierarchy, branch predictor, and pipeline visualization — all implemented from scratch in JavaScript.</p>'+
+    '<div class="sec"><h4>Pipeline Stages</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">1. Assembler</b> — Two-pass: collect labels, then encode<br>'+
+    '<b class="text-c1">2. Disassembler</b> — Reverse-engineer binary back to mnemonics<br>'+
+    '<b class="text-c1">3. CPU Core</b> — 32-bit registers, PC, execute/decode logic<br>'+
+    '<b class="text-c1">4. Cache Hierarchy</b> — Set-associative with LRU replacement<br>'+
+    '<b class="text-c1">5. Branch Predictor</b> — 2-bit saturating counter with BHT<br>'+
+    '<b class="text-c1">6. Pipeline</b> — 5-stage IF/ID/EX/MEM/WB visualization'+
+    '</div></div>'+
+    '<div class="sec"><h4>RISC-V Features</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '• Full RV32I base instruction set ('+ISA.length+' instructions)<br>'+
+    '• 32 registers x0-x31 with ABI names<br>'+
+    '• Six encoding formats: R, I, S, B, U, J<br>'+
+    '• Sign extension for all immediate types<br>'+
+    '• Load/store with byte/half/word granularity<br>'+
+    '• Signed/unsigned comparisons<br>'+
+    '• Syscall (ecall) support for I/O<br>'+
+    '• Custom extensions for simplified I/O'+
+    '</div></div>'+
+    '<div class="sec"><h4>Sample Programs</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    Object.keys(PROGRAMS).map(function(k){return PROGRAMS[k].icon+' '+esc(PROGRAMS[k].name);}).join(' · ')+
+    '</div></div>'+
+    '<div class="sec"><h4>Keyboard Shortcuts</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">Space</b> — Run/Pause<br>'+
+    '<b class="text-c1">S</b> — Step one instruction<br>'+
+    '<b class="text-c1">R</b> — Reset CPU<br>'+
+    '<b class="text-c1">Ctrl+Enter</b> — Assemble & load<br>'+
+    '<b class="text-c1">T</b> — Cycle theme<br>'+
+    '<b class="text-c1">?</b> — This help'+
+    '</div></div>'+
+    '</div>';
+}
+</script>
+<script>
+/* ================================================================
+   EXECUTION ENGINE
+   ================================================================ */
+function loadProgram(key){
+  var p=PROGRAMS[key];
+  if(!p)return;
+  STATE.selectedProgram=key;
+  STATE.source=p.code;
+  STATE.breakpoints={};
+  var ta=$('edSource');
+  if(ta){ta.value=p.code;updateEditor();}
+  toast('Loaded: '+p.name,'success',1200);
+  renderLeftPanel();
+}
+function assembleAndLoad(){
+  var ta=$('edSource');
+  if(ta)STATE.source=ta.value;
+  STATE.errors=[];
+  var asm=new Assembler();
+  var result=asm.assemble(STATE.source);
+  if(result.errors.length){
+    STATE.errors=result.errors;
+    STATE.assembled=result;
+    toast('Assembly failed: '+result.errors.length+' error(s)','error',3500);
+    if(STATE.currentTab!=='disasm')switchTab('disasm');
+    else renderDisasm($('contentArea'));
+    return false;
+  }
+  STATE.assembled=result;
+  /* Initialize CPU */
+  if(!STATE.cpu)STATE.cpu=new CPU();
+  STATE.cpu.reset();
+  STATE.cpu.loadProgram(result.code,result.data);
+  /* Set up caches */
+  STATE.cpu.iCache=new Cache({name:'I-Cache',capacity:4096,lineSize:16,assoc:2,latency:1});
+  STATE.cpu.dCache=new Cache({name:'D-Cache',capacity:4096,lineSize:16,assoc:2,latency:1});
+  STATE.cpu.bp=new BranchPredictor(8);
+  /* Apply breakpoints */
+  STATE.cpu.breakpoints={};
+  for(var i=0;i<result.code.length;i++){
+    if(STATE.breakpoints[result.code[i].lineNum]){
+      STATE.cpu.breakpoints[result.code[i].pc]=true;
+    }
+  }
+  toast('Assembled: '+result.code.length+' instructions','success');
+  renderRightPanel();
+  if(STATE.currentTab!=='disasm'&&STATE.currentTab!=='output')switchTab('disasm');
+  else renderContent();
+  return true;
+}
+function runFull(){
+  if(!assembleAndLoad())return;
+  var maxSteps=1000000;
+  var steps=0;
+  while(!STATE.cpu.halted&&steps<maxSteps){
+    STATE.cpu.step();
+    steps++;
+  }
+  if(STATE.cpu.halted){
+    toast('Program finished: '+STATE.cpu.instrCount+' instructions, '+STATE.cpu.cycles+' cycles','success',3500);
+    if(STATE.currentTab!=='output')switchTab('output');
+  } else {
+    toast('Run limit reached ('+steps+' steps)','warn');
+  }
+  renderRightPanel();
+}
+function resetCPU(){
+  if(!STATE.cpu)return;
+  STATE.cpu.reset();
+  STATE.running=false;
+  clearInterval(STATE.runInterval);
+  $('btnRun').textContent='▶';
+  $('btnRun').classList.remove('running');
+  toast('CPU reset','info',1000);
+  renderRightPanel();
+  renderContent();
+}
+function toggleRun(){
+  if(!STATE.assembled){
+    if(!assembleAndLoad())return;
+  }
+  STATE.running=!STATE.running;
+  if(STATE.running){
+    $('btnRun').textContent='⏸';
+    $('btnRun').classList.add('running');
+    $('sbState').textContent='Running';
+    STATE.runInterval=setInterval(function(){
+      if(!STATE.cpu||STATE.cpu.halted){
+        toggleRun();
+        return;
+      }
+      var batch=Math.max(1,Math.floor(STATE.runSpeed/60));
+      for(var i=0;i<batch;i++){
+        if(STATE.cpu.halted)break;
+        STATE.cpu.step();
+      }
+      updateStats();
+    },Math.max(8,1000/STATE.runSpeed*3));
+  } else {
+    $('btnRun').textContent='▶';
+    $('btnRun').classList.remove('running');
+    $('sbState').textContent='Paused';
+    clearInterval(STATE.runInterval);
+    STATE.runInterval=null;
+  }
+}
+function stepCPU(){
+  if(!STATE.assembled){if(!assembleAndLoad())return;}
+  if(STATE.cpu.halted){toast('CPU halted — reset to continue','warn');return;}
+  STATE.cpu.step();
+  updateStats();
+}
+function updateStats(){
+  if(!STATE.cpu)return;
+  var cpu=STATE.cpu;
+  $('tbPC').textContent=toHex(cpu.pc,8);
+  $('tbCycles').textContent=cpu.cycles;
+  $('tbIPC').textContent=cpu.cycles>0?fmt(cpu.instrCount/cpu.cycles,2):'0.00';
+  $('sbCycles').textContent=cpu.cycles;
+  $('sbInstrs').textContent=cpu.instrCount;
+  $('sbCPI').textContent=cpu.instrCount>0?fmt(cpu.cycles/cpu.instrCount,2):'0.00';
+  $('sbStalls').textContent=cpu.stalls;
+  $('sbBranches').textContent=cpu.branches;
+  $('sbMispred').textContent=cpu.mispredictions;
+  if(cpu.iCache) $('sbCache').textContent=cpu.iCache.hits+'/'+cpu.iCache.accesses;
+  if(cpu.halted)$('sbState').textContent='Halted'+(cpu.lastError?' (error)':'');
+  else if(STATE.running)$('sbState').textContent='Running';
+  else $('sbState').textContent='Ready';
+  renderRightPanel();
+}
+
+/* ================================================================
+   RIGHT PANEL
+   ================================================================ */
+function renderRightPanel(){
+  renderRegsPane();
+  renderMemPane();
+  renderPipelinePane();
+  renderStatsPane();
+}
+function renderRegsPane(){
+  var p=$('rpRegs');
+  if(!p)return;
+  var regs=STATE.cpu?STATE.cpu.regs:new Int32Array(32);
+  var pc=STATE.cpu?STATE.cpu.pc:0;
+  var html='<div class="reg-grid">';
+  html+='<div class="reg-cell pc" style="grid-column:span 2">'+
+    '<div class="reg-name">pc <span class="reg-alias">program counter</span></div>'+
+    '<div class="reg-val">'+toHex(pc,8)+'</div>'+
+    '<div class="reg-dec">'+(pc>>>0)+'</div>'+
+    '</div>';
+  /* Find most recent write */
+  var lastWrite=-1;
+  if(STATE.cpu&&STATE.cpu.pipelineHistory.length){
+    var last=STATE.cpu.pipelineHistory[STATE.cpu.pipelineHistory.length-1];
+    if(last.regWrite&&last.def){
+      /* Find rd from encoding */
+      var word=last.word;
+      lastWrite=(word>>7)&0x1F;
+    }
+  }
+  REGISTERS.forEach(function(r){
+    var val=regs[r.n]|0;
+    var isChanged=r.n===lastWrite;
+    html+='<div class="reg-cell'+(isChanged?' changed':'')+'">'+
+      '<div class="reg-name">x'+r.n+' <span class="reg-alias">'+r.alias+'</span></div>'+
+      '<div class="reg-val">'+toHex(val>>>0,8)+'</div>'+
+      '<div class="reg-dec">'+val+'</div>'+
+      '</div>';
+  });
+  html+='</div>';
+  p.innerHTML=html;
+}
+function renderMemPane(){
+  var p=$('rpMem');
+  if(!p)return;
+  if(!STATE.cpu){
+    p.innerHTML='<div class="empty"><div class="e-icon">💾</div><div>No program loaded</div></div>';
+    return;
+  }
+  var html='<div class="mem-view">';
+  var pc=STATE.cpu.pc;
+  /* Show around PC and around any stored data */
+  var startAddr=Math.max(0,(pc-8*16)&~15);
+  var range=16*16; /* 256 bytes */
+  for(var row=0;row<16;row++){
+    var addr=startAddr+row*16;
+    html+='<div class="mem-row">';
+    html+='<div class="mem-addr">'+toHex(addr,6)+'</div>';
+    for(var col=0;col<16;col++){
+      var a=addr+col;
+      var b=STATE.cpu.memory[a];
+      var cls='mem-byte';
+      if(a===pc||(a>=pc&&a<pc+4))cls+=' pc';
+      if(b===0)cls+=' zero';
+      html+='<div class="'+cls+'">'+b.toString(16).padStart(2,'0')+'</div>';
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  p.innerHTML=html;
+}
+function renderPipelinePane(){
+  var p=$('rpPipeline');
+  if(!p)return;
+  if(!STATE.cpu||!STATE.cpu.pipelineHistory.length){
+    p.innerHTML='<div class="empty"><div class="e-icon">📊</div><div>Run program to see pipeline</div></div>';
+    return;
+  }
+  var hist=STATE.cpu.pipelineHistory.slice(-12);
+  var html='<div style="padding:10px;overflow-x:auto">';
+  html+='<div style="font-family:var(--mono);font-size:.6rem;color:var(--tx3);margin-bottom:8px;display:flex;gap:10px;flex-wrap:wrap">';
+  html+='<span><span style="display:inline-block;width:10px;height:10px;background:var(--c1);border-radius:2px"></span> IF</span>';
+  html+='<span><span style="display:inline-block;width:10px;height:10px;background:var(--c3);border-radius:2px"></span> ID</span>';
+  html+='<span><span style="display:inline-block;width:10px;height:10px;background:var(--c5);border-radius:2px"></span> EX</span>';
+  html+='<span><span style="display:inline-block;width:10px;height:10px;background:var(--c6);border-radius:2px"></span> MEM</span>';
+  html+='<span><span style="display:inline-block;width:10px;height:10px;background:var(--c2);border-radius:2px"></span> WB</span>';
+  html+='</div>';
+  /* Draw horizontal pipeline chart */
+  var maxCycles=20;
+  for(var i=0;i<hist.length;i++){
+    var t=hist[i];
+    var stages=['IF','ID','EX'];
+    if(t.memAccess)stages.push('MEM');
+    stages.push('WB');
+    /* Add stall boxes */
+    var displayStages=[];
+    for(var s=0;s<stages.length;s++){
+      displayStages.push(stages[s]);
+      if(s===1){
+        for(var st=0;st<(t.stalls||0);st++)displayStages.push('stall');
+      }
+    }
+    html+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;font-family:var(--mono);font-size:.55rem">';
+    html+='<div style="width:70px;color:var(--tx3);text-align:right;padding-right:6px">'+toHex(t.pc,6)+'</div>';
+    html+='<div style="width:80px;color:var(--c1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(t.text)+'">'+esc(t.text.split(' ')[0])+'</div>';
+    html+='<div style="display:flex;gap:2px;flex:1">';
+    displayStages.forEach(function(st){
+      var bg='var(--panel3)';
+      var col='var(--tx3)';
+      if(st==='IF'){bg='var(--c1)';col='#0a0c14';}
+      else if(st==='ID'){bg='var(--c3)';col='#0a0c14';}
+      else if(st==='EX'){bg='var(--c5)';col='#0a0c14';}
+      else if(st==='MEM'){bg='var(--c6)';col='#0a0c14';}
+      else if(st==='WB'){bg='var(--c2)';col='#0a0c14';}
+      else if(st==='stall'){bg='var(--err)';col='#fff';}
+      html+='<div style="background:'+bg+';color:'+col+';padding:2px 6px;border-radius:2px;font-size:.5rem;font-weight:700;min-width:26px;text-align:center">'+st+'</div>';
+    });
+    html+='</div>';
+    html+='</div>';
+  }
+  html+='</div>';
+  p.innerHTML=html;
+}
+function renderStatsPane(){
+  var p=$('rpStats');
+  if(!p)return;
+  if(!STATE.cpu){
+    p.innerHTML='<div class="empty"><div class="e-icon">📈</div><div>No statistics yet</div></div>';
+    return;
+  }
+  var cpu=STATE.cpu;
+  var cpi=cpu.instrCount>0?cpu.cycles/cpu.instrCount:0;
+  var html='<div class="sec"><h4>Performance</h4>';
+  html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">Instructions</span><span style="color:var(--c1);font-weight:700">'+cpu.instrCount+'</span></div>';
+  html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">Cycles</span><span style="color:var(--c5);font-weight:700">'+cpu.cycles+'</span></div>';
+  html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">CPI</span><span style="color:var(--c3);font-weight:700">'+fmt(cpi,3)+'</span></div>';
+  html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">IPC</span><span style="color:var(--c2);font-weight:700">'+fmt(cpu.cycles>0?cpu.instrCount/cpu.cycles:0,3)+'</span></div>';
+  html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">Stalls</span><span style="color:var(--c4);font-weight:700">'+cpu.stalls+'</span></div>';
+  html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">Efficiency</span><span style="color:var(--c3);font-weight:700">'+(cpu.cycles>0?fmt(cpu.instrCount/cpu.cycles*100,1):'0.0')+'%</span></div>';
+  html+='</div>';
+  html+='<div class="sec"><h4>Branches</h4>';
+  html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">Total</span><span style="color:var(--c1);font-weight:700">'+cpu.branches+'</span></div>';
+  html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">Mispredictions</span><span style="color:var(--c4);font-weight:700">'+cpu.mispredictions+'</span></div>';
+  html+='</div>';
+  if(cpu.iCache){
+    html+='<div class="sec"><h4>Cache</h4>';
+    html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">I-Cache</span><span style="color:var(--c1);font-weight:700">'+cpu.iCache.hits+'/'+cpu.iCache.accesses+'</span></div>';
+    html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">D-Cache</span><span style="color:var(--c1);font-weight:700">'+cpu.dCache.hits+'/'+cpu.dCache.accesses+'</span></div>';
+    html+='<div class="prop-row" style="display:flex;justify-content:space-between;padding:6px 0;font-family:var(--mono);font-size:.7rem"><span style="color:var(--tx3)">Combined</span><span style="color:var(--c3);font-weight:700">'+fmt((cpu.iCache.hitRate()*100+cpu.dCache.hitRate()*100)/2,1)+'%</span></div>';
+    html+='</div>';
+  }
+  p.innerHTML=html;
+}
+
+/* ================================================================
+   THEME / HELP / PANELS
+   ================================================================ */
+var THEMES=['silicon','dark','classic','amber'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  var next=THEMES[(i+1)%THEMES.length];
+  document.documentElement.setAttribute('data-theme',next);
+  STATE.theme=next;
+  if(STATE.currentTab==='editor')updateEditor();
+  toast('Theme: '+next,'success');
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+function togglePipeline(){
+  /* Toggle right panel to pipeline view */
+  switchRp('pipeline',$$('.rp-tab')[2]);
+  toast('Pipeline view','info',1200);
+}
+function clearBreakpoints(){
+  STATE.breakpoints={};
+  if(STATE.cpu)STATE.cpu.breakpoints={};
+  updateEditor();
+  toast('Breakpoints cleared','info',1200);
+}
+function saveCode(){
+  try{
+    localStorage.setItem('silicon-source',STATE.source);
+    toast('Source saved','success');
+  }catch(e){toast('Save failed','error')}
+}
+function loadCode(){
+  try{
+    var s=localStorage.getItem('silicon-source');
+    if(!s){toast('No saved source','warn');return}
+    STATE.source=s;
+    var ta=$('edSource');
+    if(ta){ta.value=s;updateEditor();}
+    toast('Source loaded','success');
+  }catch(e){toast('Load failed','error')}
+}
+
+function showHelp(){
+  openModal('❓ SILICON — Help',
+    '<div class="sec"><h4>🔬 About</h4><div class="text-xs" style="line-height:1.75;color:var(--tx2);font-family:var(--mono)">A complete RISC-V RV32I CPU simulator with a two-pass assembler, cache hierarchy, branch predictor, and pipeline visualization. Everything implemented from scratch in pure JavaScript.</div></div>'+
+    '<div class="sec"><h4>🎯 Pipeline</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">1. Source</b> — Write RISC-V assembly in the editor<br>'+
+    '<b class="text-c1">2. Assemble</b> — Two-pass assembler converts to machine code<br>'+
+    '<b class="text-c1">3. Load</b> — Machine code loaded into CPU memory<br>'+
+    '<b class="text-c1">4. Step</b> — Execute instructions cycle by cycle<br>'+
+    '<b class="text-c1">5. Inspect</b> — Registers, memory, cache, pipeline in real time'+
+    '</div></div>'+
+    '<div class="sec"><h4>📝 Assembly Syntax</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">Instructions:</b> add rd, rs1, rs2<br>'+
+    '<b class="text-c1">Immediates:</b> addi rd, rs1, 42<br>'+
+    '<b class="text-c1">Loads:</b> lw rd, offset(rs1)<br>'+
+    '<b class="text-c1">Stores:</b> sw rs2, offset(rs1)<br>'+
+    '<b class="text-c1">Branches:</b> beq rs1, rs2, label<br>'+
+    '<b class="text-c1">Jumps:</b> jal rd, label<br>'+
+    '<b class="text-c1">Pseudo:</b> li, mv, j, ret, call, la<br>'+
+    '<b class="text-c1">Directives:</b> .text, .data, .word, .string, .globl<br>'+
+    '<b class="text-c1">Comments:</b> ; or #'+
+    '</div></div>'+
+    '<div class="sec"><h4>🎯 Syscalls (ecall)</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    'Set <b class="text-c1">a7</b> = syscall number, then <b class="text-c1">ecall</b>:<br>'+
+    '<b class="text-c5">1</b> — exit (a0 = exit code)<br>'+
+    '<b class="text-c5">2</b> — print integer (a0)<br>'+
+    '<b class="text-c5">3</b> — print character (a0)<br>'+
+    '<b class="text-c5">4</b> — print string (a0 = address)<br>'+
+    '<b class="text-c5">10</b> — exit<br><br>'+
+    '<b class="text-c1">Custom:</b> <b>print rd</b> — quick print register<br>'+
+    '<b class="text-c1">Custom:</b> <b>exit</b> — halt CPU'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">Space</b> — Run / Pause<br>'+
+    '<b class="text-c1">S</b> — Step one instruction<br>'+
+    '<b class="text-c1">R</b> — Reset CPU<br>'+
+    '<b class="text-c1">Ctrl+Enter</b> — Assemble & load<br>'+
+    '<b class="text-c1">Click line number</b> — Toggle breakpoint<br>'+
+    '<b class="text-c1">T</b> — Cycle theme<br>'+
+    '<b class="text-c1">?</b> — This help'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',
+    {size:'lg'});
+}
+
+/* Keyboard */
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){
+    e.preventDefault();
+    assembleAndLoad();
+    return;
+  }
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'){e.preventDefault();toggleRun();}
+  else if(e.key==='s'||e.key==='S')stepCPU();
+  else if(e.key==='r'||e.key==='R')resetCPU();
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal();
+});
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+var BOOT_STEPS=[
+  'Initializing RISC-V RV32I core...',
+  'Loading '+ISA.length+' instruction definitions...',
+  'Preparing '+Object.keys(FORMATS).length+' encoding formats...',
+  'Building two-pass assembler...',
+  'Compiling disassembler tables...',
+  'Allocating 64KB memory...',
+  'Configuring L1 I-Cache (4KB, 2-way)...',
+  'Configuring L1 D-Cache (4KB, 2-way)...',
+  'Warming up branch predictor (256-entry BHT)...',
+  'Loading sample programs...',
+  'System ready.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  var iv=setInterval(function(){
+    pct+=rnd(6,14);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('SILICON ready · Press ? for help','success',3500);
+      },400);
+    }
+  },150);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  STATE.source=PROGRAMS[STATE.selectedProgram].code;
+  buildTabs();
+  renderLeftPanel();
+  renderContent();
+  renderRightPanel();
+  updateStats();
+  bootSequence();
+});
+
+console.log('%c SILICON ','background:linear-gradient(90deg,#40d0ff,#b060ff);color:#0a0c14;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cCPU Architecture Studio','color:#40d0ff;font-weight:600');
+console.log('%cRISC-V RV32I · Assembler · Cache · Branch Predictor · Pipeline','color:#b060ff');
+console.log('%cPress ? for help · Space to run · S to step','color:#a0b0d0');
+</script>
+</body></html>

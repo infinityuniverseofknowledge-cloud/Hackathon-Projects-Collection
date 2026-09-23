@@ -1,0 +1,2542 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="biotech">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#060b12">
+<title>HELIX — Bioinformatics Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+ul,ol{list-style:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:var(--c1);background-clip:content-box}
+
+:root{
+  --bg:#060b12;--bg2:#0a121c;--bg3:#0e1a28;--bg4:#142438;
+  --panel:#08121c;--panel2:#0e1a28;--panel3:#142438;--panel4:#1c3048;
+  --bd:#182a44;--bd2:#264068;--bd3:#385a90;
+  --tx:#dce8f4;--tx2:#9cb4d0;--tx3:#5878a0;--mu:#38526c;
+  --c1:#00e0d0;--c1h:#80f0e8;--c1l:#00a898;
+  --c2:#ff6b8a;--c2h:#ffa0b4;--c2l:#c04060;
+  --c3:#ffd040;--c3h:#ffe890;--c3l:#c09000;
+  --c4:#a060ff;--c4h:#c090ff;--c4l:#7030c0;
+  --c5:#40e888;--c5h:#80ffc0;--c5l:#20a860;
+  --c6:#40b0ff;--c6h:#80d0ff;--c6l:#2080c8;
+  --c7:#ff9040;--c7h:#ffb080;--c7l:#c04800;
+  --c8:#ff40d0;--c8h:#ff80e0;--c8l:#c020a0;
+  /* Nucleotide colors — standard Sanger-style */
+  --nA:#40e888;--nT:#ff6b8a;--nG:#ffd040;--nC:#40b0ff;--nU:#a060ff;--nN:#5878a0;
+  --ok:#40e888;--warn:#ffd040;--err:#ff6b8a;--info:#40b0ff;
+  /* Amino acid class colors */
+  --aa-hydrophobic:#ffd040;--aa-polar:#40e888;--aa-positive:#ff6b8a;
+  --aa-negative:#40b0ff;--aa-aromatic:#a060ff;--aa-special:#00e0d0;
+  --g1:linear-gradient(135deg,#00e0d0,#40b0ff);
+  --g2:linear-gradient(135deg,#ff6b8a,#ffd040);
+  --g3:linear-gradient(135deg,#a060ff,#00e0d0);
+  --gHolo:linear-gradient(120deg,#00e0d0,#40b0ff,#a060ff,#ff40d0,#ffd040,#40e888,#00e0d0);
+  --r:10px;--rs:7px;--rxs:5px;--rf:9999px;
+  --sh:0 8px 32px rgba(0,0,0,.7);
+  --sh2:0 16px 48px rgba(0,0,0,.9);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,-apple-system,sans-serif;
+  --disp:'Orbitron','Audiowide',sans-serif;
+  --t1:all .14s cubic-bezier(.4,0,.2,1);
+  --t2:all .24s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="clinic"]{--bg:#f2f6fa;--bg2:#e6eef6;--bg3:#d4e0ec;--panel:#fff;--panel2:#f5f9fc;--panel3:#e8f0f8;--panel4:#d8e4f0;
+  --bd:#c4d4e4;--bd2:#a0b8d0;--tx:#0a1420;--tx2:#3a4c68;--tx3:#6a7898;
+  --c1:#0088a8;--c2:#d0385a;--c3:#c08800;--c4:#6040a0;
+  --g1:linear-gradient(135deg,#0088a8,#6040a0)}
+[data-theme="purple"]{--bg:#0c0818;--bg2:#140c28;--bg3:#1c1438;--panel:#140c28;--panel2:#1c1438;--panel3:#241a48;
+  --bd:#3c2c5c;--bd2:#584080;--tx:#e8d8ff;--tx2:#c0a0f0;--tx3:#8060b0;
+  --c1:#c060ff;--c2:#ff60b0;--c3:#ffe040;--c4:#40d0ff;
+  --g1:linear-gradient(135deg,#c060ff,#40d0ff)}
+[data-theme="matrix"]{--bg:#000a08;--bg2:#001410;--bg3:#001e18;--panel:#001a14;--panel2:#002820;
+  --bd:#005c3c;--bd2:#00805c;--tx:#c0ffe0;--tx2:#60d8a0;--tx3:#00a070;
+  --c1:#00ff90;--c2:#ff4060;--c3:#ffe040;--c4:#40d0ff;
+  --g1:linear-gradient(135deg,#00ff90,#40d0ff)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* ============ BOOT ============ */
+#boot{position:fixed;inset:0;background:#060b12;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px}
+#boot.hidden{opacity:0;pointer-events:none}
+.boot-helix{position:relative;width:110px;height:140px;margin-bottom:20px}
+.boot-helix svg{width:100%;height:100%}
+.boot-helix circle{animation:pulseBoot 1.6s ease-in-out infinite}
+.boot-helix circle:nth-child(1){animation-delay:0s}
+.boot-helix circle:nth-child(2){animation-delay:.15s}
+.boot-helix circle:nth-child(3){animation-delay:.3s}
+.boot-helix circle:nth-child(4){animation-delay:.45s}
+.boot-helix circle:nth-child(5){animation-delay:.6s}
+.boot-helix circle:nth-child(6){animation-delay:.75s}
+@keyframes pulseBoot{0%,100%{opacity:.3;r:2.5}50%{opacity:1;r:4}}
+.boot-logo{font-family:var(--disp);font-size:3.2rem;font-weight:900;letter-spacing:10px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:6px}
+.boot-sub{font-size:.68rem;color:#00e0d0;letter-spacing:8px;margin-bottom:32px;opacity:.75}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#0e1a28;border-radius:2px;overflow:hidden;margin-bottom:12px}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #00e0d0}
+.boot-pct{font-size:.68rem;color:#00e0d0;margin-bottom:16px}
+.boot-log{font-size:.6rem;color:#5878a0;text-align:left;width:min(420px,90vw);height:120px;overflow:hidden;line-height:1.7}
+.boot-log .ok{color:#40e888}.boot-log .warn{color:#ffd040}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+/* ============ TOPBAR ============ */
+#topbar{height:50px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:5px;font-size:.95rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.7rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:32px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#061220;box-shadow:0 0 14px rgba(0,224,208,.35)}
+.tb-tab .tab-icon{font-size:.9rem}
+.tb-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.tb-btn{width:32px;height:32px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-btn.active{background:var(--g1);color:#061220;border-color:transparent}
+.tb-status{font-family:var(--mono);font-size:.62rem;padding:4px 10px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600}
+.tb-status.mol{color:var(--c3)}
+
+/* ============ MAIN ============ */
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:260px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:36px}
+.panel-head{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#contentArea{flex:1;overflow:auto;padding:0;position:relative;background:var(--bg2)}
+
+#rightPanel{width:280px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:36px}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:32px}
+.rp-tab{flex:1;padding:6px;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:4px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+/* ============ STATUS BAR ============ */
+#statusbar{height:26px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;font-family:var(--mono);font-size:.62rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}.sb-val.c5{color:var(--c5)}
+
+/* ============ CONTROLS ============ */
+.sec{margin-bottom:14px}
+.sec h4{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);margin-bottom:8px;font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.sec h4 .badge{background:var(--c1);color:#061220;font-size:.55rem;padding:1px 7px;border-radius:8px;font-family:var(--mono);letter-spacing:0}
+.lbl{font-size:.62rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);font-family:var(--mono);letter-spacing:0;text-transform:none}
+.ctrl{margin-bottom:10px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;border:none}
+.ctrl input[type=text],.ctrl input[type=number],.ctrl select,.ctrl textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 9px;color:var(--tx);font-size:.7rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(0,224,208,.15)}
+.ctrl textarea{resize:vertical;min-height:100px;line-height:1.6;font-size:.68rem}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.7rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1)}
+.btn.primary{background:var(--g1);color:#061220;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 16px rgba(0,224,208,.4)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--panel3);border-color:var(--bd)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.danger:hover{background:rgba(255,107,138,.1)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:4px 8px;font-size:.62rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap}
+.toggle{position:relative;width:36px;height:20px;background:var(--panel4);border-radius:var(--rf);cursor:pointer;transition:var(--t2);flex-shrink:0;display:inline-block}
+.toggle.on{background:var(--c1)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:var(--t2)}
+.toggle.on::after{left:18px}
+
+/* ============ SEQUENCE VIEWER ============ */
+.seq-viewer{padding:14px;font-family:var(--mono);font-size:.72rem;line-height:1.9;user-select:text;letter-spacing:1px}
+.seq-viewer .seq-pos{color:var(--tx3);user-select:none;margin-right:10px;font-size:.62rem}
+.seq-viewer .base{display:inline-block;padding:0 1px}
+.base-A{color:var(--nA)}.base-T{color:var(--nT)}.base-G{color:var(--nG)}.base-C{color:var(--nC)}.base-U{color:var(--nU)}.base-N{color:var(--nN)}
+.base.hi{background:rgba(255,208,64,.3);border-radius:2px}
+.base.orf1{background:rgba(0,224,208,.2)}
+.base.orf2{background:rgba(64,176,255,.2)}
+.base.orf3{background:rgba(160,96,255,.2)}
+.aa-hydrophobic{color:var(--aa-hydrophobic)}
+.aa-polar{color:var(--aa-polar)}
+.aa-positive{color:var(--aa-positive)}
+.aa-negative{color:var(--aa-negative)}
+.aa-aromatic{color:var(--aa-aromatic)}
+.aa-special{color:var(--aa-special)}
+
+/* ============ CHARTS ============ */
+.chart-wrap{padding:14px}
+.chart-canvas{width:100%;display:block;background:#02080c;border-radius:var(--rxs);border:1px solid var(--bd)}
+.chart-label{font-family:var(--mono);font-size:.62rem;color:var(--tx3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;font-weight:700;display:flex;justify-content:space-between}
+
+/* ============ TABLES ============ */
+.data-table{width:100%;font-family:var(--mono);font-size:.65rem;border-collapse:collapse}
+.data-table th{text-align:left;padding:6px 8px;background:var(--panel3);font-size:.58rem;text-transform:uppercase;letter-spacing:.9px;color:var(--tx3);font-weight:700;border-bottom:1px solid var(--bd);position:sticky;top:0}
+.data-table td{padding:5px 8px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+.data-table tbody tr:hover td{background:var(--panel3);color:var(--tx)}
+.data-table td.c1{color:var(--c1)}.data-table td.c2{color:var(--c2)}.data-table td.c3{color:var(--c3)}.data-table td.c5{color:var(--c5)}
+
+/* ============ ALIGNMENT VIEW ============ */
+.align-view{padding:14px;font-family:var(--mono);font-size:.72rem;line-height:1.6;user-select:text;overflow-x:auto;white-space:nowrap}
+.align-view .seq-line{white-space:nowrap}
+.align-view .match{color:var(--c5);background:rgba(64,232,136,.15)}
+.align-view .mismatch{color:var(--c2);background:rgba(255,107,138,.15)}
+.align-view .gap{color:var(--tx3)}
+
+/* ============ HELPERS ============ */
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+.text-mono{font-family:var(--mono)}
+.text-xs{font-size:.62rem}
+.text-dim{color:var(--tx3)}
+.text-c1{color:var(--c1)}.text-c2{color:var(--c2)}.text-c3{color:var(--c3)}.text-c4{color:var(--c4)}.text-c5{color:var(--c5)}
+.kv{font-family:var(--mono);font-size:.65rem;line-height:1.75}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd)}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3)}
+.kv .v{color:var(--c1)}
+
+/* ============ MODAL ============ */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:800px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.9rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:20px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:26px;height:26px;border-radius:var(--rxxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+/* ============ TOAST ============ */
+#toasts{position:fixed;bottom:44px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:10px 16px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.7rem;font-weight:500;max-width:340px;min-width:180px;animation:tin .3s cubic-bezier(.34,1.56,.64,1);display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c5)}.toast.warn{border-left-color:var(--c3)}.toast.error{border-left-color:var(--c2)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+/* ============ STATS ============ */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.stat{background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:10px;text-align:center}
+.stat .sv{font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--c1);line-height:1.1}
+.stat .sl{font-size:.55rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-top:3px}
+
+/* ============ PRESET CARDS ============ */
+.preset-card{background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:10px;margin-bottom:6px;cursor:pointer;transition:var(--t1)}
+.preset-card:hover{border-color:var(--c1);transform:translateX(2px)}
+.preset-card .pc-name{font-size:.75rem;font-weight:700;color:var(--tx);margin-bottom:3px}
+.preset-card .pc-meta{font-size:.6rem;color:var(--tx3);font-family:var(--mono)}
+.preset-card .pc-desc{font-size:.65rem;color:var(--tx2);margin-top:4px;line-height:1.4}
+
+/* ============ ORF TABLE ============ */
+.orf-tag{display:inline-block;padding:1px 6px;border-radius:3px;font-family:var(--mono);font-size:.55rem;font-weight:700}
+.orf-tag.f1{background:rgba(0,224,208,.25);color:var(--c1)}
+.orf-tag.f2{background:rgba(64,176,255,.25);color:var(--c6)}
+.orf-tag.f3{background:rgba(160,96,255,.25);color:var(--c4)}
+
+@media(max-width:1000px){#leftPanel{width:220px}#rightPanel{width:240px}}
+@media(max-width:700px){#leftPanel{width:0;overflow:hidden}#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-helix">
+    <svg viewBox="0 0 110 140">
+      <path d="M15,10 C30,30 15,45 30,65 C45,85 30,105 45,130" stroke="#00e0d0" stroke-width="2.5" fill="none"/>
+      <path d="M95,10 C80,30 95,45 80,65 C65,85 80,105 65,130" stroke="#40b0ff" stroke-width="2.5" fill="none"/>
+      <line x1="20" y1="20" x2="90" y2="20" stroke="#a060ff" stroke-width="1.5"/>
+      <line x1="22" y1="45" x2="88" y2="45" stroke="#ffd040" stroke-width="1.5"/>
+      <line x1="28" y1="70" x2="82" y2="70" stroke="#ff6b8a" stroke-width="1.5"/>
+      <line x1="35" y1="95" x2="75" y2="95" stroke="#40e888" stroke-width="1.5"/>
+      <line x1="40" y1="120" x2="70" y2="120" stroke="#00e0d0" stroke-width="1.5"/>
+    </svg>
+  </div>
+  <div class="boot-logo">HELIX</div>
+  <div class="boot-sub">BIOINFORMATICS STUDIO</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('editor')">HELIX</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus">—</div>
+    <div class="tb-actions">
+      <button class="tb-btn" onclick="loadFASTA()" title="Load FASTA">📂</button>
+      <button class="tb-btn" onclick="saveFASTA()" title="Save FASTA">💾</button>
+      <button class="tb-btn" onclick="copySequence()" title="Copy sequence">📋</button>
+      <button class="tb-btn" onclick="complementAll()" title="Reverse complement">🔄</button>
+      <button class="tb-btn" onclick="translateCurrent()" title="Translate to protein">🧬</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left panel">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right panel">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Tools</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="contentArea"></div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="analysis" onclick="switchRp('analysis',this)">📊<span>Analysis</span></div>
+        <div class="rp-tab" data-tab="stats" onclick="switchRp('stats',this)">📈<span>Stats</span></div>
+        <div class="rp-tab" data-tab="help" onclick="switchRp('help',this)">ℹ️<span>Info</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpAnalysis"></div>
+        <div class="rp-pane" id="rpStats"></div>
+        <div class="rp-pane" id="rpHelp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">Length</span><span class="sb-val" id="sbLen">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Type</span><span class="sb-val c3" id="sbType">DNA</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">GC</span><span class="sb-val c5" id="sbGC">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Tm</span><span class="sb-val c4" id="sbTm">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">MW</span><span class="sb-val c2" id="sbMW">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">ORFs</span><span class="sb-val c3" id="sbOrfs">0</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Mode</span><span class="sb-val" id="sbMode">Editor</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2400;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:1rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   GENETIC CODE — Standard translation table (NCBI transl_table=1)
+   ================================================================ */
+var CODON_TABLE={
+  'TTT':'F','TTC':'F','TTA':'L','TTG':'L',
+  'CTT':'L','CTC':'L','CTA':'L','CTG':'L',
+  'ATT':'I','ATC':'I','ATA':'I','ATG':'M',
+  'GTT':'V','GTC':'V','GTA':'V','GTG':'V',
+  'TCT':'S','TCC':'S','TCA':'S','TCG':'S',
+  'CCT':'P','CCC':'P','CCA':'P','CCG':'P',
+  'ACT':'T','ACC':'T','ACA':'T','ACG':'T',
+  'GCT':'A','GCC':'A','GCA':'A','GCG':'A',
+  'TAT':'Y','TAC':'Y','TAA':'*','TAG':'*',
+  'CAT':'H','CAC':'H','CAA':'Q','CAG':'Q',
+  'AAT':'N','AAC':'N','AAA':'K','AAG':'K',
+  'GAT':'D','GAC':'D','GAA':'E','GAG':'E',
+  'TGT':'C','TGC':'C','TGA':'*','TGG':'W',
+  'CGT':'R','CGC':'R','CGA':'R','CGG':'R',
+  'AGT':'S','AGC':'S','AGA':'R','AGG':'R',
+  'GGT':'G','GGC':'G','GGA':'G','GGG':'G'
+};
+
+/* Amino acid properties */
+var AA_INFO={
+  A:{name:'Alanine',class:'hydrophobic',mw:89.09,hyd:1.8},
+  R:{name:'Arginine',class:'positive',mw:174.20,hyd:-4.5},
+  N:{name:'Asparagine',class:'polar',mw:132.12,hyd:-3.5},
+  D:{name:'Aspartate',class:'negative',mw:133.10,hyd:-3.5},
+  C:{name:'Cysteine',class:'special',mw:121.15,hyd:2.5},
+  Q:{name:'Glutamine',class:'polar',mw:146.15,hyd:-3.5},
+  E:{name:'Glutamate',class:'negative',mw:147.13,hyd:-3.5},
+  G:{name:'Glycine',class:'special',mw:75.07,hyd:-0.4},
+  H:{name:'Histidine',class:'positive',mw:155.16,hyd:-3.2},
+  I:{name:'Isoleucine',class:'hydrophobic',mw:131.17,hyd:4.5},
+  L:{name:'Leucine',class:'hydrophobic',mw:131.17,hyd:3.8},
+  K:{name:'Lysine',class:'positive',mw:146.19,hyd:-3.9},
+  M:{name:'Methionine',class:'hydrophobic',mw:149.21,hyd:1.9},
+  F:{name:'Phenylalanine',class:'aromatic',mw:165.19,hyd:2.8},
+  P:{name:'Proline',class:'special',mw:115.13,hyd:-1.6},
+  S:{name:'Serine',class:'polar',mw:105.09,hyd:-0.8},
+  T:{name:'Threonine',class:'polar',mw:119.12,hyd:-0.7},
+  W:{name:'Tryptophan',class:'aromatic',mw:204.23,hyd:-0.9},
+  Y:{name:'Tyrosine',class:'aromatic',mw:181.19,hyd:-1.3},
+  V:{name:'Valine',class:'hydrophobic',mw:117.15,hyd:4.2},
+  '*':{name:'Stop',class:'stop',mw:0,hyd:0}
+};
+
+/* Codon usage frequency (human, per 1000 codons) */
+var CODON_USAGE={
+  'TTT':17.6,'TTC':20.3,'TTA':7.7,'TTG':12.9,'CTT':13.2,'CTC':19.6,'CTA':7.2,'CTG':39.6,
+  'ATT':16.0,'ATC':20.8,'ATA':7.5,'ATG':22.0,'GTT':11.0,'GTC':14.5,'GTA':7.1,'GTG':28.1,
+  'TCT':15.2,'TCC':17.7,'TCA':12.2,'TCG':4.4,'CCT':17.5,'CCC':19.8,'CCA':16.9,'CCG':6.9,
+  'ACT':13.1,'ACC':18.9,'ACA':15.1,'ACG':6.1,'GCT':18.4,'GCC':27.7,'GCA':15.8,'GCG':7.4,
+  'TAT':12.2,'TAC':15.3,'TAA':1.0,'TAG':0.8,'CAT':10.9,'CAC':15.1,'CAA':12.3,'CAG':34.2,
+  'AAT':17.0,'AAC':19.1,'AAA':24.4,'AAG':31.9,'GAT':21.8,'GAC':25.1,'GAA':29.0,'GAG':39.6,
+  'TGT':10.6,'TGC':12.6,'TGA':1.6,'TGG':13.2,'CGT':4.5,'CGC':10.4,'CGA':6.2,'CGG':11.4,
+  'AGT':12.1,'AGC':19.5,'AGA':12.1,'AGG':12.0,'GGT':10.8,'GGC':22.2,'GGA':16.5,'GGG':16.5
+};
+
+/* Genetic code expansion helpers */
+function reverseComplement(seq){
+  var map={A:'T',T:'A',G:'C',C:'G',U:'A',N:'N',a:'t',t:'a',g:'c',c:'g',u:'a',n:'n'};
+  var out='';
+  for(var i=seq.length-1;i>=0;i--){
+    out+=map[seq[i]]||'N';
+  }
+  return out;
+}
+function transcribeDNA(seq){
+  return seq.replace(/T/g,'U').replace(/t/g,'u');
+}
+function translate(seq,frame){
+  frame=frame||0;
+  var protein='';
+  for(var i=frame;i<seq.length-2;i+=3){
+    var codon=seq.substr(i,3).toUpperCase();
+    var aa=CODON_TABLE[codon];
+    if(aa===undefined)aa='X';
+    protein+=aa;
+  }
+  return protein;
+}
+
+/* ================================================================
+   SEQUENCE ANALYSIS — Real bioinformatics algorithms
+   ================================================================ */
+
+/* GC content with sliding window */
+function gcContent(seq,windowSize){
+  if(!windowSize)windowSize=50;
+  var results=[];
+  for(var i=0;i<=seq.length-windowSize;i+=1){
+    var gc=0;
+    for(var j=0;j<windowSize;j++){
+      var c=seq[i+j].toUpperCase();
+      if(c==='G'||c==='C')gc++;
+    }
+    results.push({pos:i+windowSize/2,gc:gc/windowSize*100});
+  }
+  return results;
+}
+function totalGC(seq){
+  var gc=0,n=0;
+  for(var i=0;i<seq.length;i++){
+    var c=seq[i].toUpperCase();
+    if(c==='G'||c==='C')gc++;
+    if('ATGCU'.indexOf(c)>-1)n++;
+  }
+  return n>0?gc/n*100:0;
+}
+
+/* Molecular weight */
+function molecularWeight(seq,type){
+  type=type||'dna';
+  if(type==='protein'){
+    /* Sum of AA MW minus water loss */
+    var mw=0;
+    for(var i=0;i<seq.length;i++){
+      var info=AA_INFO[seq[i].toUpperCase()];
+      if(info)mw+=info.mw;
+    }
+    mw-=18.015*(Math.max(0,seq.length-1));
+    return mw;
+  }
+  /* DNA: nucleotide monophosphate weights */
+  var weights={'A':313.21,'T':304.20,'G':329.21,'C':289.18,'U':290.17};
+  var w=0;
+  for(var j=0;j<seq.length;j++){
+    var c=seq[j].toUpperCase();
+    w+=(weights[c]||0);
+  }
+  return w-(61.96*(Math.max(0,seq.length-1)));
+}
+
+/* Melting temperature (Wallace rule for <14 nt, else nearest neighbor approximation) */
+function meltingTemp(seq){
+  var up=seq.toUpperCase();
+  if(up.length<14){
+    var at=0,gc=0;
+    for(var i=0;i<up.length;i++){
+      var c=up[i];
+      if(c==='A'||c==='T')at++;
+      else if(c==='G'||c==='C')gc++;
+    }
+    return 2*at+4*gc;
+  }
+  /* Nearest-neighbor approximation (simplified SantaLucia) */
+  var nn={
+    'AA':-7.9,'AT':-7.2,'AC':-8.4,'AG':-7.8,
+    'TA':-7.2,'TT':-7.9,'TC':-8.2,'TG':-8.5,
+    'CA':-8.5,'CT':-7.8,'CC':-8.0,'CG':-10.6,
+    'GA':-8.2,'GT':-8.4,'GC':-9.8,'GG':-8.0
+  };
+  var dH=0,dS=0;
+  for(var j=0;j<up.length-1;j++){
+    var dinuc=up.substr(j,2);
+    var dh=nn[dinuc]||-8;
+    dH+=dh;
+  }
+  /* Simplified: 100 mM Na+ */
+  var gc=totalGC(up)/100;
+  dS=0.012*up.length*gc-0.0108*up.length-0.0005*up.length*up.length;
+  return dH*1000/(dS*1000+1.987*Math.log(0.25e-6))-273.15;
+}
+
+/* ORF finding in all six frames */
+function findORFs(seq,minLen){
+  minLen=minLen||30;
+  var orfs=[];
+  var bases=['A','T','G','C','U'];
+  /* For each strand */
+  var strands=[
+    {seq:seq,name:'+',frameOffset:0},
+    {seq:reverseComplement(seq.replace(/U/g,'T').replace(/u/g,'t')),name:'-',frameOffset:0}
+  ];
+  strands.forEach(function(strand){
+    var s=strand.seq;
+    for(var frame=0;frame<3;frame++){
+      var start=-1;
+      for(var i=frame;i<s.length-2;i+=3){
+        var codon=s.substr(i,3).toUpperCase();
+        if(codon==='ATG'&&start===-1)start=i;
+        else if((codon==='TAA'||codon==='TAG'||codon==='TGA')&&start>=0){
+          var orfLen=i+3-start;
+          if(orfLen>=minLen){
+            orfs.push({
+              start:start,
+              end:i+3,
+              len:orfLen,
+              frame:frame+1,
+              strand:strand.name,
+              aa:translate(s.substr(start,orfLen),0)
+            });
+          }
+          start=-1;
+        }
+      }
+      /* Trailing ORF (no stop) */
+      if(start>=0&&s.length-start>=minLen){
+        orfs.push({
+          start:start,
+          end:s.length,
+          len:s.length-start,
+          frame:frame+1,
+          strand:strand.name,
+          aa:translate(s.substr(start),0),
+          noStop:true
+        });
+      }
+    }
+  });
+  orfs.sort(function(a,b){return b.len-a.len});
+  return orfs;
+}
+
+/* Protein properties */
+function proteinProperties(seq){
+  var up=seq.toUpperCase().replace(/[^A-Z*]/g,'');
+  var mw=0;
+  var counts={};
+  var positive=0,negative=0;
+  for(var i=0;i<up.length;i++){
+    var aa=up[i];
+    var info=AA_INFO[aa];
+    if(!info)continue;
+    counts[aa]=(counts[aa]||0)+1;
+    mw+=info.mw;
+    if(aa==='K'||aa==='R'||aa==='H')positive++;
+    if(aa==='D'||aa==='E')negative++;
+  }
+  mw-=18.015*Math.max(0,up.length-1);
+  /* Isoelectric point — simplified Henderson-Hasselbalch iteration */
+  var pKa={D:3.9,E:4.1,C:8.3,Y:10.1,H:6.0,K:10.5,R:12.5,Nterm:9.6,Cterm:2.4};
+  function chargeAt(pH){
+    var q=1/(1+Math.pow(10,pH-pKa.Nterm));
+    q-=1/(1+Math.pow(10,pKa.Cterm-pH));
+    Object.keys(pKa).forEach(function(aa){
+      if(aa==='Nterm'||aa==='Cterm')return;
+      var n=counts[aa]||0;
+      if(!n)return;
+      if(aa==='D'||aa==='E'||aa==='C'||aa==='Y'){
+        /* acidic */
+        q-=n/(1+Math.pow(10,pKa[aa]-pH));
+      } else {
+        q+=n/(1+Math.pow(10,pH-pKa[aa]));
+      }
+    });
+    return q;
+  }
+  var lo=0,hi=14,pI=7;
+  for(var it=0;it<60;it++){
+    pI=(lo+hi)/2;
+    var q=chargeAt(pI);
+    if(Math.abs(q)<0.001)break;
+    if(q>0)lo=pI;else hi=pI;
+  }
+  /* Aromaticity */
+  var aromatic=counts.F||0+counts.W||0+counts.Y||0;
+  aromatic=(counts.F||0)+(counts.W||0)+(counts.Y||0);
+  return {
+    length:up.length,
+    mw:mw,
+    pI:pI,
+    positive:positive,
+    negative:negative,
+    netCharge:positive-negative,
+    aromatic:aromatic,
+    hydrophobic:(counts.A||0)+(counts.V||0)+(counts.L||0)+(counts.I||0)+(counts.M||0)+(counts.F||0)+(counts.W||0),
+    polar:(counts.S||0)+(counts.T||0)+(counts.N||0)+(counts.Q||0)+(counts.C||0)+(counts.Y||0),
+    counts:counts
+  };
+}
+
+/* Hydrophobicity (Kyte-Doolittle) */
+function hydrophobicity(seq,windowSize){
+  windowSize=windowSize||9;
+  var out=[];
+  var half=Math.floor(windowSize/2);
+  for(var i=half;i<seq.length-half;i++){
+    var sum=0,n=0;
+    for(var j=-half;j<=half;j++){
+      var aa=seq[i+j].toUpperCase();
+      var info=AA_INFO[aa];
+      if(info){sum+=info.hyd;n++;}
+    }
+    out.push({pos:i,value:n>0?sum/n:0});
+  }
+  return out;
+}
+
+/* Chou-Fasman secondary structure prediction */
+function chouFasman(seq){
+  /* Real propensity values (simplified — helix/sheet/turn) */
+  var P={
+    A:{h:1.42,s:0.83,t:0.66},R:{h:0.98,s:0.93,t:0.95},N:{h:0.67,s:0.89,t:1.56},
+    D:{h:1.01,s:0.54,t:1.46},C:{h:0.70,s:1.19,t:1.19},Q:{h:1.11,s:1.10,t:0.98},
+    E:{h:1.51,s:0.37,t:0.74},G:{h:0.57,s:0.75,t:1.56},H:{h:1.00,s:0.87,t:0.95},
+    I:{h:1.08,s:1.60,t:0.47},L:{h:1.21,s:1.30,t:0.59},K:{h:1.16,s:0.74,t:1.01},
+    M:{h:1.45,s:1.05,t:0.60},F:{h:1.13,s:1.38,t:0.60},P:{h:0.57,s:0.55,t:1.52},
+    S:{h:0.77,s:0.75,t:1.43},T:{h:0.83,s:1.19,t:0.96},W:{h:1.08,s:1.37,t:0.96},
+    Y:{h:0.69,s:1.47,t:1.14},V:{h:1.06,s:1.70,t:0.50}
+  };
+  var up=seq.toUpperCase().replace(/[^A-Z]/g,'');
+  var struct=[];
+  for(var i=0;i<up.length;i++){
+    var aa=up[i];
+    var pa=P[aa];
+    if(!pa){struct.push('-');continue;}
+    var window=6;
+    var sumH=0,sumS=0,sumT=0,count=0;
+    for(var j=Math.max(0,i-window);j<=Math.min(up.length-1,i+window);j++){
+      var p=P[up[j]];
+      if(!p)continue;
+      sumH+=p.h;sumS+=p.s;sumT+=p.t;count++;
+    }
+    if(count===0){struct.push('-');continue;}
+    var avgH=sumH/count,avgS=sumS/count,avgT=sumT/count;
+    /* Rule: if helix propensity > 1.0 and > sheet, assign H. Else if sheet > 1.0, E. Else if turn max, T */
+    if(avgH>=1.03&&avgH>avgS&&avgH>avgT)struct.push('H');
+    else if(avgS>=1.05&&avgS>avgH&&avgS>avgT)struct.push('E');
+    else if(avgT>=1.0&&avgT>avgH&&avgT>avgS)struct.push('T');
+    else struct.push('-');
+  }
+  return struct.join('');
+}
+
+/* ================================================================
+   ALIGNMENT — Needleman-Wunsch (global) & Smith-Waterman (local)
+   ================================================================ */
+function needlemanWunsch(seq1,seq2,match,mismatch,gapOpen,gapExtend){
+  match=match!=null?match:2;
+  mismatch=mismatch!=null?mismatch:-1;
+  gapOpen=gapOpen!=null?gapOpen:-3;
+  gapExtend=gapExtend!=null?gapExtend:-1;
+  var n=seq1.length,m=seq2.length;
+  /* Score matrix M[i][j], and gap states */
+  var M=[],X=[],Y=[];
+  for(var i=0;i<=n;i++){
+    M.push(new Float64Array(m+1).fill(-Infinity));
+    X.push(new Float64Array(m+1).fill(-Infinity));
+    Y.push(new Float64Array(m+1).fill(-Infinity));
+  }
+  M[0][0]=0;
+  for(var i2=1;i2<=n;i2++)X[i2][0]=gapOpen+gapExtend*(i2-1);
+  for(var j2=1;j2<=m;j2++)Y[0][j2]=gapOpen+gapExtend*(j2-1);
+  for(var i3=1;i3<=n;i3++){
+    for(var j3=1;j3<=m;j3++){
+      var s=seq1[i3-1].toUpperCase()===seq2[j3-1].toUpperCase()?match:mismatch;
+      var mBest=Math.max(M[i3-1][j3-1],X[i3-1][j3-1],Y[i3-1][j3-1]);
+      M[i3][j3]=mBest+s;
+      var xBest=Math.max(M[i3-1][j3]+gapOpen,X[i3-1][j3]+gapExtend);
+      X[i3][j3]=xBest;
+      var yBest=Math.max(M[i3][j3-1]+gapOpen,Y[i3][j3-1]+gapExtend);
+      Y[i3][j3]=yBest;
+    }
+  }
+  /* Traceback */
+  var finalScore=Math.max(M[n][m],X[n][m],Y[n][m]);
+  var state=finalScore===M[n][m]?'M':finalScore===X[n][m]?'X':'Y';
+  var i4=n,j4=m;
+  var a1='',a2='',matchLine='';
+  while(i4>0||j4>0){
+    if(state==='M'){
+      a1=seq1[i4-1]+a1;
+      a2=seq2[j4-1]+a2;
+      matchLine+=(seq1[i4-1].toUpperCase()===seq2[j4-1].toUpperCase()?'|':' ');
+      var prev=Math.max(M[i4-1][j4-1],X[i4-1][j4-1],Y[i4-1][j4-1]);
+      state=prev===M[i4-1][j4-1]?'M':prev===X[i4-1][j4-1]?'X':'Y';
+      i4--;j4--;
+    } else if(state==='X'){
+      a1=seq1[i4-1]+a1;
+      a2='-'+a2;
+      matchLine+=' ';
+      var prevX=Math.max(M[i4-1][j4]+gapOpen,X[i4-1][j4]+gapExtend);
+      state=prevX===M[i4-1][j4]?'M':'X';
+      i4--;
+    } else {
+      a1='-'+a1;
+      a2=seq2[j4-1]+a2;
+      matchLine+=' ';
+      var prevY=Math.max(M[i4][j4-1]+gapOpen,Y[i4][j4-1]+gapExtend);
+      state=prevY===M[i4][j4-1]?'M':'Y';
+      j4--;
+    }
+  }
+  /* Compute identity */
+  var matches=0;
+  for(var k=0;k<matchLine.length;k++)if(matchLine[k]==='|')matches++;
+  return {aligned1:a1,aligned2:a2,matchLine:matchLine,score:finalScore,identity:matches/matchLine.length*100,length:matchLine.length};
+}
+
+function smithWaterman(seq1,seq2,match,mismatch,gap){
+  match=match!=null?match:2;
+  mismatch=mismatch!=null?mismatch:-1;
+  gap=gap!=null?gap:-2;
+  var n=seq1.length,m=seq2.length;
+  var H=[];
+  for(var i=0;i<=n;i++)H.push(new Float64Array(m+1));
+  var maxScore=0,maxI=0,maxJ=0;
+  for(var i2=1;i2<=n;i2++){
+    for(var j2=1;j2<=m;j2++){
+      var s=seq1[i2-1].toUpperCase()===seq2[j2-1].toUpperCase()?match:mismatch;
+      var diag=H[i2-1][j2-1]+s;
+      var up=H[i2-1][j2]+gap;
+      var left=H[i2][j2-1]+gap;
+      var v=Math.max(0,diag,up,left);
+      H[i2][j2]=v;
+      if(v>maxScore){maxScore=v;maxI=i2;maxJ=j2;}
+    }
+  }
+  /* Traceback from max */
+  var i3=maxI,j3=maxJ;
+  var a1='',a2='',matchLine='';
+  while(i3>0&&j3>0&&H[i3][j3]>0){
+    var s2=seq1[i3-1].toUpperCase()===seq2[j3-1].toUpperCase()?match:mismatch;
+    if(H[i3][j3]===H[i3-1][j3-1]+s2){
+      a1=seq1[i3-1]+a1;a2=seq2[j3-1]+a2;
+      matchLine+=(s2===match?'|':' ');
+      i3--;j3--;
+    } else if(H[i3][j3]===H[i3-1][j3]+gap){
+      a1=seq1[i3-1]+a1;a2='-'+a2;matchLine+=' ';i3--;
+    } else {
+      a1='-'+a1;a2=seq2[j3-1]+a2;matchLine+=' ';j3--;
+    }
+  }
+  var matches=0;
+  for(var k=0;k<matchLine.length;k++)if(matchLine[k]==='|')matches++;
+  return {aligned1:a1,aligned2:a2,matchLine:matchLine,score:maxScore,identity:matchLine.length>0?matches/matchLine.length*100:0,length:matchLine.length,startI:i3,endI:maxI,startJ:j3,endJ:maxJ};
+}
+
+/* ================================================================
+   RESTRICTION ENZYMES
+   ================================================================ */
+var RESTRICTION_ENZYMES=[
+  {name:'EcoRI',site:'GAATTC',cut:1,overhang:4},
+  {name:'BamHI',site:'GGATCC',cut:1,overhang:4},
+  {name:'HindIII',site:'AAGCTT',cut:1,overhang:4},
+  {name:'NotI',site:'GCGGCCGC',cut:2,overhang:4},
+  {name:'XhoI',site:'CTCGAG',cut:1,overhang:4},
+  {name:'PstI',site:'CTGCAG',cut:5,overhang:4},
+  {name:'SalI',site:'GTCGAC',cut:1,overhang:4},
+  {name:'KpnI',site:'GGTACC',cut:5,overhang:4},
+  {name:'SacI',site:'GAGCTC',cut:5,overhang:4},
+  {name:'SmaI',site:'CCCGGG',cut:3,overhang:0},
+  {name:'NdeI',site:'CATATG',cut:2,overhang:2},
+  {name:'NcoI',site:'CCATGG',cut:2,overhang:4},
+  {name:'BglII',site:'AGATCT',cut:1,overhang:4},
+  {name:'NheI',site:'GCTAGC',cut:1,overhang:4},
+  {name:'SpeI',site:'ACTAGT',cut:1,overhang:4},
+  {name:'MluI',site:'ACGCGT',cut:1,overhang:4},
+  {name:'BspHI',site:'TCATGA',cut:1,overhang:4},
+  {name:'ApaI',site:'GGGCCC',cut:5,overhang:4},
+  {name:'AflII',site:'CTTAAG',cut:1,overhang:4},
+  {name:'DraI',site:'TTTAAA',cut:3,overhang:0},
+  {name:'HaeIII',site:'GGCC',cut:2,overhang:0},
+  {name:'AluI',site:'AGCT',cut:2,overhang:0},
+  {name:'MboI',site:'GATC',cut:0,overhang:4},
+  {name:'Sau3AI',site:'GATC',cut:0,overhang:4},
+  {name:'TaqI',site:'TCGA',cut:1,overhang:4}
+];
+
+function findRestrictionSites(seq,enzymes){
+  var sites=[];
+  var up=seq.toUpperCase();
+  var rc=reverseComplement(up);
+  enzymes.forEach(function(enz){
+    var site=enz.site;
+    var pos=0;
+    while((pos=up.indexOf(site,pos))>-1){
+      sites.push({enzyme:enz.name,position:pos,strand:'+',site:site});
+      pos++;
+    }
+    /* Palindromic — but we still want to know both strands for non-palindromic */
+    var rcSite=reverseComplement(site);
+    if(rcSite!==site){
+      pos=0;
+      while((pos=up.indexOf(rcSite,pos))>-1){
+        sites.push({enzyme:enz.name,position:pos,strand:'-',site:rcSite});
+        pos++;
+      }
+    }
+  });
+  sites.sort(function(a,b){return a.position-b.position});
+  return sites;
+}
+
+/* ================================================================
+   PHYLOGENETIC TREE — UPGMA from pairwise distances
+   ================================================================ */
+function pairwiseDistance(seq1,seq2){
+  /* Jukes-Cantor corrected p-distance */
+  var n=Math.min(seq1.length,seq2.length);
+  var diffs=0;
+  for(var i=0;i<n;i++){
+    if(seq1[i].toUpperCase()!==seq2[i].toUpperCase())diffs++;
+  }
+  var p=diffs/n;
+  if(p<0.75)p=-0.75*Math.log(1-4/3*p);
+  return p*n;
+}
+
+function buildUPGMA(names,sequences){
+  /* Distance matrix */
+  var n=names.length;
+  var dist=[];
+  for(var i=0;i<n;i++){
+    dist.push(new Float64Array(n));
+  }
+  for(var i2=0;i2<n;i2++){
+    for(var j2=i2+1;j2<n;j2++){
+      var d=pairwiseDistance(sequences[i2],sequences[j2]);
+      dist[i2][j2]=d;
+      dist[j2][i2]=d;
+    }
+  }
+  /* Clusters */
+  var clusters=[];
+  for(var k=0;k<n;k++){
+    clusters.push({
+      id:'leaf_'+k,
+      members:[k],
+      height:0,
+      children:null,
+      name:names[k]
+    });
+  }
+  var active=clusters.slice();
+  while(active.length>1){
+    /* Find min distance pair */
+    var minD=Infinity,minI=0,minJ=0;
+    for(var a=0;a<active.length;a++){
+      for(var b=a+1;b<active.length;b++){
+        /* Average of members */
+        var sum=0,cnt=0;
+        for(var mi=0;mi<active[a].members.length;mi++){
+          for(var mj=0;mj<active[b].members.length;mj++){
+            sum+=dist[active[a].members[mi]][active[b].members[mj]];
+            cnt++;
+          }
+        }
+        var avg=sum/cnt;
+        if(avg<minD){minD=avg;minI=a;minJ=b;}
+      }
+    }
+    var newCluster={
+      id:'node_'+Math.random().toString(36).substr(2,6),
+      members:active[minI].members.concat(active[minJ].members),
+      height:minD/2,
+      children:[active[minI],active[minJ]],
+      name:active[minI].name+'+'+active[minJ].name
+    };
+    active.splice(minJ,1);
+    active.splice(minI,1);
+    active.push(newCluster);
+  }
+  return active[0];
+}
+</script>
+<script>
+/* ================================================================
+   SAMPLE SEQUENCES — Real biological sequences
+   ================================================================ */
+var SAMPLES={
+  insulin:{
+    name:'Human Insulin (INS)',
+    desc:'Preproinsulin mRNA coding sequence — 110 aa protein hormone',
+    type:'DNA',
+    seq:'ATGGCCCTGTGGATGCGCCTCCTGCCCCTGCTGGCGCTGCTGGCCCTCTGGGGACCTGACCCAGCCGCAGCCTTTGTGAACCAACACCTGTGCGGCTCACACCTGGTGGAAGCTCTCTACCTAGTGTGCGGGGAACGAGGCTTCTTCTACACACCCAAGACCCGCCGGGAGGCAGAGGACCTGCAGGTGGGGCAGGTGGAGCTGGGCGGGGGCCCTGGTGCAGGCAGCCTGCAGCCCTTGGCCCTGGAGGGGTCCCTGCAGAAGCGTGGCATTGTGGAACAATGCTGTACCAGCATCTGCTCCCTCTACCAGCTGGAGAACTACTGCAACTAG'
+  },
+  hemoglobin:{
+    name:'Human Hemoglobin Beta (HBB)',
+    desc:'Beta-globin coding sequence — oxygen transport protein',
+    type:'DNA',
+    seq:'ATGGTGCATCTGACTCCTGAGGAGAAGTCTGCCGTTACTGCCCTGTGGGGCAAGGTGAACGTGGATGAAGTTGGTGGTGAGGCCCTGGGCAGGCTGCTGGTGGTCTACCCTTGGACCCAGAGGTTCTTTGAGTCCTTTGGGGATCTGTCCACTCCTGATGCTGTTATGGGCAACCCTAAGGTGAAGGCTCATGGCAAGAAAGTGCTCGGTGCCTTTAGTGATGGCCTGGCTCACCTGGACAACCTCAAGGGCACCTTTGCCACACTGAGTGAGCTGCACTGTGACAAGCTGCACGTGGATCCTGAGAACTTCAGGCTCCTGGGCAACGTGCTGGTCTGTGTGCTGGCCCATCACTTTGGCAAAGAATTCACCCCACCAGTGCAGGCTGCCTATCAGAAAGTGGTGGCTGGTGTGGCTAATGCCCTGGCCCACAAGTATCACTAA'
+  },
+  gfp:{
+    name:'Green Fluorescent Protein (GFP)',
+    desc:'Aequorea victoria GFP — 238 aa fluorescent protein',
+    type:'DNA',
+    seq:'ATGGTGAGCAAGGGCGAGGAGCTGTTCACCGGGGTGGTGCCCATCCTGGTCGAGCTGGACGGCGACGTAAACGGCCACAAGTTCAGCGTGTCCGGCGAGGGCGAGGGCGATGCCACCTACGGCAAGCTGACCCTGAAGTTCATCTGCACCACCGGCAAGCTGCCCGTGCCCTGGCCCACCCTCGTGACCACCCTGACCTACGGCGTGCAGTGCTTCAGCCGCTACCCCGACCACATGAAGCAGCACGACTTCTTCAAGTCCGCCATGCCCGAAGGCTACGTCCAGGAGCGCACCATCTTCTTCAAGGACGACGGCAACTACAAGACCCGCGCCGAGGTGAAGTTCGAGGGCGACACCCTGGTGAACCGCATCGAGCTGAAGGGCATCGACTTCAAGGAGGACGGCAACATCCTGGGGCACAAGCTGGAGTACAACTACAACAGCCACAACGTCTATATCATGGCCGACAAGCAGAAGAACGGCATCAAGGTGAACTTCAAGATCCGCCACAACATCGAGGACGGCAGCGTGCAGCTCGCCGACCACTACCAGCAGAACACCCCCATCGGCGACGGCCCCGTGCTGCTGCCCGACAACCACTACCTGAGCACCCAGTCCAAGCTGAGCAAAGACCCCAACGAGAAGCGCGATCACATGGTCCTGCTGGAGTTCGTGACCGCCGCCGGGATCACTCTCGGCATGGACGAGCTGTACAAGTAA'
+  },
+  cytochrome:{
+    name:'Cytochrome c (Human CYCS)',
+    desc:'104 aa electron transport protein — classic phylogenetics marker',
+    type:'PROTEIN',
+    seq:'MGDVEKGKKIFIMKCSQCHTVEKGGKHKTGPNLHGLFGRKTGQAPGYSYTAANKNKGIIWGEDTLMEYLENPKKYIPGTKMIFVGIKKKEERADLIAYLKKATNE'
+  },
+  p53:{
+    name:'p53 Tumor Suppressor (TP53) fragment',
+    desc:'Partial p53 DNA-binding domain — most mutated gene in cancer',
+    type:'DNA',
+    seq:'ATGGAGGAGCCGCAGTCAGATCCTAGCGTCGAGCCCCCTCTGAGTCAGGAAACATTTTCAGACCTATGGAAACTACTTCCTGAAAACAACGTTCTGTCCCCCTTGCCGTCCCAAGCAATGGATGATTTGATGCTGTCCCCGGACGATATTGAACAATGGTTCACTGAAGACCCAGGTCCAGATGAAGCTCCCAGAATGCCAGAGGCTGCTCCCCCCGTGGCCCCTGCACCAGCAGCTCCTACACCGGCGGCCCCTGCACCAGCCCCCTCCTGGCCCCTGTCATCTTCTGTCCCTTCCCAGAAAACCTACCAGGGCAGCTACGGTTTCCGTCTGGGCTTCTTGCATTCTGGGACAGCCAAGTCTGTGACTTGCACGTACTCCCCTGCCCTCAACAAGATGTTTTGCCAACTGGCCAAGACCTGCCCTGTGCAGCTGTGGGTTGATTCCACACCCCCGCCCGGCACCCGCGTCCGCGCCATGGCCATCTACAAGCAGTCACAGCACATGACGGAGGTTGTGAGGCGCTGCCCCCACCATGAGCGCTGCTCAGATAGCGATGGTGAGCAGCTGGGGCTGGAGAGACGACAGGGCTGGTTGCCCAGGGGCCCCTGCCAATGCTTGTCCCCAGGTT'
+  },
+  hiv:{
+    name:'HIV-1 Protease (partial)',
+    desc:'99 aa viral protease — drug target',
+    type:'PROTEIN',
+    seq:'PQITLWQRPLVTIKIGGQLKEALLDTGADDTVLEEMSLPGRWKPKMIGGIGGFIKVRQYDQILIEICGHKAIGTVLVGPTPVNIIGRNLLTQIGCTLNF'
+  },
+  random:{
+    name:'Random DNA',
+    desc:'Random 300 bp sequence for testing',
+    type:'DNA',
+    seq:''
+  },
+  primer_f:{
+    name:'Universal 16S Primer Fwd',
+    desc:'27F bacterial 16S rRNA primer',
+    type:'DNA',
+    seq:'AGAGTTTGATCMTGGCTCAG'
+  },
+  primer_r:{
+    name:'Universal 16S Primer Rev',
+    desc:'1492R bacterial 16S rRNA primer',
+    type:'DNA',
+    seq:'GGYTACCTTGTTACGACTT'
+  }
+};
+
+/* Generate a random DNA sequence */
+function generateRandomDNA(n){
+  var bases='ATGC';
+  var out='';
+  for(var i=0;i<n;i++)out+=bases[Math.floor(Math.random()*4)];
+  return out;
+}
+SAMPLES.random.seq=generateRandomDNA(300);
+
+/* ================================================================
+   APPLICATION STATE
+   ================================================================ */
+var STATE={
+  sequence:'',
+  seq2:'',
+  sequenceType:'DNA',
+  sequenceName:'Custom Sequence',
+  currentTab:'editor',
+  selectedSample:null,
+  alignmentMethod:'nw',
+  nwMatch:2,
+  nwMismatch:-1,
+  nwGapOpen:-3,
+  nwGapExtend:-1,
+  swMatch:2,
+  swMismatch:-1,
+  swGap:-2,
+  windowSize:50,
+  hydroWindow:9,
+  orfMinLength:90,
+  selectedEnzymes:['EcoRI','BamHI','HindIII','NotI','XhoI','PstI','SalI'],
+  showTranslation:true,
+  translateFrame:0,
+  phyloSelected:['cytochrome'],
+  phyloTree:null
+};
+
+/* ================================================================
+   SEQUENCE UTILITIES
+   ================================================================ */
+function detectType(seq){
+  var s=seq.toUpperCase().replace(/[^A-Z]/g,'');
+  var nuc=0,prot=0;
+  for(var i=0;i<s.length;i++){
+    var c=s[i];
+    if('ATGCUN'.indexOf(c)>-1)nuc++;
+    else if('DEFHIKLMPQRSVWY'.indexOf(c)>-1)prot++;
+  }
+  if(nuc/(nuc+prot+0.001)>0.8)return 'DNA';
+  if(prot/(nuc+prot+0.001)>0.8)return 'PROTEIN';
+  return 'MIXED';
+}
+function cleanSequence(seq,type){
+  if(type==='PROTEIN'){
+    return seq.toUpperCase().replace(/[^A-Z]/g,'');
+  }
+  return seq.toUpperCase().replace(/[^ATGCUN]/g,'');
+}
+function sequenceStats(seq,type){
+  var counts={A:0,T:0,G:0,C:0,U:0,N:0};
+  if(type==='PROTEIN'){
+    var aaCounts={};
+    for(var i=0;i<seq.length;i++){
+      var aa=seq[i].toUpperCase();
+      aaCounts[aa]=(aaCounts[aa]||0)+1;
+    }
+    return {length:seq.length,aaCounts:aaCounts};
+  }
+  for(var j=0;j<seq.length;j++){
+    var c=seq[j].toUpperCase();
+    if(counts[c]!==undefined)counts[c]++;
+  }
+  return {length:seq.length,counts:counts};
+}
+</script>
+<script>
+/* ================================================================
+   TABS
+   ================================================================ */
+var TABS=[
+  {key:'editor',icon:'🧬',label:'Editor'},
+  {key:'translation',icon:'🔤',label:'Translate'},
+  {key:'orfs',icon:'🎯',label:'ORFs'},
+  {key:'alignment',icon:'⚖️',label:'Align'},
+  {key:'protein',icon:'💊',label:'Protein'},
+  {key:'analysis',icon:'📊',label:'Analysis'},
+  {key:'enzymes',icon:'✂️',label:'Enzymes'},
+  {key:'tree',icon:'🌳',label:'Phylogeny'},
+  {key:'about',icon:'ℹ️',label:'About'}
+];
+
+function buildTabs(){
+  var tabs=$('tbTabs');
+  tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-tab')===key)});
+  $('sbMode').textContent=key.charAt(0).toUpperCase()+key.slice(1);
+  renderLeftPanel();
+  renderContent();
+  renderRightPanel();
+}
+
+function switchRp(name,el2){
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active');});
+  el2.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active');});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+}
+
+/* ================================================================
+   LEFT PANEL
+   ================================================================ */
+function renderLeftPanel(){
+  var body=$('lpBody');
+  if(!body)return;
+  var html='';
+  if(STATE.currentTab==='editor'){
+    html+='<div class="sec"><h4>Sample Sequences</h4>';
+    Object.keys(SAMPLES).forEach(function(k){
+      var s=SAMPLES[k];
+      html+='<div class="preset-card" onclick="loadSample(\''+k+'\')">'+
+        '<div class="pc-name">'+esc(s.name)+'</div>'+
+        '<div class="pc-meta">'+s.type+' · '+s.seq.length+' '+(s.type==='PROTEIN'?'aa':'bp')+'</div>'+
+        '<div class="pc-desc">'+esc(s.desc)+'</div></div>';
+    });
+    html+='</div>';
+    html+='<div class="sec"><h4>Quick Actions</h4>';
+    html+='<button class="btn full sm" onclick="generateRandom(\'dna\')">🎲 Random DNA (300bp)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="generateRandom(\'protein\')">🎲 Random Protein</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="insertMutation()">⚡ Insert Mutation</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="clearSequence()">🗑 Clear</button>';
+    html+='</div>';
+  }
+  else if(STATE.currentTab==='translation'){
+    html+='<div class="sec"><h4>Translation Frame</h4>';
+    for(var f=0;f<6;f++){
+      var strand=f<3?'+':'-';
+      var frame=f%3;
+      html+='<button class="btn full sm'+(STATE.translateFrame===f?' primary':'')+'" style="margin-bottom:4px" onclick="STATE.translateFrame='+f+';renderContent()">'+
+        strand+' frame '+frame+(STATE.translateFrame===f?' ✓':'')+'</button>';
+    }
+    html+='</div>';
+    html+='<div class="sec"><h4>Options</h4>';
+    html+='<div class="flex-between" style="margin-bottom:8px"><span class="text-xs">Show codons</span><div class="toggle on" onclick="this.classList.toggle(\'on\')"></div></div>';
+    html+='<div class="flex-between"><span class="text-xs">Highlight stops</span><div class="toggle on" onclick="this.classList.toggle(\'on\')"></div></div>';
+    html+='</div>';
+  }
+  else if(STATE.currentTab==='orfs'){
+    html+='<div class="sec"><h4>ORF Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Min ORF length</span><span id="orfMinLabel">'+STATE.orfMinLength+'bp</span></div>';
+    html+='<input type="range" min="30" max="600" step="30" value="'+STATE.orfMinLength+'" oninput="STATE.orfMinLength=parseInt(this.value);document.getElementById(\'orfMinLabel\').textContent=this.value+\'bp\';renderContent()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Legend</h4>';
+    html+='<div class="kv">'+
+      '<div class="row"><span class="k"><span class="orf-tag f1">+1</span></span><span>Forward frame 1</span></div>'+
+      '<div class="row"><span class="k"><span class="orf-tag f2">+2</span></span><span>Forward frame 2</span></div>'+
+      '<div class="row"><span class="k"><span class="orf-tag f3">+3</span></span><span>Forward frame 3</span></div>'+
+      '</div></div>';
+  }
+  else if(STATE.currentTab==='alignment'){
+    html+='<div class="sec"><h4>Alignment Method</h4>';
+    html+='<button class="btn full sm'+(STATE.alignmentMethod==='nw'?' primary':'')+'" onclick="STATE.alignmentMethod=\'nw\';renderLeftPanel();renderContent()">Global (Needleman-Wunsch)</button>';
+    html+='<button class="btn full sm'+(STATE.alignmentMethod==='sw'?' primary':'')+'" style="margin-top:4px" onclick="STATE.alignmentMethod=\'sw\';renderLeftPanel();renderContent()">Local (Smith-Waterman)</button>';
+    html+='</div>';
+    if(STATE.alignmentMethod==='nw'){
+      html+='<div class="sec"><h4>NW Parameters</h4>';
+      html+='<div class="ctrl"><div class="lbl"><span>Match</span><span>'+STATE.nwMatch+'</span></div>';
+      html+='<input type="range" min="1" max="5" step="1" value="'+STATE.nwMatch+'" oninput="STATE.nwMatch=parseInt(this.value);renderContent()"></div>';
+      html+='<div class="ctrl"><div class="lbl"><span>Mismatch</span><span>'+STATE.nwMismatch+'</span></div>';
+      html+='<input type="range" min="-5" max="0" step="1" value="'+STATE.nwMismatch+'" oninput="STATE.nwMismatch=parseInt(this.value);renderContent()"></div>';
+      html+='<div class="ctrl"><div class="lbl"><span>Gap open</span><span>'+STATE.nwGapOpen+'</span></div>';
+      html+='<input type="range" min="-10" max="0" step="1" value="'+STATE.nwGapOpen+'" oninput="STATE.nwGapOpen=parseInt(this.value);renderContent()"></div>';
+      html+='<div class="ctrl"><div class="lbl"><span>Gap extend</span><span>'+STATE.nwGapExtend+'</span></div>';
+      html+='<input type="range" min="-3" max="0" step="1" value="'+STATE.nwGapExtend+'" oninput="STATE.nwGapExtend=parseInt(this.value);renderContent()"></div>';
+      html+='</div>';
+    } else {
+      html+='<div class="sec"><h4>SW Parameters</h4>';
+      html+='<div class="ctrl"><div class="lbl"><span>Match</span><span>'+STATE.swMatch+'</span></div>';
+      html+='<input type="range" min="1" max="5" step="1" value="'+STATE.swMatch+'" oninput="STATE.swMatch=parseInt(this.value);renderContent()"></div>';
+      html+='<div class="ctrl"><div class="lbl"><span>Mismatch</span><span>'+STATE.swMismatch+'</span></div>';
+      html+='<input type="range" min="-5" max="0" step="1" value="'+STATE.swMismatch+'" oninput="STATE.swMismatch=parseInt(this.value);renderContent()"></div>';
+      html+='<div class="ctrl"><div class="lbl"><span>Gap</span><span>'+STATE.swGap+'</span></div>';
+      html+='<input type="range" min="-5" max="0" step="1" value="'+STATE.swGap+'" oninput="STATE.swGap=parseInt(this.value);renderContent()"></div>';
+      html+='</div>';
+    }
+  }
+  else if(STATE.currentTab==='analysis'){
+    html+='<div class="sec"><h4>Analysis Options</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>GC Window</span><span>'+STATE.windowSize+' bp</span></div>';
+    html+='<input type="range" min="10" max="200" step="5" value="'+STATE.windowSize+'" oninput="STATE.windowSize=parseInt(this.value);renderContent()"></div>';
+    html+='</div>';
+  }
+  else if(STATE.currentTab==='enzymes'){
+    html+='<div class="sec"><h4>Restriction Enzymes</h4>';
+    html+='<div class="btn-row">';
+    html+='<button class="btn sm" onclick="selectAllEnzymes()">All</button>';
+    html+='<button class="btn sm" onclick="selectNoEnzymes()">None</button>';
+    html+='<button class="btn sm" onclick="selectCommonEnzymes()">Common</button>';
+    html+='</div>';
+    html+='<div style="margin-top:8px;max-height:400px;overflow-y:auto">';
+    RESTRICTION_ENZYMES.forEach(function(enz){
+      var active=STATE.selectedEnzymes.indexOf(enz.name)>-1;
+      html+='<div class="flex-between" style="padding:4px 8px;background:var(--panel3);border-radius:var(--rxxs);margin-bottom:3px;cursor:pointer" onclick="toggleEnzyme(\''+enz.name+'\')">'+
+        '<span style="font-family:var(--mono);font-size:.65rem;color:'+(active?'var(--c1)':'var(--tx2)')+'">'+enz.name+'</span>'+
+        '<span style="font-family:var(--mono);font-size:.6rem;color:var(--tx3)">'+enz.site+'</span>'+
+        '<span style="color:'+(active?'var(--c5)':'var(--tx3)')+'">'+(active?'✓':'○')+'</span></div>';
+    });
+    html+='</div>';
+    html+='</div>';
+  }
+  else if(STATE.currentTab==='tree'){
+    html+='<div class="sec"><h4>Select Sequences</h4>';
+    html+='<div class="text-xs text-dim" style="margin-bottom:8px;font-family:var(--mono)">Choose sequences to build a phylogenetic tree. Must all be same length (will trim).</div>';
+    Object.keys(SAMPLES).forEach(function(k){
+      var s=SAMPLES[k];
+      if(s.type!=='PROTEIN'&&s.type!=='DNA')return;
+      var active=STATE.phyloSelected.indexOf(k)>-1;
+      html+='<div class="flex-between" style="padding:5px 8px;background:var(--panel3);border-radius:var(--rxxs);margin-bottom:3px;cursor:pointer" onclick="togglePhylo(\''+k+'\')">'+
+        '<span style="font-size:.7rem;color:'+(active?'var(--c1)':'var(--tx2)')+'">'+esc(s.name)+'</span>'+
+        '<span style="color:'+(active?'var(--c5)':'var(--tx3)')+'">'+(active?'✓':'○')+'</span></div>';
+    });
+    html+='</div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn full primary" onclick="buildTree()">🌳 Build Tree</button>';
+    html+='</div>';
+  }
+  body.innerHTML=html;
+}
+
+/* ================================================================
+   SAMPLE / SEQUENCE LOADING
+   ================================================================ */
+function loadSample(key){
+  var s=SAMPLES[key];
+  if(!s)return;
+  STATE.sequence=s.seq;
+  STATE.sequenceType=s.type;
+  STATE.sequenceName=s.name;
+  STATE.selectedSample=key;
+  toast('Loaded: '+s.name,'success');
+  renderContent();
+  renderRightPanel();
+  updateStatusBar();
+}
+function generateRandom(type){
+  if(type==='dna'){
+    STATE.sequence=generateRandomDNA(300);
+    STATE.sequenceType='DNA';
+    STATE.sequenceName='Random DNA';
+  } else {
+    var aa='ACDEFGHIKLMNPQRSTVWY';
+    var s='';
+    for(var i=0;i<150;i++)s+=aa[Math.floor(Math.random()*20)];
+    STATE.sequence=s;
+    STATE.sequenceType='PROTEIN';
+    STATE.sequenceName='Random Protein';
+  }
+  STATE.selectedSample=null;
+  renderContent();
+  updateStatusBar();
+  toast('Generated '+type,'success');
+}
+function insertMutation(){
+  if(!STATE.sequence)return;
+  var pos=Math.floor(Math.random()*STATE.sequence.length);
+  var bases=STATE.sequenceType==='PROTEIN'?'ACDEFGHIKLMNPQRSTVWY':'ATGC';
+  var arr=STATE.sequence.split('');
+  arr[pos]=bases[Math.floor(Math.random()*bases.length)];
+  STATE.sequence=arr.join('');
+  renderContent();
+  toast('Mutated position '+pos,'warn');
+}
+function clearSequence(){
+  STATE.sequence='';
+  STATE.sequenceName='Empty';
+  STATE.selectedSample=null;
+  renderContent();
+  updateStatusBar();
+}
+function complementAll(){
+  if(!STATE.sequence||STATE.sequenceType!=='DNA'){toast('Requires DNA sequence','warn');return}
+  STATE.sequence=reverseComplement(STATE.sequence);
+  STATE.sequenceName+=' (revcomp)';
+  renderContent();
+  updateStatusBar();
+  toast('Reverse complement applied','success');
+}
+function translateCurrent(){
+  if(!STATE.sequence){toast('No sequence','warn');return}
+  if(STATE.sequenceType==='DNA'){
+    /* Translate frame 0 to ORFs — just load the frame's protein */
+    var frame=STATE.translateFrame%3;
+    var sub=STATE.sequence.substr(frame);
+    STATE.sequence=translate(sub,0);
+    STATE.sequenceType='PROTEIN';
+    STATE.sequenceName+=' (protein)';
+    renderContent();
+    updateStatusBar();
+    toast('Translated to protein','success');
+  } else {
+    toast('Already protein','info');
+  }
+}
+function updateStatusBar(){
+  var len=STATE.sequence.length;
+  $('sbLen').textContent=len;
+  $('sbType').textContent=STATE.sequenceType;
+  if(STATE.sequenceType==='DNA'){
+    var gc=totalGC(STATE.sequence);
+    $('sbGC').textContent=fmt(gc,1)+'%';
+    var tm=meltingTemp(STATE.sequence);
+    $('sbTm').textContent=fmt(tm,1)+'°C';
+    var orfs=STATE.sequence.length>=30?findORFs(STATE.sequence,STATE.orfMinLength):[];
+    $('sbOrfs').textContent=orfs.length;
+  } else {
+    $('sbGC').textContent='—';
+    $('sbTm').textContent='—';
+    $('sbOrfs').textContent='—';
+  }
+  var mw=molecularWeight(STATE.sequence,STATE.sequenceType==='PROTEIN'?'protein':'dna');
+  $('sbMW').textContent=fmt(mw/1000,1)+' kDa';
+  $('tbStatus').textContent=STATE.sequenceName;
+}
+
+/* ================================================================
+   UTILITY
+   ================================================================ */
+function copySequence(){
+  if(!STATE.sequence){toast('Nothing to copy','warn');return}
+  if(navigator.clipboard)navigator.clipboard.writeText(STATE.sequence).then(function(){toast('Copied','success')});
+}
+function saveFASTA(){
+  if(!STATE.sequence){toast('No sequence to save','warn');return}
+  var fasta='>'+STATE.sequenceName.replace(/\s+/g,'_')+'\n';
+  for(var i=0;i<STATE.sequence.length;i+=60){
+    fasta+=STATE.sequence.substr(i,60)+'\n';
+  }
+  var blob=new Blob([fasta],{type:'text/plain'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='sequence.fasta';a.click();
+  setTimeout(function(){URL.revokeObjectURL(url)},500);
+  toast('FASTA saved','success');
+}
+function loadFASTA(){
+  var input=document.createElement('input');
+  input.type='file';input.accept='.fasta,.fa,.txt';
+  input.onchange=function(e){
+    var file=e.target.files[0];
+    if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      var text=ev.target.result;
+      var lines=text.split('\n');
+      var name='Loaded';
+      var seq='';
+      for(var i=0;i<lines.length;i++){
+        var line=lines[i].trim();
+        if(line.startsWith('>'))name=line.slice(1);
+        else seq+=line;
+      }
+      STATE.sequence=cleanSequence(seq,detectType(seq));
+      STATE.sequenceType=detectType(seq);
+      STATE.sequenceName=name;
+      STATE.selectedSample=null;
+      renderContent();
+      renderRightPanel();
+      updateStatusBar();
+      toast('Loaded from file','success');
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+/* Enzyme selection */
+function toggleEnzyme(name){
+  var i=STATE.selectedEnzymes.indexOf(name);
+  if(i>-1)STATE.selectedEnzymes.splice(i,1);
+  else STATE.selectedEnzymes.push(name);
+  renderLeftPanel();
+  renderContent();
+}
+function selectAllEnzymes(){
+  STATE.selectedEnzymes=RESTRICTION_ENZYMES.map(function(e){return e.name});
+  renderLeftPanel();renderContent();
+}
+function selectNoEnzymes(){
+  STATE.selectedEnzymes=[];
+  renderLeftPanel();renderContent();
+}
+function selectCommonEnzymes(){
+  STATE.selectedEnzymes=['EcoRI','BamHI','HindIII','NotI','XhoI','PstI','SalI'];
+  renderLeftPanel();renderContent();
+}
+
+/* Phylogeny selection */
+function togglePhylo(key){
+  var i=STATE.phyloSelected.indexOf(key);
+  if(i>-1){if(STATE.phyloSelected.length<=2){toast('Need at least 2 sequences','warn');return}STATE.phyloSelected.splice(i,1)}
+  else STATE.phyloSelected.push(key);
+  renderLeftPanel();
+}
+function buildTree(){
+  if(STATE.phyloSelected.length<2){toast('Select at least 2 sequences','warn');return}
+  var names=[],seqs=[];
+  STATE.phyloSelected.forEach(function(k){
+    names.push(SAMPLES[k].name);
+    seqs.push(SAMPLES[k].seq);
+  });
+  /* Trim to shortest length */
+  var minLen=Math.min.apply(null,seqs.map(function(s){return s.length}));
+  seqs=seqs.map(function(s){return s.substr(0,minLen)});
+  STATE.phyloTree=buildUPGMA(names,seqs);
+  renderContent();
+  toast('Tree built from '+names.length+' sequences','success');
+}
+</script>
+<script>
+/* ================================================================
+   CONTENT RENDERING (dispatcher)
+   ================================================================ */
+function renderContent(){
+  var c=$('contentArea');
+  c.classList.remove('nopad');
+  if(STATE.currentTab==='editor')renderEditor(c);
+  else if(STATE.currentTab==='translation')renderTranslation(c);
+  else if(STATE.currentTab==='orfs')renderORFs(c);
+  else if(STATE.currentTab==='alignment')renderAlignment(c);
+  else if(STATE.currentTab==='protein')renderProtein(c);
+  else if(STATE.currentTab==='analysis')renderAnalysis(c);
+  else if(STATE.currentTab==='enzymes')renderEnzymes(c);
+  else if(STATE.currentTab==='tree')renderTree(c);
+  else if(STATE.currentTab==='about')renderAbout(c);
+  updateStatusBar();
+}
+
+/* ================================================================
+   EDITOR
+   ================================================================ */
+function renderEditor(c){
+  var html='<div style="padding:14px">';
+  html+='<div style="margin-bottom:12px"><div class="chart-label"><span>Sequence — '+esc(STATE.sequenceName)+'</span><span>'+(STATE.sequenceType==='PROTEIN'?'amino acids':'base pairs')+': '+STATE.sequence.length+'</span></div>';
+  html+='<textarea id="seqInput" class="ctrl" style="width:100%;min-height:180px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--tx);font-family:var(--mono);font-size:.72rem;padding:12px;line-height:1.7;resize:vertical;letter-spacing:1px" placeholder="Paste DNA, RNA, or protein sequence here..."></textarea>';
+  html+='<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">';
+  html+='<button class="btn primary" onclick="applySeqInput()">✓ Apply</button>';
+  html+='<button class="btn" onclick="document.getElementById(\'seqInput\').value=STATE.sequence">↺ Reset</button>';
+  html+='<button class="btn" onclick="autoDetectType()">🔍 Auto-detect Type</button>';
+  html+='<div style="margin-left:auto;font-family:var(--mono);font-size:.7rem;color:var(--tx3);align-self:center" id="seqCharCount">0 chars</div>';
+  html+='</div></div>';
+  /* Colored viewer */
+  html+='<div class="chart-wrap" style="padding:0;margin-top:14px">';
+  html+='<div class="chart-label" style="padding:0 0 8px 0"><span>Colored View</span><span>A · T · G · C · U · N</span></div>';
+  html+='<div class="seq-viewer" style="background:var(--bg);border-radius:var(--rxs);border:1px solid var(--bd);max-height:400px;overflow-y:auto">';
+  html+=colorizeSequence(STATE.sequence);
+  html+='</div></div>';
+  html+='</div>';
+  c.innerHTML=html;
+  /* Set value in textarea */
+  var ta=$('seqInput');
+  ta.value=STATE.sequence;
+  updateCharCount();
+  ta.addEventListener('input',updateCharCount);
+}
+function updateCharCount(){
+  var ta=$('seqInput');
+  if(!ta)return;
+  var cnt=$('seqCharCount');
+  if(cnt)cnt.textContent=ta.value.length+' chars';
+}
+function colorizeSequence(seq){
+  if(!seq)return '<div style="color:var(--tx3);padding:12px">No sequence loaded</div>';
+  var html='';
+  var lineSize=60;
+  for(var i=0;i<seq.length;i+=lineSize){
+    var line=seq.substr(i,lineSize);
+    html+='<div><span class="seq-pos">'+String(i+1).padStart(6,' ')+'</span>';
+    for(var j=0;j<line.length;j++){
+      var ch=line[j].toUpperCase();
+      html+='<span class="base base-'+ch+'">'+ch+'</span>';
+    }
+    html+='</div>';
+  }
+  return html;
+}
+function applySeqInput(){
+  var ta=$('seqInput');
+  if(!ta)return;
+  var raw=ta.value;
+  STATE.sequence=cleanSequence(raw,detectType(raw));
+  STATE.sequenceType=detectType(raw);
+  STATE.sequenceName='User Input';
+  STATE.selectedSample=null;
+  renderContent();
+  renderRightPanel();
+  updateStatusBar();
+  toast('Applied '+STATE.sequence.length+' characters','success');
+}
+function autoDetectType(){
+  var ta=$('seqInput');
+  if(!ta)return;
+  var type=detectType(ta.value);
+  STATE.sequenceType=type;
+  toast('Detected: '+type,'info');
+}
+
+/* ================================================================
+   TRANSLATION
+   ================================================================ */
+function renderTranslation(c){
+  if(!STATE.sequence||STATE.sequenceType==='PROTEIN'){
+    c.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--tx3);font-family:var(--mono)">'+
+      '<div style="font-size:2.5rem;opacity:.3;margin-bottom:14px">🔤</div>'+
+      '<div>Load a DNA sequence to translate</div></div>';
+    return;
+  }
+  var f=STATE.translateFrame;
+  var strand=f<3?'+':'-';
+  var frame=f%3;
+  var seq=strand==='+'?STATE.sequence:reverseComplement(STATE.sequence);
+  seq=seq.substr(frame);
+  var protein=translate(seq,0);
+  var codonCount=Math.floor(seq.length/3);
+  var html='<div style="padding:14px">';
+  html+='<div class="chart-label"><span>Frame '+strand+frame+' — '+codonCount+' codons, '+protein.length+' aa</span></div>';
+  html+='<div style="font-family:var(--mono);font-size:.72rem;background:var(--bg);border-radius:var(--rxs);border:1px solid var(--bd);padding:12px;max-height:500px;overflow:auto;line-height:1.6">';
+  /* Three lines per chunk: nucleotide, amino acid, position */
+  var lineLen=60;
+  for(var i=0;i<protein.length;i+=20){
+    var chunkAa=protein.substr(i,20);
+    var chunkNuc=seq.substr(i*3,60);
+    html+='<div style="margin-bottom:10px">';
+    /* Nucleotide row */
+    html+='<div><span class="seq-pos">'+(frame+i*3+1)+'</span>';
+    for(var k=0;k<chunkNuc.length;k+=3){
+      var codon=chunkNuc.substr(k,3);
+      var aa=CODON_TABLE[codon.toUpperCase()]||'X';
+      var cls='';
+      if(aa==='*')cls='text-c2';
+      else if(aa==='M')cls='text-c3';
+      html+='<span class="'+cls+'" style="margin-right:2px">'+codon+'</span>';
+    }
+    html+='</div>';
+    /* AA row */
+    html+='<div><span class="seq-pos"> </span>';
+    for(var m=0;m<chunkAa.length;m++){
+      var aaInfo=AA_INFO[chunkAa[m]]||{class:'special'};
+      var aaClass='aa-'+aaInfo.class;
+      html+='<span class="'+aaClass+'" style="margin-right:2px">'+chunkAa[m]+'</span>';
+    }
+    html+='</div>';
+    html+='</div>';
+  }
+  html+='</div>';
+  /* AA composition */
+  var aaCounts={};
+  for(var j=0;j<protein.length;j++){
+    var a=protein[j];
+    aaCounts[a]=(aaCounts[a]||0)+1;
+  }
+  html+='<div class="chart-label" style="margin-top:14px"><span>Amino acid composition</span><span>'+Object.keys(aaCounts).length+' types</span></div>';
+  html+='<div style="display:flex;flex-wrap:wrap;gap:4px">';
+  Object.keys(aaCounts).sort(function(a,b){return aaCounts[b]-aaCounts[a]}).forEach(function(aa){
+    var info=AA_INFO[aa]||{class:'special'};
+    html+='<div style="padding:4px 8px;background:var(--panel3);border-radius:var(--rxxs);font-family:var(--mono);font-size:.65rem">'+
+      '<span class="aa-'+info.class+'" style="font-weight:700">'+aa+'</span> '+
+      '<span style="color:var(--tx3)">'+aaCounts[aa]+'</span></div>';
+  });
+  html+='</div>';
+  html+='</div>';
+  c.innerHTML=html;
+}
+
+/* ================================================================
+   ORFs
+   ================================================================ */
+function renderORFs(c){
+  if(!STATE.sequence||STATE.sequenceType!=='DNA'){
+    c.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--tx3);font-family:var(--mono)">'+
+      '<div style="font-size:2.5rem;opacity:.3;margin-bottom:14px">🎯</div>'+
+      '<div>Open Reading Frame finder requires DNA sequence</div></div>';
+    return;
+  }
+  var orfs=findORFs(STATE.sequence,STATE.orfMinLength);
+  /* Group by frame */
+  var byFrame={};
+  orfs.forEach(function(o){
+    var key=o.strand+o.frame;
+    if(!byFrame[key])byFrame[key]=[];
+    byFrame[key].push(o);
+  });
+  var html='<div style="padding:14px">';
+  html+='<div class="stats-grid">';
+  html+='<div class="stat"><div class="sv">'+orfs.length+'</div><div class="sl">Total ORFs</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c3)">'+(orfs.filter(function(o){return o.strand===\'+\'}).length)+'</div><div class="sl">Forward</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c4)">'+(orfs.filter(function(o){return o.strand===\'-\'}).length)+'</div><div class="sl">Reverse</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c5)">'+(orfs.length?Math.max.apply(null,orfs.map(function(o){return o.len})):0)+'</div><div class="sl">Longest (bp)</div></div>';
+  html+='</div>';
+  /* Visual map */
+  html+='<div class="chart-label" style="margin-top:14px"><span>ORF Map (all 6 frames)</span><span>Sequence: '+STATE.sequence.length+' bp</span></div>';
+  html+='<canvas class="chart-canvas" id="orfCanvas" style="height:220px"></canvas>';
+  /* Table */
+  html+='<div class="chart-label" style="margin-top:14px"><span>ORF Table</span></div>';
+  html+='<div style="max-height:300px;overflow-y:auto">';
+  html+='<table class="data-table"><thead><tr><th>Frame</th><th>Strand</th><th>Start</th><th>End</th><th>Length</th><th>Protein Preview</th></tr></thead><tbody>';
+  orfs.slice(0,50).forEach(function(o){
+    var cls=o.strand==='+'?'f'+o.frame:'f'+o.frame;
+    html+='<tr><td><span class="orf-tag '+cls+'">'+o.strand+o.frame+'</span></td>'+
+      '<td>'+o.strand+'</td>'+
+      '<td class="c1">'+o.start+'</td>'+
+      '<td class="c1">'+o.end+'</td>'+
+      '<td class="c3">'+o.len+' bp</td>'+
+      '<td style="font-family:var(--mono);font-size:.62rem">'+esc(o.aa.substr(0,40))+'...</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  html+='</div>';
+  c.innerHTML=html;
+  setTimeout(function(){drawORFMap(orfs);},50);
+}
+function drawORFMap(orfs){
+  var cv=$('orfCanvas');
+  if(!cv)return;
+  var wrap=cv.parentElement;
+  var W=wrap.clientWidth,H=220;
+  var dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#02080c';
+  ctx.fillRect(0,0,W,H);
+  var seqLen=STATE.sequence.length;
+  var padX=60,padY=20;
+  var trackH=(H-padY*2)/6;
+  /* Six tracks: +1, +2, +3, -1, -2, -3 */
+  var frameKeys=['+1','+2','+3','-1','-2','-3'];
+  var colors=['#00e0d0','#40b0ff','#a060ff','#ff40d0','#ff6b8a','#ffd040'];
+  for(var i=0;i<6;i++){
+    var y=padY+i*trackH;
+    /* Track label */
+    ctx.fillStyle=colors[i];
+    ctx.font='bold 10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText(frameKeys[i],8,y+trackH*0.6);
+    /* Track baseline */
+    ctx.strokeStyle='rgba(255,255,255,.1)';
+    ctx.beginPath();
+    ctx.moveTo(padX,y+trackH/2);
+    ctx.lineTo(W-20,y+trackH/2);
+    ctx.stroke();
+    /* ORFs in this frame */
+    orfs.forEach(function(o){
+      if(o.strand+o.frame!==frameKeys[i])return;
+      var startX=padX+(o.start/seqLen)*(W-padX-20);
+      var endX=padX+(o.end/seqLen)*(W-padX-20);
+      var boxH=trackH*0.55;
+      ctx.fillStyle=colors[i]+'66';
+      ctx.fillRect(startX,y+(trackH-boxH)/2,endX-startX,boxH);
+      ctx.strokeStyle=colors[i];
+      ctx.lineWidth=1;
+      ctx.strokeRect(startX,y+(trackH-boxH)/2,endX-startX,boxH);
+    });
+  }
+  /* Position axis */
+  ctx.fillStyle='#5878a0';
+  ctx.font='9px monospace';
+  ctx.textAlign='center';
+  var numTicks=6;
+  for(var j=0;j<=numTicks;j++){
+    var pos=Math.floor(seqLen*j/numTicks);
+    var x=padX+(j/numTicks)*(W-padX-20);
+    ctx.fillText(pos,x,H-4);
+  }
+}
+
+/* ================================================================
+   ALIGNMENT
+   ================================================================ */
+function renderAlignment(c){
+  /* Use current sequence and a sample to compare */
+  if(!STATE.sequence){
+    c.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--tx3);font-family:var(--mono)">'+
+      '<div style="font-size:2.5rem;opacity:.3;margin-bottom:14px">⚖️</div>'+
+      '<div>Load sequences to align</div></div>';
+    return;
+  }
+  var html='<div style="padding:14px">';
+  html+='<div class="chart-label"><span>Sequence Inputs</span></div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">';
+  html+='<div><label class="lbl">Sequence A</label><textarea id="alignA" class="ctrl" style="width:100%;min-height:80px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--tx);font-family:var(--mono);font-size:.65rem;padding:8px;resize:vertical">'+esc(STATE.sequence)+'</textarea></div>';
+  html+='<div><label class="lbl">Sequence B</label><textarea id="alignB" class="ctrl" style="width:100%;min-height:80px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--tx);font-family:var(--mono);font-size:.65rem;padding:8px;resize:vertical">'+esc(SAMPLES.hemoglobin.seq)+'</textarea></div>';
+  html+='</div>';
+  html+='<button class="btn primary" onclick="runAlignment()">⚡ Run Alignment</button>';
+  html+='<div id="alignResult" style="margin-top:14px"></div>';
+  html+='</div>';
+  c.innerHTML=html;
+  runAlignment();
+}
+function runAlignment(){
+  var a=$('alignA')?$('alignA').value.trim():STATE.sequence;
+  var b=$('alignB')?$('alignB').value.trim():'';
+  if(!a||!b){return}
+  /* Trim for performance */
+  var maxLen=200;
+  if(a.length>maxLen)a=a.substr(0,maxLen);
+  if(b.length>maxLen)b=b.substr(0,maxLen);
+  var res;
+  var t0=performance.now();
+  if(STATE.alignmentMethod==='nw'){
+    res=needlemanWunsch(a,b,STATE.nwMatch,STATE.nwMismatch,STATE.nwGapOpen,STATE.nwGapExtend);
+  } else {
+    res=smithWaterman(a,b,STATE.swMatch,STATE.swMismatch,STATE.swGap);
+  }
+  var t1=performance.now();
+  var el=$('alignResult');
+  if(!el)return;
+  var html='<div class="stats-grid">';
+  html+='<div class="stat"><div class="sv" style="color:'+(res.score>0?'var(--c5)':'var(--c2)')+'">'+res.score+'</div><div class="sl">Score</div></div>';
+  html+='<div class="stat"><div class="sv">'+fmt(res.identity,1)+'%</div><div class="sl">Identity</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c3)">'+res.length+'</div><div class="sl">Aligned length</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c4)">'+fmt(t1-t0,2)+'ms</div><div class="sl">Time</div></div>';
+  html+='</div>';
+  /* Alignment view */
+  html+='<div class="align-view" style="background:var(--bg);border-radius:var(--rxs);border:1px solid var(--bd);max-height:400px;overflow:auto">';
+  var lineLen=60;
+  for(var i=0;i<res.aligned1.length;i+=lineLen){
+    var la=res.aligned1.substr(i,lineLen);
+    var lb=res.aligned2.substr(i,lineLen);
+    var lm=res.matchLine.substr(i,lineLen);
+    html+='<div class="seq-line"><span class="seq-pos">'+String(i+1).padStart(5,' ')+'</span>';
+    /* Color A */
+    for(var j=0;j<la.length;j++){
+      var chA=la[j];
+      if(chA==='-')html+='<span class="gap">'+chA+'</span>';
+      else if(lm[j]==='|')html+='<span class="match">'+chA+'</span>';
+      else html+='<span class="mismatch">'+chA+'</span>';
+    }
+    html+='</div>';
+    html+='<div class="seq-line"><span class="seq-pos">      </span>';
+    for(var k=0;k<lm.length;k++){
+      if(lm[k]==='|')html+='<span style="color:var(--c5)">|</span>';
+      else html+='<span style="color:var(--tx3)"> </span>';
+    }
+    html+='</div>';
+    html+='<div class="seq-line"><span class="seq-pos">      </span>';
+    for(var m=0;m<lb.length;m++){
+      var chB=lb[m];
+      if(chB==='-')html+='<span class="gap">'+chB+'</span>';
+      else if(lm[m]==='|')html+='<span class="match">'+chB+'</span>';
+      else html+='<span class="mismatch">'+chB+'</span>';
+    }
+    html+='</div><div style="height:6px"></div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+/* ================================================================
+   PROTEIN
+   ================================================================ */
+function renderProtein(c){
+  var seq=STATE.sequence;
+  if(!seq){
+    c.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--tx3);font-family:var(--mono)">'+
+      '<div style="font-size:2.5rem;opacity:.3;margin-bottom:14px">💊</div>'+
+      '<div>Load a protein sequence</div></div>';
+    return;
+  }
+  /* If DNA, translate first */
+  var proteinSeq=seq;
+  if(STATE.sequenceType==='DNA'){
+    proteinSeq=translate(seq,0);
+  }
+  var props=proteinProperties(proteinSeq);
+  var hydro=hydrophobicity(proteinSeq,STATE.hydroWindow);
+  var ss=chouFasman(proteinSeq);
+  var html='<div style="padding:14px">';
+  /* Property tiles */
+  html+='<div class="stats-grid">';
+  html+='<div class="stat"><div class="sv">'+props.length+'</div><div class="sl">Residues</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c3)">'+fmt(props.mw/1000,2)+'</div><div class="sl">kDa</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c2)">'+fmt(props.pI,2)+'</div><div class="sl">pI</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c5)">'+props.netCharge+'</div><div class="sl">Net charge</div></div>';
+  html+='</div>';
+  /* Hydrophobicity plot */
+  html+='<div class="chart-label" style="margin-top:14px"><span>Kyte-Doolittle Hydrophobicity (window '+STATE.hydroWindow+')</span></div>';
+  html+='<canvas class="chart-canvas" id="hydroCanvas" style="height:140px"></canvas>';
+  /* Secondary structure */
+  html+='<div class="chart-label" style="margin-top:14px"><span>Chou-Fasman Secondary Structure</span><span>H=Helix E=Sheet T=Turn</span></div>';
+  html+='<div style="font-family:var(--mono);font-size:.7rem;background:var(--bg);border-radius:var(--rxs);border:1px solid var(--bd);padding:12px;max-height:200px;overflow:auto;line-height:1.7">';
+  for(var i=0;i<ss.length;i+=60){
+    var chunk=ss.substr(i,60);
+    html+='<div><span class="seq-pos">'+String(i+1).padStart(5,' ')+'</span>';
+    for(var j=0;j<chunk.length;j++){
+      var ch=chunk[j];
+      var color=ch==='H'?'var(--c2)':ch==='E'?'var(--c6)':ch==='T'?'var(--c3)':'var(--tx3)';
+      html+='<span style="color:'+color+'">'+ch+'</span>';
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  /* Amino acid composition table */
+  html+='<div class="chart-label" style="margin-top:14px"><span>Amino Acid Composition</span></div>';
+  html+='<div style="max-height:300px;overflow:auto">';
+  html+='<table class="data-table"><thead><tr><th>AA</th><th>Name</th><th>Class</th><th>Count</th><th>%</th><th>MW</th></tr></thead><tbody>';
+  var sorted=Object.keys(props.counts).sort(function(a,b){return props.counts[b]-props.counts[a]});
+  sorted.forEach(function(aa){
+    var info=AA_INFO[aa]||{name:'?',class:'special',mw:0};
+    var pct=props.counts[aa]/props.length*100;
+    html+='<tr><td class="c1" style="font-weight:700">'+aa+'</td>'+
+      '<td>'+info.name+'</td>'+
+      '<td>'+info.class+'</td>'+
+      '<td class="c3">'+props.counts[aa]+'</td>'+
+      '<td>'+fmt(pct,1)+'%</td>'+
+      '<td>'+fmt(info.mw,2)+'</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  html+='</div>';
+  c.innerHTML=html;
+  setTimeout(function(){drawHydrophobicity(hydro,props.length);},50);
+}
+function drawHydrophobicity(hydro,length){
+  var cv=$('hydroCanvas');
+  if(!cv)return;
+  var wrap=cv.parentElement;
+  var W=wrap.clientWidth,H=140;
+  var dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#02080c';
+  ctx.fillRect(0,0,W,H);
+  var padL=40,padR=10,padT=10,padB=20;
+  var plotW=W-padL-padR,plotH=H-padT-padB;
+  /* Grid */
+  ctx.strokeStyle='rgba(255,255,255,.06)';
+  for(var gi=0;gi<=4;gi++){
+    var y=padT+gi*plotH/4;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+  }
+  /* Zero line (hydrophilic/hydrophobic boundary) */
+  var zeroY=padT+plotH*0.5;
+  ctx.strokeStyle='rgba(255,208,64,.4)';
+  ctx.lineWidth=1;
+  ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(padL,zeroY);ctx.lineTo(W-padR,zeroY);ctx.stroke();
+  ctx.setLineDash([]);
+  /* Scale */
+  var maxAbs=4.5;
+  /* Curve */
+  ctx.strokeStyle='#00e0d0';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for(var i=0;i<hydro.length;i++){
+    var x=padL+(hydro[i].pos/length)*plotW;
+    var y=padT+plotH*0.5-hydro[i].value/maxAbs*plotH*0.5;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  /* Fill area */
+  ctx.fillStyle='rgba(0,224,208,.15)';
+  ctx.beginPath();
+  for(var i2=0;i2<hydro.length;i2++){
+    var x2=padL+(hydro[i2].pos/length)*plotW;
+    var y2=padT+plotH*0.5-hydro[i2].value/maxAbs*plotH*0.5;
+    if(i2===0)ctx.moveTo(x2,y2);else ctx.lineTo(x2,y2);
+  }
+  ctx.lineTo(padL+plotW,zeroY);
+  ctx.lineTo(padL,zeroY);
+  ctx.closePath();
+  ctx.fill();
+  /* Labels */
+  ctx.fillStyle='#5878a0';
+  ctx.font='9px monospace';
+  ctx.textAlign='right';
+  ctx.fillText('+4.5',padL-4,padT+8);
+  ctx.fillText('0',padL-4,zeroY+3);
+  ctx.fillText('-4.5',padL-4,padT+plotH);
+  ctx.textAlign='center';
+  ctx.fillText('hydrophobic above, hydrophilic below',W/2,H-4);
+}
+
+/* ================================================================
+   ANALYSIS — GC content, stats, codon usage
+   ================================================================ */
+function renderAnalysis(c){
+  if(!STATE.sequence){
+    c.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--tx3);font-family:var(--mono)"><div style="font-size:2.5rem;opacity:.3;margin-bottom:14px">📊</div><div>No sequence</div></div>';
+    return;
+  }
+  var html='<div style="padding:14px">';
+  if(STATE.sequenceType==='DNA'){
+    /* GC content chart */
+    var gc=gcContent(STATE.sequence,STATE.windowSize);
+    html+='<div class="chart-label"><span>GC Content (window '+STATE.windowSize+'bp)</span><span>Overall GC: '+fmt(totalGC(STATE.sequence),2)+'%</span></div>';
+    html+='<canvas class="chart-canvas" id="gcCanvas" style="height:180px"></canvas>';
+  }
+  /* Nucleotide composition */
+  var stats=sequenceStats(STATE.sequence,STATE.sequenceType);
+  if(STATE.sequenceType==='DNA'){
+    var total=STATE.sequence.length;
+    html+='<div class="chart-label" style="margin-top:14px"><span>Base Composition</span></div>';
+    html+='<div class="stats-grid">';
+    ['A','T','G','C','U','N'].forEach(function(base){
+      if(!stats.counts[base])return;
+      html+='<div class="stat"><div class="sv" style="color:var(--n'+base+')">'+stats.counts[base]+'</div><div class="sl">'+base+' ('+fmt(stats.counts[base]/total*100,1)+'%)</div></div>';
+    });
+    html+='</div>';
+    /* Codon usage comparison vs human */
+    if(STATE.sequence.length>=30){
+      html+='<div class="chart-label" style="margin-top:14px"><span>Codon Usage</span><span>vs human average</span></div>';
+      var obsCodons={};
+      for(var i=0;i<STATE.sequence.length-2;i+=3){
+        var codon=STATE.sequence.substr(i,3).toUpperCase();
+        if(codon.length<3||!/^[ATGC]+$/.test(codon))continue;
+        obsCodons[codon]=(obsCodons[codon]||0)+1;
+      }
+      var totalCodons=Object.keys(obsCodons).reduce(function(a,k){return a+obsCodons[k]},0);
+      var codons=Object.keys(CODON_TABLE).sort();
+      html+='<div style="max-height:300px;overflow-y:auto;margin-top:8px">';
+      html+='<table class="data-table"><thead><tr><th>Codon</th><th>AA</th><th>Observed</th><th>%/1000</th><th>Human</th><th>Δ</th></tr></thead><tbody>';
+      codons.forEach(function(cd){
+        var aa=CODON_TABLE[cd];
+        var obs=obsCodons[cd]||0;
+        var perK=totalCodons>0?obs/totalCodons*1000:0;
+        var hum=CODON_USAGE[cd]||0;
+        var delta=perK-hum;
+        var deltaColor=delta>0?'var(--c5)':delta<0?'var(--c2)':'var(--tx3)';
+        html+='<tr><td class="c1">'+cd+'</td><td class="c3">'+aa+'</td>'+
+          '<td>'+obs+'</td><td>'+fmt(perK,1)+'</td>'+
+          '<td class="text-dim">'+fmt(hum,1)+'</td>'+
+          '<td style="color:'+deltaColor+'">'+(delta>0?'+':'')+fmt(delta,1)+'</td></tr>';
+      });
+      html+='</tbody></table></div>';
+    }
+  } else {
+    /* Protein — amino acid composition */
+    html+='<div class="chart-label"><span>Amino Acid Composition</span></div>';
+    var total2=STATE.sequence.length;
+    var items=Object.keys(stats.aaCounts).sort(function(a,b){return stats.aaCounts[b]-stats.aaCounts[a]});
+    html+='<table class="data-table"><thead><tr><th>AA</th><th>Name</th><th>Class</th><th>Count</th><th>%</th></tr></thead><tbody>';
+    items.forEach(function(aa){
+      var info=AA_INFO[aa]||{name:'?',class:'special'};
+      html+='<tr><td class="c1">'+aa+'</td><td>'+info.name+'</td><td>'+info.class+'</td>'+
+        '<td class="c3">'+stats.aaCounts[aa]+'</td><td>'+fmt(stats.aaCounts[aa]/total2*100,1)+'%</td></tr>';
+    });
+    html+='</tbody></table>';
+  }
+  html+='</div>';
+  c.innerHTML=html;
+  if(STATE.sequenceType==='DNA')setTimeout(function(){drawGCChart();},50);
+}
+function drawGCChart(){
+  var cv=$('gcCanvas');
+  if(!cv)return;
+  var wrap=cv.parentElement;
+  var W=wrap.clientWidth,H=180;
+  var dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#02080c';
+  ctx.fillRect(0,0,W,H);
+  var padL=40,padR=10,padT=10,padB=20;
+  var plotW=W-padL-padR,plotH=H-padT-padB;
+  var gc=gcContent(STATE.sequence,STATE.windowSize);
+  /* Grid */
+  ctx.strokeStyle='rgba(255,255,255,.06)';
+  for(var gi=0;gi<=4;gi++){
+    var y=padT+gi*plotH/4;
+    ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+    ctx.fillStyle='#5878a0';
+    ctx.font='9px monospace';
+    ctx.textAlign='right';
+    ctx.fillText((100-gi*25)+'%',padL-4,y+3);
+  }
+  /* 50% reference */
+  var midY=padT+plotH/2;
+  ctx.strokeStyle='rgba(255,208,64,.3)';
+  ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(padL,midY);ctx.lineTo(W-padR,midY);ctx.stroke();
+  ctx.setLineDash([]);
+  /* GC curve */
+  ctx.strokeStyle='#00e0d0';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  for(var i=0;i<gc.length;i++){
+    var x=padL+(i/gc.length)*plotW;
+    var y=padT+plotH-(gc[i].gc/100)*plotH;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  /* Fill */
+  ctx.fillStyle='rgba(0,224,208,.15)';
+  ctx.beginPath();
+  for(var i2=0;i2<gc.length;i2++){
+    var x2=padL+(i2/gc.length)*plotW;
+    var y2=padT+plotH-(gc[i2].gc/100)*plotH;
+    if(i2===0)ctx.moveTo(x2,y2);else ctx.lineTo(x2,y2);
+  }
+  ctx.lineTo(padL+plotW,padT+plotH);
+  ctx.lineTo(padL,padT+plotH);
+  ctx.closePath();
+  ctx.fill();
+  /* X labels */
+  ctx.fillStyle='#5878a0';
+  ctx.font='9px monospace';
+  ctx.textAlign='center';
+  var len=STATE.sequence.length;
+  for(var j=0;j<=4;j++){
+    var pos=Math.floor(len*j/4);
+    var x3=padL+(j/4)*plotW;
+    ctx.fillText(pos,x3,H-4);
+  }
+}
+
+/* ================================================================
+   ENZYMES — restriction map
+   ================================================================ */
+function renderEnzymes(c){
+  if(!STATE.sequence||STATE.sequenceType!=='DNA'){
+    c.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--tx3);font-family:var(--mono)"><div style="font-size:2.5rem;opacity:.3;margin-bottom:14px">✂️</div><div>Restriction analysis requires DNA sequence</div></div>';
+    return;
+  }
+  var enzymes=RESTRICTION_ENZYMES.filter(function(e){return STATE.selectedEnzymes.indexOf(e.name)>-1});
+  var sites=findRestrictionSites(STATE.sequence,enzymes);
+  var html='<div style="padding:14px">';
+  html+='<div class="stats-grid">';
+  html+='<div class="stat"><div class="sv">'+sites.length+'</div><div class="sl">Cut sites</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c3)">'+(sites.length+1)+'</div><div class="sl">Fragments</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c4)">'+enzymes.length+'</div><div class="sl">Enzymes</div></div>';
+  html+='<div class="stat"><div class="sv" style="color:var(--c5)">'+(sites.length>0?Math.round(STATE.sequence.length/(sites.length+1)):STATE.sequence.length)+'</div><div class="sl">Avg frag (bp)</div></div>';
+  html+='</div>';
+  html+='<div class="chart-label" style="margin-top:14px"><span>Restriction Map</span></div>';
+  html+='<canvas class="chart-canvas" id="enzymeCanvas" style="height:180px"></canvas>';
+  /* Table */
+  html+='<div class="chart-label" style="margin-top:14px"><span>Cut Sites</span></div>';
+  html+='<div style="max-height:400px;overflow:auto"><table class="data-table"><thead><tr><th>Enzyme</th><th>Site</th><th>Strand</th><th>Position</th><th>Context</th></tr></thead><tbody>';
+  sites.forEach(function(s){
+    var ctxStart=Math.max(0,s.position-8);
+    var ctxEnd=Math.min(STATE.sequence.length,s.position+s.site.length+8);
+    var context=STATE.sequence.substring(ctxStart,ctxEnd);
+    var before=STATE.sequence.substring(ctxStart,s.position);
+    var after=STATE.sequence.substring(s.position+s.site.length,ctxEnd);
+    html+='<tr><td class="c1">'+s.enzyme+'</td>'+
+      '<td class="text-mono">'+s.site+'</td>'+
+      '<td>'+(s.strand==='+'?'<span class="text-c5">+</span>':'<span class="text-c2">−</span>')+'</td>'+
+      '<td class="c3">'+s.position+'</td>'+
+      '<td class="text-mono text-dim">'+esc(before)+'<span class="text-c1">'+esc(s.site)+'</span>'+esc(after)+'</td></tr>';
+  });
+  if(!sites.length){
+    html+='<tr><td colspan="5" style="text-align:center;color:var(--tx3);padding:20px">No restriction sites found for selected enzymes</td></tr>';
+  }
+  html+='</tbody></table></div>';
+  /* Fragment sizes */
+  if(sites.length>0){
+    var cuts=[];
+    sites.forEach(function(s){cuts.push(s.position+s.cut)});
+    cuts.sort(function(a,b){return a-b});
+    cuts.unshift(0);
+    cuts.push(STATE.sequence.length);
+    html+='<div class="chart-label" style="margin-top:14px"><span>Fragment Sizes</span><span>'+cuts.length+' cut points</span></div>';
+    html+='<div class="stats-grid">';
+    for(var i=0;i<cuts.length-1;i++){
+      var fragLen=cuts[i+1]-cuts[i];
+      html+='<div class="stat"><div class="sv" style="color:var(--c1)">'+fragLen+'</div><div class="sl">bp fragment '+(i+1)+'</div></div>';
+    }
+    html+='</div>';
+  }
+  html+='</div>';
+  c.innerHTML=html;
+  setTimeout(function(){drawEnzymeMap(sites);},50);
+}
+function drawEnzymeMap(sites){
+  var cv=$('enzymeCanvas');
+  if(!cv)return;
+  var wrap=cv.parentElement;
+  var W=wrap.clientWidth,H=180;
+  var dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#02080c';
+  ctx.fillRect(0,0,W,H);
+  var padX=40,padR=20;
+  var seqLen=STATE.sequence.length;
+  var trackY=H/2;
+  var plotW=W-padX-padR;
+  /* Backbone line */
+  ctx.strokeStyle='#5878a0';
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(padX,trackY);
+  ctx.lineTo(W-padR,trackY);
+  ctx.stroke();
+  /* Cut sites */
+  sites.forEach(function(s){
+    var x=padX+(s.position/seqLen)*plotW;
+    var color=s.strand==='+'?'#00e0d0':'#ff6b8a';
+    ctx.strokeStyle=color;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(x,trackY-25);
+    ctx.lineTo(x,trackY+25);
+    ctx.stroke();
+    /* Arrow direction */
+    var dir=s.strand==='+'?-1:1;
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.moveTo(x,trackY+dir*25);
+    ctx.lineTo(x-5,trackY+dir*18);
+    ctx.lineTo(x+5,trackY+dir*18);
+    ctx.closePath();
+    ctx.fill();
+    /* Enzyme label */
+    ctx.save();
+    ctx.translate(x,trackY-30);
+    ctx.rotate(-Math.PI/4);
+    ctx.fillStyle=color;
+    ctx.font='bold 9px monospace';
+    ctx.textAlign='left';
+    ctx.fillText(s.enzyme,0,0);
+    ctx.restore();
+  });
+  /* Axis */
+  ctx.fillStyle='#5878a0';
+  ctx.font='9px monospace';
+  ctx.textAlign='center';
+  for(var j=0;j<=6;j++){
+    var pos=Math.floor(seqLen*j/6);
+    var x2=padX+(j/6)*plotW;
+    ctx.fillText(pos,x2,H-6);
+    ctx.strokeStyle='rgba(255,255,255,.1)';
+    ctx.beginPath();ctx.moveTo(x2,H-22);ctx.lineTo(x2,H-18);ctx.stroke();
+  }
+}
+
+/* ================================================================
+   PHYLOGENETIC TREE
+   ================================================================ */
+function renderTree(c){
+  if(!STATE.phyloTree){
+    c.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--tx3);font-family:var(--mono)">'+
+      '<div style="font-size:2.5rem;opacity:.3;margin-bottom:14px">🌳</div>'+
+      '<div>Select 2+ sequences in the left panel<br>then click "Build Tree"</div></div>';
+    return;
+  }
+  c.innerHTML='<div style="padding:14px"><div class="chart-label"><span>UPGMA Phylogenetic Tree</span><span>Jukes-Cantor distances</span></div>'+
+    '<canvas class="chart-canvas" id="treeCanvas" style="height:500px"></canvas></div>';
+  setTimeout(drawTree,50);
+}
+function drawTree(){
+  var cv=$('treeCanvas');
+  if(!cv)return;
+  var wrap=cv.parentElement;
+  var W=wrap.clientWidth,H=500;
+  var dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#02080c';
+  ctx.fillRect(0,0,W,H);
+  var tree=STATE.phyloTree;
+  /* Compute layout */
+  var maxHeight=0;
+  function measure(node){
+    if(node.height>maxHeight)maxHeight=node.height;
+    if(node.children){node.children.forEach(measure);}
+  }
+  measure(tree);
+  /* Assign x positions */
+  var padL=40,padR=200,padT=30,padB=30;
+  var plotW=W-padL-padR;
+  /* Assign y positions to leaves */
+  var leafY=[];
+  var leafCounter=0;
+  function assignY(node){
+    if(!node.children){
+      leafY.push(node);
+      node.y=leafCounter++;
+    } else {
+      node.children.forEach(assignY);
+    }
+  }
+  assignY(tree);
+  var leafCount=leafCounter;
+  var rowH=(H-padT-padB)/Math.max(1,leafCount-1);
+  function setY(node){
+    if(node.children){
+      node.children.forEach(setY);
+      node.y=(node.children[0].y+node.children[1].y)/2;
+    }
+  }
+  setY(tree);
+  /* Convert to pixel */
+  var maxDist=maxHeight||1;
+  function xFor(h){return padL+(h/maxDist)*plotW;}
+  function yFor(node){return padT+node.y*rowH;}
+  /* Draw branches */
+  function drawBranch(node){
+    if(!node.children)return;
+    var x=xFor(node.height);
+    var y=yFor(node);
+    ctx.strokeStyle='#00e0d0';
+    ctx.lineWidth=1.5;
+    node.children.forEach(function(child){
+      var cx=xFor(child.height);
+      var cy=yFor(child);
+      /* Vertical from parent to child's y */
+      ctx.beginPath();
+      ctx.moveTo(x,cy);
+      ctx.lineTo(cx,cy);
+      ctx.stroke();
+      /* Horizontal connector */
+      ctx.beginPath();
+      ctx.moveTo(x,y);
+      ctx.lineTo(x,cy);
+      ctx.stroke();
+      drawBranch(child);
+    });
+  }
+  drawBranch(tree);
+  /* Leaf labels */
+  ctx.fillStyle='#dce8f4';
+  ctx.font='11px monospace';
+  ctx.textAlign='left';
+  function drawLabel(node){
+    if(!node.children){
+      var x=xFor(node.height);
+      var y=yFor(node);
+      /* Connector line to label */
+      ctx.strokeStyle='rgba(0,224,208,.5)';
+      ctx.beginPath();
+      ctx.moveTo(x,y);
+      ctx.lineTo(padL+plotW+10,y);
+      ctx.stroke();
+      ctx.fillText(node.name.substr(0,30),padL+plotW+15,y+4);
+      return;
+    }
+    node.children.forEach(drawLabel);
+  }
+  drawLabel(tree);
+  /* Axis */
+  ctx.fillStyle='#5878a0';
+  ctx.font='10px monospace';
+  ctx.textAlign='center';
+  var numTicks=4;
+  for(var i=0;i<=numTicks;i++){
+    var pos=maxDist*i/numTicks;
+    var x2=padL+(i/numTicks)*plotW;
+    ctx.fillText(fmt(pos,3),x2,H-8);
+    ctx.strokeStyle='rgba(255,255,255,.1)';
+    ctx.beginPath();ctx.moveTo(x2,H-25);ctx.lineTo(x2,H-22);ctx.stroke();
+  }
+  ctx.fillStyle='#5878a0';
+  ctx.textAlign='center';
+  ctx.fillText('Genetic distance',padL+plotW/2,16);
+}
+
+/* ================================================================
+   ABOUT
+   ================================================================ */
+function renderAbout(c){
+  c.innerHTML='<div style="padding:24px;max-width:800px;margin:0 auto">'+
+    '<h1 style="font-size:1.8rem;font-weight:900;letter-spacing:4px;background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:holo 4s linear infinite;font-family:var(--disp);margin-bottom:6px">HELIX</h1>'+
+    '<p style="font-size:.72rem;color:var(--tx3);letter-spacing:3px;font-family:var(--mono);margin-bottom:20px">BIOINFORMATICS STUDIO</p>'+
+    '<p style="font-size:.75rem;color:var(--tx2);line-height:1.8;margin-bottom:16px">A complete bioinformatics workbench with real algorithms from molecular biology. Sequence analysis, alignment, ORF detection, protein property prediction, secondary structure, restriction mapping, and phylogeny — all implemented from scratch in JavaScript.</p>'+
+    '<div class="sec"><h4>Algorithms</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">Needleman-Wunsch</b> — global alignment with affine gap penalty<br>'+
+    '<b class="text-c1">Smith-Waterman</b> — local alignment via dynamic programming<br>'+
+    '<b class="text-c1">Kyte-Doolittle</b> — sliding window hydrophobicity<br>'+
+    '<b class="text-c1">Chou-Fasman</b> — secondary structure propensity prediction<br>'+
+    '<b class="text-c1">UPGMA</b> — hierarchical clustering with Jukes-Cantor distances<br>'+
+    '<b class="text-c1">Henderson-Hasselbalch</b> — iterative isoelectric point calculation<br>'+
+    '<b class="text-c1">Wallace rule / nearest-neighbor</b> — Tm calculation<br>'+
+    '<b class="text-c1">NCBI genetic code</b> — standard translation table<br>'+
+    '</div></div>'+
+    '<div class="sec"><h4>Sample Sequences</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.8;color:var(--tx2)">'+
+    'Human insulin (INS) · Hemoglobin beta (HBB) · Green fluorescent protein (GFP) · Cytochrome c (CYCS) · p53 tumor suppressor · HIV-1 protease · 16S rRNA primers<br><br>'+
+    'All sequences are real, publicly available, and used in actual molecular biology research.'+
+    '</div></div>'+
+    '<div class="sec"><h4>Keyboard Shortcuts</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">1-9</b> — Switch tabs<br>'+
+    '<b class="text-c1">Ctrl+S</b> — Save as FASTA<br>'+
+    '<b class="text-c1">T</b> — Theme<br>'+
+    '<b class="text-c1">?</b> — Help'+
+    '</div></div>'+
+    '</div>';
+}
+
+/* ================================================================
+   RIGHT PANEL
+   ================================================================ */
+function renderRightPanel(){
+  renderAnalysisPane();
+  renderStatsPane();
+  renderHelpPane();
+}
+function renderAnalysisPane(){
+  var p=$('rpAnalysis');
+  if(!p)return;
+  if(!STATE.sequence){
+    p.innerHTML='<div style="text-align:center;padding:40px 10px;color:var(--tx3);font-size:.7rem;font-family:var(--mono)">No sequence loaded</div>';
+    return;
+  }
+  var html='<div class="sec"><h4>Sequence Info</h4>';
+  html+='<div class="kv">';
+  html+='<div class="row"><span class="k">Name</span><span class="v">'+esc(STATE.sequenceName)+'</span></div>';
+  html+='<div class="row"><span class="k">Type</span><span class="v">'+STATE.sequenceType+'</span></div>';
+  html+='<div class="row"><span class="k">Length</span><span class="v">'+STATE.sequence.length+' '+(STATE.sequenceType==='PROTEIN'?'aa':'bp')+'</span></div>';
+  if(STATE.sequenceType==='DNA'){
+    html+='<div class="row"><span class="k">GC content</span><span class="v">'+fmt(totalGC(STATE.sequence),2)+'%</span></div>';
+    html+='<div class="row"><span class="k">Tm (Wallace)</span><span class="v">'+fmt(meltingTemp(STATE.sequence),1)+' °C</span></div>';
+    var orfs=findORFs(STATE.sequence,STATE.orfMinLength);
+    html+='<div class="row"><span class="k">ORFs ≥'+(STATE.orfMinLength)+'bp</span><span class="v">'+orfs.length+'</span></div>';
+  }
+  var mw=molecularWeight(STATE.sequence,STATE.sequenceType==='PROTEIN'?'protein':'dna');
+  html+='<div class="row"><span class="k">MW</span><span class="v">'+fmt(mw/1000,2)+' kDa</span></div>';
+  html+='</div></div>';
+  /* Composition mini-chart */
+  if(STATE.sequenceType==='DNA'){
+    var stats=sequenceStats(STATE.sequence,'DNA');
+    html+='<div class="sec"><h4>Base Composition</h4>';
+    html+='<canvas class="chart-canvas" id="compositionChart" style="height:120px"></canvas>';
+    html+='</div>';
+  }
+  p.innerHTML=html;
+  if(STATE.sequenceType==='DNA')setTimeout(drawCompositionChart,50);
+}
+function drawCompositionChart(){
+  var cv=$('compositionChart');
+  if(!cv)return;
+  var wrap=cv.parentElement;
+  var W=wrap.clientWidth,H=120;
+  var dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px';
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle='#02080c';
+  ctx.fillRect(0,0,W,H);
+  var stats=sequenceStats(STATE.sequence,'DNA');
+  var bases=['A','T','G','C','N'];
+  var colors=['#40e888','#ff6b8a','#ffd040','#40b0ff','#5878a0'];
+  var total=STATE.sequence.length;
+  var x=10;
+  for(var i=0;i<bases.length;i++){
+    var count=stats.counts[bases[i]]||0;
+    var pct=count/total;
+    var barH=Math.max(4,pct*80);
+    ctx.fillStyle=colors[i];
+    ctx.fillRect(x,H-25-barH,20,barH);
+    ctx.fillStyle=colors[i];
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(bases[i],x+10,H-12);
+    ctx.fillStyle='#5878a0';
+    ctx.fillText(fmt(pct*100,0)+'%',x+10,H-3);
+    x+=24;
+  }
+  ctx.textAlign='left';
+  ctx.fillStyle='#5878a0';
+  ctx.fillText(total+' bp total',x+10,H-12);
+}
+function renderStatsPane(){
+  var p=$('rpStats');
+  if(!p)return;
+  /* Real-time file info */
+  html='';
+  html+='<div class="sec"><h4>Sequence Statistics</h4>';
+  var html='';
+  html+='<div class="kv">';
+  html+='<div class="row"><span class="k">Characters</span><span class="v">'+STATE.sequence.length+'</span></div>';
+  var cleaned=STATE.sequence.replace(/[^A-Z]/gi,'');
+  html+='<div class="row"><span class="k">Valid chars</span><span class="v">'+cleaned.length+'</span></div>';
+  var unique={};
+  for(var i=0;i<STATE.sequence.length;i++)unique[STATE.sequence[i].toUpperCase()]=1;
+  html+='<div class="row"><span class="k">Unique characters</span><span class="v">'+Object.keys(unique).length+'</span></div>';
+  if(STATE.sequenceType==='DNA'){
+    var gc=totalGC(STATE.sequence);
+    html+='<div class="row"><span class="k">GC%</span><span class="v">'+fmt(gc,2)+'%</span></div>';
+    html+='<div class="row"><span class="k">AT%</span><span class="v">'+fmt(100-gc,2)+'%</span></div>';
+  }
+  html+='</div></div>';
+  /* Quick lookup */
+  html+='<div class="sec"><h4>Amino Acid Lookup</h4>';
+  html+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">';
+  Object.keys(AA_INFO).forEach(function(aa){
+    if(aa==='*')return;
+    var info=AA_INFO[aa];
+    html+='<div style="padding:4px 6px;background:var(--panel3);border-radius:var(--rxxs);text-align:center;cursor:pointer" onclick="showAADetail(\''+aa+'\')">'+
+      '<div class="aa-'+info.class+'" style="font-family:var(--mono);font-weight:700;font-size:.85rem">'+aa+'</div>'+
+      '<div style="font-size:.5rem;color:var(--tx3);font-family:var(--mono)">'+fmt(info.mw,0)+'</div>'+
+      '</div>';
+  });
+  html+='</div></div>';
+  /* Codon table */
+  html+='<div class="sec"><h4>Genetic Code</h4>';
+  html+='<div style="font-family:var(--mono);font-size:.55rem;line-height:1.5;color:var(--tx2);word-break:break-all">';
+  Object.keys(CODON_TABLE).forEach(function(codon){
+    var aa=CODON_TABLE[codon];
+    var color=aa==='*'?'var(--c2)':'var(--c1)';
+    html+='<span style="color:'+color+'">'+codon+'→'+aa+'</span> ';
+  });
+  html+='</div></div>';
+  p.innerHTML=html;
+}
+function showAADetail(aa){
+  var info=AA_INFO[aa];
+  if(!info)return;
+  openModal('🧬 Amino Acid: '+aa,
+    '<div class="kv" style="font-size:.78rem">'+
+    '<div class="row"><span class="k">Code</span><span class="v">'+aa+'</span></div>'+
+    '<div class="row"><span class="k">Name</span><span class="v">'+info.name+'</span></div>'+
+    '<div class="row"><span class="k">Class</span><span class="v">'+info.class+'</span></div>'+
+    '<div class="row"><span class="k">Molecular weight</span><span class="v">'+fmt(info.mw,2)+' Da</span></div>'+
+    '<div class="row"><span class="k">Hydrophobicity (KD)</span><span class="v">'+info.hyd+'</span></div>'+
+    '</div>');
+}
+function renderHelpPane(){
+  var p=$('rpHelp');
+  if(!p)return;
+  p.innerHTML='<div class="sec"><h4>Quick Reference</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.8;color:var(--tx2)">'+
+    '<b class="text-c1">DNA bases:</b> A·T·G·C<br>'+
+    '<b class="text-c1">RNA bases:</b> A·U·G·C<br>'+
+    '<b class="text-c1">Start codon:</b> ATG (Methionine)<br>'+
+    '<b class="text-c1">Stop codons:</b> TAA, TAG, TGA<br><br>'+
+    '<b class="text-c3">Reading frames:</b><br>'+
+    'Forward +1, +2, +3<br>'+
+    'Reverse −1, −2, −3<br><br>'+
+    '<b class="text-c4">Amino acid classes:</b><br>'+
+    '<span style="color:var(--aa-hydrophobic)">■ Hydrophobic</span> — AVLIMFWC<br>'+
+    '<span style="color:var(--aa-polar)">■ Polar</span> — STNQ<br>'+
+    '<span style="color:var(--aa-positive)">■ Positive</span> — KRH<br>'+
+    '<span style="color:var(--aa-negative)">■ Negative</span> — DE<br>'+
+    '<span style="color:var(--aa-aromatic)">■ Aromatic</span> — FWY<br>'+
+    '<span style="color:var(--aa-special)">■ Special</span> — GPC'+
+    '</div></div>';
+}
+
+/* ================================================================
+   THEME
+   ================================================================ */
+var THEMES=['biotech','clinic','purple','matrix'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  document.documentElement.setAttribute('data-theme',THEMES[(i+1)%THEMES.length]);
+  toast('Theme: '+THEMES[(i+1)%THEMES.length],'success');
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+
+/* ================================================================
+   HELP
+   ================================================================ */
+function showHelp(){
+  openModal('❓ HELIX — Help',
+    '<div class="sec"><h4>🧬 About</h4><div class="text-xs" style="line-height:1.75;color:var(--tx2);font-family:var(--mono)">A complete bioinformatics workbench with real algorithms from molecular biology. Analyse DNA, RNA, and protein sequences with professional-grade tools.</div></div>'+
+    '<div class="sec"><h4>📚 Tabs</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">Editor</b> — Paste, view, and edit sequences<br>'+
+    '<b class="text-c1">Translate</b> — Translate DNA to protein in 6 reading frames<br>'+
+    '<b class="text-c1">ORFs</b> — Find open reading frames with visual map<br>'+
+    '<b class="text-c1">Align</b> — Needleman-Wunsch or Smith-Waterman alignment<br>'+
+    '<b class="text-c1">Protein</b> — MW, pI, hydrophobicity, secondary structure<br>'+
+    '<b class="text-c1">Analysis</b> — GC content, codon usage, composition<br>'+
+    '<b class="text-c1">Enzymes</b> — Restriction enzyme map with 25+ enzymes<br>'+
+    '<b class="text-c1">Phylogeny</b> — UPGMA tree from multiple sequences'+
+    '</div></div>'+
+    '<div class="sec"><h4>🔬 Real Algorithms</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '• Needleman-Wunsch global alignment (affine gaps)<br>'+
+    '• Smith-Waterman local alignment<br>'+
+    '• Kyte-Doolittle hydrophobicity sliding window<br>'+
+    '• Chou-Fasman secondary structure prediction<br>'+
+    '• Henderson-Hasselbalch isoelectric point<br>'+
+    '• Jukes-Cantor distance with UPGMA clustering<br>'+
+    '• Wallace rule melting temperature<br>'+
+    '• Standard NCBI genetic code translation'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">1-9</b> — Jump to tab<br>'+
+    '<b class="text-c1">T</b> — Cycle theme<br>'+
+    '<b class="text-c1">Ctrl+S</b> — Save FASTA<br>'+
+    '<b class="text-c1">?</b> — This help'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',
+    {size:'lg'});
+}
+
+/* Keyboard */
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.key>='1'&&e.key<='9'){
+    var idx=parseInt(e.key)-1;
+    if(TABS[idx])switchTab(TABS[idx].key);
+  }
+  else if(e.key==='t'||e.key==='T'){toggleTheme();}
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/')){showHelp();}
+  else if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();saveFASTA();}
+  else if(e.key==='Escape')closeModal();
+});
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+var BOOT_STEPS=[
+  'Loading standard genetic code...',
+  'Preparing translation tables...',
+  'Initializing alignment engine...',
+  'Loading restriction enzyme database...',
+  'Warming up Chou-Fasman predictor...',
+  'Preparing hydrophobicity scales...',
+  'Compiling UPGMA clustering...',
+  'Loading reference sequences...',
+  'Ready.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  var iv=setInterval(function(){
+    pct+=rnd(6,14);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('HELIX ready · Press ? for help','success',3500);
+      },400);
+    }
+  },150);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  buildTabs();
+  /* Load a default sample */
+  loadSample('insulin');
+  renderLeftPanel();
+  renderRightPanel();
+  updateStatusBar();
+  bootSequence();
+});
+
+console.log('%c HELIX ','background:linear-gradient(90deg,#00e0d0,#40b0ff);color:#061220;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cBioinformatics & Genomics Studio','color:#00e0d0;font-weight:600');
+console.log('%cNeedleman-Wunsch · Smith-Waterman · Chou-Fasman · UPGMA · Codon usage','color:#40b0ff');
+console.log('%cPress ? for help, 1-9 to jump between tabs','color:#9cb4d0');
+</script>
+</body></html>
