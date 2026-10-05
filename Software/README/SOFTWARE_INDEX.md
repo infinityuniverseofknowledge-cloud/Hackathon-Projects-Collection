@@ -2,7 +2,8 @@
 
 Automatically generated index of software projects.
 
-Repository path: `Software/`
+Repository: `Hackathon-Projects-Collection`
 
 | Project | Location |
 |---|---|
+| README | `Software/README` |
