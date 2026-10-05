@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="gaia">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>GAIA — Ecology & Population Dynamics Lab</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px;border:2px solid transparent;background-clip:content-box}
+
+:root{
+  --bg:#050a06;--bg2:#0a140c;--bg3:#122014;--bg4:#1c3020;
+  --panel:#0a140c;--panel2:#122014;--panel3:#1c3020;--panel4:#28482c;
+  --bd:#12321a;--bd2:#1e4c28;--bd3:#327040;
+  --tx:#d0ffe0;--tx2:#90c8a0;--tx3:#4a8058;--mu:#2a5038;
+  --c1:#40ff90;--c1h:#80ffb8;--c1l:#20c070;
+  --c2:#ffb040;--c2h:#ffd070;--c2l:#c08020;
+  --c3:#40d0ff;--c3h:#80e0ff;--c3l:#2090c0;
+  --c4:#ff60a0;--c4h:#ff90c0;--c4l:#c03080;
+  --c5:#c060ff;--c5h:#d090ff;--c5l:#8030c0;
+  --c6:#ffe040;--c6h:#fff080;--c6l:#c0b020;
+  --c7:#ff8040;--c7h:#ffa870;--c7l:#c05020;
+  --ok:#40ff90;--warn:#ffe040;--err:#ff60a0;--info:#40d0ff;
+  --g1:linear-gradient(135deg,#40ff90,#40d0ff);
+  --g2:linear-gradient(135deg,#ffb040,#ff60a0);
+  --gHolo:linear-gradient(120deg,#40ff90,#40d0ff,#c060ff,#ff60a0,#ffe040,#40ff90);
+  --r:9px;--rs:6px;--rxs:4px;--rf:9999px;
+  --sh:0 6px 24px rgba(0,0,0,.8);
+  --sh2:0 14px 42px rgba(0,0,0,1);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .13s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"]{
+  --bg:#f0fff6;--bg2:#e0f8e8;--bg3:#d0f0dc;--panel:#fff;--panel2:#f0fff6;--panel3:#e0f8e8;
+  --bd:#c0e0cc;--bd2:#a0c8b0;--tx:#0a2014;--tx2:#306048;--tx3:#609078;
+  --c1:#00a050;--c2:#a06000;--c3:#0060c0;--c4:#c02060;--c5:#7030c0;--c6:#a08000;--c7:#c05020;
+  --g1:linear-gradient(135deg,#00a050,#0060c0)}
+[data-theme="mono"]{--bg:#08080a;--bg2:#101014;--bg3:#18181e;--panel:#101014;--panel2:#18181e;--panel3:#202028;
+  --bd:#282830;--bd2:#404048;--tx:#e0e0e6;--tx2:#a0a0b0;--c1:#e0e0e6;--c2:#a0a0b0;--c3:#c0c0c8;
+  --g1:linear-gradient(135deg,#e0e0e6,#808088)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+#boot{position:fixed;inset:0;background:#050a06;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px;overflow:hidden}
+#boot.hidden{opacity:0;pointer-events:none}
+#bootField{position:absolute;inset:0;pointer-events:none}
+.boot-logo{font-family:var(--disp);font-size:3.2rem;font-weight:900;letter-spacing:16px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:6px;position:relative;z-index:1}
+.boot-sub{font-size:.66rem;color:#40ff90;letter-spacing:10px;margin-bottom:26px;opacity:.75;position:relative;z-index:1}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#122014;border-radius:2px;overflow:hidden;margin-bottom:10px;position:relative;z-index:1}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #40ff90}
+.boot-pct{font-size:.66rem;color:#40ff90;margin-bottom:14px;position:relative;z-index:1}
+.boot-log{font-size:.58rem;color:#4a8058;text-align:left;width:min(460px,90vw);height:130px;overflow:hidden;line-height:1.7;position:relative;z-index:1}
+.boot-log .ok{color:#40ff90}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+#topbar{height:48px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:8px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:5px;font-size:.96rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:8px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.66rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:30px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#050a06;box-shadow:0 0 12px rgba(64,255,144,.4)}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.tb-btn{width:30px;height:30px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-status{font-family:var(--mono);font-size:.6rem;padding:4px 9px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tb-status .dot{width:7px;height:7px;border-radius:50%;background:#122014;transition:var(--t1)}
+.tb-status .dot.on{background:var(--c1);box-shadow:0 0 10px var(--c1);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:290px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:9px 11px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.58rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#020604;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.co-badge{background:rgba(10,20,12,.92);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:5px 9px;font-family:var(--mono);font-size:.6rem;color:var(--c1);pointer-events:auto;max-width:340px}
+.co-badge.stats{color:var(--c6);display:flex;flex-direction:column;gap:2px;align-items:flex-end;text-align:right;line-height:1.5}
+
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:30px}
+.rp-tab{flex:1;padding:5px;font-size:.54rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+#statusbar{height:26px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:12px;font-family:var(--mono);font-size:.6rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:4px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}.sb-val.c5{color:var(--c5)}
+
+.sec{margin-bottom:12px}
+.sec h4{font-size:.58rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--tx3);margin-bottom:7px;font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.58rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:3px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);text-transform:none;letter-spacing:0}
+.ctrl{margin-bottom:9px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=number],.ctrl select,.ctrl textarea,.ctrl input[type=text]{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:5px 8px;color:var(--tx);font-size:.66rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl textarea{resize:vertical;min-height:60px;line-height:1.5}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(64,255,144,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.66rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1h)}
+.btn.primary{background:var(--g1);color:#050a06;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 14px rgba(64,255,144,.5)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.warn{color:var(--c6);border-color:var(--c6)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:3px 7px;font-size:.58rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.chip-row{display:flex;gap:3px;flex-wrap:wrap}
+.chip{padding:3px 8px;background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rf);cursor:pointer;font-size:.58rem;font-family:var(--mono);transition:var(--t1);color:var(--tx2)}
+.chip:hover{border-color:var(--c1);color:var(--c1)}
+.chip.active{background:var(--g1);color:#050a06;border-color:transparent;font-weight:700}
+
+.kv{font-family:var(--mono);font-size:.6rem;line-height:1.7}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3);white-space:nowrap}
+.kv .v{color:var(--c1);text-align:right;word-break:break-all;font-size:.58rem}
+.empty{text-align:center;padding:28px 18px;color:var(--tx3);font-size:.68rem;font-family:var(--mono)}
+
+.data-table{width:100%;font-family:var(--mono);font-size:.6rem;border-collapse:collapse}
+.data-table th{text-align:left;padding:4px 7px;background:var(--panel3);font-size:.53rem;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);font-weight:700;border-bottom:1px solid var(--bd)}
+.data-table td{padding:3px 7px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+.data-table td.c1{color:var(--c1)}.data-table td.c2{color:var(--c2)}.data-table td.c3{color:var(--c3)}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.88rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:18px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:13px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:24px;height:24px;border-radius:var(--rxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+#toasts{position:fixed;bottom:40px;right:18px;z-index:9000;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.toast{padding:9px 14px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.68rem;font-weight:500;max-width:320px;min-width:170px;animation:tin .3s;display:flex;align-items:center;gap:9px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c1)}.toast.warn{border-left-color:var(--c6)}.toast.error{border-left-color:var(--err)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:1000px){#leftPanel{width:250px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel,#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <canvas id="bootField" style="position:absolute;inset:0"></canvas>
+  <div class="boot-logo">GAIA</div>
+  <div class="boot-sub">ECOLOGY LAB</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('lv')">GAIA</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus">
+      <span class="dot" id="tbDot"></span>
+      <span id="tbText">evolving</span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="togglePlay()" title="Play/Pause (Space)">⏸</button>
+      <button class="tb-btn" onclick="stepOnce()" title="Step (→)">⏭</button>
+      <button class="tb-btn" onclick="resetModule()" title="Reset (R)">↺</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div id="canvasOverlay">
+          <div class="co-badge" id="coBadge">Ready</div>
+          <div class="co-badge stats" id="coStats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+        <div class="rp-tab" data-tab="help" onclick="switchRp('help',this)">ℹ️<span>Info</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpState"></div>
+        <div class="rp-pane" id="rpMath"></div>
+        <div class="rp-pane" id="rpLogs"></div>
+        <div class="rp-pane" id="rpHelp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">t</span><span class="sb-val c2" id="sbT">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Species</span><span class="sb-val c3" id="sbSpecies">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Pop</span><span class="sb-val c4" id="sbPop">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">R₀</span><span class="sb-val c5" id="sbR0">—</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">Lotka-Volterra</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';return Number(n).toFixed(d)}
+function sci(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';if(n===0)return '0';var e=Math.floor(Math.log10(Math.abs(n)));if(e>=-2&&e<4)return fmt(n,d);var m=n/Math.pow(10,e);return fmt(m,d)+'×10^'+e}
+function toast(m,t,d){t=t||'info';d=d||2200;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:.95rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   CANVAS
+   ================================================================ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');
+  CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('contextmenu',function(e){e.preventDefault()});
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){
+  var wrap=CANV.canvas.parentElement;
+  CANV.dpr=window.devicePixelRatio||1;
+  CANV.W=wrap.clientWidth;CANV.H=wrap.clientHeight;
+  CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);
+  CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);
+  CANV.canvas.style.width=CANV.W+'px';
+  CANV.canvas.style.height=CANV.H+'px';
+  CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0);
+}
+var INPUT={down:false,x:0,y:0,lastX:0,lastY:0,dx:0,dy:0,right:false};
+function canvasPos(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=canvasPos(e);INPUT.down=true;INPUT.right=e.button===2;INPUT.x=p.x;INPUT.y=p.y;INPUT.lastX=p.x;INPUT.lastY=p.y;INPUT.dx=0;INPUT.dy=0;var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p,e);}
+function onMove(e){var p=canvasPos(e);INPUT.dx=p.x-INPUT.lastX;INPUT.dy=p.y-INPUT.lastY;INPUT.lastX=p.x;INPUT.lastY=p.y;INPUT.x=p.x;INPUT.y=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,e);}
+function onUp(e){INPUT.down=false;var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp(e);}
+function onTouchStart(e){if(e.touches.length===1){var t=e.touches[0];onDown({clientX:t.clientX,clientY:t.clientY,button:0});}e.preventDefault();}
+function onTouchMove(e){if(e.touches.length===1){var t=e.touches[0];onMove({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchEnd(e){onUp({});e.preventDefault();}
+
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;
+  };
+}
+
+var MODULES={};
+function registerModule(key,def){def.key=key;MODULES[key]=def;}
+function setStatsHTML(h){var e=$('coStats');if(e)e.innerHTML=h}
+function updateBadge(t){var e=$('coBadge');if(e)e.textContent=t}
+
+var LOG=[];
+function logMsg(msg,type){
+  type=type||'info';
+  LOG.push({t:Date.now(),msg:msg,type:type});
+  if(LOG.length>200)LOG.shift();
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function drawGlowText(ctx,text,x,y,color,size,align){
+  ctx.save();
+  ctx.font='bold '+(size||14)+'px monospace';
+  ctx.textAlign=align||'left';
+  ctx.shadowColor=color;ctx.shadowBlur=10;
+  ctx.fillStyle=color;
+  ctx.fillText(text,x,y);
+  ctx.restore();
+}
+/* RK4 integrator for ODE systems: y' = f(t,y) */
+function rk4(f,t,y,h){
+  var n=y.length;
+  var k1=f(t,y);
+  var y2=new Array(n);for(var i=0;i<n;i++)y2[i]=y[i]+h*k1[i]/2;
+  var k2=f(t+h/2,y2);
+  var y3=new Array(n);for(var i=0;i<n;i++)y3[i]=y[i]+h*k2[i]/2;
+  var k3=f(t+h/2,y3);
+  var y4=new Array(n);for(var i=0;i<n;i++)y4[i]=y[i]+h*k3[i];
+  var k4=f(t+h,y4);
+  var out=new Array(n);
+  for(var i=0;i<n;i++)out[i]=y[i]+h*(k1[i]+2*k2[i]+2*k3[i]+k4[i])/6;
+  return out;
+}
+/* Species colors for food web / LV */
+var SPECIES_COLORS=['#40ff90','#40d0ff','#ffb040','#ff60a0','#c060ff','#ffe040','#ff8040','#80ffd0'];
+</script>
+<script>
+var STATE={
+  currentTab:'lv',
+  currentRp:'state',
+  theme:'gaia',
+  playing:true,
+  time:0,
+  lv:{
+    X:10,Y:5,
+    alpha:1.1,beta:0.4,
+    delta:0.1,gamma:0.4,
+    t:0,
+    history:[],
+    phaseTrail:[],
+    maxHistory:1200,
+    dt:0.01,
+    showPhase:true,
+    preset:'classic',
+    trajectory:[],
+    carrying:false,   /* logistic prey */
+    K:50
+  },
+  web:{
+    species:[],
+    t:0,
+    dt:0.02,
+    maxHistory:800,
+    history:[],
+    selected:-1,
+    preset:'trophic',
+    extinction:0
+  },
+  daisy:{
+    T:280,
+    pWhite:0.5,
+    pBlack:0.5,
+    empty:0.0,
+    t:0,
+    dt:0.1,
+    maxHistory:1500,
+    history:[],
+    L:1.0,           /* luminosity */
+    albedoWhite:0.75,
+    albedoBlack:0.25,
+    albedoGround:0.5,
+    solarConst:917.0,
+    greenhouse:1.0,
+    preset:'default',
+    regulation:true
+  },
+  sir:{
+    S:990,I:10,R:0,
+    beta:0.3,gamma:0.1,
+    N:1000,
+    t:0,
+    dt:0.05,
+    maxHistory:2000,
+    history:[],
+    mode:'ode',
+    network:null,
+    states:null,
+    gridSize:40,
+    vaccinationRate:0,
+    preset:'flu'
+  },
+  evolution:{
+    pA:0.5,          /* allele frequency of A */
+    wAA:1.0,         /* fitness of AA */
+    wAa:1.0,         /* fitness of Aa */
+    waa:0.9,         /* fitness of aa */
+    popSize:200,
+    mutationRate:0.001,
+    generations:0,
+    history:[],
+    drift:false,
+    demoMode:'selection',
+    simPop:[],
+    maxHistory:1000
+  }
+};
+
+/* ================================================================
+   MODULE 1: LOTKA-VOLTERRA
+   ================================================================ */
+var LV_PRESETS={
+  'classic':{alpha:1.1,beta:0.4,delta:0.1,gamma:0.4,X:10,Y:5,carrying:false,K:50,name:'Classic'},
+  'damped':{alpha:1.1,beta:0.4,delta:0.1,gamma:0.9,X:10,Y:5,carrying:false,K:50,name:'Damped'},
+  'fast-prey':{alpha:2.0,beta:0.5,delta:0.1,gamma:0.6,X:10,Y:5,carrying:false,K:50,name:'Fast Prey'},
+  'efficient':{alpha:1.2,beta:0.8,delta:0.3,gamma:0.4,X:10,Y:5,carrying:false,K:50,name:'Efficient Predator'},
+  'with-carrying':{alpha:1.1,beta:0.4,delta:0.1,gamma:0.4,X:10,Y:5,carrying:true,K:30,name:'Logistic Prey'}
+};
+registerModule('lv',{
+  title:'Lotka-Volterra',
+  icon:'🦊',
+  desc:'Predator-prey dynamics. RK4 integration of the coupled ODEs. Watch closed orbits in phase space (Lotka-Volterra has a conserved quantity).',
+  init:function(){
+    var l=STATE.lv;
+    l.t=0;
+    l.history=[];
+    l.phaseTrail=[];
+    l.trajectory=[];
+    logMsg('Lotka-Volterra: α='+l.alpha+' β='+l.beta+' δ='+l.delta+' γ='+l.gamma,'success');
+  },
+  deriv:function(t,y){
+    var l=STATE.lv;
+    var X=y[0],Y=y[1];
+    var growth;
+    if(l.carrying)growth=l.alpha*X*(1-X/l.K);
+    else growth=l.alpha*X;
+    var dX=growth-l.beta*X*Y;
+    var dY=l.delta*X*Y-l.gamma*Y;
+    return [dX,dY];
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var l=STATE.lv;
+    if(!STATE.playing)return;
+    /* Multiple RK4 substeps per frame */
+    var steps=6;
+    var h=l.dt;
+    for(var k=0;k<steps;k++){
+      var y=[l.X,l.Y];
+      var yNew=rk4(this.deriv.bind(this),l.t,y,h);
+      l.X=Math.max(0.001,yNew[0]);
+      l.Y=Math.max(0.001,yNew[1]);
+      l.t+=h;
+    }
+    l.history.push({t:l.t,X:l.X,Y:l.Y});
+    if(l.history.length>l.maxHistory)l.history.shift();
+    l.phaseTrail.push({X:l.X,Y:l.Y});
+    if(l.phaseTrail.length>800)l.phaseTrail.shift();
+    /* Auto-reset if values explode */
+    if(l.X>500||l.Y>500||l.X<0.001&&l.Y<0.001){
+      this.init();
+    }
+  },
+  stepOnce:function(){this.tick(0.1)},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020604';
+    ctx.fillRect(0,0,W,H);
+    var l=STATE.lv;
+    /* Layout: time series top, phase plot right/bottom */
+    var tsH=H*0.5;
+    var pad=40;
+    /* Time series */
+    var tsX=pad,tsY=pad+20,tsW=W*0.6-pad*1.5,tsH2=tsH-pad-30;
+    ctx.fillStyle='rgba(10,20,12,0.6)';
+    ctx.strokeStyle='rgba(64,255,144,0.4)';
+    ctx.beginPath();ctx.roundRect(tsX,tsY,tsW,tsH2,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ff90';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('POPULATION vs TIME',tsX+10,tsY-6);
+    /* Compute max Y for scale */
+    var maxPop=1;
+    l.history.forEach(function(h){
+      if(h.X>maxPop)maxPop=h.X;
+      if(h.Y>maxPop)maxPop=h.Y;
+    });
+    maxPop=Math.max(maxPop,1)*1.1;
+    /* Axes */
+    for(var i=0;i<=4;i++){
+      var y=tsY+i*tsH2/4;
+      ctx.strokeStyle='rgba(64,255,144,0.1)';
+      ctx.beginPath();ctx.moveTo(tsX,y);ctx.lineTo(tsX+tsW,y);ctx.stroke();
+      ctx.fillStyle='#4a8058';
+      ctx.font='9px monospace';
+      ctx.textAlign='right';
+      ctx.fillText(fmt((1-i/4)*maxPop,1),tsX-4,y+3);
+    }
+    /* Draw curves */
+    if(l.history.length>1){
+      var tMax=l.history[l.history.length-1].t;
+      var tMin=l.history[0].t;
+      var tRange=tMax-tMin||1;
+      /* Prey */
+      ctx.strokeStyle='#40ff90';
+      ctx.lineWidth=2.5;
+      ctx.shadowColor='#40ff90';ctx.shadowBlur=8;
+      ctx.beginPath();
+      l.history.forEach(function(h,i){
+        var x=tsX+(h.t-tMin)/tRange*tsW;
+        var y=tsY+tsH2-(h.X/maxPop)*tsH2;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      /* Predator */
+      ctx.strokeStyle='#ffb040';
+      ctx.shadowColor='#ffb040';
+      ctx.beginPath();
+      l.history.forEach(function(h,i){
+        var x=tsX+(h.t-tMin)/tRange*tsW;
+        var y=tsY+tsH2-(h.Y/maxPop)*tsH2;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+    /* Legend */
+    ctx.fillStyle='rgba(10,20,12,0.9)';
+    ctx.strokeStyle='rgba(64,255,144,0.3)';
+    ctx.beginPath();ctx.roundRect(tsX+tsW-180,tsY+10,170,60,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ff90';
+    ctx.fillRect(tsX+tsW-170,tsY+22,12,8);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('Prey (X) = '+fmt(l.X,2),tsX+tsW-152,tsY+30);
+    ctx.fillStyle='#ffb040';
+    ctx.fillRect(tsX+tsW-170,tsY+42,12,8);
+    ctx.fillStyle='#d0ffe0';
+    ctx.fillText('Predator (Y) = '+fmt(l.Y,2),tsX+tsW-152,tsY+50);
+    /* Phase portrait */
+    var phX=W*0.6+pad*0.5;
+    var phY=pad+20;
+    var phW=W-phX-pad;
+    var phH=H-pad*2-30;
+    ctx.fillStyle='rgba(10,20,12,0.6)';
+    ctx.strokeStyle='rgba(255,176,64,0.4)';
+    ctx.beginPath();ctx.roundRect(phX,phY,phW,phH,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffb040';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('PHASE PORTRAIT (X vs Y)',phX+10,phY-6);
+    /* Phase axes */
+    var maxPh=Math.max(1,l.phaseTrail.reduce(function(m,p){return Math.max(m,p.X,p.Y)},0))*1.15;
+    for(var i=0;i<=4;i++){
+      var y=phY+i*phH/4;
+      ctx.strokeStyle='rgba(255,176,64,0.1)';
+      ctx.beginPath();ctx.moveTo(phX,y);ctx.lineTo(phX+phW,y);ctx.stroke();
+    }
+    /* Fixed point at (γ/δ, α/β) */
+    var Xstar=l.gamma/l.delta;
+    var Ystar=l.alpha/l.beta;
+    var fx=phX+(Xstar/maxPh)*phW;
+    var fy=phY+phH-(Ystar/maxPh)*phH;
+    if(Xstar<maxPh&&Ystar<maxPh){
+      ctx.fillStyle='#ff60a0';
+      ctx.beginPath();ctx.arc(fx,fy,6,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#ff60a0';
+      ctx.lineWidth=2;
+      ctx.stroke();
+      ctx.fillStyle='#ff60a0';
+      ctx.font='10px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('center',fx+10,fy+4);
+    }
+    /* Phase trail */
+    if(l.phaseTrail.length>1){
+      ctx.strokeStyle='#40d0ff';
+      ctx.lineWidth=2;
+      ctx.shadowColor='#40d0ff';ctx.shadowBlur=6;
+      ctx.beginPath();
+      l.phaseTrail.forEach(function(p,i){
+        var x=phX+(p.X/maxPh)*phW;
+        var y=phY+phH-(p.Y/maxPh)*phH;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      ctx.shadowBlur=0;
+      /* Current point */
+      var cur=l.phaseTrail[l.phaseTrail.length-1];
+      var cx=phX+(cur.X/maxPh)*phW;
+      var cy=phY+phH-(cur.Y/maxPh)*phH;
+      ctx.fillStyle='#ffe040';
+      ctx.shadowColor='#ffe040';ctx.shadowBlur=12;
+      ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    }
+    /* Info panel */
+    ctx.fillStyle='rgba(10,20,12,0.9)';
+    ctx.strokeStyle='rgba(64,255,144,0.5)';
+    ctx.beginPath();ctx.roundRect(20,20,240,140,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ff90';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('LOTKA-VOLTERRA',32,42);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('α = '+fmt(l.alpha,2)+'   β = '+fmt(l.beta,2),32,62);
+    ctx.fillText('δ = '+fmt(l.delta,2)+'   γ = '+fmt(l.gamma,2),32,78);
+    ctx.fillText('Prey X = '+fmt(l.X,3),32,98);
+    ctx.fillText('Predator Y = '+fmt(l.Y,3),32,114);
+    ctx.fillStyle='#ff60a0';
+    ctx.fillText('Fixed pt: ('+fmt(Xstar,2)+', '+fmt(Ystar,2)+')',32,132);
+    /* Conserved quantity H = δX − γ·ln(X) + βY − α·ln(Y) */
+    var Hc=l.delta*l.X-l.gamma*Math.log(Math.max(0.001,l.X))+l.beta*l.Y-l.alpha*Math.log(Math.max(0.001,l.Y));
+    ctx.fillStyle='#40d0ff';
+    ctx.font='10px monospace';
+    ctx.fillText('H = '+fmt(Hc,4)+' (invariant)',32,148);
+    setStatsHTML(
+      '<div>Prey: '+fmt(l.X,2)+'</div>'+
+      '<div>Pred: '+fmt(l.Y,2)+'</div>'+
+      '<div>t: '+fmt(l.t,1)+'</div>'+
+      '<div>H: '+fmt(Hc,3)+'</div>'
+    );
+    updateBadge('🦊 LV · prey='+fmt(l.X,1)+' pred='+fmt(l.Y,1)+' · H='+fmt(Hc,2));
+    $('sbMode').textContent='Lotka-Volterra';
+    $('sbT').textContent=fmt(l.t,1);
+    $('sbSpecies').textContent='2';
+    $('sbPop').textContent=fmt(l.X+l.Y,1);
+  },
+  onDown:function(p){
+    var l=STATE.lv;
+    /* Click in phase plot to set initial condition */
+    var phX=CANV.W*0.6+20,phY=60,phW=CANV.W-phX-40,phH=CANV.H-100;
+    if(p.x<phX||p.x>phX+phW||p.y<phY||p.y>phY+phH)return;
+    var maxPh=Math.max(1,l.phaseTrail.reduce(function(m,q){return Math.max(m,q.X,q.Y)},0))*1.15;
+    l.X=(p.x-phX)/phW*maxPh;
+    l.Y=(phY+phH-p.y)/phH*maxPh;
+    l.phaseTrail=[{X:l.X,Y:l.Y}];
+    l.history=[];
+    l.t=0;
+  },
+  controls:function(){
+    var l=STATE.lv;
+    var html='';
+    html+='<div class="sec"><h4>Preset</h4><div class="chip-row">';
+    Object.keys(LV_PRESETS).forEach(function(k){
+      html+='<div class="chip '+(l.preset===k?'active':'')+'" onclick="loadLV(\''+k+'\')">'+LV_PRESETS[k].name+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>α (prey growth)</span><span>'+fmt(l.alpha,2)+'</span></div>';
+    html+='<input type="range" min="0.1" max="3" step="0.05" value="'+l.alpha+'" oninput="STATE.lv.alpha=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>β (predation rate)</span><span>'+fmt(l.beta,2)+'</span></div>';
+    html+='<input type="range" min="0.05" max="1.5" step="0.05" value="'+l.beta+'" oninput="STATE.lv.beta=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>δ (predator efficiency)</span><span>'+fmt(l.delta,2)+'</span></div>';
+    html+='<input type="range" min="0.02" max="1" step="0.02" value="'+l.delta+'" oninput="STATE.lv.delta=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>γ (predator death)</span><span>'+fmt(l.gamma,2)+'</span></div>';
+    html+='<input type="range" min="0.05" max="1.5" step="0.05" value="'+l.gamma+'" oninput="STATE.lv.gamma=parseFloat(this.value);renderLeftPanel()"></div>';
+    if(l.carrying){
+      html+='<div class="ctrl"><div class="lbl"><span>K (carrying capacity)</span><span>'+fmt(l.K,0)+'</span></div>';
+      html+='<input type="range" min="10" max="100" step="1" value="'+l.K+'" oninput="STATE.lv.K=parseFloat(this.value);renderLeftPanel()"></div>';
+    }
+    html+='</div>';
+    html+='<div class="sec"><h4>Options</h4><div class="chip-row">';
+    html+='<div class="chip '+(l.carrying?'active':'')+'" onclick="STATE.lv.carrying=!STATE.lv.carrying;MODULES.lv.init();renderLeftPanel()">Logistic prey</div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.lv.init()">↺ Reset</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.lv.phaseTrail=[];STATE.lv.history=[];STATE.lv.t=0">✕ Clear trails</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Try it</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.56rem;line-height:1.65;color:var(--tx2)">'+
+      '• Click the phase plot to set initial X, Y<br>'+
+      '• With carrying=false, orbits are closed (H invariant)<br>'+
+      '• With carrying=true, spiral toward stable focus<br>'+
+      '• Raise γ (predator death) → fewer predators, more prey'
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var l=STATE.lv;
+    var Xstar=l.gamma/l.delta;
+    var Ystar=l.alpha/l.beta;
+    return '<div class="sec"><h4>Lotka-Volterra equations</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'dX/dt = α·X − β·X·Y<br>'+
+      'dY/dt = δ·X·Y − γ·Y<br><br>'+
+      'X = prey, Y = predator<br><br>'+
+      'α: prey growth rate<br>'+
+      'β: predation rate<br>'+
+      'δ: predator reproduction per prey eaten<br>'+
+      'γ: predator death rate'+
+      '</div></div>'+
+      '<div class="sec"><h4>Fixed point</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Set dX/dt = dY/dt = 0:<br>'+
+      'X* = γ/δ = '+fmt(Xstar,3)+'<br>'+
+      'Y* = α/β = '+fmt(Ystar,3)+'<br><br>'+
+      'The coexistence equilibrium is a <b>center</b> for the classical LV system — orbits are closed.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Conserved quantity</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'H = δ·X − γ·ln(X) + β·Y − α·ln(Y)<br><br>'+
+      'dH/dt = 0 along trajectories.<br><br>'+
+      'This is why classical LV orbits are periodic.'+
+      '</div></div>'+
+      '<div class="sec"><h4>With logistic prey</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'If prey has carrying capacity K:<br>'+
+      'dX/dt = α·X·(1−X/K) − β·X·Y<br><br>'+
+      'Then the fixed point becomes <b>stable</b> (spiral convergence).'+
+      '</div></div>';
+  }
+});
+function loadLV(k){
+  var p=LV_PRESETS[k];
+  var l=STATE.lv;
+  l.preset=k;
+  l.alpha=p.alpha;l.beta=p.beta;l.delta=p.delta;l.gamma=p.gamma;
+  l.X=p.X;l.Y=p.Y;l.carrying=p.carrying;l.K=p.K||50;
+  MODULES.lv.init();
+  renderLeftPanel();
+}
+
+/* ================================================================
+   MODULE 2: FOOD WEB
+   ================================================================ */
+registerModule('web',{
+  title:'Food Web',
+  icon:'🕸',
+  desc:'Multi-species ecosystem with trophic interactions. Generalized Lotka-Volterra with competition and predation.',
+  init:function(){
+    var w=STATE.web;
+    w.t=0;
+    w.history=[];
+    w.extinction=0;
+    /* Build a 5-species food chain + competition */
+    w.species=[
+      /* name, color, initial, growth, [interactions] */
+      {name:'Grass',color:'#40ff90',N:40,base:1.0,type:'producer',K:80,mass:1},
+      {name:'Rabbits',color:'#ffe040',N:15,base:0.3,type:'herbivore',K:40,mass:2},
+      {name:'Foxes',color:'#ff8040',N:8,base:0.1,type:'carnivore',K:20,mass:5},
+      {name:'Hawks',color:'#ff60a0',N:3,base:0.05,type:'apex',K:10,mass:10},
+      {name:'Mice',color:'#40d0ff',N:12,base:0.25,type:'herbivore',K:40,mass:1.5}
+    ];
+    /* Interaction matrix: A[i][j] = effect of j on i (positive=benefit to i) */
+    /* Simplified: use trophic structure directly */
+    logMsg('Food web: 5 species ecosystem initialized','success');
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var w=STATE.web;
+    if(!STATE.playing)return;
+    var steps=4;
+    var h=w.dt/steps;
+    for(var s=0;s<steps;s++){
+      /* Producer: logistic growth */
+      var grass=w.species[0];
+      var dG=grass.base*grass.N*(1-grass.N/grass.K);
+      /* Herbivores eat grass */
+      var rabbits=w.species[1];
+      var mice=w.species[4];
+      var pred1=0.008*grass.N*rabbits.N;
+      var pred2=0.006*grass.N*mice.N;
+      dG-=pred1+pred2;
+      /* Rabbit: gains from grass, loses to fox */
+      var foxes=w.species[2];
+      var dR=0.15*pred1-rabbits.base*rabbits.N-0.004*foxes.N*rabbits.N;
+      /* Fox: gains from rabbit + mouse, loses to hawk */
+      var hawks=w.species[3];
+      var predMouse=0.005*mice.N*foxes.N;
+      var dF=0.2*(0.004*foxes.N*rabbits.N+predMouse)-foxes.base*foxes.N-0.003*hawks.N*foxes.N;
+      /* Hawk: gains from fox */
+      var dH=0.3*0.003*hawks.N*foxes.N-hawks.base*hawks.N;
+      /* Mice: gains from grass, loses to fox */
+      var dM=0.15*pred2-mice.base*mice.N-0.005*mice.N*foxes.N;
+      var updates=[dG,dR,dF,dH,dM];
+      for(var i=0;i<5;i++){
+        var N=w.species[i].N+updates[i]*h;
+        N=Math.max(0,N);
+        if(N<0.01&&w.species[i].N>1)w.extinction++;
+        w.species[i].N=N;
+      }
+      w.t+=h;
+    }
+    /* Record history */
+    var snapshot={t:w.t};
+    w.species.forEach(function(sp,i){snapshot['s'+i]=sp.N});
+    w.history.push(snapshot);
+    if(w.history.length>w.maxHistory)w.history.shift();
+    /* Check for full ecosystem collapse */
+    var total=w.species.reduce(function(s,sp){return s+sp.N},0);
+    if(total<1){logMsg('Ecosystem collapsed!','warn');this.init()}
+  },
+  stepOnce:function(){this.tick(0.1)},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020604';
+    ctx.fillRect(0,0,W,H);
+    var w=STATE.web;
+    var pad=40;
+    /* Time series */
+    var tsY=pad+20;
+    var tsH=H*0.55;
+    ctx.fillStyle='rgba(10,20,12,0.6)';
+    ctx.strokeStyle='rgba(64,255,144,0.4)';
+    ctx.beginPath();ctx.roundRect(pad,tsY,W-2*pad,tsH,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ff90';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('POPULATION DYNAMICS',pad+10,tsY-6);
+    /* Compute max */
+    var maxPop=1;
+    w.species.forEach(function(sp){if(sp.N>maxPop)maxPop=sp.N});
+    maxPop*=1.1;
+    /* Draw curves */
+    if(w.history.length>1){
+      var tMin=w.history[0].t;
+      var tMax=w.history[w.history.length-1].t;
+      var tRange=tMax-tMin||1;
+      w.species.forEach(function(sp,i){
+        var col=sp.color;
+        ctx.strokeStyle=col;
+        ctx.lineWidth=2;
+        ctx.shadowColor=col;ctx.shadowBlur=5;
+        ctx.beginPath();
+        w.history.forEach(function(h,j){
+          var x=pad+(h.t-tMin)/tRange*(W-2*pad);
+          var y=tsY+tsH-(h['s'+i]/maxPop)*tsH;
+          if(j===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+        ctx.shadowBlur=0;
+      });
+    }
+    /* Legend */
+    var legY=tsY+tsH+20;
+    var legX=pad;
+    ctx.font='10px monospace';
+    w.species.forEach(function(sp,i){
+      ctx.fillStyle=sp.color;
+      ctx.fillRect(legX,legY-8,10,10);
+      ctx.fillStyle='#d0ffe0';
+      ctx.textAlign='left';
+      ctx.fillText(sp.name+' ('+fmt(sp.N,1)+')',legX+14,legY);
+      legX+=Math.min(150,ctx.measureText(sp.name).width+80);
+    });
+    /* Trophic pyramid */
+    var pyY=legY+40;
+    var pyH=H-pyY-pad;
+    if(pyH>60){
+      ctx.fillStyle='rgba(10,20,12,0.6)';
+      ctx.strokeStyle='rgba(255,176,64,0.4)';
+      ctx.beginPath();ctx.roundRect(pad,pyY,W-2*pad,pyH,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#ffb040';
+      ctx.font='bold 11px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('TROPHIC LEVELS',pad+10,pyY-6);
+      /* Sort by mass (trophic level) */
+      var sorted=w.species.slice().sort(function(a,b){return a.mass-b.mass});
+      var barW=(W-2*pad-20)/sorted.length;
+      sorted.forEach(function(sp,i){
+        var x=pad+10+i*barW;
+        var barH=(sp.N/Math.max(1,maxPop))*(pyH-30);
+        var y=pyY+pyH-15-barH;
+        ctx.fillStyle=sp.color;
+        ctx.globalAlpha=0.6;
+        ctx.fillRect(x+4,y,barW-8,barH);
+        ctx.globalAlpha=1;
+        ctx.fillStyle=sp.color;
+        ctx.font='9px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(sp.name,x+barW/2,pyY+pyH-2);
+        ctx.fillStyle='#d0ffe0';
+        ctx.fillText(fmt(sp.N,1),x+barW/2,y-4);
+      });
+    }
+    /* Info panel */
+    ctx.fillStyle='rgba(10,20,12,0.9)';
+    ctx.strokeStyle='rgba(64,255,144,0.5)';
+    ctx.beginPath();ctx.roundRect(20,20,240,120,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ff90';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('FOOD WEB',32,42);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('Species: '+w.species.length,32,62);
+    var total=w.species.reduce(function(s,sp){return s+sp.N},0);
+    ctx.fillText('Total biomass: '+fmt(total,1),32,78);
+    ctx.fillText('Time: '+fmt(w.t,1),32,94);
+    ctx.fillText('Extinctions: '+w.extinction,32,110);
+    setStatsHTML(
+      '<div>Species: '+w.species.length+'</div>'+
+      '<div>Total: '+fmt(total,1)+'</div>'+
+      '<div>t: '+fmt(w.t,1)+'</div>'+
+      '<div>Ext: '+w.extinction+'</div>'
+    );
+    updateBadge('🕸 Food Web · '+w.species.length+' species · t='+fmt(w.t,1));
+    $('sbMode').textContent='Food Web';
+    $('sbT').textContent=fmt(w.t,1);
+    $('sbSpecies').textContent=w.species.length;
+    $('sbPop').textContent=fmt(total,1);
+  },
+  onDown:function(p){
+    /* Click species in legend to boost population */
+    var w=STATE.web;
+    var legY=CANV.H*0.55+60;
+    var legX=40;
+    w.species.forEach(function(sp,i){
+      var w2=Math.min(150,sp.name.length*7+80);
+      if(p.x>legX&&p.x<legX+w2&&p.y>legY-20&&p.y<legY+10){
+        sp.N+=10;
+        toast(sp.name+' boosted to '+fmt(sp.N,1),'success');
+      }
+      legX+=w2;
+    });
+  },
+  controls:function(){
+    var w=STATE.web;
+    var html='';
+    html+='<div class="sec"><h4>Species</h4><div class="kv">';
+    w.species.forEach(function(sp){
+      html+='<div class="row"><span class="k" style="color:'+sp.color+'">'+sp.name+'</span><span class="v">'+fmt(sp.N,2)+'</span></div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Boost population</h4><div class="chip-row">';
+    w.species.forEach(function(sp,i){
+      html+='<div class="chip" style="color:'+sp.color+'" onclick="STATE.web.species['+i+'].N+=15;renderLeftPanel()">+'+sp.name+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Stress test</h4><div class="chip-row">';
+    html+='<div class="chip" style="color:var(--c4)" onclick="STATE.web.species.forEach(function(sp){sp.N*=0.5});renderLeftPanel()">Mass die-off</div>';
+    html+='<div class="chip" style="color:var(--c6)" onclick="STATE.web.species[0].N=0;renderLeftPanel()">Kill producers</div>';
+    html+='<div class="chip" style="color:var(--c1)" onclick="MODULES.web.init()">Reset</div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Structure</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.56rem;line-height:1.65;color:var(--tx2)">'+
+      'Grass → Rabbits → Foxes → Hawks<br>'+
+      'Grass → Mice → Foxes<br><br>'+
+      'Two herbivore species compete for grass. Foxes are generalist predators.'+
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    return '<div class="sec"><h4>Generalized LV</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'dNᵢ/dt = Nᵢ·(rᵢ + Σⱼ aᵢⱼ·Nⱼ)<br><br>'+
+      'rᵢ: intrinsic growth rate<br>'+
+      'aᵢⱼ: effect of j on i<br>'+
+      '  aᵢⱼ > 0: j benefits i (prey)<br>'+
+      '  aᵢⱼ < 0: j harms i (predator)<br>'+
+      '  aᵢᵢ < 0: self-limitation (logistic)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Food web topology</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Trophic levels:<br>'+
+      '1. Producers (grass)<br>'+
+      '2. Herbivores (rabbits, mice)<br>'+
+      '3. Carnivores (foxes)<br>'+
+      '4. Apex (hawks)<br><br>'+
+      'Energy transfer efficiency ~10% per level.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Stability</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Robert May (1972): random food webs become unstable as n·C grows (n species, C connectance).<br><br>'+
+      'Real ecosystems avoid this via structure: weak interactions, modularity, hierarchy.'+
+      '</div></div>';
+  }
+});
+</script>
+<script>
+/* ================================================================
+   MODULE 3: DAISYWORLD
+   ================================================================ */
+registerModule('daisy',{
+  title:'Daisyworld',
+  icon:'🌼',
+  desc:'Lovelock & Watson (1983). Two daisy species with different albedos self-regulate planetary temperature as solar luminosity changes.',
+  init:function(){
+    var d=STATE.daisy;
+    d.t=0;
+    d.history=[];
+    d.T=280;
+    d.pWhite=0.3;
+    d.pBlack=0.2;
+    d.empty=0.5;
+    logMsg('Daisyworld: L='+d.L+' starting T='+fmt(d.T,1)+'K','success');
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var d=STATE.daisy;
+    if(!STATE.playing)return;
+    var steps=5;
+    var h=d.dt/steps;
+    for(var s=0;s<steps;s++){
+      /* Growth rates based on local temperature */
+      var Topt=295.5, Tmin=278, Tmax=313;
+      /* Parabolic growth: 1 − ((T−Topt)/Trange)² */
+      function growth(T){
+        var g=1-Math.pow((T-Topt)/22.5,2);
+        return Math.max(0,g);
+      }
+      /* Local temperature for each daisy type */
+      var albedo=d.pWhite*d.albedoWhite+d.pBlack*d.albedoBlack+d.empty*d.albedoGround;
+      /* Stefan-Boltzmann: T = ((L·S·(1−a))/(4σ))^¼ */
+      var sigma=5.67e-8;
+      var S=d.solarConst*d.L;
+      var Teff=Math.pow(S*(1-albedo)/(4*sigma),0.25);
+      /* Greenhouse warming */
+      Teff=(Teff-255)*d.greenhouse+255;
+      /* Local temperatures */
+      var Tw=Teff+5*(albedo-d.albedoWhite); /* white cools locally relative */
+      var Tb=Teff+5*(albedo-d.albedoBlack);
+      var gw=growth(Tw),gb=growth(Tb);
+      var areasTotal=d.pWhite+d.pBlack+d.empty;
+      if(areasTotal<0.01)areasTotal=0.01;
+      var aw=d.pWhite,ab=d.pBlack,ae=d.empty;
+      /* Spread into empty area */
+      var newW=aw*(1+gw*h*(ae-0.01))+0.001*gw*ae*h;
+      var newB=ab*(1+gb*h*(ae-0.01))+0.001*gb*ae*h;
+      var newE=1-newW-newB;
+      if(newE<0){/* normalize */var tot=newW+newB;newW/=tot;newB/=tot;newE=0}
+      newW=Math.max(0,newW);newB=Math.max(0,newB);
+      d.pWhite=newW;
+      d.pBlack=newB;
+      d.empty=Math.max(0,1-newW-newB);
+      d.T=Teff;
+      d.t+=h;
+      /* Slowly change luminosity to demonstrate regulation */
+      if(d.regulation){
+        d.L+=0.0005*h; /* increase luminosity */
+        if(d.L>2.2)d.L=0.6;
+      }
+    }
+    d.history.push({t:d.t,T:d.T,pW:d.pWhite,pB:d.pBlack,L:d.L});
+    if(d.history.length>d.maxHistory)d.history.shift();
+  },
+  stepOnce:function(){this.tick(0.2)},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020604';
+    ctx.fillRect(0,0,W,H);
+    var d=STATE.daisy;
+    var pad=40;
+    /* Layout: temperature vs time top, daisy coverage bottom */
+    var tsH=H*0.4;
+    var tsY=pad+20;
+    ctx.fillStyle='rgba(10,20,12,0.6)';
+    ctx.strokeStyle='rgba(64,255,144,0.4)';
+    ctx.beginPath();ctx.roundRect(pad,tsY,W-2*pad,tsH,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ff90';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('PLANETARY TEMPERATURE',pad+10,tsY-6);
+    /* Temperature range 250-330 K */
+    var Tmin=250,Tmax=330;
+    for(var i=0;i<=4;i++){
+      var y=tsY+i*tsH/4;
+      ctx.strokeStyle='rgba(64,255,144,0.1)';
+      ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke();
+      ctx.fillStyle='#4a8058';
+      ctx.font='9px monospace';
+      ctx.textAlign='right';
+      ctx.fillText(fmt(Tmax-(Tmax-Tmin)*i/4,0)+'K',pad-4,y+3);
+    }
+    /* Optimal range 290-300 K band */
+    var yTop=tsY+tsH-(300-Tmin)/(Tmax-Tmin)*tsH;
+    var yBot=tsY+tsH-(290-Tmin)/(Tmax-Tmin)*tsH;
+    ctx.fillStyle='rgba(64,255,144,0.1)';
+    ctx.fillRect(pad,yTop,W-2*pad,yBot-yTop);
+    /* Temperature curve */
+    if(d.history.length>1){
+      var tMin=d.history[0].t;
+      var tMax=d.history[d.history.length-1].t;
+      var tRange=tMax-tMin||1;
+      ctx.strokeStyle='#ff8040';
+      ctx.lineWidth=2.5;
+      ctx.shadowColor='#ff8040';ctx.shadowBlur=8;
+      ctx.beginPath();
+      d.history.forEach(function(h,i){
+        var x=pad+(h.t-tMin)/tRange*(W-2*pad);
+        var y=tsY+tsH-(h.T-Tmin)/(Tmax-Tmin)*tsH;
+        y=clamp(y,tsY,tsY+tsH);
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+    /* Coverage panel */
+    var covY=tsY+tsH+40;
+    var covH=H-covY-pad;
+    ctx.fillStyle='rgba(10,20,12,0.6)';
+    ctx.strokeStyle='rgba(255,224,64,0.4)';
+    ctx.beginPath();ctx.roundRect(pad,covY,W-2*pad,covH,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('DAISY COVERAGE',pad+10,covY-6);
+    if(d.history.length>1){
+      var tMin2=d.history[0].t;
+      var tMax2=d.history[d.history.length-1].t;
+      var tRange2=tMax2-tMin2||1;
+      /* White daisies */
+      ctx.strokeStyle='#f0f0f0';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      d.history.forEach(function(h,i){
+        var x=pad+(h.t-tMin2)/tRange2*(W-2*pad);
+        var y=covY+covH-(h.pW)*covH;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      /* Black daisies */
+      ctx.strokeStyle='#606060';
+      ctx.beginPath();
+      d.history.forEach(function(h,i){
+        var x=pad+(h.t-tMin2)/tRange2*(W-2*pad);
+        var y=covY+covH-(h.pB)*covH;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    }
+    /* Luminosity */
+    ctx.strokeStyle='#ffe040';
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    d.history.forEach(function(h,i){
+      var tMin3=d.history[0].t;
+      var tMax3=d.history[d.history.length-1].t;
+      var tRange3=tMax3-tMin3||1;
+      var x=pad+(h.t-tMin3)/tRange3*(W-2*pad);
+      var y=covY+covH-(h.L-0.6)/(2.2-0.6)*covH;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    /* Legend */
+    ctx.fillStyle='#f0f0f0';
+    ctx.fillRect(pad+covW_0(),covY+covH-6,10,10);
+    function covW_0(){return 0}
+    ctx.fillStyle='#f0f0f0';
+    ctx.fillRect(pad+10,covY+covH-16,10,10);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('White ('+fmt(d.pWhite*100,1)+'%)',pad+26,covY+covH-8);
+    ctx.fillStyle='#606060';
+    ctx.fillRect(pad+130,covY+covH-16,10,10);
+    ctx.fillStyle='#d0ffe0';
+    ctx.fillText('Black ('+fmt(d.pBlack*100,1)+'%)',pad+146,covY+covH-8);
+    ctx.fillStyle='#ffe040';
+    ctx.fillRect(pad+250,covY+covH-16,10,10);
+    ctx.fillStyle='#d0ffe0';
+    ctx.fillText('Luminosity L='+fmt(d.L,2),pad+266,covY+covH-8);
+    /* Info panel */
+    ctx.fillStyle='rgba(10,20,12,0.9)';
+    ctx.strokeStyle='rgba(64,255,144,0.5)';
+    ctx.beginPath();ctx.roundRect(20,20,260,130,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ff90';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('DAISYWORLD',32,42);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('Temperature: '+fmt(d.T,2)+' K',32,62);
+    ctx.fillText('Solar luminosity: '+fmt(d.L,3),32,78);
+    ctx.fillText('White daisies: '+fmt(d.pWhite*100,1)+'%',32,94);
+    ctx.fillText('Black daisies: '+fmt(d.pBlack*100,1)+'%',32,110);
+    ctx.fillStyle='#ffe040';
+    ctx.fillText('Bare ground: '+fmt(d.empty*100,1)+'%',32,126);
+    setStatsHTML(
+      '<div>T: '+fmt(d.T,1)+' K</div>'+
+      '<div>L: '+fmt(d.L,3)+'</div>'+
+      '<div>White: '+fmt(d.pWhite*100,1)+'%</div>'+
+      '<div>Black: '+fmt(d.pBlack*100,1)+'%</div>'
+    );
+    updateBadge('🌼 Daisyworld · T='+fmt(d.T,1)+'K · L='+fmt(d.L,3));
+    $('sbMode').textContent='Daisyworld';
+    $('sbT').textContent=fmt(d.t,1);
+    $('sbPop').textContent=fmt(d.T,1)+'K';
+  },
+  onDown:function(){},
+  controls:function(){
+    var d=STATE.daisy;
+    var html='';
+    html+='<div class="sec"><h4>Solar luminosity</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>L</span><span>'+fmt(d.L,3)+'</span></div>';
+    html+='<input type="range" min="0.6" max="2.2" step="0.01" value="'+d.L+'" oninput="STATE.daisy.L=parseFloat(this.value);STATE.daisy.regulation=false;renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Albedos</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>White daisy</span><span>'+fmt(d.albedoWhite,2)+'</span></div>';
+    html+='<input type="range" min="0.5" max="0.9" step="0.01" value="'+d.albedoWhite+'" oninput="STATE.daisy.albedoWhite=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Black daisy</span><span>'+fmt(d.albedoBlack,2)+'</span></div>';
+    html+='<input type="range" min="0.1" max="0.4" step="0.01" value="'+d.albedoBlack+'" oninput="STATE.daisy.albedoBlack=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Greenhouse factor</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>GH</span><span>'+fmt(d.greenhouse,2)+'</span></div>';
+    html+='<input type="range" min="0.5" max="1.5" step="0.05" value="'+d.greenhouse+'" oninput="STATE.daisy.greenhouse=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn '+(d.regulation?'danger':'primary')+' full" onclick="STATE.daisy.regulation=!STATE.daisy.regulation;renderLeftPanel()">'+(d.regulation?'⏸ Stop luminosity sweep':'▶ Auto-sweep luminosity')+'</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.daisy.init();STATE.daisy.regulation=false">↺ Reset</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Try it</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.56rem;line-height:1.65;color:var(--tx2)">'+
+      '• Slide L from 0.6 → 2.2 manually<br>'+
+      '• With daisies, T stays ~290-300 K over a wide range<br>'+
+      '• Without daisies (set both albedos = ground), T rises steeply<br>'+
+      '• This is Lovelock\'s Gaia hypothesis: life regulates climate'
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var d=STATE.daisy;
+    var sigma=5.67e-8;
+    var S=d.solarConst*d.L;
+    var albedo=d.pWhite*d.albedoWhite+d.pBlack*d.albedoBlack+d.empty*d.albedoGround;
+    return '<div class="sec"><h4>Planetary temperature</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Stefan-Boltzmann balance:<br>'+
+      '(1−a)·L·S/4 = σ·T⁴<br><br>'+
+      'T = ((1−a)·L·S / (4σ))^¼<br><br>'+
+      'a = mean albedo (reflectivity)<br>'+
+      'S = 1370 W/m² (solar constant)<br>'+
+      'σ = 5.67×10⁻⁸ W/(m²·K⁴)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Daisy growth</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Growth rate depends on local T:<br>'+
+      'β(T) = 1 − ((T − T_opt)/ΔT)²<br><br>'+
+      'T_opt = 295.5 K (22.5°C)<br>'+
+      'ΔT = 17.5 K<br><br>'+
+      'Below/above this range, growth = 0.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Feedback mechanism</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'High L → T rises → white daisies grow (low albedo)<br>'+
+      '→ albedo increases → T drops<br><br>'+
+      'Low L → T falls → black daisies grow (high albedo)<br>'+
+      '→ albedo decreases → T rises<br><br>'+
+      'This is a negative feedback loop.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current</h4><div class="kv">'+
+      '<div class="row"><span class="k">Albedo</span><span class="v">'+fmt(albedo,3)+'</span></div>'+
+      '<div class="row"><span class="k">T</span><span class="v">'+fmt(d.T,2)+' K</span></div>'+
+      '<div class="row"><span class="k">L</span><span class="v">'+fmt(d.L,3)+'</span></div>'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE 4: SIR EPIDEMIC
+   ================================================================ */
+var SIR_PRESETS={
+  'flu':{beta:0.3,gamma:0.1,name:'Flu (R₀=3)'},
+  'covid':{beta:0.4,gamma:0.15,name:'COVID-like (R₀=2.7)'},
+  'measles':{beta:0.9,gamma:0.1,name:'Measles (R₀=9)'},
+  'common':{beta:0.15,gamma:0.1,name:'Common cold (R₀=1.5)'},
+  'ebola':{beta:0.35,gamma:0.2,name:'Ebola-like (R₀=1.75)'}
+};
+registerModule('sir',{
+  title:'Epidemic (SIR)',
+  icon:'🦠',
+  desc:'Kermack-McKendrick SIR model. R₀ determines outbreak size. Switch to network mode to see spatial spread.',
+  init:function(){
+    var s=STATE.sir;
+    s.S=s.N-s.I;
+    s.R=0;
+    s.t=0;
+    s.history=[];
+    if(s.mode==='network'){
+      s.gridSize=60;
+      s.states=new Uint8Array(s.gridSize*s.gridSize);
+      /* 0=S, 1=I, 2=R */
+      var initI=rnd(3,8);
+      for(var k=0;k<initI;k++){
+        s.states[rnd(0,s.gridSize*s.gridSize-1)]=1;
+      }
+      s.S=s.gridSize*s.gridSize-initI;
+      s.I=initI;
+      s.R=0;
+    }
+    logMsg('SIR: β='+s.beta+' γ='+s.gamma+' R₀='+fmt(s.beta/s.gamma,2),'success');
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var s=STATE.sir;
+    if(!STATE.playing)return;
+    if(s.mode==='ode'){
+      var steps=4;
+      var h=s.dt/steps;
+      for(var k=0;k<steps;k++){
+        var S=s.S,I=s.I,R=s.R;
+        var dS=-s.beta*S*I/s.N;
+        var dI=s.beta*S*I/s.N-s.gamma*I;
+        var dR=s.gamma*I;
+        s.S=Math.max(0,S+dS*h);
+        s.I=Math.max(0,I+dI*h);
+        s.R=Math.max(0,R+dR*h);
+        s.t+=h;
+      }
+      s.history.push({t:s.t,S:s.S,I:s.I,R:s.R});
+      if(s.history.length>s.maxHistory)s.history.shift();
+    } else {
+      /* Network mode: cellular automaton-like SIR */
+      var size=s.gridSize;
+      var newStates=new Uint8Array(s.states);
+      for(var y=0;y<size;y++){
+        for(var x=0;x<size;x++){
+          var idx=y*size+x;
+          if(s.states[idx]===0){
+            /* Count infected neighbors */
+            var infN=0;
+            for(var dy=-1;dy<=1;dy++){
+              for(var dx=-1;dx<=1;dx++){
+                if(dx===0&&dy===0)continue;
+                var nx=(x+dx+size)%size;
+                var ny=(y+dy+size)%size;
+                if(s.states[ny*size+nx]===1)infN++;
+              }
+            }
+            var prob=s.beta*infN/8;
+            if(Math.random()<prob*0.4)newStates[idx]=1;
+          } else if(s.states[idx]===1){
+            if(Math.random()<s.gamma*0.5)newStates[idx]=2;
+          }
+        }
+      }
+      s.states=newStates;
+      /* Update counts */
+      var S=0,I=0,R=0;
+      for(var i=0;i<newStates.length;i++){
+        if(newStates[i]===0)S++;
+        else if(newStates[i]===1)I++;
+        else R++;
+      }
+      s.S=S;s.I=I;s.R=R;
+      s.t+=dt*10;
+      s.history.push({t:s.t,S:s.S,I:s.I,R:s.R});
+      if(s.history.length>s.maxHistory)s.history.shift();
+    }
+  },
+  stepOnce:function(){this.tick(0.2)},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020604';
+    ctx.fillRect(0,0,W,H);
+    var s=STATE.sir;
+    if(s.mode==='network')return this.drawNetwork(ctx);
+    var pad=40;
+    var tsH=H*0.5;
+    var tsY=pad+20;
+    ctx.fillStyle='rgba(10,20,12,0.6)';
+    ctx.strokeStyle='rgba(255,96,160,0.4)';
+    ctx.beginPath();ctx.roundRect(pad,tsY,W-2*pad,tsH,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ff60a0';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('SIR COMPARTMENTS',pad+10,tsY-6);
+    /* Axes */
+    for(var i=0;i<=4;i++){
+      var y=tsY+i*tsH/4;
+      ctx.strokeStyle='rgba(255,96,160,0.1)';
+      ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke();
+      ctx.fillStyle='#4a8058';
+      ctx.font='9px monospace';
+      ctx.textAlign='right';
+      ctx.fillText(fmt(s.N*(1-i/4),0),pad-4,y+3);
+    }
+    /* Draw curves */
+    if(s.history.length>1){
+      var tMin=s.history[0].t;
+      var tMax=s.history[s.history.length-1].t;
+      var tRange=tMax-tMin||1;
+      var cols={S:'#40d0ff',I:'#ff60a0',R:'#40ff90'};
+      ['S','I','R'].forEach(function(key){
+        ctx.strokeStyle=cols[key];
+        ctx.lineWidth=2.5;
+        ctx.shadowColor=cols[key];ctx.shadowBlur=6;
+        ctx.beginPath();
+        s.history.forEach(function(h,i){
+          var x=pad+(h.t-tMin)/tRange*(W-2*pad);
+          var y=tsY+tsH-(h[key]/s.N)*tsH;
+          if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+        ctx.shadowBlur=0;
+      });
+    }
+    /* Legend */
+    ctx.fillStyle='rgba(10,20,12,0.9)';
+    ctx.strokeStyle='rgba(255,96,160,0.3)';
+    ctx.beginPath();ctx.roundRect(pad+W-2*pad-200,tsY+10,190,90,6);ctx.fill();ctx.stroke();
+    var legY=tsY+24;
+    [['S (susceptible)','#40d0ff',s.S],['I (infected)','#ff60a0',s.I],['R (recovered)','#40ff90',s.R]].forEach(function(row){
+      ctx.fillStyle=row[1];
+      ctx.fillRect(pad+W-2*pad-190,legY-8,12,10);
+      ctx.fillStyle='#d0ffe0';
+      ctx.font='10px monospace';
+      ctx.textAlign='left';
+      ctx.fillText(row[0]+': '+fmt(row[2],0),pad+W-2*pad-172,legY);
+      legY+=26;
+    });
+    /* Peak infection analysis */
+    var R0=s.beta/s.gamma;
+    var herdThreshold=1-1/R0;
+    /* Info panel */
+    ctx.fillStyle='rgba(10,20,12,0.9)';
+    ctx.strokeStyle='rgba(255,96,160,0.5)';
+    ctx.beginPath();ctx.roundRect(20,20,260,140,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ff60a0';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('SIR EPIDEMIC',32,42);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('β = '+fmt(s.beta,3)+'   γ = '+fmt(s.gamma,3),32,62);
+    ctx.fillStyle='#ff60a0';
+    ctx.font='bold 11px monospace';
+    ctx.fillText('R₀ = '+fmt(R0,2),32,82);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('Herd immunity threshold:',32,102);
+    ctx.fillStyle='#40ff90';
+    ctx.fillText(fmt(herdThreshold*100,1)+'%',32,118);
+    ctx.fillStyle='#d0ffe0';
+    ctx.fillText('N = '+s.N,32,138);
+    /* Population pyramid */
+    var pyY=tsY+tsH+40;
+    var pyH=H-pyY-pad;
+    if(pyH>60){
+      var total=s.S+s.I+s.R;
+      var barY=pyY+pyH-30;
+      var barH=30;
+      var xS=pad,xI=pad+(s.S/total)*(W-2*pad),xR=xI+(s.I/total)*(W-2*pad);
+      ctx.fillStyle='#40d0ff';
+      ctx.fillRect(xS,barY,(s.S/total)*(W-2*pad),barH);
+      ctx.fillStyle='#ff60a0';
+      ctx.fillRect(xI,barY,(s.I/total)*(W-2*pad),barH);
+      ctx.fillStyle='#40ff90';
+      ctx.fillRect(xR,barY,(s.R/total)*(W-2*pad),barH);
+      ctx.strokeStyle='rgba(255,255,255,0.4)';
+      ctx.strokeRect(pad,barY,W-2*pad,barH);
+      ctx.fillStyle='#d0ffe0';
+      ctx.font='10px monospace';
+      ctx.textAlign='center';
+      ctx.fillText('Current population composition',W/2,pyY+20);
+      ctx.fillStyle='#40d0ff';
+      ctx.fillText('S '+fmt(s.S/total*100,0)+'%',xS+(xI-xS)/2,barY+20);
+      ctx.fillStyle='#ff60a0';
+      ctx.fillText('I '+fmt(s.I/total*100,0)+'%',xI+(xR-xI)/2,barY+20);
+      ctx.fillStyle='#40ff90';
+      ctx.fillText('R '+fmt(s.R/total*100,0)+'%',xR+(W-pad-xR)/2,barY+20);
+    }
+    setStatsHTML(
+      '<div>S: '+fmt(s.S,0)+'</div>'+
+      '<div>I: '+fmt(s.I,0)+'</div>'+
+      '<div>R: '+fmt(s.R,0)+'</div>'+
+      '<div>R₀: '+fmt(R0,2)+'</div>'+
+      '<div>Herd: '+fmt(herdThreshold*100,0)+'%</div>'
+    );
+    updateBadge('🦠 SIR · R₀='+fmt(R0,2)+' · I='+fmt(s.I,0));
+    $('sbMode').textContent='Epidemic (SIR)';
+    $('sbT').textContent=fmt(s.t,1);
+    $('sbR0').textContent=fmt(R0,2);
+    $('sbPop').textContent=fmt(s.S+s.I+s.R,0);
+  },
+  drawNetwork:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    var s=STATE.sir;
+    var size=s.gridSize;
+    var cellW=Math.min(W,H)/size;
+    var ox=(W-size*cellW)/2,oy=(H-size*cellW)/2;
+    for(var y=0;y<size;y++){
+      for(var x=0;x<size;x++){
+        var v=s.states[y*size+x];
+        ctx.fillStyle=v===0?'#1c3020':v===1?'#ff60a0':'#40ff90';
+        ctx.fillRect(ox+x*cellW,oy+y*cellW,cellW+0.5,cellW+0.5);
+      }
+    }
+    ctx.strokeStyle='rgba(64,255,144,0.4)';
+    ctx.lineWidth=1.5;
+    ctx.strokeRect(ox,oy,size*cellW,size*cellW);
+    /* Info */
+    var R0=s.beta/s.gamma;
+    ctx.fillStyle='rgba(10,20,12,0.9)';
+    ctx.strokeStyle='rgba(255,96,160,0.5)';
+    ctx.beginPath();ctx.roundRect(20,20,260,130,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ff60a0';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('NETWORK SIR',32,42);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('Grid: '+size+'×'+size,32,62);
+    ctx.fillText('S: '+s.S+'  I: '+s.I+'  R: '+s.R,32,78);
+    ctx.fillText('β = '+fmt(s.beta,2)+'  γ = '+fmt(s.gamma,2),32,94);
+    ctx.fillStyle='#ff60a0';
+    ctx.fillText('R₀ = '+fmt(R0,2),32,110);
+    ctx.fillStyle='#40ff90';
+    ctx.fillText('Wavefront spread on grid',32,126);
+    setStatsHTML(
+      '<div>S: '+s.S+'</div>'+
+      '<div>I: '+s.I+'</div>'+
+      '<div>R: '+s.R+'</div>'+
+      '<div>R₀: '+fmt(R0,2)+'</div>'
+    );
+    updateBadge('🦠 Network SIR · R₀='+fmt(R0,2)+' · I='+s.I);
+    $('sbMode').textContent='Epidemic (SIR)';
+  },
+  onDown:function(p){
+    if(STATE.sir.mode!=='network')return;
+    var s=STATE.sir;
+    var size=s.gridSize;
+    var cellW=Math.min(CANV.W,CANV.H)/size;
+    var ox=(CANV.W-size*cellW)/2,oy=(CANV.H-size*cellW)/2;
+    var x=Math.floor((p.x-ox)/cellW);
+    var y=Math.floor((p.y-oy)/cellW);
+    if(x<0||x>=size||y<0||y>=size)return;
+    /* Infect a cell */
+    s.states[y*size+x]=1;
+  },
+  controls:function(){
+    var s=STATE.sir;
+    var R0=s.beta/s.gamma;
+    var html='';
+    html+='<div class="sec"><h4>Preset</h4><div class="chip-row">';
+    Object.keys(SIR_PRESETS).forEach(function(k){
+      html+='<div class="chip" onclick="setSIR(\''+k+'\')">'+SIR_PRESETS[k].name+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Mode</h4><div class="chip-row">';
+    html+='<div class="chip '+(s.mode==='ode'?'active':'')+'" onclick="STATE.sir.mode=\'ode\';MODULES.sir.init();renderLeftPanel()">ODE compartments</div>';
+    html+='<div class="chip '+(s.mode==='network'?'active':'')+'" onclick="STATE.sir.mode=\'network\';MODULES.sir.init();renderLeftPanel()">Spatial network</div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>β (infection rate)</span><span>'+fmt(s.beta,3)+'</span></div>';
+    html+='<input type="range" min="0.02" max="1" step="0.01" value="'+s.beta+'" oninput="STATE.sir.beta=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>γ (recovery rate)</span><span>'+fmt(s.gamma,3)+'</span></div>';
+    html+='<input type="range" min="0.02" max="0.5" step="0.01" value="'+s.gamma+'" oninput="STATE.sir.gamma=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div style="font-family:var(--mono);font-size:.6rem;color:var(--c4)">R₀ = β/γ = '+fmt(R0,2)+'</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.sir.init()">↺ Reset outbreak</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.sir.I+=50;STATE.sir.S-=50;renderLeftPanel()">🦠 Seed 50 new cases</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Interpretation</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.56rem;line-height:1.65;color:var(--tx2)">'+
+      'R₀ < 1 → outbreak dies out<br>'+
+      'R₀ = 1 → endemic threshold<br>'+
+      'R₀ > 1 → epidemic spreads<br><br>'+
+      'Herd immunity threshold = 1 − 1/R₀. Above this, disease can\'t spread.'+
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var s=STATE.sir;
+    var R0=s.beta/s.gamma;
+    return '<div class="sec"><h4>SIR equations</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'dS/dt = −β·S·I/N<br>'+
+      'dI/dt = β·S·I/N − γ·I<br>'+
+      'dR/dt = γ·I<br><br>'+
+      'N = S + I + R (conserved)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Basic reproduction number</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'R₀ = β/γ<br><br>'+
+      'Average number of secondary infections caused by one infected individual in a fully susceptible population.<br><br>'+
+      'Current: R₀ = '+fmt(R0,3)+''+
+      '</div></div>'+
+      '<div class="sec"><h4>Herd immunity</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Threshold: H = 1 − 1/R₀<br><br>'+
+      'If S/N &lt; 1/R₀, epidemic cannot grow.<br><br>'+
+      'Examples:<br>'+
+      'Flu (R₀=3): H = 67%<br>'+
+      'Measles (R₀=9): H = 89%<br>'+
+      'COVID-19 (R₀=2.7): H = 63%'+
+      '</div></div>'+
+      '<div class="sec"><h4>Peak infection</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Peak occurs when dI/dt = 0:<br>'+
+      'S = N/R₀<br><br>'+
+      'So peak is at S/N = 1/R₀ = '+fmt(1/R0,3)+''+
+      '</div></div>';
+  }
+});
+function setSIR(k){
+  var p=SIR_PRESETS[k];
+  STATE.sir.beta=p.beta;
+  STATE.sir.gamma=p.gamma;
+  MODULES.sir.init();
+  renderLeftPanel();
+}
+
+/* ================================================================
+   MODULE 5: EVOLUTION
+   ================================================================ */
+registerModule('evolution',{
+  title:'Evolution',
+  icon:'🧬',
+  desc:'Hardy-Weinberg equilibrium, natural selection, and genetic drift. Watch allele frequencies change under different fitness regimes.',
+  init:function(){
+    var e=STATE.evolution;
+    e.generations=0;
+    e.history=[];
+    e.popSize=100;
+    e.simPop=[];
+    for(var i=0;i<e.popSize;i++){
+      /* Each individual has 2 alleles */
+      var a1=Math.random()<e.pA?1:0;
+      var a2=Math.random()<e.pA?1:0;
+      e.simPop.push([a1,a2]);
+    }
+    logMsg('Evolution: p(A)='+e.pA+' wAA='+e.wAA+' wAa='+e.wAa+' waa='+e.waa,'success');
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var e=STATE.evolution;
+    if(!STATE.playing)return;
+    /* Run one generation per ~0.3s */
+    if(!this._acc)this._acc=0;
+    this._acc+=dt;
+    if(this._acc>=0.3){
+      this._acc=0;
+      this.generation();
+    }
+  },
+  generation:function(){
+    var e=STATE.evolution;
+    e.generations++;
+    if(e.demoMode==='selection'){
+      /* Deterministic selection: compute allele freq change from fitness */
+      var p=e.pA;
+      var q=1-p;
+      var wBar=p*p*e.wAA+2*p*q*e.wAa+q*q*e.waa;
+      var pNext=(p*p*e.wAA+p*q*e.wAa)/wBar;
+      /* Mutation */
+      var mu=e.mutationRate;
+      pNext=pNext*(1-mu)+q*mu;
+      e.pA=pNext;
+      /* Record */
+      e.history.push({gen:e.generations,p:e.pA,q:1-e.pA});
+    } else {
+      /* Genetic drift with finite pop */
+      var newPop=[];
+      var p=e.pA;
+      for(var i=0;i<e.popSize;i++){
+        var a1=Math.random()<p?1:0;
+        var a2=Math.random()<p?1:0;
+        /* Selection: parent survives with prob proportional to fitness */
+        var fit=a1===1&&a2===1?e.wAA:(a1===1||a2===1?e.wAa:e.waa);
+        if(Math.random()<fit){
+          newPop.push([a1,a2]);
+        } else {
+          newPop.push([Math.random()<p?1:0,Math.random()<p?1:0]);
+        }
+        /* Mutation */
+        if(Math.random()<e.mutationRate)newPop[newPop.length-1][0]=1-newPop[newPop.length-1][0];
+        if(Math.random()<e.mutationRate)newPop[newPop.length-1][1]=1-newPop[newPop.length-1][1];
+      }
+      e.simPop=newPop;
+      var count=0;
+      newPop.forEach(function(ind){count+=ind[0]+ind[1]});
+      e.pA=count/(2*e.popSize);
+      e.history.push({gen:e.generations,p:e.pA,q:1-e.pA});
+    }
+    if(e.history.length>e.maxHistory)e.history.shift();
+    /* Fixation check */
+    if(e.demoMode==='drift'){
+      if(e.pA<=0.001){toast('A allele fixed out (p=0)','warn');e.pA=0}
+      if(e.pA>=0.999){toast('A allele fixed (p=1)','success');e.pA=1}
+    }
+  },
+  stepOnce:function(){this.generation()},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020604';
+    ctx.fillRect(0,0,W,H);
+    var e=STATE.evolution;
+    var pad=40;
+    /* Allele frequency plot */
+    var plotY=pad+20;
+    var plotH=H*0.55;
+    ctx.fillStyle='rgba(10,20,12,0.6)';
+    ctx.strokeStyle='rgba(192,96,255,0.4)';
+    ctx.beginPath();ctx.roundRect(pad,plotY,W-2*pad,plotH,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#c060ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('ALLELE FREQUENCY OVER TIME',pad+10,plotY-6);
+    /* Axes */
+    for(var i=0;i<=4;i++){
+      var y=plotY+i*plotH/4;
+      ctx.strokeStyle='rgba(192,96,255,0.1)';
+      ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke();
+      ctx.fillStyle='#4a8058';
+      ctx.font='9px monospace';
+      ctx.textAlign='right';
+      ctx.fillText(fmt((1-i/4),2),pad-4,y+3);
+    }
+    /* Draw freq curve */
+    if(e.history.length>1){
+      var gMax=e.history[e.history.length-1].gen;
+      var gMin=e.history[0].gen;
+      var gRange=gMax-gMin||1;
+      ctx.strokeStyle='#c060ff';
+      ctx.lineWidth=2.5;
+      ctx.shadowColor='#c060ff';ctx.shadowBlur=8;
+      ctx.beginPath();
+      e.history.forEach(function(h,i){
+        var x=pad+(h.gen-gMin)/gRange*(W-2*pad);
+        var y=plotY+plotH-h.p*plotH;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      ctx.shadowBlur=0;
+      /* Draw q line */
+      ctx.strokeStyle='#40d0ff';
+      ctx.lineWidth=1.5;
+      ctx.setLineDash([3,3]);
+      ctx.beginPath();
+      e.history.forEach(function(h,i){
+        var x=pad+(h.gen-gMin)/gRange*(W-2*pad);
+        var y=plotY+plotH-(1-h.p)*plotH;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    /* Legend */
+    ctx.fillStyle='#c060ff';
+    ctx.fillRect(pad+10,plotY+10,12,8);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('p (allele A) = '+fmt(e.pA,4),pad+26,plotY+18);
+    ctx.fillStyle='#40d0ff';
+    ctx.fillRect(pad+10,plotY+28,12,8);
+    ctx.fillStyle='#d0ffe0';
+    ctx.fillText('q (allele a) = '+fmt(1-e.pA,4),pad+26,plotY+36);
+    /* Genotype bars */
+    var genY=plotY+plotH+40;
+    var genH=H-genY-pad;
+    if(genH>60){
+      ctx.fillStyle='rgba(10,20,12,0.6)';
+      ctx.strokeStyle='rgba(192,96,255,0.4)';
+      ctx.beginPath();ctx.roundRect(pad,genY,W-2*pad,genH,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#c060ff';
+      ctx.font='bold 11px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('GENOTYPE FREQUENCIES (Hardy-Weinberg)',pad+10,genY-6);
+      var p=e.pA,q=1-e.pA;
+      var fAA=p*p,fAa=2*p*q,faa=q*q;
+      var barH=genH-40;
+      var barW=(W-2*pad-40)/3;
+      var genotypes=[
+        {name:'AA',freq:fAA,color:'#40ff90',fit:e.wAA},
+        {name:'Aa',freq:fAa,color:'#ffe040',fit:e.wAa},
+        {name:'aa',freq:faa,color:'#ff60a0',fit:e.waa}
+      ];
+      genotypes.forEach(function(g,i){
+        var x=pad+20+i*barW;
+        var h=g.freq*barH;
+        var y=genY+genH-20-h;
+        ctx.fillStyle=g.color;
+        ctx.globalAlpha=0.6;
+        ctx.fillRect(x+5,y,barW-10,h);
+        ctx.globalAlpha=1;
+        ctx.strokeStyle=g.color;
+        ctx.lineWidth=2;
+        ctx.strokeRect(x+5,y,barW-10,h);
+        /* Labels */
+        ctx.fillStyle=g.color;
+        ctx.font='bold 13px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(g.name,x+barW/2,genY+30);
+        ctx.font='11px monospace';
+        ctx.fillStyle='#d0ffe0';
+        ctx.fillText(fmt(g.freq*100,1)+'%',x+barW/2,genY+50);
+        ctx.font='10px monospace';
+        ctx.fillStyle='#4a8058';
+        ctx.fillText('w = '+fmt(g.fit,2),x+barW/2,genY+genH-4);
+      });
+    }
+    /* Info panel */
+    ctx.fillStyle='rgba(10,20,12,0.9)';
+    ctx.strokeStyle='rgba(192,96,255,0.5)';
+    ctx.beginPath();ctx.roundRect(20,20,260,140,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#c060ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('EVOLUTION',32,42);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('Generation: '+e.generations,32,62);
+    ctx.fillText('p(A) = '+fmt(e.pA,4),32,78);
+    ctx.fillText('Mode: '+e.demoMode,32,94);
+    ctx.fillStyle='#ffe040';
+    ctx.fillText('wAA='+fmt(e.wAA,2)+'  wAa='+fmt(e.wAa,2)+'  waa='+fmt(e.waa,2),32,112);
+    ctx.fillStyle='#40d0ff';
+    ctx.fillText('μ (mutation) = '+sci(e.mutationRate,1),32,130);
+    setStatsHTML(
+      '<div>Gen: '+e.generations+'</div>'+
+      '<div>p(A): '+fmt(e.pA,3)+'</div>'+
+      '<div>q(a): '+fmt(1-e.pA,3)+'</div>'+
+      '<div>Mode: '+e.demoMode+'</div>'
+    );
+    updateBadge('🧬 Evolution · gen '+e.generations+' · p='+fmt(e.pA,3));
+    $('sbMode').textContent='Evolution';
+    $('sbT').textContent=e.generations;
+  },
+  onDown:function(){},
+  controls:function(){
+    var e=STATE.evolution;
+    var html='';
+    html+='<div class="sec"><h4>Mode</h4><div class="chip-row">';
+    [['selection','Selection (deterministic)'],['drift','Genetic drift (finite)']].forEach(function(m){
+      html+='<div class="chip '+(e.demoMode===m[0]?'active':'')+'" onclick="STATE.evolution.demoMode=\''+m[0]+'\';MODULES.evolution.init();renderLeftPanel()">'+m[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Initial frequency</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>p(A)</span><span>'+fmt(e.pA,3)+'</span></div>';
+    html+='<input type="range" min="0.01" max="0.99" step="0.01" value="'+e.pA+'" oninput="STATE.evolution.pA=parseFloat(this.value);MODULES.evolution.init();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Fitness coefficients</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>w(AA)</span><span>'+fmt(e.wAA,2)+'</span></div>';
+    html+='<input type="range" min="0" max="1" step="0.02" value="'+e.wAA+'" oninput="STATE.evolution.wAA=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>w(Aa)</span><span>'+fmt(e.wAa,2)+'</span></div>';
+    html+='<input type="range" min="0" max="1" step="0.02" value="'+e.wAa+'" oninput="STATE.evolution.wAa=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>w(aa)</span><span>'+fmt(e.waa,2)+'</span></div>';
+    html+='<input type="range" min="0" max="1" step="0.02" value="'+e.waa+'" oninput="STATE.evolution.waa=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Mutation rate</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>μ</span><span>'+sci(e.mutationRate,1)+'</span></div>';
+    html+='<input type="range" min="0" max="0.01" step="0.0001" value="'+e.mutationRate+'" oninput="STATE.evolution.mutationRate=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Famous scenarios</h4><div class="chip-row">';
+    html+='<div class="chip" onclick="setEvo(1,1,1,0.5,\'selection\')">Neutral</div>';
+    html+='<div class="chip" onclick="setEvo(1,1,0.9,0.5,\'selection\')">Deleterious recessive</div>';
+    html+='<div class="chip" onclick="setEvo(0.9,1,1,0.5,\'selection\')">Heterozygote advantage</div>';
+    html+='<div class="chip" onclick="setEvo(1,0.95,0.9,0.5,\'selection\')">Directional</div>';
+    html+='<div class="chip" onclick="setEvo(1,1,1,0.5,\'drift\')">Drift only</div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.evolution.init()">↺ Reset population</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var e=STATE.evolution;
+    var p=e.pA,q=1-p;
+    var wBar=p*p*e.wAA+2*p*q*e.wAa+q*q*e.waa;
+    return '<div class="sec"><h4>Hardy-Weinberg</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Genotype frequencies after one generation of random mating:<br>'+
+      'AA: p²<br>'+
+      'Aa: 2pq<br>'+
+      'aa: q²<br><br>'+
+      'If no selection, drift, or mutation → frequencies stay constant (equilibrium).'+
+      '</div></div>'+
+      '<div class="sec"><h4>Selection</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'w = fitness (probability of survival × reproduction)<br>'+
+      'w̄ = p²wAA + 2pq·wAa + q²·waa (mean fitness)<br><br>'+
+      'p\' = (p²·wAA + pq·wAa) / w̄<br><br>'+
+      'Current: w̄ = '+fmt(wBar,4)+''+
+      '</div></div>'+
+      '<div class="sec"><h4>Genetic drift</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'In finite populations, allele frequencies change randomly even without selection.<br><br>'+
+      'Variance per generation: p·q/(2N)<br><br>'+
+      'Eventually one allele fixes (p=0 or p=1).<br><br>'+
+      'This is why small populations lose diversity.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Mutation-selection balance</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'For deleterious recessive alleles, equilibrium frequency:<br>'+
+      'q_eq ≈ √(μ/s)<br><br>'+
+      'μ = mutation rate, s = selection coefficient'+
+      '</div></div>';
+  }
+});
+function setEvo(wAA,wAa,waa,pA,mode){
+  var e=STATE.evolution;
+  e.wAA=wAA;e.wAa=wAa;e.waa=waa;e.pA=pA;e.demoMode=mode;
+  MODULES.evolution.init();
+  renderLeftPanel();
+}
+</script>
+<script>
+var TABS=[
+  {key:'lv',icon:'🦊',label:'Lotka-Volterra'},
+  {key:'web',icon:'🕸',label:'Food Web'},
+  {key:'daisy',icon:'🌼',label:'Daisyworld'},
+  {key:'sir',icon:'🦠',label:'Epidemic'},
+  {key:'evolution',icon:'🧬',label:'Evolution'}
+];
+function buildTabs(){
+  var tabs=$('tbTabs');tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===key)});
+  $('sbMode').textContent=(MODULES[key]&&MODULES[key].title)||key;
+  if(MODULES[key]&&MODULES[key].init)MODULES[key].init();
+  renderLeftPanel();renderRightPanel();
+}
+function switchRp(name,e){
+  STATE.currentRp=name;
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active')});
+  e.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active')});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+  renderRightPanel();
+}
+function renderLeftPanel(){
+  var body=$('lpBody');if(!body)return;
+  var m=MODULES[STATE.currentTab];if(!m){body.innerHTML='';return;}
+  var html='';
+  html+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--c1);font-size:.7rem">'+m.icon+' '+m.title+'</h4><div style="font-size:.6rem;color:var(--tx3);font-family:var(--mono);line-height:1.5;margin-top:4px">'+m.desc+'</div></div>';
+  if(m.controls)html+=m.controls();
+  body.innerHTML=html;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var statePane=$('rpState');
+  if(statePane){
+    statePane.innerHTML=
+      '<div class="sec"><h4>Live</h4><div class="kv">'+
+      '<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>'+
+      '<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,1)+'s</span></div>'+
+      '<div class="row"><span class="k">Playing</span><span class="v">'+(STATE.playing?'yes':'paused')+'</span></div>'+
+      '</div></div>';
+  }
+  var mathPane=$('rpMath');
+  if(mathPane&&m&&m.mathPanel)mathPane.innerHTML=m.mathPanel();
+  else if(mathPane)mathPane.innerHTML='<div class="empty">No math panel</div>';
+  var helpPane=$('rpHelp');
+  if(helpPane&&m)helpPane.innerHTML=
+    '<div class="sec"><h4>Module</h4>'+
+    '<div style="font-size:.6rem;font-family:var(--mono);line-height:1.6;color:var(--tx2)">'+
+    '<b style="color:var(--c1)">'+m.icon+' '+m.title+'</b><br><br>'+m.desc+'</div></div>';
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){
+  var p=$('rpLogs');if(!p)return;
+  var html='<div class="sec"><h4>Event Log</h4>';
+  if(!LOG.length)html+='<div class="empty" style="padding:20px;font-size:.6rem">No events</div>';
+  else LOG.slice().reverse().forEach(function(l){
+    var color=l.type==='error'?'var(--err)':l.type==='success'?'var(--c1)':l.type==='warn'?'var(--c6)':'var(--c3)';
+    html+='<div style="padding:3px 6px;border-left:2px solid '+color+';margin-bottom:3px;font-family:var(--mono);font-size:.58rem;background:var(--panel3);border-radius:2px">'+
+      '<span style="color:var(--tx3)">'+new Date(l.t).toTimeString().substr(0,8)+'</span> '+
+      '<span style="color:'+color+'">'+esc(l.msg)+'</span></div>';
+  });
+  html+='</div>';
+  p.innerHTML=html;
+}
+function togglePlay(){
+  STATE.playing=!STATE.playing;
+  $('btnPlay').textContent=STATE.playing?'⏸':'▶';
+  $('tbDot').classList.toggle('on',STATE.playing);
+  toast(STATE.playing?'Running':'Paused','info',900);
+}
+function stepOnce(){
+  var m=MODULES[STATE.currentTab];
+  if(m&&m.stepOnce)m.stepOnce();
+  else if(m&&m.step)m.step();
+  else toast('No step','info',900);
+}
+function resetModule(){
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();toast('Reset','success',900);
+  }
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['gaia','light','mono'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  var next=THEMES[(i+1)%THEMES.length];
+  document.documentElement.setAttribute('data-theme',next);
+  STATE.theme=next;
+  toast('Theme: '+next,'success');
+}
+function showHelp(){
+  openModal('❓ GAIA — Help',
+    '<div class="sec"><h4>🌿 About</h4><div style="font-size:.62rem;line-height:1.75;color:var(--tx2);font-family:var(--mono)">Ecology and population dynamics workbench in one HTML file. Lotka-Volterra predator-prey, multi-species food webs, Daisyworld climate regulation, SIR epidemics, and population genetics — all real ODEs and models, no dependencies.</div></div>'+
+    '<div class="sec"><h4>📚 Modules</h4><div style="font-size:.62rem;line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b style="color:var(--c1)">🦊 Lotka-Volterra</b> — predator-prey ODEs + phase portrait<br>'+
+    '<b style="color:var(--c1)">🕸 Food Web</b> — multi-species ecosystem<br>'+
+    '<b style="color:var(--c1)">🌼 Daisyworld</b> — Gaia hypothesis (Lovelock)<br>'+
+    '<b style="color:var(--c1)">🦠 Epidemic</b> — SIR model with R₀ and networks<br>'+
+    '<b style="color:var(--c1)">🧬 Evolution</b> — Hardy-Weinberg + selection + drift'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div style="font-size:.62rem;font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b style="color:var(--c1)">Space</b> — Play/pause<br>'+
+    '<b style="color:var(--c1)">→</b> — Single step<br>'+
+    '<b style="color:var(--c1)">R</b> — Reset module<br>'+
+    '<b style="color:var(--c1)">1-5</b> — Jump to module<br>'+
+    '<b style="color:var(--c1)">T</b> — Cycle theme<br>'+
+    '<b style="color:var(--c1)">?</b> — This help'+
+    '</div></div>'+
+    '<div class="sec"><h4>🎮 Tips</h4><div style="font-size:.6rem;font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+    '• Lotka-Volterra: click phase plot to set initial X, Y<br>'+
+    '• Food Web: click species chips to boost populations; try mass die-off<br>'+
+    '• Daisyworld: enable auto-sweep and watch T stay stable across L range<br>'+
+    '• SIR: switch to network mode for spatial wavefront spread<br>'+
+    '• Evolution: try "heterozygote advantage" (wAa=1, wAA=waa=0.9) — both alleles persist'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',{size:'lg'});
+}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay();}
+  else if(e.key==='ArrowRight'){e.preventDefault();stepOnce();}
+  else if(e.key==='r'||e.key==='R')resetModule();
+  else if(e.key>='1'&&e.key<='5'){var idx=parseInt(e.key)-1;if(TABS[idx])switchTab(TABS[idx].key);}
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal();
+});
+
+/* Animated boot: growing plants/boids */
+function animateBootField(){
+  var bc=$('bootField');
+  if(!bc)return;
+  bc.width=window.innerWidth;bc.height=window.innerHeight;
+  var bctx=bc.getContext('2d');
+  /* Simple plant growth simulation */
+  var plants=[];
+  for(var i=0;i<60;i++){
+    plants.push({
+      x:Math.random()*bc.width,
+      y:Math.random()*bc.height,
+      size:0,
+      maxSize:rndF(20,50),
+      speed:rndF(0.2,0.8),
+      color:['#40ff90','#40d0ff','#ffe040','#ff60a0'][rnd(0,3)]
+    });
+  }
+  var t0=performance.now();
+  function frame(){
+    if(!bc.isConnected||$('boot').classList.contains('hidden'))return;
+    bctx.fillStyle='#050a06';
+    bctx.fillRect(0,0,bc.width,bc.height);
+    var t=(performance.now()-t0)/1000;
+    plants.forEach(function(p){
+      p.size=Math.min(p.maxSize,p.size+p.speed*0.5);
+      /* Sway */
+      var sx=p.x+Math.sin(t*0.5+p.x*0.01)*3;
+      var sy=p.y-p.size;
+      bctx.strokeStyle=p.color;
+      bctx.globalAlpha=0.5;
+      bctx.lineWidth=2;
+      bctx.shadowColor=p.color;bctx.shadowBlur=8;
+      bctx.beginPath();
+      bctx.moveTo(p.x,p.y);
+      bctx.quadraticCurveTo(sx,sy+p.size/2,sx,sy);
+      bctx.stroke();
+      /* Leaf/tip */
+      bctx.fillStyle=p.color;
+      bctx.beginPath();
+      bctx.arc(sx,sy,2.5,0,Math.PI*2);
+      bctx.fill();
+      bctx.shadowBlur=0;
+      bctx.globalAlpha=1;
+    });
+    /* Reset occasionally for continuous bloom */
+    if(t>15){
+      t0=performance.now();
+      plants.forEach(function(p){p.size=0});
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+var BOOT_STEPS=[
+  'Compiling Lotka-Volterra ODEs...',
+  'Building multi-species food web matrix...',
+  'Warming up Daisyworld albedo feedback...',
+  'Seeding SIR compartments (S=990, I=10, R=0)...',
+  'Initializing Hardy-Weinberg equilibrium...',
+  'Loading RK4 integrator (4th-order accuracy)...',
+  'Growing plants (L-system preview)...',
+  'Ready.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  animateBootField();
+  var iv=setInterval(function(){
+    pct+=rnd(8,18);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('GAIA ready · Press ? for help','success',3200);
+      },400);
+    }
+  },140);
+}
+
+var lastFrameTime=performance.now();
+var fpsAccum=0,fpsFrames=0;
+function mainLoop(now){
+  var dt=Math.min((now-lastFrameTime)/1000,0.05);
+  lastFrameTime=now;
+  fpsAccum+=dt;fpsFrames++;
+  if(fpsAccum>=0.5){
+    $('sbFps').textContent=Math.round(fpsFrames/fpsAccum);
+    fpsAccum=0;fpsFrames=0;
+  }
+  if(STATE.playing){
+    var m=MODULES[STATE.currentTab];
+    if(m&&m.tick){try{m.tick(dt);}catch(e){console.error(e);}}
+    if(m&&m.draw){try{m.draw(CANV.ctx);}catch(e){console.error(e);}}
+  }
+  requestAnimationFrame(mainLoop);
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  buildTabs();
+  initCanvas();
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+  }
+  renderLeftPanel();
+  renderRightPanel();
+  logMsg('GAIA initialized','success');
+  bootSequence();
+  requestAnimationFrame(mainLoop);
+  $('tbDot').classList.add('on');
+  $('tbText').textContent='evolving';
+  setInterval(function(){if(STATE.currentRp==='logs')renderLogs();},1000);
+});
+
+console.log('%c GAIA ','background:linear-gradient(90deg,#40ff90,#40d0ff,#c060ff,#ffe040);color:#050a06;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cEcology & Population Dynamics Lab','color:#40ff90;font-weight:600');
+console.log('%cLotka-Volterra · Food Web · Daisyworld · SIR · Evolution','color:#40d0ff');
+console.log('%cPress ? for help','color:#90c8a0');
+</script>
+</body></html>

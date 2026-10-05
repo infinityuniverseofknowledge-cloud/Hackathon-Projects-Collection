@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CIPHER — Cryptography Workbench</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#030a06;color:#00ff88}
+body{font-family:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#030a06;--bg2:#061209;--panel:#08160d;--panel2:#0a1d11;--panel3:#0e2816;
+  --bd:#0d2818;--bd2:#1a4028;--bd3:#2a6040;
+  --tx:#00ff88;--tx2:#5cbb88;--tx3:#2a6040;
+  --ok:#00ff88;--wn:#ffb000;--er:#ff3355;--info:#00d4ff;--dim:#0a1a10;
+}
+::selection{background:rgba(0,255,136,.25);color:#000}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+textarea{resize:vertical}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#1a4028;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#2a6040}
+
+/* scanlines */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:10000;background:repeating-linear-gradient(0deg,rgba(0,255,136,.02) 0px,rgba(0,255,136,.02) 1px,transparent 1px,transparent 3px)}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:10001;background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.35) 100%)}
+
+#shell{display:flex;flex-direction:column;height:100vh}
+
+/* top bar */
+.top{display:flex;align-items:center;padding:0 16px;height:44px;background:linear-gradient(180deg,#08160d,#061209);border-bottom:1px solid var(--bd2);gap:16px;flex-shrink:0;position:relative;z-index:100}
+.top::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,#00ff88,transparent);opacity:.35;animation:barSweep 6s linear infinite}
+@keyframes barSweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:6px;font-size:14px}
+.logo .cur{display:inline-block;width:8px;height:14px;background:var(--tx);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.logo-name{color:var(--tx);text-shadow:0 0 8px rgba(0,255,136,.5)}
+.logo-sub{color:var(--tx3);font-size:10px;letter-spacing:2px;font-weight:400;margin-left:4px}
+.st{display:flex;gap:16px;margin-left:auto;font-size:11px;color:var(--tx2);letter-spacing:1px}
+.st .v{color:var(--tx)}
+.st .ok{color:var(--ok);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.4}}
+
+/* main layout */
+.main{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* sidebar */
+.side{width:260px;background:var(--panel);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0}
+.side-search{padding:10px;border-bottom:1px solid var(--bd)}
+.side-search input{width:100%;background:#020704;border:1px solid var(--bd2);border-radius:3px;padding:8px 10px;color:var(--tx);font-size:12px;letter-spacing:1px;transition:.15s}
+.side-search input:focus{border-color:var(--tx);box-shadow:0 0 0 3px rgba(0,255,136,.12)}
+.side-search input::placeholder{color:var(--tx3)}
+.side-list{flex:1;overflow-y:auto;padding:6px}
+.cat-h{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--tx3);padding:10px 10px 4px;font-weight:700}
+.tool-item{padding:7px 10px;border-radius:3px;cursor:pointer;font-size:12px;color:var(--tx2);letter-spacing:.5px;transition:.12s;display:flex;align-items:center;gap:8px;border-left:2px solid transparent}
+.tool-item:hover{background:var(--panel2);color:var(--tx)}
+.tool-item.active{background:var(--panel2);color:var(--tx);border-left-color:var(--tx);box-shadow:inset 0 0 20px rgba(0,255,136,.05)}
+.tool-ico{color:var(--tx3);font-size:10px;width:14px;text-align:center}
+.tool-item.active .tool-ico{color:var(--tx)}
+
+/* work area */
+.work{flex:1;overflow-y:auto;padding:20px 24px;min-width:0}
+.work-head{border-bottom:1px dashed var(--bd2);padding-bottom:14px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.work-title{font-size:20px;font-weight:700;letter-spacing:1px;color:var(--tx);text-shadow:0 0 12px rgba(0,255,136,.3)}
+.work-title::before{content:'$ ';color:var(--tx3)}
+.work-desc{font-size:12px;color:var(--tx2);margin-top:6px;max-width:640px;line-height:1.6}
+.work-cat{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--tx3);padding:3px 8px;border:1px solid var(--bd2);border-radius:3px}
+
+.io{margin-bottom:16px}
+.io-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--tx3);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.io-label .cnt{color:var(--tx2);letter-spacing:0;font-weight:400;text-transform:none}
+.io textarea,.io input[type=text],.io input[type=number],.io select{width:100%;background:#020704;border:1px solid var(--bd2);border-radius:3px;padding:10px 12px;color:var(--tx);font-size:13px;letter-spacing:1px;line-height:1.6;transition:.15s;min-height:44px}
+.io textarea{min-height:110px;font-family:inherit}
+.io textarea:focus,.io input:focus,.io select:focus{border-color:var(--tx);box-shadow:0 0 0 3px rgba(0,255,136,.1);background:#000}
+.io input::placeholder,.io textarea::placeholder{color:var(--tx3)}
+.io-out{background:#000;border:1px solid var(--bd2);border-radius:3px;padding:12px;color:var(--tx);font-size:13px;letter-spacing:1px;line-height:1.6;white-space:pre-wrap;word-break:break-all;min-height:44px;max-height:400px;overflow-y:auto;position:relative}
+.io-out::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#00ff88,transparent);opacity:.4}
+.io-out.err{border-color:var(--er);color:var(--er)}
+.io-out.ok{border-color:var(--ok)}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.btn{padding:9px 16px;background:#020704;border:1px solid var(--bd2);border-radius:3px;color:var(--tx);cursor:pointer;font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;transition:.12s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--panel3);border-color:var(--tx);box-shadow:0 0 12px rgba(0,255,136,.15)}
+.btn.primary{background:linear-gradient(180deg,#0a2818,#061a0f);border-color:var(--bd3);color:var(--tx)}
+.btn.primary:hover{background:linear-gradient(180deg,#0e3420,#0a2416);box-shadow:0 0 20px rgba(0,255,136,.25)}
+.btn.warn{border-color:#5a3a10;color:var(--wn)}
+.btn.warn:hover{border-color:var(--wn);box-shadow:0 0 12px rgba(255,176,0,.2)}
+.btn.er{border-color:#5a1a28;color:var(--er)}
+.btn.er:hover{border-color:var(--er);box-shadow:0 0 12px rgba(255,51,85,.2)}
+.btn.sm{padding:5px 10px;font-size:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}.side{width:200px}}
+
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:4px;padding:16px;margin-bottom:14px}
+.panel-h{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--tx3);margin-bottom:10px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.kv{font-size:12px;line-height:1.8}
+.kv .k{color:var(--tx3);display:inline-block;min-width:160px}
+.kv .v{color:var(--tx);font-weight:700}
+.mono{font-family:inherit;letter-spacing:1px}
+
+.chip{display:inline-block;padding:3px 9px;background:var(--panel2);border:1px solid var(--bd2);border-radius:3px;font-size:10px;color:var(--tx2);letter-spacing:1px;margin:0 4px 4px 0;text-transform:uppercase;font-weight:700}
+.chip.ok{border-color:#0d4028;color:var(--ok)}
+.chip.er{border-color:#5a1a28;color:var(--er)}
+.chip.wn{border-color:#5a3a10;color:var(--wn)}
+.chip.info{border-color:#0a4050;color:var(--info)}
+
+.bar{height:6px;background:#031006;border:1px solid var(--bd2);border-radius:2px;overflow:hidden;position:relative}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--tx3),var(--tx));transition:width .3s;box-shadow:0 0 8px rgba(0,255,136,.4)}
+
+.swap{display:flex;justify-content:center;margin:8px 0}
+.swap-btn{width:36px;height:36px;border-radius:50%;background:#020704;border:1px solid var(--bd2);color:var(--tx);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:.15s}
+.swap-btn:hover{background:var(--panel3);border-color:var(--tx);transform:rotate(180deg)}
+
+.tag{font-size:10px;color:var(--tx3);letter-spacing:1px;text-transform:uppercase}
+.hl{color:var(--wn);font-weight:700}
+.hl-ok{color:var(--ok)}
+.hl-er{color:var(--er)}
+.hl-info{color:var(--info)}
+table.tbl{width:100%;border-collapse:collapse;font-size:12px}
+table.tbl th{text-align:left;padding:8px 10px;background:var(--panel2);color:var(--tx2);font-weight:700;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--bd2)}
+table.tbl td{padding:7px 10px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+table.tbl tr:hover td{background:rgba(0,255,136,.03);color:var(--tx)}
+#toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.toast{padding:9px 14px;background:#020704;border:1px solid var(--bd2);border-left:3px solid var(--tx);border-radius:3px;font-size:11px;letter-spacing:1px;max-width:340px;animation:tin .2s;color:var(--tx);box-shadow:0 8px 30px rgba(0,0,0,.6)}
+.toast.er{border-left-color:var(--er);color:var(--er)}
+.toast.wn{border-left-color:var(--wn);color:var(--wn)}
+@keyframes tin{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+.helptext{font-size:11px;color:var(--tx3);line-height:1.7;margin-top:8px;font-style:italic}
+.hidden{display:none}
+.kbd{display:inline-block;padding:1px 6px;background:var(--panel2);border:1px solid var(--bd2);border-radius:3px;font-size:10px;color:var(--tx);letter-spacing:1px}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div class="top">
+    <div class="logo"><span class="logo-name">CIPHER</span><span class="cur"></span><span class="logo-sub">/ offline crypto workbench</span></div>
+    <div class="st">
+      <span>TOOLS <span class="v" id="stTools">0</span></span>
+      <span>OPS <span class="v" id="stOps">0</span></span>
+      <span class="ok">● SECURE</span>
+      <span id="stClock">--:--:--</span>
+    </div>
+  </div>
+  <div class="main">
+    <aside class="side">
+      <div class="side-search"><input id="searchInput" placeholder="search 50 tools…" autocomplete="off"></div>
+      <div class="side-list" id="sideList"></div>
+    </aside>
+    <section class="work" id="work"></section>
+  </div>
+</div>
+<div id="toasts"></div>
+<script>
+"use strict";
+var $=function(i){return document.getElementById(i)};
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c!=null){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(m,k){var t=el('div',{class:'toast'+(k?' '+k:''),text:m});$('toasts').appendChild(t);setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(function(){t.remove()},320)},2200)}
+function bytesToHex(b){return Array.from(b).map(function(x){return x.toString(16).padStart(2,'0')}).join('')}
+function hexToBytes(h){h=h.replace(/[^0-9a-fA-F]/g,'');if(h.length%2)h='0'+h;var out=new Uint8Array(h.length/2);for(var i=0;i<out.length;i++)out[i]=parseInt(h.substr(i*2,2),16);return out}
+function textToBytes(s){return new TextEncoder().encode(s)}
+function bytesToText(b){return new TextDecoder().decode(b)}
+function isHex(s){return /^[0-9a-fA-F\s]+$/.test(s)&&s.replace(/\s/g,'').length%2===0}
+
+/* ========== CRYPTO PRIMITIVES ========== */
+
+/* MD5 — full implementation */
+var MD5=function(){
+  var S=[7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  var K=new Uint32Array(64);
+  for(var i=0;i<64;i++)K[i]=Math.floor(Math.abs(Math.sin(i+1))*4294967296);
+  function rotl(x,c){return(x<<c)|(x>>>(32-c))}
+  function add(a,b){return(a+b)|0}
+  return function(msg){
+    var bytes=typeof msg==='string'?textToBytes(msg):msg;
+    var ml=bytes.length*8;
+    var withOne=bytes.length+1;
+    var padLen=((withOne+8+63)&~63)-8;
+    var buf=new Uint8Array(padLen+8);
+    buf.set(bytes);
+    buf[bytes.length]=0x80;
+    var dv=new DataView(buf.buffer);
+    dv.setUint32(padLen,ml>>>0,true);
+    dv.setUint32(padLen+4,Math.floor(ml/4294967296),true);
+    var a0=0x67452301,b0=0xefcdab89,c0=0x98badcfe,d0=0x10325476;
+    for(var off=0;off<buf.length;off+=64){
+      var M=new Uint32Array(16);
+      for(var j=0;j<16;j++)M[j]=dv.getUint32(off+j*4,true);
+      var A=a0,B=b0,C=c0,D=d0;
+      for(var k=0;k<64;k++){
+        var F,g;
+        if(k<16){F=(B&C)|(~B&D);g=k}
+        else if(k<32){F=(D&B)|(~D&C);g=(5*k+1)%16}
+        else if(k<48){F=B^C^D;g=(3*k+5)%16}
+        else{F=C^(B|~D);g=(7*k)%16}
+        F=add(add(add(F,A),K[k]),M[g]);
+        A=D;D=C;C=B;B=add(B,rotl(F,S[k]));
+      }
+      a0=add(a0,A);b0=add(b0,B);c0=add(c0,C);d0=add(d0,D);
+    }
+    var out=new Uint8Array(16);
+    var odv=new DataView(out.buffer);
+    odv.setUint32(0,a0>>>0,true);odv.setUint32(4,b0>>>0,true);
+    odv.setUint32(8,c0>>>0,true);odv.setUint32(12,d0>>>0,true);
+    return bytesToHex(out);
+  }
+}();
+
+/* CRC32 */
+var CRC_TABLE=(function(){var t=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c}return t})();
+function crc32(str){
+  var bytes=typeof str==='string'?textToBytes(str):str;
+  var c=0xFFFFFFFF;
+  for(var i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&0xFF]^(c>>>8);
+  return ((c^0xFFFFFFFF)>>>0).toString(16).padStart(8,'0');
+}
+function fnv1a(str){
+  var h=0x811c9dc5;var bytes=typeof str==='string'?textToBytes(str):str;
+  for(var i=0;i<bytes.length;i++){h^=bytes[i];h=Math.imul(h,0x01000193)}
+  return (h>>>0).toString(16).padStart(8,'0');
+}
+function djb2(str){var h=5381;for(var i=0;i<str.length;i++)h=((h<<5)+h+str.charCodeAt(i))|0;return (h>>>0).toString(16)}
+function sdbm(str){var h=0;for(var i=0;i<str.length;i++)h=str.charCodeAt(i)+(h<<6)+(h<<16)-h;return (h>>>0).toString(16)}
+
+/* Web Crypto wrappers */
+async function sha(algo,data){
+  var buf=typeof data==='string'?textToBytes(data):data;
+  var h=await crypto.subtle.digest(algo,buf);
+  return bytesToHex(new Uint8Array(h));
+}
+async function hmac(algo,key,data){
+  var keyBuf=typeof key==='string'?textToBytes(key):key;
+  var dataBuf=typeof data==='string'?textToBytes(data):data;
+  var k=await crypto.subtle.importKey('raw',keyBuf,{name:'HMAC',hash:algo},false,['sign']);
+  var sig=await crypto.subtle.sign('HMAC',k,dataBuf);
+  return bytesToHex(new Uint8Array(sig));
+}
+async function aesGcmEncrypt(keyText,plain){
+  var keyBytes=textToBytes(keyText.padEnd(16,'0').substring(0,32));
+  var key=await crypto.subtle.importKey('raw',keyBytes,{name:'AES-GCM'},false,['encrypt']);
+  var iv=crypto.getRandomValues(new Uint8Array(12));
+  var ct=await crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,textToBytes(plain));
+  return {iv:bytesToHex(iv),ciphertext:bytesToHex(new Uint8Array(ct))};
+}
+async function aesGcmDecrypt(keyText,ivHex,ctHex){
+  var keyBytes=textToBytes(keyText.padEnd(16,'0').substring(0,32));
+  var key=await crypto.subtle.importKey('raw',keyBytes,{name:'AES-GCM'},false,['decrypt']);
+  var pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:hexToBytes(ivHex)},key,hexToBytes(ctHex));
+  return bytesToText(new Uint8Array(pt));
+}
+
+/* ========== CLASSICAL CIPHERS ========== */
+function caesar(s,n,dec){n=((n%26)+26)%26;if(dec)n=(26-n)%26;return s.replace(/[a-z]/gi,function(c){var b=c<='Z'?65:97;return String.fromCharCode((c.charCodeAt(0)-b+n)%26+b)})}
+function rot13(s){return caesar(s,13)}
+function atbash(s){return s.replace(/[a-z]/gi,function(c){var b=c<='Z'?65:97;return String.fromCharCode(b+25-(c.charCodeAt(0)-b))})}
+var AZ='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function vigenere(text,key,dec){
+  key=key.replace(/[^A-Z]/gi,'').toUpperCase();
+  if(!key)return text;
+  var ki=0;
+  return text.replace(/[a-z]/gi,function(c){
+    var b=c<='Z'?65:97;
+    var base=c.toUpperCase().charCodeAt(0)-65;
+    var k=key.charCodeAt(ki%key.length)-65;
+    ki++;
+    var v=dec?(base-k+26)%26:(base+k)%26;
+    return String.fromCharCode(v+b);
+  })
+}
+function railFence(text,rails,dec){
+  if(rails<2)return text;
+  if(!dec){
+    var res=[];for(var r=0;r<rails;r++)res.push('');
+    var row=0,dir=1;
+    for(var i=0;i<text.length;i++){
+      res[row]+=text[i];
+      row+=dir;
+      if(row===rails-1||row===0)dir=-dir;
+    }
+    return res.join('');
+  }
+  var cycle=2*(rails-1);
+  var pattern=[];
+  for(var i2=0;i2<text.length;i2++){var pos=i2%cycle;pattern.push(pos<rails?pos:cycle-pos)}
+  var counts={};pattern.forEach(function(p){counts[p]=(counts[p]||0)+1});
+  var chunks={},idx=0;
+  for(var r2=0;r2<rails;r2++){chunks[r2]=text.substr(idx,counts[r2]);idx+=counts[r2]}
+  var ptr={};var out='';
+  for(var i3=0;i3<text.length;i3++){var rr=pattern[i3];out+=chunks[rr][ptr[rr]||0];ptr[rr]=(ptr[rr]||0)+1}
+  return out;
+}
+function columnarTransposition(text,key,dec){
+  key=key.replace(/[^A-Za-z]/g,'');
+  if(!key)return text;
+  var keyArr=key.toUpperCase().split('').map(function(c,i){return {c:c,i:i}});
+  var order=keyArr.slice().sort(function(a,b){return a.c<b.c?-1:1}).map(function(x){return x.i});
+  if(!dec){
+    var cols=key.length;
+    var rows=Math.ceil(text.length/cols);
+    var grid=Array.from({length:rows},function(){return []});
+    var idx=0;
+    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++)grid[r][c]=text[idx++]||'';
+    var out='';
+    order.forEach(function(c){for(var r2=0;r2<rows;r2++)if(grid[r2][c])out+=grid[r2][c]});
+    return out;
+  }
+  var cols=key.length,rows=Math.ceil(text.length/cols);
+  var orderArr=order;
+  var counts=Array(cols).fill(rows);
+  var extra=text.length-rows*cols;
+  for(var i=0;i<-extra;i++)counts[orderArr[orderArr.length-1-i]]--;
+  var grid2=Array.from({length:rows},function(){return Array(cols).fill('')});
+  var idx2=0;
+  orderArr.forEach(function(c){for(var r=0;r<counts[c];r++)grid2[r][c]=text[idx2++]});
+  var out2='';
+  for(var r3=0;r3<rows;r3++)for(var c2=0;c2<cols;c2++)if(grid2[r3][c2])out2+=grid2[r3][c2];
+  return out2;
+}
+function baconEncode(text){
+  return text.toUpperCase().replace(/[A-Z]/g,function(c){
+    var v=c.charCodeAt(0)-65;
+    return v.toString(2).padStart(5,'0').replace(/0/g,'a').replace(/1/g,'b');
+  });
+}
+function baconDecode(text){
+  var bits=text.toLowerCase().replace(/[^ab]/g,'');
+  var out='';
+  for(var i=0;i+5<=bits.length;i+=5){
+    var v=parseInt(bits.substr(i,5).replace(/a/g,'0').replace(/b/g,'1'),2);
+    if(v<26)out+=String.fromCharCode(65+v);
+  }
+  return out;
+}
+function affineEncrypt(s,a,b){return s.replace(/[a-z]/gi,function(c){var base=c<='Z'?65:97;return String.fromCharCode(((a*(c.charCodeAt(0)-base)+b)%26+26)%26+base)})}
+function affineDecrypt(s,a,b){
+  var ai=0;for(var i=1;i<26;i++)if((a*i)%26===1){ai=i;break}
+  if(!ai)throw new Error('a must be coprime with 26');
+  return s.replace(/[a-z]/gi,function(c){var base=c<='Z'?65:97;return String.fromCharCode(((ai*((c.charCodeAt(0)-base)-b)%26)+26)%26+base)})
+}
+function playfairPrepare(text){
+  var t=text.toUpperCase().replace(/[^A-Z]/g,'').replace(/J/g,'I');
+  var out='';
+  for(var i=0;i<t.length;i+=2){
+    var a=t[i],b=t[i+1]||'X';
+    if(a===b){out+=a+'X';i--}
+    else out+=a+b;
+  }
+  return out;
+}
+function playfairMatrix(key){
+  key=key.toUpperCase().replace(/[^A-Z]/g,'').replace(/J/g,'I');
+  var seen={},chars=[];
+  (key+'ABCDEFGHIKLMNOPQRSTUVWXYZ').split('').forEach(function(c){if(!seen[c]){seen[c]=1;chars.push(c)}});
+  return chars;
+}
+function playfair(text,key,dec){
+  var m=playfairMatrix(key);
+  var t=dec?text.toUpperCase().replace(/[^A-Z]/g,'').replace(/J/g,'I'):playfairPrepare(text);
+  var out='';
+  for(var i=0;i+1<t.length;i+=2){
+    var a=t[i],b=t[i+1];
+    var pa=m.indexOf(a),pb=m.indexOf(b);
+    var ra=Math.floor(pa/5),ca=pa%5,rb=Math.floor(pb/5),cb=pb%5;
+    var shift=dec?-1:1;
+    if(ra===rb){out+=m[ra*5+(ca+shift+5)%5]+m[rb*5+(cb+shift+5)%5]}
+    else if(ca===cb){out+=m[((ra+shift+5)%5)*5+ca]+m[((rb+shift+5)%5)*5+cb]}
+    else out+=m[ra*5+cb]+m[rb*5+ca];
+  }
+  return out;
+}
+function hillMatrix(key,n){
+  key=key.toUpperCase().replace(/[^A-Z]/g,'');
+  var m=[];
+  for(var i=0;i<n*n;i++)m.push(key.charCodeAt(i%key.length)-65);
+  return m;
+}
+function hill(text,key,n,dec){
+  n=n||2;
+  var m=hillMatrix(key,n);
+  var t=text.toUpperCase().replace(/[^A-Z]/g,'');
+  while(t.length%n)t+='X';
+  var nums=[];for(var i=0;i<t.length;i++)nums.push(t.charCodeAt(i)-65);
+  var k=invMatrix(m,n,26);
+  if(dec&&!k)throw new Error('matrix not invertible mod 26');
+  var out='';
+  for(var j=0;j<nums.length;j+=n){
+    var vec=nums.slice(j,j+n);
+    var res=[];
+    for(var r=0;r<n;r++){
+      var sum=0;
+      for(var c=0;c<n;c++)sum+=(dec?k[r*n+c]:m[r*n+c])*vec[c];
+      res.push(((sum%26)+26)%26);
+    }
+    out+=res.map(function(v){return String.fromCharCode(65+v)}).join('');
+  }
+  return out;
+}
+function invMatrix(m,n,mod){
+  var aug=[];for(var i=0;i<n;i++){aug.push(m.slice(i*n,(i+1)*n).concat(Array(n).fill(0).map(function(_,j){return i===j?1:0})))}
+  for(var col=0;col<n;col++){
+    var pivot=-1;
+    for(var r=col;r<n;r++)if(gcd(aug[r][col],mod)===1){pivot=r;break}
+    if(pivot<0)return null;
+    var t=aug[col];aug[col]=aug[pivot];aug[pivot]=t;
+    var inv=modInv(aug[col][col],mod);
+    for(var c=0;c<2*n;c++)aug[col][c]=(aug[col][c]*inv)%mod;
+    for(var r2=0;r2<n;r2++)if(r2!==col){var f=aug[r2][col];for(var c2=0;c2<2*n;c2++)aug[r2][c2]=((aug[r2][c2]-f*aug[col][c2])%mod+mod)%mod}
+  }
+  var out=[];for(var i2=0;i2<n;i2++)for(var j2=0;j2<n;j2++)out.push(aug[i2][n+j2]);
+  return out;
+}
+function gcd(a,b){while(b){var t=b;b=a%b;a=t}return a}
+function modInv(a,m){a=((a%m)+m)%m;for(var x=1;x<m;x++)if((a*x)%m===1)return x;return null}
+
+/* ========== ENCODING ========== */
+var B32='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function base32Encode(str){
+  var bytes=textToBytes(str),out='',bits=0,val=0;
+  for(var i=0;i<bytes.length;i++){
+    val=(val<<8)|bytes[i];bits+=8;
+    while(bits>=5){out+=B32[(val>>>(bits-5))&31];bits-=5}
+  }
+  if(bits>0)out+=B32[(val<<(5-bits))&31];
+  while(out.length%8)out+='=';
+  return out;
+}
+function base32Decode(str){
+  str=str.toUpperCase().replace(/[^A-Z2-7]/g,'');
+  var out=[],bits=0,val=0;
+  for(var i=0;i<str.length;i++){
+    val=(val<<5)|B32.indexOf(str[i]);bits+=5;
+    if(bits>=8){out.push((val>>>(bits-8))&0xFF);bits-=8}
+  }
+  return bytesToText(new Uint8Array(out));
+}
+var B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function base58Encode(str){
+  var bytes=textToBytes(str);
+  var digits=[0];
+  for(var i=0;i<bytes.length;i++){
+    var carry=bytes[i];
+    for(var j=0;j<digits.length;j++){carry+=digits[j]<<8;digits[j]=carry%58;carry=Math.floor(carry/58)}
+    while(carry){digits.push(carry%58);carry=Math.floor(carry/58)}
+  }
+  var out='';
+  for(var k=0;k<bytes.length&&bytes[k]===0;k++)out+='1';
+  for(var m=digits.length-1;m>=0;m--)out+=B58[digits[m]];
+  return out;
+}
+function base58Decode(str){
+  var bytes=[0];
+  for(var i=0;i<str.length;i++){
+    var v=B58.indexOf(str[i]);if(v<0)continue;
+    var carry=v;
+    for(var j=0;j<bytes.length;j++){carry+=bytes[j]*58;bytes[j]=carry&0xFF;carry>>=8}
+    while(carry){bytes.push(carry&0xFF);carry>>=8}
+  }
+  var prefix=0;while(prefix<str.length&&str[prefix]==='1'){bytes.push(0);prefix++}
+  bytes.reverse();
+  return bytesToText(new Uint8Array(bytes));
+}
+function toBinary(str){return Array.from(textToBytes(str)).map(function(b){return b.toString(2).padStart(8,'0')}).join(' ')}
+function fromBinary(str){
+  var bits=str.replace(/[^01]/g,'');
+  var out=[];
+  for(var i=0;i+8<=bits.length;i+=8)out.push(parseInt(bits.substr(i,8),2));
+  return bytesToText(new Uint8Array(out));
+}
+function toOctal(str){return Array.from(textToBytes(str)).map(function(b){return b.toString(8).padStart(3,'0')}).join(' ')}
+function fromOctal(str){
+  var parts=str.split(/\s+/).filter(Boolean);
+  var out=new Uint8Array(parts.length);
+  parts.forEach(function(p,i){out[i]=parseInt(p,8)});
+  return bytesToText(out);
+}
+function morseEncode(str){
+  var M={A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',0:'-----',1:'.----',2:'..---',3:'...--',4:'....-',5:'.....',6:'-....',7:'--...',8:'---..',9:'----.','.':'.-.-.-',',':'--..--','?':'..--..',"'":'.----.','!':'-.-.--','/':'-..-.','(':'-.--.',')':'-.--.-','&':'.-...',':':'---...',';':'-.-.-.', '=':'-...-', '+':'.-.-.', '-':'-....-', '_':'..--.-','"':'.-..-.','$':'...-..-','@':'.--.-.'};
+  return str.toUpperCase().split('').map(function(c){return M[c]||c}).join(' ');
+}
+function morseDecode(str){
+  var M={'.-':'A','-...':'B','-.-.':'C','-..':'D','.':'E','..-.':'F','--.':'G','....':'H','..':'I','.---':'J','-.-':'K','.-..':'L','--':'M','-.':'N','---':'O','.--.':'P','--.-':'Q','.-.':'R','...':'S','-':'T','..-':'U','...-':'V','.--':'W','-..-':'X','-.--':'Y','--..':'Z','-----':'0','.----':'1','..---':'2','...--':'3','....-':'4','.....':'5','-....':'6','--...':'7','---..':'8','----.':'9','.-.-.-':'.','--..--':',','..--..':'?','.----.':"'",'-.-.--':'!','-..-.':'/','-.--.':'(','-.--.-':')','.-...':'&','---...':':','-.-.-.':';','-...-':'=','.-.-.':'+','-....-':'-','..--.-':'_','.-..-.':'"','...-..-':'$','.--.-.':'@'};
+  return str.split(/\s{2,}/).map(function(word){
+    return word.split(/\s+/).map(function(m){return M[m]||''}).join('');
+  }).join(' ');
+}
+
+/* ========== ANALYSIS ========== */
+function frequencyAnalysis(text){
+  var clean=text.toUpperCase().replace(/[^A-Z]/g,'');
+  var counts={};
+  for(var i=0;i<clean.length;i++)counts[clean[i]]=(counts[clean[i]]||0)+1;
+  var total=clean.length;
+  var arr=Object.keys(counts).map(function(k){return {c:k,n:counts[k],pct:counts[k]/total*100}});
+  arr.sort(function(a,b){return b.n-a.n});
+  return {total:total,counts:arr};
+}
+function indexOfCoincidence(text){
+  var clean=text.toUpperCase().replace(/[^A-Z]/g,'');
+  var n=clean.length;
+  if(n<2)return 0;
+  var counts={};
+  for(var i=0;i<clean.length;i++)counts[clean[i]]=(counts[clean[i]]||0)+1;
+  var sum=0;
+  for(var k in counts)sum+=counts[k]*(counts[k]-1);
+  return sum/(n*(n-1));
+}
+function chiSquared(text){
+  var eng={A:8.167,B:1.492,C:2.782,D:4.253,E:12.702,F:2.228,G:2.015,H:6.094,I:6.966,J:0.153,K:0.772,L:4.025,M:2.406,N:6.749,O:7.507,P:1.929,Q:0.095,R:5.987,S:6.327,T:9.056,U:2.758,V:0.978,W:2.360,X:0.150,Y:1.974,Z:0.074};
+  var clean=text.toUpperCase().replace(/[^A-Z]/g,'');
+  var n=clean.length;
+  if(!n)return 0;
+  var counts={};
+  for(var i=0;i<clean.length;i++)counts[clean[i]]=(counts[clean[i]]||0)+1;
+  var chi=0;
+  for(var c in eng){
+    var obs=counts[c]||0;
+    var exp=eng[c]/100*n;
+    chi+=(obs-exp)*(obs-exp)/exp;
+  }
+  return chi;
+}
+function kasiskiTest(text,minLen){
+  minLen=minLen||3;
+  var clean=text.toUpperCase().replace(/[^A-Z]/g,'');
+  var repeats={};
+  for(var i=0;i+minLen<=clean.length;i++){
+    var k=clean.substr(i,minLen);
+    if(!repeats[k])repeats[k]=[];
+    repeats[k].push(i);
+  }
+  var distances=[];
+  for(var key in repeats){
+    var pos=repeats[key];
+    if(pos.length<2)continue;
+    for(var j=1;j<pos.length;j++)distances.push(pos[j]-pos[j-1]);
+  }
+  return distances;
+}
+function caesarBruteforce(text){
+  var results=[];
+  for(var i=0;i<26;i++){
+    var dec=caesar(text,i,true);
+    results.push({shift:i,text:dec,chi:chiSquared(dec)});
+  }
+  results.sort(function(a,b){return a.chi-b.chi});
+  return results.slice(0,8);
+}
+
+/* ========== UTILITIES ========== */
+function uuidv4(){
+  var b=crypto.getRandomValues(new Uint8Array(16));
+  b[6]=(b[6]&0x0f)|0x40;b[8]=(b[8]&0x3f)|0x80;
+  var h=bytesToHex(b);
+  return h.substr(0,8)+'-'+h.substr(8,4)+'-'+h.substr(12,4)+'-'+h.substr(16,4)+'-'+h.substr(20);
+}
+function entropyBits(pw){
+  var pools=0;
+  if(/[a-z]/.test(pw))pools+=26;
+  if(/[A-Z]/.test(pw))pools+=26;
+  if(/[0-9]/.test(pw))pools+=10;
+  if(/[^a-zA-Z0-9]/.test(pw))pools+=33;
+  return pw.length*Math.log2(pools||1);
+}
+function generatePassword(len,opts){
+  var chars='';
+  if(opts.lower)chars+='abcdefghijkmnpqrstuvwxyz';
+  if(opts.upper)chars+='ABCDEFGHJKLMNPQRSTUVWXYZ';
+  if(opts.digits)chars+='23456789';
+  if(opts.symbols)chars+='!@#$%^&*-_=+?';
+  if(!chars)chars='abcdefghijklmnopqrstuvwxyz';
+  var out='',buf=crypto.getRandomValues(new Uint8Array(len));
+  for(var i=0;i<len;i++)out+=chars[buf[i]%chars.length];
+  return out;
+}
+function checkPassword(pw){
+  var score=0;
+  var checks=[];
+  checks.push({ok:pw.length>=8,label:'Length ≥ 8'});
+  checks.push({ok:pw.length>=12,label:'Length ≥ 12'});
+  checks.push({ok:pw.length>=16,label:'Length ≥ 16'});
+  checks.push({ok:/[a-z]/.test(pw),label:'lowercase'});
+  checks.push({ok:/[A-Z]/.test(pw),label:'UPPERCASE'});
+  checks.push({ok:/[0-9]/.test(pw),label:'digits'});
+  checks.push({ok:/[^a-zA-Z0-9]/.test(pw),label:'symbols'});
+  var common=['password','123456','qwerty','letmein','admin','welcome','monkey','dragon'];
+  checks.push({ok:!common.some(function(c){return pw.toLowerCase().indexOf(c)>=0}),label:'no common words'});
+  checks.forEach(function(c){if(c.ok)score++});
+  var bits=entropyBits(pw);
+  var strength=bits<28?'very weak':bits<36?'weak':bits<60?'fair':bits<80?'strong':'very strong';
+  return {checks:checks,score:score,bits:bits,strength:strength};
+}
+function unixToDate(ts){
+  var d=new Date(parseInt(ts)*1000);
+  if(isNaN(d))throw new Error('invalid unix timestamp');
+  return d.toISOString()+' ('+d.toUTCString()+')';
+}
+function dateToUnix(str){
+  var d=new Date(str);
+  if(isNaN(d))throw new Error('invalid date');
+  return Math.floor(d.getTime()/1000);
+}
+function romanNumeral(n){
+  if(n<1||n>3999||!Number.isInteger(n))throw new Error('1–3999 only');
+  var map=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+  var out='';
+  map.forEach(function(m){while(n>=m[0]){out+=m[1];n-=m[0]}});
+  return out;
+}
+function fromRoman(s){
+  var vals={I:1,V:5,X:10,L:50,C:100,D:500,M:1000};
+  var out=0;
+  s=s.toUpperCase();
+  for(var i=0;i<s.length;i++){
+    var v=vals[s[i]]||0;
+    var nv=vals[s[i+1]]||0;
+    out+=v<nv?-v:v;
+  }
+  return out;
+}
+function ipToBin(ip){
+  var parts=ip.split('.');
+  if(parts.length!==4)throw new Error('invalid IPv4');
+  return parts.map(function(p){var n=parseInt(p);if(n<0||n>255)throw new Error('invalid octet');return n.toString(2).padStart(8,'0')}).join('.');
+}
+function ipClass(ip){
+  var n=parseInt(ip.split('.')[0]);
+  if(n<128)return 'A';
+  if(n<192)return 'B';
+  if(n<224)return 'C';
+  if(n<240)return 'D (multicast)';
+  return 'E (reserved)';
+}
+function subnetInfo(cidr){
+  var parts=cidr.split('/');
+  if(parts.length!==2)throw new Error('format: 192.168.1.0/24');
+  var ip=parts[0].split('.').map(Number);
+  var bits=parseInt(parts[1]);
+  if(ip.length!==4||ip.some(function(n){return n<0||n>255})||bits<0||bits>32)throw new Error('invalid CIDR');
+  var ipInt=(ip[0]<<24)|(ip[1]<<16)|(ip[2]<<8)|ip[3];
+  var mask=bits===0?0:((0xFFFFFFFF<<(32-bits))>>>0);
+  var network=(ipInt&mask)>>>0;
+  var broadcast=(network|(~mask>>>0))>>>0;
+  var hosts=bits>=31?0:Math.pow(2,32-bits)-2;
+  function i2s(n){return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.')}
+  return {network:i2s(network),broadcast:i2s(broadcast),mask:i2s(mask),hosts:hosts,wildcard:i2s(~mask>>>0)};
+}
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CIPHER — Tool Registry (50 tools)
+   ══════════════════════════════════════════════════════════════ */
+
+var TOOLS=[];
+function reg(t){TOOLS.push(t);t.id=t.id||t.name.toLowerCase().replace(/[^a-z0-9]+/g,'_')}
+
+/* ---------- CLASSICAL ---------- */
+reg({name:'Caesar Cipher',cat:'Classical',ico:'⁂',desc:'Shift the alphabet by N positions.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'ATTACK AT DAWN'},{id:'n',type:'number',label:'SHIFT',def:3,min:0,max:25}],
+  outputs:[{id:'out',label:'RESULT'}],
+  swap:{a:'text',b:'out',dec:true},
+  run:function(i,dec){return {out:caesar(i.text,parseInt(i.n)||0,dec)}}})
+
+reg({name:'ROT13',cat:'Classical',ico:'↻',desc:'The classic 13-position Caesar shift.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'HELLO WORLD'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i){return {out:rot13(i.text)}}})
+
+reg({name:'Atbash',cat:'Classical',ico:'⇋',desc:'Mirror the alphabet: A↔Z, B↔Y.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'ATTACK AT DAWN'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i){return {out:atbash(i.text)}}})
+
+reg({name:'Vigenère',cat:'Classical',ico:'⟐',desc:'Polyalphabetic substitution using a keyword.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'ATTACKATDAWN'},{id:'key',type:'text',label:'KEY',def:'LEMON'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){return {out:vigenere(i.text,i.key,dec)}},
+  help:'Encrypt: C = P + K mod 26 · Decrypt: P = C − K mod 26'})
+
+reg({name:'Playfair',cat:'Classical',ico:'▦',desc:'Digraph substitution using a 5×5 key square.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'HIDETHEGOLDINTHETREESTUMP'},{id:'key',type:'text',label:'KEY',def:'PLAYFAIR EXAMPLE'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){return {out:playfair(i.text,i.key,dec)}}})
+
+reg({name:'Hill Cipher',cat:'Classical',ico:'◨',desc:'Linear algebra substitution. 2×2 matrix.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'HELP'},{id:'key',type:'text',label:'KEY (4 chars)',def:'GYBN'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){return {out:hill(i.text,i.key,2,dec)}}})
+
+reg({name:'Rail Fence',cat:'Classical',ico:'⋀⋁',desc:'Zig-zag transposition cipher.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'WEAREDISCOVEREDFLEEATONCE'},{id:'rails',type:'number',label:'RAILS',def:3,min:2,max:20}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){return {out:railFence(i.text,parseInt(i.rails)||3,dec)}}})
+
+reg({name:'Columnar Transposition',cat:'Classical',ico:'▥',desc:'Write in rows, read by sorted key order.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'WEAREDISCOVEREDFLEEATONCE'},{id:'key',type:'text',label:'KEY',def:'ZEBRA'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){return {out:columnarTransposition(i.text,i.key,dec)}}})
+
+reg({name:'Affine Cipher',cat:'Classical',ico:'⊞',desc:'E(x) = (a·x + b) mod 26. Requires gcd(a,26)=1.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'AFFINE CIPHER'},{id:'a',type:'number',label:'a (coprime to 26)',def:5,min:1,max:25},{id:'b',type:'number',label:'b',def:8,min:0,max:25}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){return {out:dec?affineDecrypt(i.text,parseInt(i.a),parseInt(i.b)):affineEncrypt(i.text,parseInt(i.a),parseInt(i.b))}}})
+
+reg({name:'Bacon Cipher',cat:'Classical',ico:'ⓐⓑ',desc:'Hide messages in a/b letter case.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT (a=A, b=B)',def:'HELLO'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){
+    try{return {out:dec?baconDecode(i.text):baconEncode(i.text)}}
+    catch(e){return {out:'error: '+e.message,err:1}}}})
+
+/* ---------- ENCODING ---------- */
+reg({name:'Base64',cat:'Encoding',ico:'₆₄',desc:'Standard RFC 4648 Base64.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'Hello, World!'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){
+    try{
+      if(dec){
+        var clean=i.text.replace(/\s/g,'');
+        return {out:bytesToText(Uint8Array.from(atob(clean),function(c){return c.charCodeAt(0)}))}
+      }
+      return {out:btoa(bytesToText(textToBytes(i.text)))}
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Base32',cat:'Encoding',ico:'₃₂',desc:'RFC 4648 Base32. Uppercase, no ambiguous chars.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'Hello'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){try{return {out:dec?base32Decode(i.text):base32Encode(i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Base58',cat:'Encoding',ico:'₅₈',desc:'Bitcoin-style Base58. No 0/O/I/l.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'Hello'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){try{return {out:dec?base58Decode(i.text):base58Encode(i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'URL Encode',cat:'Encoding',ico:'%',desc:'Percent-encode for URLs.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'Hello World! & more=yes'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){try{return {out:dec?decodeURIComponent(i.text):encodeURIComponent(i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'HTML Entities',cat:'Encoding',ico:'&',desc:'Encode/decode HTML entities.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'<a href="x">click</a>'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){
+    if(dec){var d=document.createElement('div');d.innerHTML=i.text;return {out:d.textContent}}
+    return {out:i.text.replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}}})
+
+reg({name:'Binary',cat:'Encoding',ico:'01',desc:'Text ↔ binary (8-bit bytes).',
+  inputs:[{id:'text',type:'textarea',label:'TEXT / BINARY',def:'Hi!'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){try{return {out:dec?fromBinary(i.text):toBinary(i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Octal',cat:'Encoding',ico:'⁸',desc:'Text ↔ octal bytes.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT / OCTAL',def:'Hi!'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){try{return {out:dec?fromOctal(i.text):toOctal(i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Hex',cat:'Encoding',ico:'0x',desc:'Text ↔ hex bytes.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT / HEX',def:'Hi!'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){try{return {out:dec?bytesToText(hexToBytes(i.text)):bytesToHex(textToBytes(i.text)).replace(/(..)/g,'$1 ').trim()}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Morse Code',cat:'Encoding',ico:'·−',desc:'International Morse code.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT / MORSE',def:'SOS'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){
+    try{
+      var isMorse=/^[.\-\s]+$/.test(i.text.trim());
+      return {out:(dec||isMorse)?morseDecode(i.text):morseEncode(i.text)}
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+/* ---------- HASHES ---------- */
+reg({name:'MD5',cat:'Hash',ico:'❋',desc:'128-bit MD5 digest. Legacy — for checksum/compat only.',
+  inputs:[{id:'text',type:'textarea',label:'INPUT',def:'hello world'}],
+  outputs:[{id:'out',label:'MD5 DIGEST'}],
+  run:function(i){try{return {out:MD5(i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'SHA-1',cat:'Hash',ico:'❶',desc:'160-bit SHA-1. Deprecated for security.',
+  inputs:[{id:'text',type:'textarea',label:'INPUT',def:'hello world'}],
+  outputs:[{id:'out',label:'SHA-1 DIGEST'}],
+  async:true,
+  run:async function(i){try{return {out:await sha('SHA-1',i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'SHA-256',cat:'Hash',ico:'❷',desc:'256-bit SHA-2. Industry standard.',
+  inputs:[{id:'text',type:'textarea',label:'INPUT',def:'hello world'}],
+  outputs:[{id:'out',label:'SHA-256 DIGEST'}],
+  async:true,
+  run:async function(i){try{return {out:await sha('SHA-256',i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'SHA-512',cat:'Hash',ico:'❺',desc:'512-bit SHA-2.',
+  inputs:[{id:'text',type:'textarea',label:'INPUT',def:'hello world'}],
+  outputs:[{id:'out',label:'SHA-512 DIGEST'}],
+  async:true,
+  run:async function(i){try{return {out:await sha('SHA-512',i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'CRC32',cat:'Hash',ico:'▣',desc:'32-bit cyclic redundancy check.',
+  inputs:[{id:'text',type:'textarea',label:'INPUT',def:'hello world'}],
+  outputs:[{id:'out',label:'CRC32'}],
+  run:function(i){return {out:crc32(i.text)}}})
+
+reg({name:'FNV-1a',cat:'Hash',ico:'⚐',desc:'Fast 32-bit hash for hash tables.',
+  inputs:[{id:'text',type:'textarea',label:'INPUT',def:'hello world'}],
+  outputs:[{id:'out',label:'FNV-1A'}],
+  run:function(i){return {out:fnv1a(i.text)}}})
+
+reg({name:'djb2',cat:'Hash',ico:'♪',desc:'Daniel Bernstein classic hash.',
+  inputs:[{id:'text',type:'textarea',label:'INPUT',def:'hello world'}],
+  outputs:[{id:'out',label:'DJB2'}],
+  run:function(i){return {out:djb2(i.text)}}})
+
+/* ---------- HMAC / AEAD ---------- */
+reg({name:'HMAC-SHA256',cat:'HMAC',ico:'⌘',desc:'Keyed-hash message authentication.',
+  inputs:[{id:'key',type:'text',label:'KEY',def:'secret-key'},{id:'text',type:'textarea',label:'MESSAGE',def:'hello'}],
+  outputs:[{id:'out',label:'HMAC'}],
+  async:true,
+  run:async function(i){try{return {out:await hmac('SHA-256',i.key,i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'HMAC-SHA1',cat:'HMAC',ico:'⌥',desc:'HMAC with SHA-1.',
+  inputs:[{id:'key',type:'text',label:'KEY',def:'secret-key'},{id:'text',type:'textarea',label:'MESSAGE',def:'hello'}],
+  outputs:[{id:'out',label:'HMAC'}],
+  async:true,
+  run:async function(i){try{return {out:await hmac('SHA-1',i.key,i.text)}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'AES-GCM Encrypt',cat:'AEAD',ico:'🔒',desc:'AES-256-GCM authenticated encryption.',
+  inputs:[{id:'key',type:'text',label:'KEY',def:'my-secret-password'},{id:'text',type:'textarea',label:'PLAINTEXT',def:'top secret message'}],
+  outputs:[{id:'out',label:'IV : CIPHERTEXT'}],
+  async:true,
+  run:async function(i){
+    try{var r=await aesGcmEncrypt(i.key,i.text);return {out:r.iv+' : '+r.ciphertext}}
+    catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'AES-GCM Decrypt',cat:'AEAD',ico:'🔓',desc:'Decrypt AES-GCM (input: IV : CIPHERTEXT).',
+  inputs:[{id:'key',type:'text',label:'KEY',def:'my-secret-password'},{id:'text',type:'textarea',label:'IV : CIPHERTEXT',def:''}],
+  outputs:[{id:'out',label:'PLAINTEXT'}],
+  async:true,
+  run:async function(i){
+    try{
+      var parts=i.text.split(' : ');
+      if(parts.length!==2)throw new Error('format: IV : CIPHERTEXT');
+      var pt=await aesGcmDecrypt(i.key,parts[0].trim(),parts[1].trim());
+      return {out:pt};
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'XOR Cipher',cat:'AEAD',ico:'⊕',desc:'Classic XOR with repeating key.',
+  inputs:[{id:'key',type:'text',label:'KEY',def:'key'},{id:'text',type:'textarea',label:'INPUT (text or hex)',def:'Hello'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i){
+    try{
+      var key=textToBytes(i.key||'k');
+      if(!key.length)key=new Uint8Array([0x6b]);
+      var isHex=isHex(i.text)&&/^[0-9a-fA-F\s]+$/.test(i.text)&&i.text.replace(/\s/g,'').length%2===0;
+      var data=isHex?hexToBytes(i.text):textToBytes(i.text);
+      var out=new Uint8Array(data.length);
+      for(var j=0;j<data.length;j++)out[j]=data[j]^key[j%key.length];
+      return {out:bytesToHex(out).replace(/(..)/g,'$1 ').trim()};
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+/* ---------- PASSWORDS ---------- */
+reg({name:'Password Generator',cat:'Password',ico:'🔑',desc:'CSPRNG-based password generator.',
+  ui:'custom',
+  render:renderPasswordGen})
+
+reg({name:'Password Strength',cat:'Password',ico:'💪',desc:'Estimate entropy and check common patterns.',
+  inputs:[{id:'text',type:'textarea',label:'PASSWORD',def:'MyC0mpl3x!Pass'}],
+  outputs:[{id:'out',label:'ANALYSIS'}],
+  run:function(i){
+    try{
+      var r=checkPassword(i.text);
+      var lines=[];
+      lines.push('Entropy: '+r.bits.toFixed(1)+' bits');
+      lines.push('Strength: '+r.strength.toUpperCase());
+      lines.push('Score: '+r.score+'/8');
+      lines.push('');
+      lines.push('CHECKS:');
+      r.checks.forEach(function(c){lines.push('  '+(c.ok?'[✓]':'[ ]')+' '+c.label)});
+      return {out:lines.join('\n')};
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Entropy Calculator',cat:'Password',ico:'∑',desc:'Shannon entropy of a string.',
+  inputs:[{id:'text',type:'textarea',label:'INPUT',def:'hello world'}],
+  outputs:[{id:'out',label:'ENTROPY'}],
+  run:function(i){
+    var s=i.text,t=s.length;
+    if(!t)return {out:'empty'};
+    var counts={};
+    for(var j=0;j<s.length;j++)counts[s[j]]=(counts[s[j]]||0)+1;
+    var H=0;
+    for(var c in counts){var p=counts[c]/t;H-=p*Math.log2(p)}
+    var lines=[];
+    lines.push('Shannon entropy: '+H.toFixed(4)+' bits/char');
+    lines.push('Total: '+(H*t).toFixed(2)+' bits');
+    lines.push('Distinct chars: '+Object.keys(counts).length);
+    lines.push('Length: '+t);
+    lines.push('');
+    lines.push('Top chars:');
+    Object.keys(counts).map(function(k){return {c:k,n:counts[k]}}).sort(function(a,b){return b.n-a.n}).slice(0,10).forEach(function(x){
+      lines.push('  '+JSON.stringify(x.c)+'  ×'+x.n);
+    });
+    return {out:lines.join('\n')}}})
+
+/* ---------- ANALYSIS ---------- */
+reg({name:'Frequency Analysis',cat:'Analysis',ico:'📊',desc:'Letter frequency of a text.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG'}],
+  outputs:[{id:'out',label:'FREQUENCY',html:1}],
+  run:function(i){
+    var r=frequencyAnalysis(i.text);
+    if(!r.total)return {out:'<span style="color:var(--tx3)">no letters</span>',html:1};
+    var html='<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Total: '+r.total+' letters</div>';
+    html+='<table class="tbl"><thead><tr><th>Letter</th><th>Count</th><th>%</th><th style="width:50%">Bar</th></tr></thead><tbody>';
+    r.counts.slice(0,15).forEach(function(x){
+      var pctWidth=Math.min(100,x.pct*4);
+      html+='<tr><td><b>'+x.c+'</b></td><td>'+x.n+'</td><td>'+x.pct.toFixed(2)+'%</td><td><div class="bar" style="max-width:200px"><div class="bar-fill" style="width:'+pctWidth+'%"></div></div></td></tr>';
+    });
+    html+='</tbody></table>';
+    return {out:html,html:1}}})
+
+reg({name:'Index of Coincidence',cat:'Analysis',ico:'◎',desc:'Measure of letter randomness. ~0.066 = English.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'A long sample of text is needed for accurate IC'}],
+  outputs:[{id:'out',label:'IC'}],
+  run:function(i){
+    var ic=indexOfCoincidence(i.text);
+    var clean=i.text.replace(/[^A-Za-z]/g,'').length;
+    var hint=ic<0.05?'random / polyalphabetic':ic<0.06?'mixed':ic<0.07?'English-like':'monoalphabetic?';
+    return {out:'IC = '+ic.toFixed(6)+'\nLetters: '+clean+'\nHint: '+hint}}})
+
+reg({name:'Chi-Squared Test',cat:'Analysis',ico:'χ²',desc:'Compare to English letter frequencies.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG'}],
+  outputs:[{id:'out',label:'CHI²'}],
+  run:function(i){
+    var chi=chiSquared(i.text);
+    var hint=chi<50?'English-like':chi<100?'mixed':'very different from English';
+    return {out:'χ² = '+chi.toFixed(3)+'\n'+hint}}})
+
+reg({name:'Kasiski Examination',cat:'Analysis',ico:'⊞',desc:'Find repeated sequences — reveals Vigenère key length.',
+  inputs:[{id:'text',type:'textarea',label:'CIPHERTEXT',def:'VHVSSPQUCEMRVBVBBBVHVSURQGIBDUGRNICJQUCXRVFSPGMVXZB'},{id:'min',type:'number',label:'MIN SEQ LENGTH',def:3,min:2,max:6}],
+  outputs:[{id:'out',label:'DISTANCES'}],
+  run:function(i){
+    var d=kasiskiTest(i.text,parseInt(i.min)||3);
+    if(!d.length)return {out:'no repeats of length ≥ '+(parseInt(i.min)||3)};
+    var lines=['Found '+d.length+' repeat distances','','Top candidates for key length:'];
+    var factorCount={};
+    d.forEach(function(x){
+      for(var f=2;f<=20;f++)if(x%f===0)factorCount[f]=(factorCount[f]||0)+1;
+    });
+    Object.keys(factorCount).map(function(k){return {f:k,n:factorCount[k]}})
+      .sort(function(a,b){return b.n-a.n}).slice(0,6).forEach(function(x){
+        lines.push('  '+x.f+'  (×'+x.n+')');
+      });
+    return {out:lines.join('\n')}}})
+
+reg({name:'Caesar Brute-Force',cat:'Analysis',ico:'⚔',desc:'Try all 26 shifts, ranked by χ².',
+  inputs:[{id:'text',type:'textarea',label:'CIPHERTEXT',def:'WKH TXLFN EURZQ IRA MXPSV RYHU WKH ODCB GRJ'}],
+  outputs:[{id:'out',label:'TOP CANDIDATES',html:1}],
+  run:function(i){
+    var r=caesarBruteforce(i.text);
+    var html='<table class="tbl"><thead><tr><th>Shift</th><th>χ²</th><th>Text</th></tr></thead><tbody>';
+    r.forEach(function(x){
+      html+='<tr><td>'+x.shift+'</td><td>'+x.chi.toFixed(1)+'</td><td style="font-family:inherit">'+esc(x.text.slice(0,60))+'</td></tr>';
+    });
+    html+='</tbody></table>';
+    return {out:html,html:1}}})
+
+/* ---------- UTILITIES ---------- */
+reg({name:'UUID v4',cat:'Utilities',ico:'⚙',desc:'Generate RFC 4122 version 4 UUIDs.',
+  ui:'custom',
+  render:renderUUID})
+
+reg({name:'Unix Timestamp',cat:'Utilities',ico:'⏱',desc:'Convert Unix time ↔ ISO date.',
+  inputs:[{id:'text',type:'textarea',label:'UNIX TS OR ISO DATE',def:'1700000000'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i){
+    try{
+      var v=i.text.trim();
+      if(/^\d+$/.test(v))return {out:unixToDate(v)};
+      return {out:dateToUnix(v).toString()};
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Roman Numerals',cat:'Utilities',ico:'Ⅻ',desc:'Convert between Roman and Arabic numerals.',
+  inputs:[{id:'text',type:'textarea',label:'NUMBER OR ROMAN',def:'2024'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i){
+    try{
+      var v=i.text.trim();
+      if(/^\d+$/.test(v))return {out:romanNumeral(parseInt(v))};
+      return {out:String(fromRoman(v))};
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'IP Subnet Calculator',cat:'Utilities',ico:'⌗',desc:'IPv4 CIDR info: network, mask, broadcast, hosts.',
+  inputs:[{id:'text',type:'text',label:'CIDR',def:'192.168.1.0/24'}],
+  outputs:[{id:'out',label:'SUBNET INFO'}],
+  run:function(i){
+    try{
+      var s=subnetInfo(i.text.trim());
+      var lines=[];
+      lines.push('Network:   '+s.network);
+      lines.push('Broadcast: '+s.broadcast);
+      lines.push('Mask:      '+s.mask);
+      lines.push('Wildcard:  '+s.wildcard);
+      lines.push('Hosts:     '+s.hosts);
+      lines.push('Class:     '+ipClass(s.network));
+      return {out:lines.join('\n')};
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'IP ↔ Binary',cat:'Utilities',ico:'▤',desc:'IPv4 to binary representation.',
+  inputs:[{id:'text',type:'text',label:'IP ADDRESS',def:'192.168.1.1'}],
+  outputs:[{id:'out',label:'BINARY'}],
+  run:function(i){try{return {out:ipToBin(i.text.trim())}}catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Base Converter',cat:'Utilities',ico:'↔',desc:'Convert numbers between bases 2–36.',
+  inputs:[{id:'text',type:'text',label:'VALUE',def:'255'},{id:'from',type:'number',label:'FROM BASE',def:10,min:2,max:36},{id:'to',type:'number',label:'TO BASE',def:16,min:2,max:36}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i){
+    try{
+      var v=parseInt(i.text.trim(),parseInt(i.from));
+      if(isNaN(v))throw new Error('invalid number for base '+i.from);
+      return {out:v.toString(parseInt(i.to)).toUpperCase()};
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Bitwise Calculator',cat:'Utilities',ico:'&|^',desc:'AND · OR · XOR · NOT · shifts on integers.',
+  inputs:[{id:'a',type:'number',label:'A',def:12},{id:'b',type:'number',label:'B',def:10}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i){
+    var a=parseInt(i.a)||0,b=parseInt(i.b)||0;
+    var lines=[];
+    lines.push('A AND B   = '+(a&b));
+    lines.push('A OR  B   = '+(a|b));
+    lines.push('A XOR B   = '+(a^b));
+    lines.push('NOT A     = '+(~a));
+    lines.push('A << 1    = '+(a<<1));
+    lines.push('A >> 1    = '+(a>>1));
+    lines.push('A >>> 1   = '+(a>>>1));
+    lines.push('');
+    lines.push('A binary: '+a.toString(2));
+    lines.push('B binary: '+b.toString(2));
+    return {out:lines.join('\n')}}})
+
+reg({name:'JWT Decoder',cat:'Utilities',ico:'🎫',desc:'Decode JSON Web Token (header + payload).',
+  inputs:[{id:'text',type:'textarea',label:'JWT',def:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'}],
+  outputs:[{id:'out',label:'DECODED'}],
+  run:function(i){
+    try{
+      var parts=i.text.trim().split('.');
+      if(parts.length<2)throw new Error('not a valid JWT');
+      var pad=function(s){while(s.length%4)s+='=';return s};
+      var header=JSON.parse(atob(pad(parts[0].replace(/-/g,'+').replace(/_/g,'/'))));
+      var payload=JSON.parse(atob(pad(parts[1].replace(/-/g,'+').replace(/_/g,'/'))));
+      return {out:'HEADER:\n'+JSON.stringify(header,null,2)+'\n\nPAYLOAD:\n'+JSON.stringify(payload,null,2)+'\n\nSIGNATURE:\n'+parts[2]};
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Regex Tester',cat:'Utilities',ico:'⊛',desc:'Test regular expressions against input.',
+  inputs:[{id:'pat',type:'text',label:'PATTERN',def:'\\d+'},{id:'text',type:'textarea',label:'TEST STRING',def:'Order #1234 shipped 2024-01-15'}],
+  outputs:[{id:'out',label:'MATCHES',html:1}],
+  run:function(i){
+    try{
+      var re=new RegExp(i.pat,'g');
+      var matches=[];var m;
+      while((m=re.exec(i.text))!==null){
+        matches.push({text:m[0],index:m.index});
+        if(m.index===re.lastIndex)re.lastIndex++;
+        if(matches.length>50)break;
+      }
+      if(!matches.length)return {out:'<span style="color:var(--tx3)">no matches</span>',html:1};
+      var html='<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">'+matches.length+' matches</div>';
+      matches.forEach(function(x){
+        html+='<div style="padding:6px 0;border-bottom:1px solid var(--bd)">pos '+x.index+': <b style="color:var(--ok)">'+esc(x.text)+'</b></div>';
+      });
+      return {out:html,html:1};
+    }catch(e){return {out:'error: '+e.message,err:1}}}})
+
+reg({name:'Text Diff',cat:'Utilities',ico:'≠',desc:'Line-by-line diff of two texts.',
+  inputs:[{id:'a',type:'textarea',label:'BEFORE',def:'line 1\nline 2\nline 3'},{id:'b',type:'textarea',label:'AFTER',def:'line 1\nline 2 changed\nline 3\nline 4'}],
+  outputs:[{id:'out',label:'DIFF',html:1}],
+  run:function(i){
+    var a=(i.a||'').split('\n');
+    var b=(i.b||'').split('\n');
+    var maxLen=Math.max(a.length,b.length);
+    var html='<div style="font-family:inherit;font-size:12px;line-height:1.7">';
+    for(var n=0;n<maxLen;n++){
+      var la=a[n],lb=b[n];
+      if(la===lb)html+='<div style="color:var(--tx3)">  '+esc(la||'')+'</div>';
+      else{
+        if(la!=null)html+='<div style="color:var(--er)">− '+esc(la)+'</div>';
+        if(lb!=null)html+='<div style="color:var(--ok)">+ '+esc(lb)+'</div>';
+      }
+    }
+    html+='</div>';
+    return {out:html,html:1}}})
+
+reg({name:'ROT-N',cat:'Classical',ico:'↻N',desc:'Rotate by any N (not just 13).',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'HELLO WORLD'},{id:'n',type:'number',label:'N',def:5,min:1,max:25}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i,dec){return {out:caesar(i.text,parseInt(i.n)||0,dec)}}})
+
+reg({name:'Reverse Text',cat:'Utilities',ico:'⇄',desc:'Reverse characters, words, or lines.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'hello world\nsecond line'}],
+  outputs:[{id:'out',label:'RESULT'}],
+  run:function(i){
+    var mode=i._mode||'chars';
+    var lines=[];
+    if(mode==='chars')lines.push({label:'reversed chars:',v:i.text.split('').reverse().join('')});
+    if(mode==='words')lines.push({label:'reversed words:',v:i.text.split(/\s+/).reverse().join(' ')});
+    if(mode==='lines')lines.push({label:'reversed lines:',v:i.text.split('\n').reverse().join('\n')});
+    return {out:lines.map(function(l){return l.label+'\n'+l.v}).join('\n\n')}},
+  ui:'custom',render:renderReverse})
+
+reg({name:'Case Converter',cat:'Utilities',ico:'Aa',desc:'Change case of text in multiple ways.',
+  inputs:[{id:'text',type:'textarea',label:'TEXT',def:'Hello World Example'}],
+  outputs:[{id:'out',label:'ALL CASES'}],
+  run:function(i){
+    var t=i.text;
+    return {out:[
+      'UPPERCASE:      '+t.toUpperCase(),
+      'lowercase:      '+t.toLowerCase(),
+      'Title Case:     '+t.replace(/\w\S*/g,function(w){return w[0].toUpperCase()+w.substr(1).toLowerCase()}),
+      'Sentence case:  '+t.charAt(0).toUpperCase()+t.substr(1).toLowerCase(),
+      'camelCase:      '+t.replace(/(?:^\w|[A-Z]|\b\w)/g,function(w,idx){return idx===0?w.toLowerCase():w.toUpperCase()}).replace(/\s+/g,''),
+      'PascalCase:     '+t.replace(/(?:^\w|[A-Z]|\b\w)/g,function(w){return w.toUpperCase()}).replace(/\s+/g,''),
+      'snake_case:     '+t.replace(/\s+/g,'_').toLowerCase(),
+      'kebab-case:     '+t.replace(/\s+/g,'-').toLowerCase(),
+      'CONSTANT_CASE:  '+t.replace(/\s+/g,'_').toUpperCase(),
+      'aLtErNaTiNg:    '+t.split('').map(function(c,idx){return idx%2?c.toLowerCase():c.toUpperCase()}).join('')
+    ].join('\n')}}})
+
+/* ---------- CUSTOM RENDERERS ---------- */
+function renderPasswordGen(container){
+  container.innerHTML=
+    '<div class="panel">'+
+      '<div class="panel-h">Password Generator</div>'+
+      '<div class="io"><div class="io-label">LENGTH <span class="cnt"><span id="pgLen">20</span></span></div>'+
+      '<input type="range" min="4" max="128" value="20" id="pgLenR" style="width:100%;accent-color:var(--tx)"></div>'+
+      '<div class="row">'+
+        '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pgLower" checked> lowercase</label>'+
+        '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pgUpper" checked> UPPERCASE</label>'+
+        '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pgDigits" checked> digits</label>'+
+        '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pgSymbols" checked> symbols</label>'+
+      '</div>'+
+      '<div class="row" style="margin-top:12px">'+
+        '<button class="btn primary" id="pgGen">⚙ Generate ×5</button>'+
+        '<button class="btn" id="pgCopy">⎘ Copy Last</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="io"><div class="io-label">GENERATED PASSWORDS <span class="cnt" id="pgCount">0</span></div>'+
+    '<div class="io-out" id="pgOut" style="font-family:inherit">click Generate…</div></div>';
+  var gen=function(){
+    var len=parseInt($('pgLenR').value);
+    var opts={lower:$('pgLower').checked,upper:$('pgUpper').checked,digits:$('pgDigits').checked,symbols:$('pgSymbols').checked};
+    var list=[];
+    for(var i=0;i<5;i++)list.push(generatePassword(len,opts));
+    $('pgOut').textContent=list.join('\n');
+    $('pgCount').textContent='5';
+    $('pgOut')._last=list[list.length-1];
+    window._lastGen=list.join('\n');
+  };
+  $('pgLenR').oninput=function(){$('pgLen').textContent=this.value};
+  $('pgGen').onclick=gen;
+  $('pgCopy').onclick=function(){
+    var t=window._lastGen||'';
+    navigator.clipboard&&navigator.clipboard.writeText(t).then(function(){toast('copied','' )})||toast('clipboard unavailable','wn');
+  };
+  gen();
+}
+function renderUUID(container){
+  container.innerHTML=
+    '<div class="panel">'+
+      '<div class="panel-h">UUID v4 Generator</div>'+
+      '<div class="row">'+
+        '<button class="btn primary" id="uuGen">⚙ Generate ×10</button>'+
+        '<button class="btn" id="uuCopy">⎘ Copy All</button>'+
+      '</div>'+
+      '<div class="helptext">UUID v4 uses 122 random bits. Collision probability is negligible.</div>'+
+    '</div>'+
+    '<div class="io"><div class="io-label">GENERATED <span class="cnt" id="uuCount">0</span></div>'+
+    '<div class="io-out" id="uuOut" style="font-family:inherit">click Generate…</div></div>';
+  $('uuGen').onclick=function(){
+    var list=[];
+    for(var i=0;i<10;i++)list.push(uuidv4());
+    $('uuOut').textContent=list.join('\n');
+    $('uuCount').textContent='10';
+    window._lastUu=list.join('\n');
+  };
+  $('uuCopy').onclick=function(){
+    navigator.clipboard&&navigator.clipboard.writeText(window._lastUu||'').then(function(){toast('copied','')})||toast('clipboard unavailable','wn');
+  };
+  $('uuGen').click();
+}
+function renderReverse(container){
+  container.innerHTML=
+    '<div class="io"><div class="io-label">TEXT</div><textarea id="rvIn" rows="4">hello world\nsecond line</textarea></div>'+
+    '<div class="row">'+
+      '<button class="btn primary" data-mode="chars">⇄ chars</button>'+
+      '<button class="btn primary" data-mode="words">⇄ words</button>'+
+      '<button class="btn primary" data-mode="lines">⇄ lines</button>'+
+    '</div>'+
+    '<div class="io" style="margin-top:14px"><div class="io-label">RESULT</div><div class="io-out" id="rvOut">—</div></div>';
+  container.querySelectorAll('[data-mode]').forEach(function(b){
+    b.onclick=function(){
+      var t=$('rvIn').value,m=b.getAttribute('data-mode');
+      if(m==='chars')$('rvOut').textContent=t.split('').reverse().join('');
+      else if(m==='words')$('rvOut').textContent=t.split(/\s+/).reverse().join(' ');
+      else $('rvOut').textContent=t.split('\n').reverse().join('\n');
+    };
+  });
+  container.querySelector('[data-mode]').click();
+}
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CIPHER — UI shell · routing · search · clock
+   ══════════════════════════════════════════════════════════════ */
+
+var CURRENT=null;
+var OPS=0;
+
+/* category order */
+var CAT_ORDER=['Classical','Encoding','Hash','HMAC','AEAD','Password','Analysis','Utilities'];
+
+function buildSidebar(filter){
+  var list=$('sideList');
+  list.innerHTML='';
+  var f=(filter||'').toLowerCase();
+  var matched=0;
+  CAT_ORDER.forEach(function(cat){
+    var tools=TOOLS.filter(function(t){return t.cat===cat && (!f || (t.name+' '+t.desc+' '+t.cat).toLowerCase().indexOf(f)>=0)});
+    if(!tools.length)return;
+    list.appendChild(el('div',{class:'cat-h',text:cat}));
+    tools.forEach(function(t){
+      matched++;
+      var item=el('div',{class:'tool-item'+(CURRENT&&CURRENT.id===t.id?' active':''),'data-id':t.id});
+      item.appendChild(el('span',{class:'tool-ico',text:t.ico}));
+      item.appendChild(el('span',{text:t.name}));
+      item.onclick=function(){openTool(t.id)};
+      list.appendChild(item);
+    });
+  });
+  if(!matched){
+    list.appendChild(el('div',{class:'cat-h',text:'— no matches —'}));
+  }
+}
+
+function openTool(id){
+  var t=TOOLS.filter(function(x){return x.id===id})[0];
+  if(!t)return;
+  CURRENT=t;
+  document.querySelectorAll('.tool-item').forEach(function(el){el.classList.toggle('active',el.getAttribute('data-id')===id)});
+  renderTool(t);
+}
+
+function renderTool(t){
+  var work=$('work');
+  work.innerHTML='';
+  var head=el('div',{class:'work-head'});
+  var l=el('div');
+  l.appendChild(el('div',{class:'work-title',text:t.name}));
+  l.appendChild(el('div',{class:'work-desc',text:t.desc}));
+  head.appendChild(l);
+  head.appendChild(el('div',{class:'work-cat',text:t.cat}));
+  work.appendChild(head);
+
+  if(t.ui==='custom' && t.render){
+    var c=el('div');
+    work.appendChild(c);
+    try{t.render(c)}catch(e){c.innerHTML='<div class="io-out err">render error: '+esc(e.message)+'</div>'}
+    return;
+  }
+
+  /* standard: inputs → swap → outputs */
+  var inputsEl=el('div');
+  var outputsEl=el('div');
+  var inputEls={};
+
+  (t.inputs||[]).forEach(function(inp){
+    var io=el('div',{class:'io'});
+    io.appendChild(el('div',{class:'io-label',html:esc(inp.label||inp.id)}));
+    var field;
+    if(inp.type==='textarea'){
+      field=el('textarea',{id:'i_'+inp.id,rows:inp.rows||4});
+      field.value=inp.def||'';
+    }else if(inp.type==='number'){
+      field=el('input',{type:'number',id:'i_'+inp.id});
+      if(inp.min!=null)field.min=inp.min;
+      if(inp.max!=null)field.max=inp.max;
+      field.value=inp.def!=null?inp.def:'';
+    }else{
+      field=el('input',{type:'text',id:'i_'+inp.id});
+      field.value=inp.def||'';
+    }
+    io.appendChild(field);
+    inputsEl.appendChild(io);
+    inputEls[inp.id]=field;
+  });
+
+  var outputsEl2=el('div');
+  (t.outputs||[]).forEach(function(o){
+    var io=el('div',{class:'io'});
+    var lbl=el('div',{class:'io-label'});
+    lbl.innerHTML=esc(o.label||o.id)+' <span class="cnt" id="cnt_'+o.id+'"></span>';
+    io.appendChild(lbl);
+    var out=el('div',{class:'io-out',id:'o_'+o.id,text:'—'});
+    io.appendChild(out);
+    outputsEl2.appendChild(io);
+  });
+
+  var runBtn=el('button',{class:'btn primary',html:'▶ Run'});
+  var swapBtn=el('button',{class:'btn',html:'⇅ Swap'});
+  var copyBtn=el('button',{class:'btn',html:'⎘ Copy'});
+  var clearBtn=el('button',{class:'btn er',html:'✕ Clear'});
+  var row=el('div',{class:'row'});
+  row.appendChild(runBtn);
+  if(t.outputs&&t.inputs&&t.outputs.length===1&&t.inputs.length===1){
+    row.appendChild(swapBtn);
+  }
+  row.appendChild(copyBtn);
+  row.appendChild(clearBtn);
+
+  work.appendChild(inputsEl);
+  work.appendChild(row);
+  work.appendChild(outputsEl2);
+
+  if(t.help){
+    var h=el('div',{class:'helptext',text:t.help});
+    work.appendChild(h);
+  }
+
+  var run=async function(){
+    var i={};
+    (t.inputs||[]).forEach(function(inp){i[inp.id]=inputEls[inp.id].value});
+    try{
+      var res=await t.run(i,false);
+      showResult(res);
+      OPS++;$('stOps').textContent=OPS;
+    }catch(e){
+      showResult({out:'error: '+e.message,err:1});
+    }
+  };
+  var showResult=function(res){
+    Object.keys(res).forEach(function(k){
+      if(k==='err'||k==='html')return;
+      var o=$('o_'+k);
+      if(!o)return;
+      if(res.html)o.innerHTML=res[k];
+      else o.textContent=res[k];
+      o.classList.remove('err','ok');
+      if(res.err)o.classList.add('err');
+      else o.classList.add('ok');
+    });
+  };
+  var doSwap=function(){
+    if(!t.outputs||!t.inputs)return;
+    if(t.inputs.length!==1||t.outputs.length!==1)return;
+    var out=$('o_'+t.outputs[0].id);
+    var cur=out.textContent;
+    if(cur==='—'||!cur)return;
+    var other=$('i_'+t.inputs[0].id);
+    var was=other.value;
+    other.value=cur;
+    var dec=was&&cur===other.value;
+    /* trigger decode run */
+    (async function(){
+      var i={};(t.inputs||[]).forEach(function(inp){i[inp.id]=inputEls[inp.id].value});
+      try{
+        var res=await t.run(i,!dec);
+        showResult(res);
+      }catch(e){showResult({out:'error: '+e.message,err:1})}
+    })();
+  };
+
+  runBtn.onclick=run;
+  swapBtn.onclick=doSwap;
+  copyBtn.onclick=function(){
+    var texts=[];
+    (t.outputs||[]).forEach(function(o){texts.push($('o_'+o.id).textContent)});
+    var t0=texts.join('\n\n');
+    if(navigator.clipboard)navigator.clipboard.writeText(t0).then(function(){toast('copied','')});
+    else toast('clipboard unavailable','wn');
+  };
+  clearBtn.onclick=function(){
+    (t.inputs||[]).forEach(function(inp){inputEls[inp.id].value=''});
+    (t.outputs||[]).forEach(function(o){$('o_'+o.id).textContent='—'});
+  };
+
+  /* auto-run on input change */
+  (t.inputs||[]).forEach(function(inp){
+    inputEls[inp.id].addEventListener('input',function(){
+      clearTimeout(window._autoRun);
+      window._autoRun=setTimeout(run,220);
+    });
+  });
+
+  run();
+}
+
+/* ---------- Clock + boot ---------- */
+function tickClock(){
+  var d=new Date();
+  var hh=String(d.getHours()).padStart(2,'0');
+  var mm=String(d.getMinutes()).padStart(2,'0');
+  var ss=String(d.getSeconds()).padStart(2,'0');
+  var c=$('stClock');if(c)c.textContent=hh+':'+mm+':'+ss;
+}
+setInterval(tickClock,1000);tickClock();
+
+function boot(){
+  $('stTools').textContent=TOOLS.length;
+  buildSidebar('');
+  /* search */
+  $('searchInput').addEventListener('input',function(){buildSidebar(this.value)});
+  /* open first tool */
+  if(TOOLS.length)openTool(TOOLS[0].id);
+  /* keyboard: / to search */
+  document.addEventListener('keydown',function(e){
+    var t=(e.target.tagName||'').toLowerCase();
+    if(t==='input'||t==='textarea')return;
+    if(e.key==='/'){e.preventDefault();$('searchInput').focus()}
+  });
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+else boot();
+
+console.log('%c CIPHER ','background:linear-gradient(90deg,#00ff88,#00d4ff);color:#000;padding:10px 22px;border-radius:6px;font-weight:900;font-size:16px;letter-spacing:6px');
+console.log('Cryptography Workbench · '+TOOLS.length+' tools · fully offline');
+</script>
+</body>
+</html>

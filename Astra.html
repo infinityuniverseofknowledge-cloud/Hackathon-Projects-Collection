@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cosmos">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>ASTRA — Astronomy Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+
+:root{
+  --bg:#02040a;--bg2:#060a18;--bg3:#0a1428;--bg4:#141e3c;
+  --panel:#060a18;--panel2:#0a1428;--panel3:#141e3c;--panel4:#1e2c58;
+  --bd:#1a2450;--bd2:#2c3c78;--bd3:#4858a8;
+  --tx:#e0e8ff;--tx2:#98a8d8;--tx3:#586890;--mu:#384870;
+  --c1:#ffc040;--c1h:#ffd880;--c1l:#c09020;
+  --c2:#40c0ff;--c2h:#80d8ff;--c2l:#2090c0;
+  --c3:#ff60a0;--c3h:#ff90c0;--c3l:#c03080;
+  --c4:#40ff90;--c4h:#80ffc0;--c4l:#20c060;
+  --c5:#ffe060;--c5h:#fff0a0;--c5l:#c0a040;
+  --c6:#a060ff;--c6h:#c090ff;--c6l:#7030c0;
+  --c7:#40ffd0;--c7h:#80ffe0;--c7l:#20c090;
+  --c8:#ff8040;--c8h:#ffb080;--c8l:#c05020;
+  --ok:#40ff90;--warn:#ffe060;--err:#ff5060;--info:#40c0ff;
+  --g1:linear-gradient(135deg,#ffc040,#ff60a0);
+  --g2:linear-gradient(135deg,#40c0ff,#a060ff);
+  --gHolo:linear-gradient(120deg,#ffc040,#ff60a0,#a060ff,#40c0ff,#40ff90,#ffc040);
+  --r:10px;--rs:7px;--rxs:5px;--rf:9999px;
+  --sh:0 8px 32px rgba(0,0,0,.85);
+  --sh2:0 16px 48px rgba(0,0,0,1);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .14s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="observatory"]{--bg:#0a0505;--bg2:#180808;--bg3:#281010;--panel:#180808;--panel2:#281010;
+  --bd:#482020;--bd2:#703838;--tx:#f0e0d8;--tx2:#c0a090;--tx3:#806858;
+  --c1:#ff8040;--c2:#40c0ff;--c3:#ff4060;--c6:#c060ff;
+  --g1:linear-gradient(135deg,#ff8040,#ff4060)}
+[data-theme="paper"]{--bg:#f8f4e8;--bg2:#f0ead8;--bg3:#e0d8c0;--panel:#fff;--panel2:#f8f4e8;--panel3:#f0ead8;--panel4:#e0d8c0;
+  --bd:#c8bca0;--bd2:#a09080;--tx:#0a1020;--tx2:#405070;--tx3:#708090;
+  --c1:#c06000;--c2:#0060c0;--c3:#c00040;--c6:#6020c0;
+  --g1:linear-gradient(135deg,#c06000,#c00040)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* BOOT */
+#boot{position:fixed;inset:0;background:#02040a;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px}
+#boot.hidden{opacity:0;pointer-events:none}
+.boot-sky{position:absolute;inset:0;overflow:hidden}
+.boot-star{position:absolute;background:#fff;border-radius:50%;animation:twinkle 3s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.3}50%{opacity:1}}
+.boot-sun{width:180px;height:180px;margin-bottom:20px;position:relative;z-index:2;animation:pulsesun 3s ease-in-out infinite}
+.boot-sun svg{width:100%;height:100%}
+.boot-sun circle.core{fill:#ffc040;filter:drop-shadow(0 0 30px #ffc040)}
+.boot-sun circle.corona{fill:none;stroke:#ffc040;stroke-width:2;opacity:.4;animation:expand 3s ease-in-out infinite}
+.boot-sun ellipse.orbit{fill:none;stroke:#40c0ff;stroke-width:1.5;opacity:.6}
+.boot-sun circle.planet{fill:#40c0ff;filter:drop-shadow(0 0 6px #40c0ff);animation:orbit 4s linear infinite}
+@keyframes pulsesun{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes expand{0%,100%{r:80;opacity:.4}50%{r:95;opacity:.15}}
+.boot-logo{font-family:var(--disp);font-size:3.4rem;font-weight:900;letter-spacing:16px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:8px;z-index:2}
+.boot-sub{font-size:.7rem;color:#ffc040;letter-spacing:10px;margin-bottom:32px;opacity:.75;z-index:2}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#141e3c;border-radius:2px;overflow:hidden;margin-bottom:12px;z-index:2}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #ffc040}
+.boot-pct{font-size:.7rem;color:#ffc040;margin-bottom:16px;z-index:2}
+.boot-log{font-size:.6rem;color:#586890;text-align:left;width:min(440px,90vw);height:120px;overflow:hidden;line-height:1.7;z-index:2}
+.boot-log .ok{color:#40ff90}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+@keyframes orbit{from{transform:rotate(0) translateX(70px) rotate(0)}to{transform:rotate(360deg) translateX(70px) rotate(-360deg)}}
+
+/* TOPBAR */
+#topbar{height:50px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:6px;font-size:1rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:32px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#02040a;box-shadow:0 0 14px rgba(255,192,64,.4)}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.tb-btn{width:32px;height:32px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-status{font-family:var(--mono);font-size:.62rem;padding:4px 10px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tb-status .dot{width:8px;height:8px;border-radius:50%;background:#141e3c;transition:var(--t1)}
+.tb-status .dot.on{background:var(--c4);box-shadow:0 0 10px var(--c4);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:290px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.6rem;text-transform:uppercase;letter-spacing:1.6px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#000205;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.co-badge{background:rgba(6,10,24,.9);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 10px;font-family:var(--mono);font-size:.62rem;color:var(--c1);pointer-events:auto;max-width:340px}
+.co-badge.stats{color:var(--c2);display:flex;flex-direction:column;gap:3px;align-items:flex-end;text-align:right;line-height:1.5}
+
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:32px}
+.rp-tab{flex:1;padding:6px;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+#statusbar{height:28px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;font-family:var(--mono);font-size:.62rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}.sb-val.c5{color:var(--c5)}
+
+.sec{margin-bottom:14px}
+.sec h4{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);margin-bottom:8px;font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.6rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);text-transform:none;letter-spacing:0}
+.ctrl{margin-bottom:10px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=number],.ctrl select,.ctrl textarea,.ctrl input[type=text]{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 9px;color:var(--tx);font-size:.68rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(255,192,64,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1h)}
+.btn.primary{background:var(--g1);color:#02040a;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 16px rgba(255,192,64,.5)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:4px 8px;font-size:.6rem}
+
+.chip-row{display:flex;gap:4px;flex-wrap:wrap}
+.chip{padding:4px 9px;background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rf);cursor:pointer;font-size:.6rem;font-family:var(--mono);transition:var(--t1);color:var(--tx2)}
+.chip:hover{border-color:var(--c1);color:var(--c1)}
+.chip.active{background:var(--g1);color:#02040a;border-color:transparent;font-weight:700}
+
+.kv{font-family:var(--mono);font-size:.62rem;line-height:1.75}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3);white-space:nowrap}
+.kv .v{color:var(--c1);text-align:right;word-break:break-all;font-size:.6rem}
+
+.empty{text-align:center;padding:30px 20px;color:var(--tx3);font-size:.7rem;font-family:var(--mono)}
+
+.data-table{width:100%;font-family:var(--mono);font-size:.62rem;border-collapse:collapse}
+.data-table th{text-align:left;padding:5px 8px;background:var(--panel3);font-size:.55rem;text-transform:uppercase;letter-spacing:.9px;color:var(--tx3);font-weight:700;border-bottom:1px solid var(--bd)}
+.data-table td{padding:4px 8px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+.data-table td.c1{color:var(--c1)}.data-table td.c2{color:var(--c2)}.data-table td.c3{color:var(--c3)}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.9rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:20px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:26px;height:26px;border-radius:var(--rxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+#toasts{position:fixed;bottom:44px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:10px 16px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.7rem;font-weight:500;max-width:340px;min-width:180px;animation:tin .3s;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c4)}.toast.warn{border-left-color:var(--c5)}.toast.error{border-left-color:var(--err)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:1000px){#leftPanel{width:250px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel{width:0;overflow:hidden}#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-sky" id="bootSky"></div>
+  <div class="boot-sun">
+    <svg viewBox="0 0 180 180">
+      <circle class="corona" cx="90" cy="90" r="75"/>
+      <circle class="core" cx="90" cy="90" r="40"/>
+      <ellipse class="orbit" cx="90" cy="90" rx="75" ry="30"/>
+      <ellipse class="orbit" cx="90" cy="90" rx="75" ry="30" transform="rotate(60 90 90)"/>
+      <circle class="planet" cx="90" cy="90" r="4"/>
+    </svg>
+  </div>
+  <div class="boot-logo">ASTRA</div>
+  <div class="boot-sub">ASTRONOMY STUDIO</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('solar')">ASTRA</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus">
+      <span class="dot" id="tbDot"></span>
+      <span id="tbText">ready</span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="togglePlay()" title="Play/Pause (Space)">⏸</button>
+      <button class="tb-btn" onclick="resetModule()" title="Reset (R)">↺</button>
+      <button class="tb-btn" onclick="exportState()" title="Export">⬇</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div id="canvasOverlay">
+          <div class="co-badge" id="coBadge">Ready</div>
+          <div class="co-badge stats" id="coStats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+        <div class="rp-tab" data-tab="help" onclick="switchRp('help',this)">ℹ️<span>Info</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpState"></div>
+        <div class="rp-pane" id="rpMath"></div>
+        <div class="rp-pane" id="rpLogs"></div>
+        <div class="rp-pane" id="rpHelp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Time</span><span class="sb-val c2" id="sbTime">0.00d</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Objects</span><span class="sb-val c3" id="sbObjs">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Zoom</span><span class="sb-val c4" id="sbZoom">1.0×</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Value</span><span class="sb-val c5" id="sbVal">—</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">Solar</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function rndN(){var u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2400;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:1rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   ASTRO CONSTANTS
+   ================================================================ */
+var AU=1.495978707e11;              /* meters */
+var PARSEC=3.0856775814913673e16;   /* meters */
+var LIGHT_YEAR=9.4607304725808e15;  /* meters */
+var SOLAR_MASS=1.98892e30;          /* kg */
+var SOLAR_LUM=3.828e26;             /* W */
+var SOLAR_RAD=6.957e8;              /* m */
+var EARTH_MASS=5.972e24;            /* kg */
+var EARTH_RAD=6.371e6;              /* m */
+var GRAV_G=6.67430e-11;             /* m³/(kg·s²) */
+var BOLTZMANN=1.380649e-23;         /* J/K */
+var PLANCK_H=6.62607015e-34;        /* J·s */
+var LIGHT_C=2.99792458e8;           /* m/s */
+var STEFAN_BOLTZMANN=5.670374419e-8;/* W/(m²·K⁴) */
+var WIEN_B=2.897771955e-3;          /* m·K */
+var DEG2RAD=Math.PI/180;
+var RAD2DEG=180/Math.PI;
+
+/* ================================================================
+   KEPLER ORBITAL MECHANICS
+   ================================================================ */
+function solveKepler(M,e){
+  /* Solve M = E - e·sin(E) for eccentric anomaly E via Newton-Raphson */
+  M=normAngle(M);
+  var E=M;
+  for(var i=0;i<20;i++){
+    var f=E-e*Math.sin(E)-M;
+    var fp=1-e*Math.cos(E);
+    var dE=f/fp;
+    E-=dE;
+    if(Math.abs(dE)<1e-10)break;
+  }
+  return E;
+}
+function normAngle(a){
+  a=a%(Math.PI*2);
+  if(a<0)a+=Math.PI*2;
+  return a;
+}
+function orbitalPosition(a,e,M0,t,P){
+  /* Given semi-major axis, eccentricity, mean anomaly at t=0, current time, period */
+  var M=M0+2*Math.PI*t/P;
+  var E=solveKepler(M,e);
+  /* True anomaly */
+  var nu=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2),Math.sqrt(1-e)*Math.cos(E/2));
+  /* Distance */
+  var r=a*(1-e*Math.cos(E));
+  return {E:E,nu:nu,r:r,x:r*Math.cos(nu),y:r*Math.sin(nu)};
+}
+function orbitalPeriod(a,M){
+  /* a in AU, M in solar masses → period in years (Kepler's 3rd law) */
+  return Math.sqrt(a*a*a/M);
+}
+
+/* ================================================================
+   BLACKBODY RADIATION (Planck's law)
+   ================================================================ */
+function planck(wavelengthNm,T){
+  /* Spectral radiance B_λ(T) in W·m⁻²·sr⁻¹·m⁻¹ */
+  var lambda=wavelengthNm*1e-9; /* to meters */
+  var c1=2*PLANCK_H*LIGHT_C*LIGHT_C;
+  var c2=PLANCK_H*LIGHT_C/(lambda*BOLTZMANN*T);
+  var lambda5=lambda*lambda*lambda*lambda*lambda;
+  return c1/(lambda5*(Math.exp(c2)-1));
+}
+function wienPeak(T){
+  /* Wien's displacement law: λ_max = b/T, in nm */
+  return WIEN_B/T*1e9;
+}
+function totalRadiance(T){
+  /* Stefan-Boltzmann: integrated flux per m² */
+  return STEFAN_BOLTZMANN*T*T*T*T;
+}
+function blackbodyRGB(T){
+  /* Approximate RGB of a blackbody at temperature T */
+  T=clamp(T,1000,40000);
+  var r,g,b;
+  /* Red */
+  if(T<=6600)r=255;
+  else r=329.698727446*Math.pow((T-6000)/100,-0.1332047592);
+  /* Green */
+  if(T<=6600)g=99.4708025861*Math.log(T/100)-161.1195681661;
+  else g=288.1221695283*Math.pow((T-6000)/100,-0.0755148492);
+  /* Blue */
+  if(T>=6600)b=255;
+  else if(T<=1900)b=0;
+  else b=138.5177312231*Math.log((T-1000)/100)-305.0447927307;
+  return 'rgb('+Math.round(clamp(r,0,255))+','+Math.round(clamp(g,0,255))+','+Math.round(clamp(b,0,255))+')';
+}
+
+/* ================================================================
+   REDSHIFT / DOPPLER
+   ================================================================ */
+function dopplerShift(lambda0,v){
+  /* Relativistic Doppler: λ_obs = λ₀ · sqrt((1+β)/(1-β)) */
+  var beta=v/LIGHT_C; /* v in m/s */
+  if(Math.abs(beta)>=1)return NaN;
+  var z=Math.sqrt((1+beta)/(1-beta))-1;
+  return {z:z,lambda_obs:lambda0*(1+z)};
+}
+function redshiftToVelocity(z){
+  /* Relativistic: v = c·((1+z)²-1)/((1+z)²+1) */
+  var num=(1+z)*(1+z)-1;
+  var den=(1+z)*(1+z)+1;
+  return LIGHT_C*num/den;
+}
+function hubbleDistance(z,H0){
+  /* Very simple linear Hubble law: d = c·z/H0, H0 in km/s/Mpc */
+  H0=H0||70;
+  return LIGHT_C*z/(H0*1e3/3.0857e22); /* meters */
+}
+
+/* ================================================================
+   GRAVITATIONAL LENSING
+   ================================================================ */
+function deflectionAngle(M,b){
+  /* Einstein deflection: α = 4GM/(c²b) */
+  return 4*GRAV_G*M/(LIGHT_C*LIGHT_C*b);
+}
+function einsteinRadius(M,Dl,Ds,Dls){
+  /* θ_E = sqrt(4GM/c² · Dls/(Dl·Ds)) */
+  return Math.sqrt(4*GRAV_G*M/LIGHT_C/LIGHT_C*Dls/(Dl*Ds));
+}
+
+/* ================================================================
+   CONSTELLATION DATA (bright stars with RA/Dec in degrees)
+   ================================================================ */
+var STARS=[
+  {name:'Sirius',ra:101.29,dec:-16.72,mag:-1.46,spectral:'A1V',dist:8.6},
+  {name:'Canopus',ra:95.99,dec:-52.70,mag:-0.74,spectral:'F0II',dist:310},
+  {name:'Alpha Centauri',ra:219.90,dec:-60.83,mag:-0.27,spectral:'G2V',dist:4.4},
+  {name:'Arcturus',ra:213.92,dec:19.18,mag:-0.05,spectral:'K1.5III',dist:36.7},
+  {name:'Vega',ra:279.23,dec:38.78,mag:0.03,spectral:'A0V',dist:25.0},
+  {name:'Capella',ra:79.17,dec:45.99,mag:0.08,spectral:'G8III',dist:42.9},
+  {name:'Rigel',ra:78.63,dec:-8.20,mag:0.13,spectral:'B8Ia',dist:860},
+  {name:'Procyon',ra:114.83,dec:5.22,mag:0.34,spectral:'F5IV',dist:11.5},
+  {name:'Betelgeuse',ra:88.79,dec:7.41,mag:0.42,spectral:'M1Ia',dist:640},
+  {name:'Achernar',ra:24.43,dec:-57.24,mag:0.46,spectral:'B3Vpe',dist:139},
+  {name:'Hadar',ra:210.96,dec:-60.37,mag:0.61,spectral:'B1III',dist:390},
+  {name:'Altair',ra:297.70,dec:8.87,mag:0.76,spectral:'A7V',dist:16.7},
+  {name:'Aldebaran',ra:68.98,dec:16.51,mag:0.86,spectral:'K5III',dist:65.3},
+  {name:'Antares',ra:247.35,dec:-26.43,mag:1.06,spectral:'M1.5Iab',dist:550},
+  {name:'Spica',ra:201.30,dec:-11.16,mag:1.04,spectral:'B1V',dist:262},
+  {name:'Pollux',ra:116.33,dec:28.03,mag:1.14,spectral:'K0III',dist:33.8},
+  {name:'Fomalhaut',ra:344.41,dec:-29.62,mag:1.16,spectral:'A3V',dist:25.1},
+  {name:'Deneb',ra:310.36,dec:45.28,mag:1.25,spectral:'A2Ia',dist:2615},
+  {name:'Regulus',ra:152.09,dec:11.97,mag:1.35,spectral:'B8IV',dist:79.3},
+  {name:'Castor',ra:113.65,dec:31.89,mag:1.58,spectral:'A1V',dist:51.5},
+  {name:'Bellatrix',ra:81.28,dec:6.35,mag:1.64,spectral:'B2III',dist:250},
+  {name:'Alnilam',ra:84.05,dec:-1.20,mag:1.69,spectral:'B0Ia',dist:1350},
+  {name:'Alnitak',ra:85.19,dec:-1.94,mag:1.74,spectral:'O9.7Ib',dist:1260},
+  {name:'Mintaka',ra:83.00,dec:-0.30,mag:2.23,spectral:'O9.5II',dist:1200},
+  {name:'Dubhe',ra:165.93,dec:61.75,mag:1.79,spectral:'K0III',dist:123},
+  {name:'Mirfak',ra:51.08,dec:49.86,mag:1.79,spectral:'F5Ib',dist:590},
+  {name:'Wezen',ra:107.10,dec:-26.39,mag:1.83,spectral:'F8Ia',dist:1600},
+  {name:'Sargas',ra:264.33,dec:-42.99,mag:1.86,spectral:'F1II',dist:270},
+  {name:'Kaus Australis',ra:276.04,dec:-34.38,mag:1.85,spectral:'B9.5III',dist:143},
+  {name:'Avior',ra:125.63,dec:-59.51,mag:1.86,spectral:'K3III',dist:610},
+  {name:'Alkaid',ra:206.89,dec:49.31,mag:1.85,spectral:'B3V',dist:104},
+  {name:'Menkalinan',ra:89.88,dec:44.95,mag:1.90,spectral:'A1IV',dist:81.1},
+  {name:'Atria',ra:252.17,dec:-69.03,mag:1.91,spectral:'K2Ib',dist:391},
+  {name:'Alhena',ra:99.43,dec:16.40,mag:1.93,spectral:'A0IV',dist:109},
+  {name:'Peacock',ra:306.41,dec:-56.74,mag:1.94,spectral:'B2IV',dist:179},
+  {name:'Polaris',ra:37.95,dec:89.26,mag:1.98,spectral:'F7Ib',dist:433}
+];
+
+/* ================================================================
+   HR DIAGRAM STAR DATA (100 stars, approximate)
+   ================================================================ */
+function generateHRStars(){
+  var stars=[];
+  /* Main sequence */
+  for(var i=0;i<60;i++){
+    var T=rndF(2500,30000);
+    /* Luminosity from mass-luminosity + temperature */
+    var L=Math.pow(T/5778,4)*rndF(0.5,3);
+    stars.push({T:T,L:L,type:'MS'});
+  }
+  /* Giants */
+  for(var i2=0;i2<20;i2++){
+    var T2=rndF(3500,5000);
+    var L2=rndF(50,500);
+    stars.push({T:T2,L:L2,type:'Giant'});
+  }
+  /* Supergiants */
+  for(var i3=0;i3<10;i3++){
+    var T3=rndF(3000,10000);
+    var L3=rndF(1e4,1e6);
+    stars.push({T:T3,L:L3,type:'Supergiant'});
+  }
+  /* White dwarfs */
+  for(var i4=0;i4<10;i4++){
+    var T4=rndF(5000,30000);
+    var L4=rndF(1e-4,1e-2);
+    stars.push({T:T4,L:L4,type:'WD'});
+  }
+  return stars;
+}
+
+/* ================================================================
+   LOG
+   ================================================================ */
+var LOG=[];
+function logMsg(msg,type){
+  type=type||'info';
+  LOG.push({t:Date.now(),msg:msg,type:type});
+  if(LOG.length>200)LOG.shift();
+  if(STATE.currentRp==='logs')renderLogs();
+}
+</script>
+<script>
+/* ================================================================
+   APPLICATION STATE
+   ================================================================ */
+var STATE={
+  currentTab:'solar',
+  currentRp:'state',
+  theme:'cosmos',
+  playing:true,
+  time:0,
+  /* Solar system */
+  solar:{
+    planets:[],
+    showOrbits:true,
+    showLabels:true,
+    showAsteroids:false,
+    timeYears:0,
+    speed:0.5,       /* years per second */
+    zoom:1,
+    panX:0,panY:0,
+    scale:'log',     /* linear | log */
+    showMoons:true,
+    selected:-1
+  },
+  /* HR diagram */
+  hr:{
+    stars:[],
+    showMainSeq:true,
+    showGiants:true,
+    showWDs:true,
+    highlight:'all',
+    hoverIdx:-1
+  },
+  /* Transits */
+  transit:{
+    starTemp:5778,
+    starRadius:1.0,
+    planetRadius:0.1,
+    period:10,
+    impactParam:0.0,
+    timeDays:0,
+    lightCurve:[],
+    playing:true,
+    speed:1,
+    showHistoric:true
+  },
+  /* Planck */
+  planck:{
+    temp:5778,
+    lambdaMin:100,
+    lambdaMax:3000,
+    showPlanck:true,
+    showWien:true,
+    showVisibleBand:true,
+    logScale:false,
+    compareTemp:3000,
+    showCompare:false,
+    snapshots:[]
+  },
+  /* Redshift */
+  redshift:{
+    lambda0:656.3,     /* H-alpha */
+    velocity:0,        /* km/s */
+    z:0,
+    mode:'doppler',    /* doppler | z | distance */
+    hubbleConst:70,
+    spectrum:[],
+    showBothLines:true
+  },
+  /* Lensing */
+  lensing:{
+    sourceX:0,sourceY:0,
+    lensX:-0.3,lensY:0,
+    mass:1.0,          /* in solar masses × 10^12 */
+    distances:{Dl:1.0,Ds:2.0,Dls:1.0},
+    showRays:true,
+    showEinsteinRing:true,
+    showGrid:true
+  }
+};
+
+/* Planet data (semi-major axis in AU, eccentricity, period in years, radius in Earth radii, color, name) */
+var PLANET_DATA=[
+  {name:'Mercury',a:0.387,e:0.206,P:0.241,radius:0.383,color:'#a09080',mass:0.055,M0:0.5},
+  {name:'Venus',a:0.723,e:0.007,P:0.615,radius:0.949,color:'#ffb070',mass:0.815,M0:1.2},
+  {name:'Earth',a:1.000,e:0.017,P:1.000,radius:1.000,color:'#4090ff',mass:1.000,M0:2.0},
+  {name:'Mars',a:1.524,e:0.093,P:1.881,radius:0.532,color:'#ff6030',mass:0.107,M0:3.5},
+  {name:'Jupiter',a:5.203,e:0.048,P:11.86,radius:11.21,color:'#e0a070',mass:317.8,M0:0.8},
+  {name:'Saturn',a:9.537,e:0.054,P:29.45,radius:9.45,color:'#e0c090',mass:95.16,M0:2.5},
+  {name:'Uranus',a:19.19,e:0.047,P:84.02,radius:4.01,color:'#80e0e0',mass:14.54,M0:5.0},
+  {name:'Neptune',a:30.07,e:0.009,P:164.8,radius:3.88,color:'#4060ff',mass:17.15,M0:3.2}
+];
+
+/* ================================================================
+   CANVAS
+   ================================================================ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');
+  CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('wheel',onWheel,{passive:false});
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){
+  var wrap=CANV.canvas.parentElement;
+  CANV.dpr=window.devicePixelRatio||1;
+  CANV.W=wrap.clientWidth;CANV.H=wrap.clientHeight;
+  CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);
+  CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);
+  CANV.canvas.style.width=CANV.W+'px';
+  CANV.canvas.style.height=CANV.H+'px';
+  CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0);
+}
+var INPUT={down:false,x:0,y:0,lastX:0,lastY:0};
+function canvasPos(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=canvasPos(e);INPUT.down=true;INPUT.lastX=p.x;INPUT.lastY=p.y;INPUT.x=p.x;INPUT.y=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p,e);}
+function onMove(e){var p=canvasPos(e);INPUT.x=p.x;INPUT.y=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,e);}
+function onUp(e){INPUT.down=false;var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp(e);}
+function onWheel(e){e.preventDefault();var m=MODULES[STATE.currentTab];if(m&&m.onWheel)m.onWheel(e);}
+function onTouchStart(e){if(e.touches.length===1){var t=e.touches[0];onDown({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchMove(e){if(e.touches.length===1){var t=e.touches[0];onMove({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchEnd(e){onUp({});e.preventDefault();}
+
+var MODULES={};
+function registerModule(key,def){def.key=key;MODULES[key]=def;}
+function setStatsHTML(h){var e=$('coStats');if(e)e.innerHTML=h}
+function updateBadge(t){var e=$('coBadge');if(e)e.textContent=t}
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;
+  };
+}
+
+/* Starfield background generator */
+function drawStarfield(ctx,W,H,seed){
+  var rng=seed||12345;
+  function rand(){rng=(rng*9301+49297)%233280;return rng/233280;}
+  for(var i=0;i<200;i++){
+    var x=rand()*W;
+    var y=rand()*H;
+    var b=rand();
+    ctx.fillStyle='rgba(255,255,255,'+(0.1+b*0.6)+')';
+    var s=b>0.9?2:b>0.7?1.2:0.8;
+    ctx.fillRect(x,y,s,s);
+  }
+}
+
+/* ================================================================
+   MODULE: SOLAR SYSTEM
+   ================================================================ */
+registerModule('solar',{
+  title:'Solar System',
+  icon:'🪐',
+  desc:'Keplerian orbits with real planetary data. Newton-Raphson solves Kepler\'s equation for each frame.',
+  init:function(){
+    var s=STATE.solar;
+    s.planets=PLANET_DATA.map(function(p){
+      return Object.assign({},p,{trail:[]});
+    });
+    s.timeYears=0;
+    s.selected=-1;
+  },
+  orbitScale:function(a){
+    /* Map AU → pixels depending on scale mode */
+    var s=STATE.solar;
+    if(s.scale==='log'){
+      /* Log scale so outer planets are visible */
+      return 40+Math.log(a+1)*90;
+    } else {
+      return 30+a*15;
+    }
+  },
+  tick:function(dt){
+    var s=STATE.solar;
+    if(!STATE.playing)return;
+    s.timeYears+=dt*s.speed;
+    /* Trail management */
+    s.planets.forEach(function(p){
+      var pos=orbitalPosition(p.a,p.e,p.M0,s.timeYears,p.P);
+      var r=this.orbitScale(p.a);
+      var px=r*pos.r/p.a*Math.cos(pos.nu);
+      var py=r*pos.r/p.a*Math.sin(pos.nu);
+      p.trail.push([px,py]);
+      if(p.trail.length>100)p.trail.shift();
+    },this);
+    STATE.time+=dt;
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#000205';
+    ctx.fillRect(0,0,W,H);
+    drawStarfield(ctx,W,H,42);
+    var s=STATE.solar;
+    var cx=W/2+s.panX;
+    var cy=H/2+s.panY;
+    var zoom=s.zoom;
+    /* Sun */
+    var sunGrad=ctx.createRadialGradient(cx,cy,0,cx,cy,60*zoom);
+    sunGrad.addColorStop(0,'#fff8d0');
+    sunGrad.addColorStop(0.2,'#ffc040');
+    sunGrad.addColorStop(0.5,'#ff8030');
+    sunGrad.addColorStop(1,'rgba(255,128,48,0)');
+    ctx.fillStyle=sunGrad;
+    ctx.beginPath();ctx.arc(cx,cy,60*zoom,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff8d0';
+    ctx.beginPath();ctx.arc(cx,cy,8*zoom,0,Math.PI*2);ctx.fill();
+    /* Orbits (ellipses, but we draw circles approximating) */
+    if(s.showOrbits){
+      s.planets.forEach(function(p){
+        var r=this.orbitScale(p.a)*zoom;
+        ctx.strokeStyle='rgba(64,192,255,.15)';
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.arc(cx,cy,r,0,Math.PI*2);
+        ctx.stroke();
+      },this);
+    }
+    /* Planets */
+    var orderedPlanets=s.planets.slice().sort(function(a,b){return b.a-a.a});
+    orderedPlanets.forEach(function(p){
+      var pos=orbitalPosition(p.a,p.e,p.M0,s.timeYears,p.P);
+      var r=this.orbitScale(p.a)*zoom;
+      var px=cx+r*pos.r/p.a*Math.cos(pos.nu);
+      var py=cy+r*pos.r/p.a*Math.sin(pos.nu);
+      var pr=Math.max(2,p.radius*1.5*Math.sqrt(zoom));
+      /* Trail */
+      if(p.trail.length>1){
+        ctx.strokeStyle=p.color+'60';
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        p.trail.forEach(function(t,i){
+          var tx=cx+t[0]*zoom;
+          var ty=cy+t[1]*zoom;
+          if(i===0)ctx.moveTo(tx,ty);else ctx.lineTo(tx,ty);
+        });
+        ctx.stroke();
+      }
+      /* Planet */
+      var grad=ctx.createRadialGradient(px-pr*0.3,py-pr*0.3,0,px,py,pr);
+      grad.addColorStop(0,'#ffffff');
+      grad.addColorStop(0.4,p.color);
+      grad.addColorStop(1,'rgba(0,0,0,0.6)');
+      ctx.fillStyle=grad;
+      ctx.beginPath();ctx.arc(px,py,pr,0,Math.PI*2);ctx.fill();
+      /* Saturn rings */
+      if(p.name==='Saturn'){
+        ctx.strokeStyle='rgba(224,192,144,.7)';
+        ctx.lineWidth=Math.max(1,pr*0.4);
+        ctx.beginPath();
+        ctx.ellipse(px,py,pr*1.8,pr*0.6,0.2,0,Math.PI*2);
+        ctx.stroke();
+      }
+      /* Label */
+      if(s.showLabels){
+        ctx.fillStyle='rgba(224,232,255,.8)';
+        ctx.font='10px monospace';
+        ctx.textAlign='left';
+        ctx.fillText(p.name,px+pr+4,py+3);
+      }
+      /* Selection indicator */
+      if(s.selected===s.planets.indexOf(p)){
+        ctx.strokeStyle='#ffe060';
+        ctx.lineWidth=2;
+        ctx.setLineDash([4,3]);
+        ctx.beginPath();ctx.arc(px,py,pr+8,0,Math.PI*2);ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    },this);
+    /* Info */
+    setStatsHTML(
+      '<div>Sim time: '+fmt(s.timeYears,2)+' years</div>'+
+      '<div>Planets: '+s.planets.length+'</div>'+
+      '<div>Scale: '+s.scale+'</div>'+
+      '<div>Speed: '+fmt(s.speed,2)+' yr/s</div>'
+    );
+    updateBadge('🪐 Solar System · '+fmt(s.timeYears,2)+' years');
+    $('sbMode').textContent='Solar System';
+    $('sbObjs').textContent=s.planets.length;
+    $('sbZoom').textContent=fmt(s.zoom,2)+'×';
+    $('sbTime').textContent=fmt(s.timeYears,2)+'yr';
+    $('sbVal').textContent=fmt(s.timeYears,2)+' yr';
+  },
+  onDown:function(p){
+    var s=STATE.solar;
+    /* Check for planet selection */
+    var cx=CANV.W/2+s.panX,cy=CANV.H/2+s.panY;
+    var best=-1,bestDist=25;
+    s.planets.forEach(function(pl,i){
+      var pos=orbitalPosition(pl.a,pl.e,pl.M0,s.timeYears,pl.P);
+      var r=this.orbitScale(pl.a)*s.zoom;
+      var px=cx+r*pos.r/pl.a*Math.cos(pos.nu);
+      var py=cy+r*pos.r/pl.a*Math.sin(pos.nu);
+      var d=Math.hypot(px-p.x,py-p.y);
+      if(d<bestDist){bestDist=d;best=i;}
+    },this);
+    s.selected=best;
+    INPUT.dragStart={x:p.x,y:p.y,px:s.panX,py:s.panY};
+  },
+  onMove:function(p){
+    var s=STATE.solar;
+    if(INPUT.down&&INPUT.dragStart){
+      s.panX=INPUT.dragStart.px+(p.x-INPUT.dragStart.x);
+      s.panY=INPUT.dragStart.py+(p.y-INPUT.dragStart.y);
+    }
+  },
+  onUp:function(){INPUT.dragStart=null;},
+  onWheel:function(e){
+    STATE.solar.zoom=clamp(STATE.solar.zoom*(e.deltaY<0?1.15:0.87),0.2,10);
+  },
+  controls:function(){
+    var s=STATE.solar;
+    var html='';
+    html+='<div class="sec"><h4>Simulation</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Speed</span><span>'+fmt(s.speed,2)+' yr/s</span></div>';
+    html+='<input type="range" min="0.05" max="3" step="0.05" value="'+s.speed+'" oninput="STATE.solar.speed=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Zoom</span><span>'+fmt(s.zoom,2)+'×</span></div>';
+    html+='<input type="range" min="0.3" max="5" step="0.1" value="'+s.zoom+'" oninput="STATE.solar.zoom=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<button class="btn full sm" onclick="STATE.solar.timeYears=0;STATE.solar.planets.forEach(function(p){p.trail=[]});renderLeftPanel()">↺ Reset time</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Scale</h4>';
+    html+='<div class="chip-row">';
+    html+='<div class="chip '+(s.scale==='linear'?'active':'')+'" onclick="STATE.solar.scale=\'linear\';renderLeftPanel()">Linear</div>';
+    html+='<div class="chip '+(s.scale==='log'?'active':'')+'" onclick="STATE.solar.scale=\'log\';renderLeftPanel()">Logarithmic</div>';
+    html+='</div>';
+    html+='<div class="text-xs text-dim" style="font-family:var(--mono);margin-top:6px">Log scale compresses outer orbits</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Display</h4>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Orbits</span><div class="chip '+(s.showOrbits?'active':'')+'" onclick="STATE.solar.showOrbits=!STATE.solar.showOrbits;renderLeftPanel()">'+(s.showOrbits?'ON':'OFF')+'</div></div>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Labels</span><div class="chip '+(s.showLabels?'active':'')+'" onclick="STATE.solar.showLabels=!STATE.solar.showLabels;renderLeftPanel()">'+(s.showLabels?'ON':'OFF')+'</div></div>';
+    html+='</div>';
+    /* Selected planet info */
+    if(s.selected>=0&&s.planets[s.selected]){
+      var p=s.planets[s.selected];
+      var pos=orbitalPosition(p.a,p.e,p.M0,s.timeYears,p.P);
+      html+='<div class="sec"><h4>Selected: '+p.name+'</h4>';
+      html+='<div class="kv">';
+      html+='<div class="row"><span class="k">Semi-major axis</span><span class="v">'+fmt(p.a,3)+' AU</span></div>';
+      html+='<div class="row"><span class="k">Eccentricity</span><span class="v">'+fmt(p.e,4)+'</span></div>';
+      html+='<div class="row"><span class="k">Period</span><span class="v">'+fmt(p.P,3)+' yr</span></div>';
+      html+='<div class="row"><span class="k">True anomaly ν</span><span class="v">'+fmt(pos.nu*180/Math.PI,2)+'°</span></div>';
+      html+='<div class="row"><span class="k">Radius vector r</span><span class="v">'+fmt(pos.r,4)+' AU</span></div>';
+      html+='<div class="row"><span class="k">Radius</span><span class="v">'+fmt(p.radius,3)+' R⊕</span></div>';
+      html+='<div class="row"><span class="k">Mass</span><span class="v">'+fmt(p.mass,3)+' M⊕</span></div>';
+      html+='</div>';
+      html+='</div>';
+    }
+    html+='<div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.5">Click planet to select. Drag to pan. Wheel to zoom.</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var s=STATE.solar;
+    var html='<div class="sec"><h4>Kepler\'s Laws</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '<b class="text-c1">1st law:</b> Orbits are ellipses with the Sun at one focus.<br><br>'+
+      '<b class="text-c1">2nd law:</b> Equal areas in equal times (dA/dt = const).<br><br>'+
+      '<b class="text-c1">3rd law:</b> T² = a³/M (T in years, a in AU, M in M☉)'+
+      '</div></div>';
+    html+='<div class="sec"><h4>Kepler\'s Equation</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'M = E − e·sin(E)<br><br>'+
+      'M = mean anomaly (linear in time)<br>'+
+      'E = eccentric anomaly<br>'+
+      'e = eccentricity<br><br>'+
+      'Solved iteratively via Newton-Raphson:<br>'+
+      'E_{n+1} = E_n − (E_n − e·sin E_n − M)/(1 − e·cos E_n)<br><br>'+
+      'Then convert to true anomaly ν:<br>'+
+      'tan(ν/2) = √((1+e)/(1−e))·tan(E/2)<br>'+
+      'r = a(1 − e·cos E)'+
+      '</div></div>';
+    if(s.selected>=0&&s.planets[s.selected]){
+      var p=s.planets[s.selected];
+      html+='<div class="sec"><h4>'+p.name+' data</h4>';
+      html+='<div class="kv">';
+      html+='<div class="row"><span class="k">a</span><span class="v">'+fmt(p.a,4)+' AU = '+fmt(p.a*AU/1e9,3)+' Mkm</span></div>';
+      html+='<div class="row"><span class="k">e</span><span class="v">'+fmt(p.e,4)+'</span></div>';
+      html+='<div class="row"><span class="k">T</span><span class="v">'+fmt(p.P,4)+' yr = '+fmt(p.P*365.25,1)+' d</span></div>';
+      html+='<div class="row"><span class="k">M</span><span class="v">'+fmt(p.mass*EARTH_MASS,3)+' kg</span></div>';
+      html+='<div class="row"><span class="k">R</span><span class="v">'+fmt(p.radius*EARTH_RAD/1000,1)+' km</span></div>';
+      html+='</div></div>';
+    }
+    return html;
+  }
+});
+
+/* ================================================================
+   MODULE: HR DIAGRAM
+   ================================================================ */
+registerModule('hr',{
+  title:'H-R Diagram',
+  icon:'⭐',
+  desc:'Hertzsprung-Russell diagram: luminosity vs. temperature. Main sequence, giants, supergiants and white dwarfs.',
+  init:function(){
+    STATE.hr.stars=generateHRStars();
+    logMsg('HR diagram: '+STATE.hr.stars.length+' stars','info');
+  },
+  tick:function(dt){STATE.time+=dt;},
+  tempToColor:function(T){
+    return blackbodyRGB(T);
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#02040a';
+    ctx.fillRect(0,0,W,H);
+    var h=STATE.hr;
+    /* Plot area */
+    var pad=60;
+    var plotX=pad,plotY=pad;
+    var plotW=W-pad*2,plotH=H-pad*2;
+    /* Grid and axes: 
+       X = temperature (reversed, log scale from 40000K to 2500K)
+       Y = luminosity (log scale from 1e-5 to 1e6)
+    */
+    var Tmin=2500,Tmax=50000;
+    var Lmin=-5,Lmax=6;
+    /* Draw grid */
+    ctx.strokeStyle='rgba(64,192,255,.1)';
+    ctx.lineWidth=1;
+    for(var lv=Lmin;lv<=Lmax;lv++){
+      var y=plotY+plotH-((lv-Lmin)/(Lmax-Lmin))*plotH;
+      ctx.beginPath();ctx.moveTo(plotX,y);ctx.lineTo(plotX+plotW,y);ctx.stroke();
+    }
+    var tempSteps=[2500,3000,4000,5000,7000,10000,15000,20000,30000,50000];
+    tempSteps.forEach(function(T){
+      var x=plotX+(1-(Math.log(T)-Math.log(Tmin))/(Math.log(Tmax)-Math.log(Tmin)))*plotW;
+      ctx.beginPath();ctx.moveTo(x,plotY);ctx.lineTo(x,plotY+plotH);ctx.stroke();
+    });
+    /* Labels */
+    ctx.fillStyle='rgba(152,168,216,.7)';
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    tempSteps.forEach(function(T){
+      var x=plotX+(1-(Math.log(T)-Math.log(Tmin))/(Math.log(Tmax)-Math.log(Tmin)))*plotW;
+      var label=T>=1000?(T/1000).toFixed(0)+'k':T.toString();
+      ctx.fillText(label,x,plotY+plotH+16);
+    });
+    ctx.fillText('Temperature (K)',plotX+plotW/2,plotY+plotH+32);
+    ctx.textAlign='right';
+    for(var lv2=Lmin;lv2<=Lmax;lv2++){
+      if(lv2%1!==0)continue;
+      var y2=plotY+plotH-((lv2-Lmin)/(Lmax-Lmin))*plotH;
+      ctx.fillText('10'+superScript(lv2),plotX-8,y2+4);
+    }
+    ctx.save();
+    ctx.translate(16,plotY+plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center';
+    ctx.fillText('Luminosity (L☉)',0,0);
+    ctx.restore();
+    /* Spectral class bands */
+    var spectralBands=[
+      {type:'O',Tmin:30000,Tmax:50000,c:'rgba(64,128,255,.08)'},
+      {type:'B',Tmin:10000,Tmax:30000,c:'rgba(128,160,255,.08)'},
+      {type:'A',Tmin:7500,Tmax:10000,c:'rgba(200,200,255,.08)'},
+      {type:'F',Tmin:6000,Tmax:7500,c:'rgba(255,255,200,.08)'},
+      {type:'G',Tmin:5200,Tmax:6000,c:'rgba(255,224,128,.08)'},
+      {type:'K',Tmin:3700,Tmax:5200,c:'rgba(255,180,128,.08)'},
+      {type:'M',Tmin:2500,Tmax:3700,c:'rgba(255,128,128,.08)'}
+    ];
+    spectralBands.forEach(function(b){
+      var x1=plotX+(1-(Math.log(b.Tmax)-Math.log(Tmin))/(Math.log(Tmax)-Math.log(Tmin)))*plotW;
+      var x2=plotX+(1-(Math.log(b.Tmin)-Math.log(Tmin))/(Math.log(Tmax)-Math.log(Tmin)))*plotW;
+      ctx.fillStyle=b.c;
+      ctx.fillRect(x1,plotY,x2-x1,plotH);
+      ctx.fillStyle='rgba(152,168,216,.5)';
+      ctx.font='bold 14px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(b.type,(x1+x2)/2,plotY+20);
+    });
+    /* Filter by highlight */
+    var filter=h.highlight;
+    function drawStar(s,size,alpha){
+      if(filter!=='all'&&filter!==s.type)return;
+      var x=plotX+(1-(Math.log(s.T)-Math.log(Tmin))/(Math.log(Tmax)-Math.log(Tmin)))*plotW;
+      var y=plotY+plotH-((Math.log10(s.L)-Lmin)/(Lmax-Lmin))*plotH;
+      if(x<plotX-5||x>plotX+plotW+5||y<plotY-5||y>plotY+plotH+5)return;
+      var color=blackbodyRGB(s.T);
+      ctx.fillStyle=color;
+      ctx.globalAlpha=alpha;
+      ctx.beginPath();ctx.arc(x,y,size,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=alpha*0.4;
+      ctx.strokeStyle=color;
+      ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(x,y,size+2,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+    h.stars.forEach(function(s){
+      drawStar(s,3,0.85);
+    });
+    /* Reference lines */
+    ctx.strokeStyle='rgba(255,192,64,.3)';
+    ctx.setLineDash([4,4]);
+    /* Sun position: T=5778K, L=1 */
+    var sunX=plotX+(1-(Math.log(5778)-Math.log(Tmin))/(Math.log(Tmax)-Math.log(Tmin)))*plotW;
+    var sunY=plotY+plotH-((0-Lmin)/(Lmax-Lmin))*plotH;
+    ctx.beginPath();
+    ctx.arc(sunX,sunY,8,0,Math.PI*2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#ffc040';
+    ctx.font='bold 10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('Sun',sunX+10,sunY+4);
+    /* Legend */
+    ctx.fillStyle='rgba(6,10,24,.85)';
+    ctx.strokeStyle='rgba(255,192,64,.3)';
+    ctx.beginPath();ctx.roundRect(W-200,20,180,120,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffc040';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('STELLAR TYPES',W-190,38);
+    ctx.font='10px monospace';
+    var types=[
+      {name:'Main sequence',c:'#ffc040'},
+      {name:'Giants',c:'#ff8040'},
+      {name:'Supergiants',c:'#ff4060'},
+      {name:'White dwarfs',c:'#40c0ff'}
+    ];
+    types.forEach(function(t,i){
+      ctx.fillStyle=t.c;
+      ctx.beginPath();ctx.arc(W-180,56+i*18,4,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#e0e8ff';
+      ctx.fillText(t.name,W-170,60+i*18);
+    });
+    setStatsHTML(
+      '<div>Stars: '+h.stars.length+'</div>'+
+      '<div>Highlight: '+h.highlight+'</div>'
+    );
+    updateBadge('⭐ H-R Diagram · '+h.stars.length+' stars');
+    $('sbMode').textContent='H-R Diagram';
+    $('sbObjs').textContent=h.stars.length;
+  },
+  onDown:function(){},
+  controls:function(){
+    var h=STATE.hr;
+    var html='';
+    html+='<div class="sec"><h4>Highlight</h4>';
+    html+='<div class="chip-row">';
+    [['all','All'],['MS','Main Seq'],['Giant','Giants'],['Supergiant','Supergiants'],['WD','White Dwarfs']].forEach(function(c){
+      html+='<div class="chip '+(h.highlight===c[0]?'active':'')+'" onclick="STATE.hr.highlight=\''+c[0]+'\';renderLeftPanel()">'+c[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn full sm" onclick="MODULES.hr.init()">🎲 New catalog</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="addSpecificStars()">+ Add specific stars</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Star counts</h4>';
+    var counts={MS:0,Giant:0,Supergiant:0,WD:0};
+    h.stars.forEach(function(s){counts[s.type]=(counts[s.type]||0)+1});
+    html+='<div class="kv">';
+    html+='<div class="row"><span class="k">Main sequence</span><span class="v">'+counts.MS+'</span></div>';
+    html+='<div class="row"><span class="k">Giants</span><span class="v">'+counts.Giant+'</span></div>';
+    html+='<div class="row"><span class="k">Supergiants</span><span class="v">'+counts.Supergiant+'</span></div>';
+    html+='<div class="row"><span class="k">White dwarfs</span><span class="v">'+counts.WD+'</span></div>';
+    html+='</div>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    return '<div class="sec"><h4>H-R Diagram</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Plots luminosity vs. effective temperature. Position on diagram encodes stellar mass and evolutionary stage.<br><br>'+
+      '<b class="text-c1">Main sequence:</b> core hydrogen fusion. Most stars spend 90% of their lives here. Mass-luminosity: L ∝ M³·⁵<br><br>'+
+      '<b class="text-c1">Giants:</b> hydrogen exhausted in core, shell burning. Radius ~10-100 R☉<br><br>'+
+      '<b class="text-c1">Supergiants:</b> massive stars (M>8M☉), end as supernovae<br><br>'+
+      '<b class="text-c1">White dwarfs:</b> exposed cores of dead low-mass stars. Size of Earth, mass of Sun'+
+      '</div></div>'+
+      '<div class="sec"><h4>Stefan-Boltzmann</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'L = 4πR²σT⁴<br><br>'+
+      'Doubling temperature → 16× more luminosity. This is why hot blue stars dominate the top of the HR diagram.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Spectral Classes</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'O (30k-50k K) blue<br>'+
+      'B (10k-30k K) blue-white<br>'+
+      'A (7.5k-10k K) white<br>'+
+      'F (6k-7.5k K) yellow-white<br>'+
+      'G (5.2k-6k K) yellow — Sun<br>'+
+      'K (3.7k-5.2k K) orange<br>'+
+      'M (2.5k-3.7k K) red<br><br>'+
+      'Mnemonic: <b>O</b>h <b>B</b>e <b>A</b> <b>F</b>ine <b>G</b>irl/Guy, <b>K</b>iss <b>M</b>e'+
+      '</div></div>';
+  }
+});
+function superScript(n){
+  var sup={'-':'\u207B','0':'\u2070','1':'\u00B9','2':'\u00B2','3':'\u00B3','4':'\u2074','5':'\u2075','6':'\u2076','7':'\u2077','8':'\u2078','9':'\u2079'};
+  return String(n).split('').map(function(c){return sup[c]||c}).join('');
+}
+function addSpecificStars(){
+  /* Add real named stars */
+  var named=[
+    {T:9940,L:25,type:'MS'},       /* Sirius A */
+    {T:3050,L:1.2e5,type:'Supergiant'}, /* Betelgeuse */
+    {T:12100,L:1.2e5,type:'Supergiant'}, /* Rigel */
+    {T:9600,L:120,type:'MS'},      /* Vega */
+    {T:4300,L:170,type:'Giant'},   /* Arcturus */
+    {T:5778,L:1,type:'MS'},        /* Sun */
+    {T:3500,L:3500,type:'Supergiant'}, /* Antares */
+    {T:22000,L:80000,type:'MS'},   /* Spica */
+    {T:7500,L:3,type:'MS'},        /* Procyon A */
+    {T:25000,L:1e-3,type:'WD'},    /* Typical WD */
+    {T:12000,L:0.005,type:'WD'},
+    {T:5000,L:200,type:'Giant'},
+    {T:3800,L:800,type:'Giant'},
+    {T:4100,L:20000,type:'Supergiant'}
+  ];
+  named.forEach(function(s){
+    STATE.hr.stars.push({T:s.T,L:s.L,type:s.type});
+  });
+  toast('Added '+named.length+' stars','success');
+  renderLeftPanel();
+}
+
+/* ================================================================
+   MODULE: EXOPLANET TRANSIT
+   ================================================================ */
+registerModule('transit',{
+  title:'Exoplanet Transit',
+  icon:'🌑',
+  desc:'Simulate a transiting exoplanet and its light curve. Measures period, depth, duration.',
+  init:function(){
+    var t=STATE.transit;
+    t.timeDays=0;
+    t.lightCurve=[];
+  },
+  tick:function(dt){
+    var t=STATE.transit;
+    if(!STATE.playing)return;
+    t.timeDays+=dt*t.speed;
+    /* Modulo period for planet phase */
+    var phase=(t.timeDays%t.period)/t.period;
+    /* Check if in transit */
+    /* Duration of transit ≈ P/π · asin((Rs+Rp)/a) — approximately */
+    /* For visualization, use simple geometric model */
+    var depth=Math.pow(t.planetRadius/t.starRadius,2);
+    var transitDuration=0.08*t.period; /* rough approximation */
+    var transitCenter=0.5*t.period;
+    var distFromCenter=Math.abs((t.timeDays%t.period)-transitCenter);
+    var flux=1;
+    if(distFromCenter<transitDuration/2){
+      /* Simulate limb darkening + ingress/egress */
+      var impactFactor=Math.abs(t.impactParam);
+      var progress=distFromCenter/(transitDuration/2);
+      /* Approximate shape */
+      var attenuation;
+      if(progress>0.85){
+        /* Ingress or egress */
+        var edgeProgress=(progress-0.85)/0.15;
+        attenuation=depth*(1-edgeProgress);
+      } else {
+        attenuation=depth;
+      }
+      /* Impact parameter reduces depth */
+      attenuation*=Math.max(0.3,1-impactFactor*0.7);
+      flux=1-attenuation;
+    }
+    /* Add noise */
+    var noise=(Math.random()-0.5)*0.0003;
+    t.lightCurve.push({t:t.timeDays,flux:flux+noise});
+    if(t.lightCurve.length>2000)t.lightCurve.shift();
+    STATE.time+=dt;
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#000205';
+    ctx.fillRect(0,0,W,H);
+    drawStarfield(ctx,W,H,777);
+    var t=STATE.transit;
+    /* Star + planet visualization on top */
+    var cx=W/2,cy=H*0.3;
+    var starR=100;
+    /* Star with limb darkening */
+    var phase=(t.timeDays%t.period)/t.period;
+    var starGrad=ctx.createRadialGradient(cx,cy,0,cx,cy,starR);
+    var starColor=blackbodyRGB(t.starTemp);
+    starGrad.addColorStop(0,'#fff8d0');
+    starGrad.addColorStop(0.6,starColor);
+    starGrad.addColorStop(1,'rgba(255,192,64,0)');
+    ctx.fillStyle=starGrad;
+    ctx.beginPath();ctx.arc(cx,cy,starR,0,Math.PI*2);ctx.fill();
+    /* Planet */
+    var transitDuration=0.08*t.period;
+    var transitCenter=0.5*t.period;
+    var elapsedSinceCenter=t.timeDays%t.period-transitCenter;
+    var progress=elapsedSinceCenter/transitDuration;
+    var px=cx+progress*starR*2*1.1;
+    var py=cy+t.impactParam*starR*0.7;
+    var planetR=starR*t.planetRadius/t.starRadius;
+    /* Only draw if in front */
+    var inFront=Math.abs(px-cx)<starR+planetR&&Math.abs(elapsedSinceCenter)<transitDuration/2;
+    /* Orbit path indicator */
+    ctx.strokeStyle='rgba(64,192,255,.2)';
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(cx-starR*1.5,py);ctx.lineTo(cx+starR*1.5,py);ctx.stroke();
+    ctx.setLineDash([]);
+    /* Planet disk */
+    ctx.fillStyle='#000';
+    ctx.beginPath();ctx.arc(px,py,planetR,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,192,64,.5)';
+    ctx.lineWidth=2;
+    ctx.stroke();
+    /* Light curve below */
+    var lcY=H*0.55;
+    var lcH=H*0.4;
+    var lcX=40,lcW=W-80;
+    ctx.fillStyle='rgba(6,10,24,.7)';
+    ctx.strokeStyle='rgba(64,192,255,.3)';
+    ctx.beginPath();ctx.roundRect(lcX,lcY,lcW,lcH,6);ctx.fill();ctx.stroke();
+    /* Grid */
+    ctx.strokeStyle='rgba(64,192,255,.08)';
+    for(var i=0;i<=4;i++){
+      var y=lcY+i*lcH/4;
+      ctx.beginPath();ctx.moveTo(lcX,y);ctx.lineTo(lcX+lcW,y);ctx.stroke();
+    }
+    /* Light curve plot */
+    if(t.lightCurve.length>1){
+      var tMin=t.lightCurve[0].t;
+      var tMax=t.lightCurve[t.lightCurve.length-1].t;
+      var tRange=tMax-tMin||1;
+      ctx.strokeStyle='#40c0ff';
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      t.lightCurve.forEach(function(pt,i){
+        var x=lcX+((pt.t-tMin)/tRange)*lcW;
+        var y=lcY+lcH-(pt.flux-0.94)/0.06*lcH;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    }
+    /* Current time marker */
+    var phaseX=lcX+(t.timeDays%t.period)/t.period*lcW;
+    ctx.strokeStyle='rgba(255,192,64,.6)';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(phaseX,lcY);ctx.lineTo(phaseX,lcY+lcH);ctx.stroke();
+    /* Labels */
+    ctx.fillStyle='#40c0ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('LIGHT CURVE',lcX+8,lcY+16);
+    ctx.font='10px monospace';
+    ctx.fillStyle='#98a8d8';
+    ctx.fillText('Relative flux vs. time (days)',lcX+8,lcY+32);
+    /* Depth annotation */
+    var depth=Math.pow(t.planetRadius/t.starRadius,2);
+    ctx.fillStyle='#ffc040';
+    ctx.font='10px monospace';
+    ctx.textAlign='right';
+    ctx.fillText('Depth: '+fmt(depth*100,3)+'%',lcX+lcW-8,lcY+lcH-8);
+    setStatsHTML(
+      '<div>Star T: '+fmt(t.starTemp,0)+' K</div>'+
+      '<div>Planet Rp/Rs: '+fmt(t.planetRadius/t.starRadius,3)+'</div>'+
+      '<div>Depth: '+fmt(depth*100,3)+'%</div>'+
+      '<div>Period: '+fmt(t.period,2)+' d</div>'+
+      '<div>Sim time: '+fmt(t.timeDays,2)+' d</div>'
+    );
+    updateBadge('🌑 Exoplanet Transit · depth '+fmt(depth*100,3)+'%');
+    $('sbMode').textContent='Transit';
+    $('sbTime').textContent=fmt(t.timeDays,2)+'d';
+    $('sbVal').textContent=fmt(depth*100,3)+'%';
+  },
+  onDown:function(p){
+    /* Click on star to place planet impact parameter */
+    var cx=CANV.W/2,cy=CANV.H*0.3;
+    var dy=(p.y-cy)/80;
+    if(Math.abs(dy)<1.5)STATE.transit.impactParam=clamp(dy,-1,1);
+  },
+  controls:function(){
+    var t=STATE.transit;
+    var html='';
+    html+='<div class="sec"><h4>Star</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Temperature</span><span>'+fmt(t.starTemp,0)+' K</span></div>';
+    html+='<input type="range" min="3000" max="12000" step="100" value="'+t.starTemp+'" oninput="STATE.transit.starTemp=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Radius (R☉)</span><span>'+fmt(t.starRadius,2)+'</span></div>';
+    html+='<input type="range" min="0.3" max="3" step="0.1" value="'+t.starRadius+'" oninput="STATE.transit.starRadius=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Planet</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Radius (Rstar)</span><span>'+fmt(t.planetRadius,3)+'</span></div>';
+    html+='<input type="range" min="0.02" max="0.3" step="0.005" value="'+t.planetRadius+'" oninput="STATE.transit.planetRadius=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Orbital period (days)</span><span>'+fmt(t.period,1)+'</span></div>';
+    html+='<input type="range" min="3" max="100" step="1" value="'+t.period+'" oninput="STATE.transit.period=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Impact parameter b</span><span>'+fmt(t.impactParam,2)+'</span></div>';
+    html+='<input type="range" min="-1" max="1" step="0.05" value="'+t.impactParam+'" oninput="STATE.transit.impactParam=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Simulation</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Speed</span><span>'+fmt(t.speed,2)+' d/s</span></div>';
+    html+='<input type="range" min="0.1" max="5" step="0.1" value="'+t.speed+'" oninput="STATE.transit.speed=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<button class="btn full sm" onclick="STATE.transit.lightCurve=[];STATE.transit.timeDays=0;renderLeftPanel()">↺ Reset light curve</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4>';
+    html+='<button class="btn full sm" onclick="transitPreset(\'hotjupiter\')">Hot Jupiter (HD 209458b)</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="transitPreset(\'earth\')">Earth-like</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="transitPreset(\'superearth\')">Super-Earth</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="transitPreset(\'reddwarf\')">Around red dwarf</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var t=STATE.transit;
+    var depth=Math.pow(t.planetRadius/t.starRadius,2);
+    return '<div class="sec"><h4>Transit Depth</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'δ = (Rp/R★)²<br><br>'+
+      'Current: δ = '+fmt(depth*100,4)+'%<br><br>'+
+      'Earth transiting Sun: δ ≈ 0.0084%<br>'+
+      'HD 209458b: δ ≈ 1.5%<br><br>'+
+      'This is why Earth-sized planets are extremely hard to detect.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Transit Duration</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'T ≈ (P/π)·arcsin((R★ + Rp)/a)<br><br>'+
+      'a = orbital semi-major axis (from P via Kepler\'s 3rd law)<br>'+
+      'For a transiting geometry, impact parameter b < 1'+
+      '</div></div>'+
+      '<div class="sec"><h4>What we learn</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '• Period P — from repeated transits<br>'+
+      '• Radius ratio Rp/R★ — from transit depth<br>'+
+      '• Orbital distance — from Kepler\'s 3rd law<br>'+
+      '• Atmosphere — from transmission spectroscopy during transit<br>'+
+      '• TTV (timing variations) — from additional planets'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current parameters</h4><div class="kv">'+
+      '<div class="row"><span class="k">Depth δ</span><span class="v">'+fmt(depth*100,4)+'%</span></div>'+
+      '<div class="row"><span class="k">Period</span><span class="v">'+fmt(t.period,2)+' d</span></div>'+
+      '<div class="row"><span class="k">Impact parameter</span><span class="v">'+fmt(t.impactParam,2)+'</span></div>'+
+      '<div class="row"><span class="k">Rp/R★</span><span class="v">'+fmt(t.planetRadius/t.starRadius,4)+'</span></div>'+
+      '</div></div>';
+  }
+});
+function transitPreset(name){
+  var t=STATE.transit;
+  if(name==='hotjupiter'){t.starTemp=6000;t.starRadius=1.2;t.planetRadius=0.13;t.period=3.5;t.impactParam=0.0;}
+  else if(name==='earth'){t.starTemp=5778;t.starRadius=1.0;t.planetRadius=0.009;t.period=365;t.impactParam=0.2;}
+  else if(name==='superearth'){t.starTemp=5500;t.starRadius=0.9;t.planetRadius=0.02;t.period=20;t.impactParam=0.1;}
+  else if(name==='reddwarf'){t.starTemp=3200;t.starRadius=0.3;t.planetRadius=0.08;t.period=8;t.impactParam=0.0;}
+  t.lightCurve=[];t.timeDays=0;
+  renderLeftPanel();
+}
+</script>
+<script>
+/* ================================================================
+   MODULE: PLANCK BLACKBODY
+   ================================================================ */
+registerModule('planck',{
+  title:'Blackbody Spectrum',
+  icon:'🌡️',
+  desc:'Planck\'s law of blackbody radiation. Temperature sets the spectrum — Wien peak, Stefan-Boltzmann total power.',
+  init:function(){
+    STATE.planck.snapshots=[];
+  },
+  tick:function(dt){STATE.time+=dt;},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#02040a';
+    ctx.fillRect(0,0,W,H);
+    var p=STATE.planck;
+    /* Plot area */
+    var pad=60;
+    var plotX=pad,plotY=pad;
+    var plotW=W-pad*2,plotH=H-pad*2;
+    /* Compute Planck spectrum */
+    var numPts=400;
+    var lambdaMin=p.lambdaMin,lambdaMax=p.lambdaMax;
+    var values=[];
+    var minV=Infinity,maxV=-Infinity;
+    for(var i=0;i<=numPts;i++){
+      var lam=lambdaMin+(lambdaMax-lambdaMin)*i/numPts;
+      var B=planck(lam,p.temp);
+      values.push({lam:lam,B:B});
+      if(p.logScale){
+        var logB=B>0?Math.log10(B):-30;
+        if(logB<minV)minV=logB;if(logB>maxV)maxV=logB;
+      } else {
+        if(B<minV)minV=B;if(B>maxV)maxV=B;
+      }
+    }
+    /* Store compare if enabled */
+    var compareValues=null;
+    if(p.showCompare){
+      compareValues=[];
+      for(var j=0;j<=numPts;j++){
+        var lam2=lambdaMin+(lambdaMax-lambdaMin)*j/numPts;
+        compareValues.push(planck(lam2,p.compareTemp));
+      }
+    }
+    /* Grid */
+    ctx.strokeStyle='rgba(64,192,255,.1)';
+    ctx.lineWidth=1;
+    for(var gi=0;gi<=4;gi++){
+      var gy=plotY+gi*plotH/4;
+      ctx.beginPath();ctx.moveTo(plotX,gy);ctx.lineTo(plotX+plotW,gy);ctx.stroke();
+    }
+    for(var gi2=0;gi2<=5;gi2++){
+      var gx=plotX+gi2*plotW/5;
+      ctx.beginPath();ctx.moveTo(gx,plotY);ctx.lineTo(gx,plotY+plotH);ctx.stroke();
+    }
+    /* Visible light band */
+    if(p.showVisibleBand){
+      var vX1=plotX+(380-lambdaMin)/(lambdaMax-lambdaMin)*plotW;
+      var vX2=plotX+(750-lambdaMin)/(lambdaMax-lambdaMin)*plotW;
+      /* Rainbow gradient */
+      var vGrad=ctx.createLinearGradient(vX1,0,vX2,0);
+      vGrad.addColorStop(0,'rgba(128,0,255,.15)');
+      vGrad.addColorStop(0.2,'rgba(64,64,255,.15)');
+      vGrad.addColorStop(0.35,'rgba(0,192,255,.15)');
+      vGrad.addColorStop(0.5,'rgba(0,255,128,.15)');
+      vGrad.addColorStop(0.65,'rgba(255,255,0,.15)');
+      vGrad.addColorStop(0.85,'rgba(255,128,0,.15)');
+      vGrad.addColorStop(1,'rgba(255,0,0,.15)');
+      if(vX1<plotX+plotW&&vX2>plotX){
+        ctx.fillStyle=vGrad;
+        ctx.fillRect(Math.max(plotX,vX1),plotY,Math.min(plotX+plotW,vX2)-Math.max(plotX,vX1),plotH);
+        ctx.fillStyle='rgba(224,232,255,.6)';
+        ctx.font='9px monospace';
+        ctx.textAlign='center';
+        ctx.fillText('visible',(vX1+vX2)/2,plotY-6);
+      }
+    }
+    /* Wien peak */
+    if(p.showWien){
+      var wienLam=wienPeak(p.temp);
+      if(wienLam>=lambdaMin&&wienLam<=lambdaMax){
+        var wx=plotX+(wienLam-lambdaMin)/(lambdaMax-lambdaMin)*plotW;
+        ctx.strokeStyle='#ffc040';
+        ctx.setLineDash([4,4]);
+        ctx.lineWidth=1.5;
+        ctx.beginPath();
+        ctx.moveTo(wx,plotY);
+        ctx.lineTo(wx,plotY+plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        /* Peak marker */
+        var wienB=planck(wienLam,p.temp);
+        var wienY;
+        if(p.logScale){
+          wienY=plotY+plotH-((Math.log10(wienB)-minV)/(maxV-minV))*plotH;
+        } else {
+          wienY=plotY+plotH-(wienB/maxV)*plotH;
+        }
+        ctx.fillStyle='#ffc040';
+        ctx.beginPath();ctx.arc(wx,wienY,5,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ffc040';
+        ctx.font='bold 10px monospace';
+        ctx.textAlign='left';
+        ctx.fillText('Wien peak '+fmt(wienLam,0)+'nm',wx+8,wienY-6);
+      }
+    }
+    /* Compare spectrum */
+    if(compareValues){
+      ctx.strokeStyle='rgba(152,168,216,.4)';
+      ctx.lineWidth=1.5;
+      ctx.setLineDash([4,3]);
+      ctx.beginPath();
+      for(var ci=0;ci<=numPts;ci++){
+        var cx=plotX+(ci/numPts)*plotW;
+        var cv=compareValues[ci];
+        var cy;
+        if(p.logScale){
+          var cl=cv>0?Math.log10(cv):-30;
+          cy=plotY+plotH-((cl-minV)/(maxV-minV))*plotH;
+        } else {
+          cy=plotY+plotH-(cv/maxV)*plotH;
+        }
+        if(ci===0)ctx.moveTo(cx,cy);else ctx.lineTo(cx,cy);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    /* Main spectrum */
+    ctx.lineWidth=2.5;
+    ctx.strokeStyle=blackbodyRGB(p.temp);
+    ctx.beginPath();
+    for(var k=0;k<=numPts;k++){
+      var x=plotX+(k/numPts)*plotW;
+      var v=values[k].B;
+      var y;
+      if(p.logScale){
+        var lv=v>0?Math.log10(v):-30;
+        y=plotY+plotH-((lv-minV)/(maxV-minV))*plotH;
+      } else {
+        y=plotY+plotH-(v/maxV)*plotH;
+      }
+      if(k===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    /* Fill under curve */
+    ctx.fillStyle=blackbodyRGB(p.temp)+'20';
+    ctx.beginPath();
+    ctx.moveTo(plotX,plotY+plotH);
+    for(var k2=0;k2<=numPts;k2++){
+      var x2=plotX+(k2/numPts)*plotW;
+      var v2=values[k2].B;
+      var y2;
+      if(p.logScale){
+        var lv2=v2>0?Math.log10(v2):-30;
+        y2=plotY+plotH-((lv2-minV)/(maxV-minV))*plotH;
+      } else {
+        y2=plotY+plotH-(v2/maxV)*plotH;
+      }
+      ctx.lineTo(x2,y2);
+    }
+    ctx.lineTo(plotX+plotW,plotY+plotH);
+    ctx.closePath();
+    ctx.fill();
+    /* Axis labels */
+    ctx.fillStyle='rgba(152,168,216,.7)';
+    ctx.font='10px monospace';
+    ctx.textAlign='center';
+    for(var li=0;li<=5;li++){
+      var lamLabel=lambdaMin+(lambdaMax-lambdaMin)*li/5;
+      ctx.fillText(fmt(lamLabel,0),plotX+li*plotW/5,plotY+plotH+18);
+    }
+    ctx.fillText('Wavelength λ (nm)',plotX+plotW/2,plotY+plotH+36);
+    ctx.save();
+    ctx.translate(16,plotY+plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center';
+    ctx.fillText(p.logScale?'log B_λ':'B_λ (W/m²/sr/m)',0,0);
+    ctx.restore();
+    /* Info box */
+    ctx.fillStyle='rgba(6,10,24,.85)';
+    ctx.strokeStyle='rgba(255,192,64,.4)';
+    ctx.beginPath();ctx.roundRect(W-260,20,240,120,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffc040';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('BLACKBODY',W-248,42);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#e0e8ff';
+    ctx.fillText('Temperature: '+fmt(p.temp,0)+' K',W-248,64);
+    ctx.fillText('Wien peak: '+fmt(wienPeak(p.temp),0)+' nm',W-248,82);
+    ctx.fillText('Total flux: '+fmt(totalRadiance(p.temp)/1e6,2)+' MW/m²',W-248,100);
+    /* Color swatch */
+    ctx.fillStyle=blackbodyRGB(p.temp);
+    ctx.fillRect(W-248,116,224,16);
+    ctx.strokeStyle='rgba(255,255,255,.3)';
+    ctx.strokeRect(W-248,116,224,16);
+    setStatsHTML(
+      '<div>T = '+fmt(p.temp,0)+' K</div>'+
+      '<div>Wien λ_max = '+fmt(wienPeak(p.temp),0)+' nm</div>'+
+      '<div>Flux = '+fmt(totalRadiance(p.temp),2)+' W/m²</div>'
+    );
+    updateBadge('🌡️ Planck · T='+fmt(p.temp,0)+' K · λ_peak='+fmt(wienPeak(p.temp),0)+' nm');
+    $('sbMode').textContent='Planck';
+    $('sbVal').textContent=fmt(p.temp,0)+' K';
+  },
+  onDown:function(p){
+    /* Click on spectrum to set temperature? No — click on color swatch area to sample */
+    var W=CANV.W;
+    if(p.x>W-248&&p.x<W-24&&p.y>116&&p.y<132){
+      var frac=(p.x-(W-248))/224;
+      STATE.planck.temp=clamp(1000+frac*(40000-1000),1000,40000);
+      renderLeftPanel();
+    }
+  },
+  controls:function(){
+    var p=STATE.planck;
+    var html='';
+    html+='<div class="sec"><h4>Temperature</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Temperature</span><span>'+fmt(p.temp,0)+' K</span></div>';
+    html+='<input type="range" min="1000" max="40000" step="100" value="'+p.temp+'" oninput="STATE.planck.temp=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="chip-row">';
+    [['3000','Red dwarf'],['4000','K star'],['5778','Sun'],['7500','A star'],['15000','B star'],['30000','O star']].forEach(function(t){
+      html+='<div class="chip '+(Math.abs(p.temp-parseFloat(t[0]))<200?'active':'')+'" onclick="STATE.planck.temp='+t[0]+';renderLeftPanel()">'+t[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Wavelength range</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Min λ</span><span>'+p.lambdaMin+' nm</span></div>';
+    html+='<input type="range" min="50" max="1000" step="10" value="'+p.lambdaMin+'" oninput="STATE.planck.lambdaMin=parseInt(this.value);if(STATE.planck.lambdaMin>=STATE.planck.lambdaMax)STATE.planck.lambdaMax=STATE.planck.lambdaMin+100;renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Max λ</span><span>'+p.lambdaMax+' nm</span></div>';
+    html+='<input type="range" min="500" max="20000" step="100" value="'+p.lambdaMax+'" oninput="STATE.planck.lambdaMax=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Display</h4>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Log scale</span><div class="chip '+(p.logScale?'active':'')+'" onclick="STATE.planck.logScale=!STATE.planck.logScale;renderLeftPanel()">'+(p.logScale?'ON':'OFF')+'</div></div>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Wien peak</span><div class="chip '+(p.showWien?'active':'')+'" onclick="STATE.planck.showWien=!STATE.planck.showWien;renderLeftPanel()">'+(p.showWien?'ON':'OFF')+'</div></div>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Visible band</span><div class="chip '+(p.showVisibleBand?'active':'')+'" onclick="STATE.planck.showVisibleBand=!STATE.planck.showVisibleBand;renderLeftPanel()">'+(p.showVisibleBand?'ON':'OFF')+'</div></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Compare temperature</h4>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Show compare</span><div class="chip '+(p.showCompare?'active':'')+'" onclick="STATE.planck.showCompare=!STATE.planck.showCompare;renderLeftPanel()">'+(p.showCompare?'ON':'OFF')+'</div></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Compare T</span><span>'+fmt(p.compareTemp,0)+' K</span></div>';
+    html+='<input type="range" min="1000" max="40000" step="100" value="'+p.compareTemp+'" oninput="STATE.planck.compareTemp=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var p=STATE.planck;
+    return '<div class="sec"><h4>Planck\'s Law</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'B_λ(T) = (2hc²/λ⁵)·1/(e^(hc/λkT) − 1)<br><br>'+
+      'h = Planck constant<br>c = speed of light<br>k = Boltzmann constant<br>'+
+      'T = temperature (K)<br>λ = wavelength (m)<br><br>'+
+      'This formula, proposed in 1900, launched quantum mechanics.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Wien\'s Displacement</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'λ_max = b/T<br><br>'+
+      'b = 2.898×10⁻³ m·K<br><br>'+
+      'Hotter → shorter peak wavelength.<br>'+
+      'Current λ_max = '+fmt(wienPeak(p.temp),0)+' nm'+
+      '</div></div>'+
+      '<div class="sec"><h4>Stefan-Boltzmann</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'F = σT⁴<br><br>'+
+      'σ = 5.670×10⁻⁸ W/(m²·K⁴)<br><br>'+
+      'Total radiated power per unit area.<br>'+
+      'Current F = '+fmt(totalRadiance(p.temp),2)+' W/m²'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current</h4><div class="kv">'+
+      '<div class="row"><span class="k">T</span><span class="v">'+fmt(p.temp,0)+' K</span></div>'+
+      '<div class="row"><span class="k">λ_peak</span><span class="v">'+fmt(wienPeak(p.temp),0)+' nm</span></div>'+
+      '<div class="row"><span class="k">Color</span><span class="v">'+blackbodyRGB(p.temp)+'</span></div>'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE: REDSHIFT
+   ================================================================ */
+registerModule('redshift',{
+  title:'Redshift & Doppler',
+  icon:'🔴',
+  desc:'Relativistic Doppler shift. Watch spectral lines shift as an object moves or recedes.',
+  init:function(){
+    this.compute();
+  },
+  compute:function(){
+    var r=STATE.redshift;
+    var v=r.velocity*1000; /* km/s to m/s */
+    var result=dopplerShift(r.lambda0,v);
+    r.z=result.z;
+    r.lambdaObs=result.lambda_obs;
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    /* Animate velocity towards zero for a decay effect? Optional */
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#02040a';
+    ctx.fillRect(0,0,W,H);
+    var r=STATE.redshift;
+    /* Header */
+    ctx.fillStyle='#ffc040';
+    ctx.font='bold 18px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('🔴 REDSHIFT & DOPPLER',20,32);
+    ctx.fillStyle='#586890';
+    ctx.font='11px monospace';
+    ctx.fillText('Rest wavelength λ₀ = '+fmt(r.lambda0,1)+' nm ('+lineName(r.lambda0)+')',20,52);
+    /* Velocity visualization */
+    var velY=100;
+    var cx=W/2;
+    /* Velocity vector */
+    var vMax=1e5; /* m/s */
+    var vFrac=clamp(r.velocity*1000/vMax,-1,1);
+    ctx.fillStyle='rgba(6,10,24,.6)';
+    ctx.strokeStyle='rgba(255,192,64,.3)';
+    ctx.beginPath();ctx.roundRect(60,velY,W-120,60,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#e0e8ff';
+    ctx.font='11px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('Observer',80,velY+34);
+    ctx.fillText('Source',W-80,velY+34);
+    /* Object */
+    var objX=cx+vFrac*(W/2-120);
+    ctx.fillStyle='#ffc040';
+    ctx.beginPath();ctx.arc(objX,velY+30,15,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    /* Motion arrow */
+    if(Math.abs(r.velocity)>1){
+      var arrDir=r.velocity>0?1:-1;
+      ctx.strokeStyle='#40ff90';
+      ctx.lineWidth=3;
+      ctx.beginPath();
+      ctx.moveTo(objX,velY+30);
+      ctx.lineTo(objX+arrDir*60*Math.abs(vFrac),velY+30);
+      ctx.stroke();
+    }
+    /* Spectrum visualization */
+    var specY=210;
+    var specH=80;
+    var specX=80;
+    var specW=W-160;
+    /* Rainbow background representing spectrum range 400-700nm */
+    var rainbow=ctx.createLinearGradient(specX,0,specX+specW,0);
+    rainbow.addColorStop(0,'rgba(128,0,255,.4)');
+    rainbow.addColorStop(0.15,'rgba(64,64,255,.4)');
+    rainbow.addColorStop(0.3,'rgba(0,192,255,.4)');
+    rainbow.addColorStop(0.45,'rgba(0,255,128,.4)');
+    rainbow.addColorStop(0.6,'rgba(255,255,0,.4)');
+    rainbow.addColorStop(0.8,'rgba(255,128,0,.4)');
+    rainbow.addColorStop(1,'rgba(255,0,0,.4)');
+    ctx.fillStyle=rainbow;
+    ctx.fillRect(specX,specY,specW,specH);
+    /* Rest line position (655 nm in 400-700 range) */
+    function lambdaToX(lam){
+      return specX+clamp((lam-400)/300,0,1)*specW;
+    }
+    /* Rest position */
+    var restX=lambdaToX(r.lambda0);
+    ctx.strokeStyle='#fff';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.moveTo(restX,specY);
+    ctx.lineTo(restX,specY+specH);
+    ctx.stroke();
+    ctx.fillStyle='#fff';
+    ctx.font='bold 10px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('REST',restX,specY-8);
+    /* Observed position */
+    var obsX=lambdaToX(r.lambdaObs);
+    if(obsX>=specX&&obsX<=specX+specW){
+      ctx.strokeStyle='#ffe040';
+      ctx.lineWidth=3;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath();
+      ctx.moveTo(obsX,specY-15);
+      ctx.lineTo(obsX,specY+specH+15);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#ffe040';
+      ctx.fillText('OBSERVED',obsX,specY+specH+28);
+    }
+    /* Axis labels */
+    ctx.fillStyle='rgba(152,168,216,.7)';
+    ctx.font='9px monospace';
+    ctx.textAlign='center';
+    for(var li=0;li<=6;li++){
+      var lam=400+li*50;
+      ctx.fillText(lam+'nm',specX+(li/6)*specW,specY+specH+16);
+    }
+    /* Info box */
+    var infoY=specY+specH+50;
+    ctx.fillStyle='rgba(6,10,24,.85)';
+    ctx.strokeStyle='rgba(255,192,64,.4)';
+    ctx.beginPath();ctx.roundRect(40,infoY,W-80,140,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffc040';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('REDSHIFT PARAMETERS',52,infoY+22);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#e0e8ff';
+    ctx.fillText('Velocity:',52,infoY+48);
+    var velColor=r.velocity>0?'#ff5060':r.velocity<0?'#40c0ff':'#e0e8ff';
+    ctx.fillStyle=velColor;
+    ctx.font='bold 13px monospace';
+    ctx.fillText(fmt(r.velocity,1)+' km/s',150,infoY+48);
+    ctx.fillStyle='#e0e8ff';
+    ctx.font='11px monospace';
+    ctx.fillText('Direction:',52,infoY+70);
+    ctx.fillStyle=r.velocity>0?'#ff5060':r.velocity<0?'#40c0ff':'#e0e8ff';
+    ctx.fillText(r.velocity>0?'→ Receding (redshift)':r.velocity<0?'← Approaching (blueshift)':'— Stationary',150,infoY+70);
+    ctx.fillStyle='#e0e8ff';
+    ctx.fillText('Redshift z:',52,infoY+92);
+    ctx.fillStyle='#ffe040';
+    ctx.font='bold 13px monospace';
+    ctx.fillText(fmt(r.z,6),150,infoY+92);
+    ctx.fillStyle='#e0e8ff';
+    ctx.font='11px monospace';
+    ctx.fillText('λ observed:',52,infoY+114);
+    ctx.fillStyle='#40ff90';
+    ctx.font='bold 13px monospace';
+    ctx.fillText(fmt(r.lambdaObs,2)+' nm',150,infoY+114);
+    /* Distance estimate */
+    var dist=hubbleDistance(r.z,r.hubbleConst);
+    ctx.fillStyle='#e0e8ff';
+    ctx.font='11px monospace';
+    ctx.fillText('Hubble distance:',380,infoY+48);
+    ctx.fillStyle='#40c0ff';
+    ctx.font='bold 13px monospace';
+    ctx.fillText(fmt(dist/PARSEC/1e6,2)+' Mpc',560,infoY+48);
+    ctx.fillStyle='#e0e8ff';
+    ctx.font='11px monospace';
+    ctx.fillText('Light travel time:',380,infoY+70);
+    ctx.fillStyle='#40c0ff';
+    ctx.fillText(fmt(dist/LIGHT_YEAR/1e6,2)+' Myr',560,infoY+70);
+    setStatsHTML(
+      '<div>λ₀ = '+fmt(r.lambda0,1)+' nm</div>'+
+      '<div>λ_obs = '+fmt(r.lambdaObs,2)+' nm</div>'+
+      '<div>z = '+fmt(r.z,5)+'</div>'+
+      '<div>v = '+fmt(r.velocity,1)+' km/s</div>'
+    );
+    updateBadge('🔴 Redshift · z='+fmt(r.z,4)+' · '+(r.velocity>0?'receding':'approaching'));
+    $('sbMode').textContent='Redshift';
+    $('sbVal').textContent='z='+fmt(r.z,4);
+  },
+  onDown:function(p){
+    /* Click on the spectrum to set line position? No — click on object to grab */
+  },
+  controls:function(){
+    var r=STATE.redshift;
+    var html='';
+    html+='<div class="sec"><h4>Spectral Line</h4>';
+    html+='<div class="chip-row">';
+    [['Ly-α',121.6],['H-β',486.1],['H-α',656.3],['Na-D',589.3],['Ca-K',393.4]].forEach(function(l){
+      html+='<div class="chip '+(Math.abs(r.lambda0-l[1])<1?'active':'')+'" onclick="STATE.redshift.lambda0='+l[1]+';MODULES.redshift.compute();renderLeftPanel()">'+l[0]+'</div>';
+    });
+    html+='</div>';
+    html+='<div class="ctrl" style="margin-top:8px"><div class="lbl"><span>Rest wavelength</span><span>'+fmt(r.lambda0,2)+' nm</span></div>';
+    html+='<input type="range" min="100" max="800" step="0.5" value="'+r.lambda0+'" oninput="STATE.redshift.lambda0=parseFloat(this.value);MODULES.redshift.compute();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Velocity</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Radial velocity</span><span>'+fmt(r.velocity,1)+' km/s</span></div>';
+    html+='<input type="range" min="-100000" max="100000" step="100" value="'+r.velocity+'" oninput="STATE.redshift.velocity=parseFloat(this.value);MODULES.redshift.compute();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4>';
+    html+='<button class="btn full sm" onclick="STATE.redshift.velocity=0;MODULES.redshift.compute();renderLeftPanel()">Stationary</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.redshift.velocity=30;MODULES.redshift.compute();renderLeftPanel()">Galaxy +30 km/s</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.redshift.velocity=1000;MODULES.redshift.compute();renderLeftPanel()">Distant galaxy 1000 km/s</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.redshift.velocity=30000;MODULES.redshift.compute();renderLeftPanel()">Quasar 10% c</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.redshift.velocity=-30;MODULES.redshift.compute();renderLeftPanel()">Blueshift -30 km/s</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Hubble constant</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>H₀</span><span>'+r.hubbleConst+' km/s/Mpc</span></div>';
+    html+='<input type="range" min="50" max="100" step="1" value="'+r.hubbleConst+'" oninput="STATE.redshift.hubbleConst=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var r=STATE.redshift;
+    return '<div class="sec"><h4>Doppler Shift</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '<b class="text-c1">Classical (v << c):</b><br>'+
+      'λ_obs = λ₀·(1 + v/c)<br>'+
+      'z = Δλ/λ₀ = v/c<br><br>'+
+      '<b class="text-c1">Relativistic:</b><br>'+
+      '1 + z = √((1+β)/(1−β))<br>'+
+      'β = v/c<br><br>'+
+      'z > 0 → redshift (receding)<br>'+
+      'z < 0 → blueshift (approaching)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Cosmological Redshift</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'For distant galaxies, z is due to expansion of space, not motion through space.<br><br>'+
+      'Hubble-Lemaître law:<br>'+
+      'v = H₀·d<br><br>'+
+      'H₀ ≈ 70 km/s/Mpc<br><br>'+
+      'For z > 0.1, use relativistic + cosmological formulas.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current</h4><div class="kv">'+
+      '<div class="row"><span class="k">λ₀</span><span class="v">'+fmt(r.lambda0,2)+' nm</span></div>'+
+      '<div class="row"><span class="k">λ_obs</span><span class="v">'+fmt(r.lambdaObs,2)+' nm</span></div>'+
+      '<div class="row"><span class="k">z</span><span class="v">'+fmt(r.z,6)+'</span></div>'+
+      '<div class="row"><span class="k">v</span><span class="v">'+fmt(r.velocity,1)+' km/s</span></div>'+
+      '<div class="row"><span class="k">d (Hubble)</span><span class="v">'+fmt(hubbleDistance(r.z,r.hubbleConst)/PARSEC/1e6,2)+' Mpc</span></div>'+
+      '</div></div>';
+  }
+});
+function lineName(lam){
+  if(Math.abs(lam-656.3)<2)return 'H-α';
+  if(Math.abs(lam-486.1)<2)return 'H-β';
+  if(Math.abs(lam-434.0)<2)return 'H-γ';
+  if(Math.abs(lam-121.6)<2)return 'Lyman-α';
+  if(Math.abs(lam-589.3)<2)return 'Na D';
+  if(Math.abs(lam-393.4)<2)return 'Ca K';
+  return 'custom';
+}
+
+/* ================================================================
+   MODULE: GRAVITATIONAL LENSING
+   ================================================================ */
+registerModule('lensing',{
+  title:'Gravitational Lensing',
+  icon:'🔵',
+  desc:'General relativity bends light. A massive foreground object creates multiple images and an Einstein ring.',
+  init:function(){
+    STATE.lensing.sourceX=0.4;
+    STATE.lensing.sourceY=0.2;
+  },
+  tick:function(dt){STATE.time+=dt;},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#000205';
+    ctx.fillRect(0,0,W,H);
+    var l=STATE.lensing;
+    /* Background starfield */
+    drawStarfield(ctx,W,H,555);
+    /* Observation grid overlay */
+    if(l.showGrid){
+      ctx.strokeStyle='rgba(64,192,255,.08)';
+      ctx.lineWidth=1;
+      var gridSpacing=40;
+      for(var x=gridSpacing/2;x<W;x+=gridSpacing){
+        ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+      }
+      for(var y=gridSpacing/2;y<H;y+=gridSpacing){
+        ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();
+      }
+    }
+    var cx=W/2,cy=H/2;
+    /* Einstein radius (scaled) */
+    var thetaE=Math.sqrt(l.mass)*0.3; /* normalized */
+    var Re=thetaE*Math.min(W,H);
+    /* Lensing visualization: for each pixel we compute the deflection */
+    /* For performance, we draw source points shifted by deflection */
+    var numSources=6;
+    for(var i=0;i<numSources;i++){
+      var angle=(i/numSources)*Math.PI*2+l.sourceAngle||0;
+      /* Source positions (in source plane) */
+      var srcX=l.sourceX+Math.cos(angle)*0.1;
+      var srcY=l.sourceY+Math.sin(angle)*0.1;
+      /* For lensing: we image the source through the lens */
+      /* Lens equation: β = θ - α(θ) = θ - θE²/θ */
+      /* Solve for θ given β: quadratic */
+      var betaX=srcX,betaY=srcY;
+      var betaMag=Math.hypot(betaX,betaY);
+      if(betaMag<thetaE){
+        /* Two images — ring forms */
+        var thetaPlus=(betaMag+Math.sqrt(betaMag*betaMag+4*thetaE*thetaE))/2;
+        var thetaMinus=(betaMag-Math.sqrt(betaMag*betaMag+4*thetaE*thetaE))/2;
+        var dirX=betaMag>1e-6?betaX/betaMag:1;
+        var dirY=betaMag>1e-6?betaY/betaMag:0;
+        /* Image positions */
+        drawSource(ctx,cx+dirX*thetaPlus*W*0.4,cy+dirY*thetaPlus*H*0.4,'#40c0ff',thetaPlus*Re*0.2);
+        drawSource(ctx,cx+dirX*Math.abs(thetaMinus)*W*0.4,cy+dirY*Math.abs(thetaMinus)*H*0.4,'#40c0ff',thetaMinus*Re*0.2);
+      } else {
+        /* Single image */
+        var theta=betaMag+thetaE*thetaE/betaMag;
+        var dirX2=betaX/betaMag,dirY2=betaY/betaMag;
+        drawSource(ctx,cx+dirX2*theta*W*0.4,cy+dirY2*theta*H*0.4,'#40c0ff',theta*Re*0.15);
+      }
+    }
+    /* Alternative: draw a single strong lens system with visible Einstein ring */
+    /* Source at position */
+    var sx=cx+l.sourceX*W*0.4;
+    var sy=cy+l.sourceY*H*0.4;
+    var sBeta=Math.hypot(l.sourceX,l.sourceY);
+    if(sBeta<thetaE){
+      /* Draw Einstein ring */
+      ctx.strokeStyle='#40c0ff';
+      ctx.lineWidth=4;
+      ctx.beginPath();
+      ctx.arc(cx,cy,thetaE*W*0.4,0,Math.PI*2);
+      ctx.stroke();
+      /* Ring glow */
+      ctx.strokeStyle='rgba(64,192,255,.3)';
+      ctx.lineWidth=12;
+      ctx.beginPath();
+      ctx.arc(cx,cy,thetaE*W*0.4,0,Math.PI*2);
+      ctx.stroke();
+    }
+    /* Two arcs (double image) */
+    if(sBeta<thetaE*0.9&&sBeta>0.05){
+      var dirX3=l.sourceX/sBeta,dirY3=l.sourceY/sBeta;
+      var thetaP=(sBeta+Math.sqrt(sBeta*sBeta+4*thetaE*thetaE))/2;
+      var thetaM=(sBeta-Math.sqrt(sBeta*sBeta+4*thetaE*thetaE))/2;
+      /* Image 1 */
+      ctx.fillStyle='#ffe040';
+      ctx.beginPath();
+      ctx.arc(cx+dirX3*thetaP*W*0.4,cy+dirY3*thetaP*H*0.4,10,0,Math.PI*2);
+      ctx.fill();
+      /* Image 2 (opposite side) */
+      ctx.fillStyle='#ffe040';
+      ctx.beginPath();
+      ctx.arc(cx-dirX3*Math.abs(thetaM)*W*0.4,cy-dirY3*Math.abs(thetaM)*H*0.4,8,0,Math.PI*2);
+      ctx.fill();
+    }
+    /* Lens (foreground galaxy/cluster) */
+    var lensGrad=ctx.createRadialGradient(cx,cy,0,cx,cy,40);
+    lensGrad.addColorStop(0,'#ffe060');
+    lensGrad.addColorStop(0.3,'#ffc04080');
+    lensGrad.addColorStop(1,'rgba(255,192,64,0)');
+    ctx.fillStyle=lensGrad;
+    ctx.beginPath();ctx.arc(cx,cy,40,0,Math.PI*2);ctx.fill();
+    /* Center marker */
+    ctx.strokeStyle='rgba(255,192,64,.6)';
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(cx,cy,8,0,Math.PI*2);ctx.stroke();
+    /* Background source (unlensed position) */
+    if(l.sourceX!==0||l.sourceY!==0){
+      ctx.fillStyle='rgba(64,192,255,.6)';
+      ctx.beginPath();ctx.arc(sx,sy,6,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#40c0ff';
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+      ctx.fillStyle='rgba(64,192,255,.7)';
+      ctx.font='9px monospace';
+      ctx.textAlign='center';
+      ctx.fillText('source',sx,sy-10);
+    }
+    /* Info */
+    ctx.fillStyle='rgba(6,10,24,.85)';
+    ctx.strokeStyle='rgba(255,192,64,.4)';
+    ctx.beginPath();ctx.roundRect(20,20,240,140,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffc040';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('GRAVITATIONAL LENS',32,42);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#e0e8ff';
+    ctx.fillText('Lens mass: '+fmt(l.mass,2)+' × 10¹² M☉',32,66);
+    ctx.fillText('Source offset: '+fmt(Math.hypot(l.sourceX,l.sourceY),2),32,86);
+    ctx.fillText('θ_E: '+fmt(thetaE*57.3,3)+'°',32,106);
+    ctx.fillStyle=thetaE>Math.hypot(l.sourceX,l.sourceY)?'#40ff90':'#586890';
+    ctx.fillText(thetaE>Math.hypot(l.sourceX,l.sourceY)?'✓ Ring visible':'○ No ring',32,126);
+    ctx.fillStyle='#98a8d8';
+    ctx.font='10px monospace';
+    ctx.fillText('Drag source • click to move lens',32,150);
+    setStatsHTML(
+      '<div>Mass: '+fmt(l.mass,2)+'×10¹² M☉</div>'+
+      '<div>Source offset: '+fmt(Math.hypot(l.sourceX,l.sourceY),2)+'</div>'+
+      '<div>θ_E: '+fmt(thetaE,3)+'</div>'
+    );
+    updateBadge('🔵 Gravitational Lensing · M='+fmt(l.mass,2)+'×10¹² M☉');
+    $('sbMode').textContent='Lensing';
+    $('sbVal').textContent='θ_E='+fmt(thetaE,3);
+  },
+  onDown:function(p){
+    var l=STATE.lensing;
+    var cx=CANV.W/2,cy=CANV.H/2;
+    /* Check if click near source */
+    var sx=cx+l.sourceX*CANV.W*0.4;
+    var sy=cy+l.sourceY*CANV.H*0.4;
+    if(Math.hypot(p.x-sx,p.y-sy)<20){
+      l.drag='source';
+    } else {
+      /* Move lens */
+      l.drag='lens';
+    }
+  },
+  onMove:function(p){
+    var l=STATE.lensing;
+    if(!INPUT.down||!l.drag)return;
+    var cx=CANV.W/2,cy=CANV.H/2;
+    if(l.drag==='source'){
+      l.sourceX=clamp((p.x-cx)/(CANV.W*0.4),-1,1);
+      l.sourceY=clamp((p.y-cy)/(CANV.H*0.4),-1,1);
+    }
+  },
+  onUp:function(){STATE.lensing.drag=null;},
+  controls:function(){
+    var l=STATE.lensing;
+    var html='';
+    html+='<div class="sec"><h4>Lens mass</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Mass (×10¹² M☉)</span><span>'+fmt(l.mass,2)+'</span></div>';
+    html+='<input type="range" min="0.1" max="10" step="0.1" value="'+l.mass+'" oninput="STATE.lensing.mass=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Source position</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>X offset</span><span>'+fmt(l.sourceX,3)+'</span></div>';
+    html+='<input type="range" min="-1" max="1" step="0.02" value="'+l.sourceX+'" oninput="STATE.lensing.sourceX=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Y offset</span><span>'+fmt(l.sourceY,3)+'</span></div>';
+    html+='<input type="range" min="-1" max="1" step="0.02" value="'+l.sourceY+'" oninput="STATE.lensing.sourceY=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Display</h4>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Einstein ring</span><div class="chip '+(l.showEinsteinRing?'active':'')+'" onclick="STATE.lensing.showEinsteinRing=!STATE.lensing.showEinsteinRing;renderLeftPanel()">'+(l.showEinsteinRing?'ON':'OFF')+'</div></div>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Grid</span><div class="chip '+(l.showGrid?'active':'')+'" onclick="STATE.lensing.showGrid=!STATE.lensing.showGrid;renderLeftPanel()">'+(l.showGrid?'ON':'OFF')+'</div></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4>';
+    html+='<button class="btn full sm" onclick="STATE.lensing.sourceX=0;STATE.lensing.sourceY=0;STATE.lensing.mass=1;renderLeftPanel()">Perfect Einstein ring</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.lensing.sourceX=0.3;STATE.lensing.sourceY=0.15;STATE.lensing.mass=2;renderLeftPanel()">Double image</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.lensing.sourceX=0.7;STATE.lensing.sourceY=0.3;STATE.lensing.mass=1.5;renderLeftPanel()">Single image</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.lensing.sourceX=0.05;STATE.lensing.sourceY=0;STATE.lensing.mass=5;renderLeftPanel()">Strong lens</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var l=STATE.lensing;
+    var thetaE=Math.sqrt(l.mass)*0.3;
+    return '<div class="sec"><h4>Lens Equation</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'β = θ − α(θ)<br><br>'+
+      'β = source position (angular)<br>'+
+      'θ = image position<br>'+
+      'α(θ) = deflection angle<br><br>'+
+      'For a point mass: α(θ) = θE²/θ<br><br>'+
+      'Substituting gives quadratic:<br>'+
+      'θ² − βθ − θE² = 0<br><br>'+
+      'θ± = (β ± √(β² + 4θE²))/2'+
+      '</div></div>'+
+      '<div class="sec"><h4>Einstein Radius</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'θE = √(4GM/c² · Dls/(Dl·Ds))<br><br>'+
+      'M = lens mass<br>'+
+      'Dl, Ds, Dls = angular diameter distances<br><br>'+
+      'When source is directly behind lens (β=0), the source appears as a perfect ring. This is Einstein\'s prediction, confirmed by observation.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Applications</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '• <b>Weighing galaxies</b> — including dark matter<br>'+
+      '• <b>Magnification</b> — observing distant galaxies<br>'+
+      '• <b>Cosmology</b> — measuring H₀<br>'+
+      '• <b>Exoplanets</b> — microlensing events<br>'+
+      '• <b>Tests of GR</b> — light bending at the Sun<br><br>'+
+      'Current θE ≈ '+fmt(thetaE,4)+' (normalized)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current state</h4><div class="kv">'+
+      '<div class="row"><span class="k">Mass</span><span class="v">'+fmt(l.mass,3)+'×10¹² M☉</span></div>'+
+      '<div class="row"><span class="k">Source β</span><span class="v">'+fmt(Math.hypot(l.sourceX,l.sourceY),3)+'</span></div>'+
+      '<div class="row"><span class="k">Ring?</span><span class="v">'+(thetaE>Math.hypot(l.sourceX,l.sourceY)?'yes':'no')+'</span></div>'+
+      '</div></div>';
+  }
+});
+function drawSource(ctx,x,y,color,r){
+  r=Math.max(6,r);
+  var g=ctx.createRadialGradient(x,y,0,x,y,r*2);
+  g.addColorStop(0,color);
+  g.addColorStop(0.3,color+'80');
+  g.addColorStop(1,color+'00');
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.arc(x,y,r*2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=color;
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+}
+</script>
+<script>
+/* ================================================================
+   MODULE: SKY MAP / CONSTELLATIONS
+   ================================================================ */
+registerModule('sky',{
+  title:'Sky Map',
+  icon:'✨',
+  desc:'Real bright stars plotted on an equatorial projection. Filter by magnitude, spectral class or constellation region.',
+  init:function(){
+    /* Nothing to init — STARS is a constant */
+  },
+  tick:function(dt){STATE.time+=dt;},
+  raToX:function(ra,W){
+    /* RA in degrees, convert to x on plot (0h at left) */
+    return (ra/360)*W;
+  },
+  decToY:function(dec,H){
+    /* Dec in degrees, +90 at top, -90 at bottom */
+    return (90-dec)/180*H;
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#000205';
+    ctx.fillRect(0,0,W,H);
+    var pad=50;
+    var plotX=pad,plotY=pad;
+    var plotW=W-pad*2,plotH=H-pad*2;
+    /* Starfield noise */
+    drawStarfield(ctx,W,H,999);
+    /* Background grid */
+    ctx.strokeStyle='rgba(64,192,255,.1)';
+    ctx.lineWidth=1;
+    for(var ra=0;ra<360;ra+=30){
+      var x=plotX+this.raToX(ra,plotW);
+      ctx.beginPath();ctx.moveTo(x,plotY);ctx.lineTo(x,plotY+plotH);ctx.stroke();
+    }
+    for(var dec=-60;dec<=60;dec+=30){
+      var y=plotY+this.decToY(dec,plotH);
+      ctx.beginPath();ctx.moveTo(plotX,y);ctx.lineTo(plotX+plotW,y);ctx.stroke();
+    }
+    /* Milky Way band (approximate) */
+    ctx.strokeStyle='rgba(128,96,192,.15)';
+    ctx.lineWidth=20;
+    ctx.beginPath();
+    for(var i=0;i<=100;i++){
+      var raW=i/100*360;
+      var decW=Math.sin(raW*Math.PI/180)*20;
+      var xw=plotX+this.raToX(raW,plotW);
+      var yw=plotY+this.decToY(decW,plotH);
+      if(i===0)ctx.moveTo(xw,yw);else ctx.lineTo(xw,yw);
+    }
+    ctx.stroke();
+    /* Axes labels */
+    ctx.fillStyle='rgba(152,168,216,.7)';
+    ctx.font='10px monospace';
+    ctx.textAlign='center';
+    for(var raL=0;raL<=360;raL+=60){
+      var xL=plotX+this.raToX(raL,plotW);
+      ctx.fillText((raL/15)+'h',xL,plotY+plotH+16);
+    }
+    ctx.textAlign='right';
+    for(var decL=-60;decL<=60;decL+=30){
+      var yL=plotY+this.decToY(decL,plotH);
+      ctx.fillText(decL+'°',plotX-8,yL+4);
+    }
+    ctx.fillStyle='rgba(152,168,216,.9)';
+    ctx.font='11px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('Right Ascension',plotX+plotW/2,plotY+plotH+34);
+    ctx.save();
+    ctx.translate(18,plotY+plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText('Declination',0,0);
+    ctx.restore();
+    /* Equator line */
+    var eqY=plotY+this.decToY(0,plotH);
+    ctx.strokeStyle='rgba(255,192,64,.4)';
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([6,4]);
+    ctx.beginPath();ctx.moveTo(plotX,eqY);ctx.lineTo(plotX+plotW,eqY);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#ffc040';
+    ctx.font='10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('Celestial equator',plotX+8,eqY-6);
+    /* Draw stars */
+    STARS.forEach(function(star){
+      var x=plotX+this.raToX(star.ra,plotW);
+      var y=plotY+this.decToY(star.dec,plotH);
+      if(x<plotX||x>plotX+plotW||y<plotY||y>plotY+plotH)return;
+      /* Star size from magnitude */
+      var size=Math.max(2,6-star.mag*1.2);
+      /* Color from spectral type */
+      var color=this.spectralColor(star.spectral);
+      /* Glow */
+      var g=ctx.createRadialGradient(x,y,0,x,y,size*3);
+      g.addColorStop(0,color);
+      g.addColorStop(0.3,color+'80');
+      g.addColorStop(1,color+'00');
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.arc(x,y,size*3,0,Math.PI*2);ctx.fill();
+      /* Core */
+      ctx.fillStyle=color;
+      ctx.beginPath();ctx.arc(x,y,size,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.5)';
+      ctx.lineWidth=0.5;
+      ctx.stroke();
+      /* Label for bright stars */
+      if(star.mag<1.5){
+        ctx.fillStyle='rgba(224,232,255,.85)';
+        ctx.font='9px monospace';
+        ctx.textAlign='left';
+        ctx.fillText(star.name,x+size+2,y+3);
+      }
+    },this);
+    /* Info box */
+    ctx.fillStyle='rgba(6,10,24,.85)';
+    ctx.strokeStyle='rgba(255,192,64,.4)';
+    ctx.beginPath();ctx.roundRect(W-260,20,240,120,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffc040';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('SKY MAP',W-248,42);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#e0e8ff';
+    ctx.fillText('Stars: '+STARS.length,W-248,64);
+    ctx.fillText('Brightest: Sirius (-1.46)',W-248,84);
+    ctx.fillText('Spectral: OBAFGKM',W-248,104);
+    /* Spectral legend */
+    var spectralColors=['#9bb0ff','#aabfff','#cad7ff','#f8f7ff','#fff4ea','#ffd2a1','#ffcc6f'];
+    var spectralLabels=['O','B','A','F','G','K','M'];
+    for(var si=0;si<7;si++){
+      ctx.fillStyle=spectralColors[si];
+      ctx.beginPath();ctx.arc(W-248+si*32,116,6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#e0e8ff';
+      ctx.font='9px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(spectralLabels[si],W-248+si*32,132);
+    }
+    setStatsHTML(
+      '<div>Stars: '+STARS.length+'</div>'+
+      '<div>Range: all sky</div>'+
+      '<div>Brightest: Sirius</div>'
+    );
+    updateBadge('✨ Sky Map · '+STARS.length+' bright stars');
+    $('sbMode').textContent='Sky Map';
+    $('sbObjs').textContent=STARS.length;
+  },
+  spectralColor:function(spectral){
+    var c=spectral.charAt(0);
+    if(c==='O')return '#9bb0ff';
+    if(c==='B')return '#aabfff';
+    if(c==='A')return '#cad7ff';
+    if(c==='F')return '#f8f7ff';
+    if(c==='G')return '#fff4ea';
+    if(c==='K')return '#ffd2a1';
+    if(c==='M')return '#ffcc6f';
+    return '#ffffff';
+  },
+  onDown:function(p){
+    /* Find nearest star and show details */
+    var pad=50;
+    var plotX=pad,plotY=pad;
+    var plotW=CANV.W-pad*2,plotH=CANV.H-pad*2;
+    var best=null,bestDist=20;
+    STARS.forEach(function(star){
+      var x=plotX+this.raToX(star.ra,plotW);
+      var y=plotY+this.decToY(star.dec,plotH);
+      var d=Math.hypot(x-p.x,y-p.y);
+      if(d<bestDist){bestDist=d;best=star;}
+    },this);
+    if(best){
+      openModal('⭐ '+best.name,
+        '<div style="text-align:center;padding:20px">'+
+        '<div style="font-size:4rem;color:'+this.spectralColor(best.spectral)+';filter:drop-shadow(0 0 20px '+this.spectralColor(best.spectral)+')">★</div>'+
+        '<h3 style="color:var(--c1);margin:16px 0;font-family:var(--disp);letter-spacing:2px">'+best.name.toUpperCase()+'</h3>'+
+        '<div class="kv" style="max-width:400px;margin:0 auto;text-align:left">'+
+        '<div class="row"><span class="k">RA</span><span class="v">'+fmt(best.ra/15,3)+' h</span></div>'+
+        '<div class="row"><span class="k">Dec</span><span class="v">'+fmt(best.dec,3)+'°</span></div>'+
+        '<div class="row"><span class="k">Magnitude</span><span class="v">'+fmt(best.mag,2)+'</span></div>'+
+        '<div class="row"><span class="k">Spectral type</span><span class="v">'+best.spectral+'</span></div>'+
+        '<div class="row"><span class="k">Distance</span><span class="v">'+fmt(best.dist,1)+' ly</span></div>'+
+        '<div class="row"><span class="k">Absolute mag</span><span class="v">'+fmt(best.mag-5*Math.log10(best.dist/10),2)+'</span></div>'+
+        '</div>'+
+        '</div>',
+        '<button class="btn primary" onclick="closeModal()">Close</button>');
+    }
+  },
+  controls:function(){
+    var html='';
+    html+='<div class="sec"><h4>Information</h4>';
+    html+='<div class="text-xs" style="font-family:var(--mono);line-height:1.65;color:var(--tx2)">'+
+    'Brightest stars from the Hipparcos catalog. Click any star for details.<br><br>'+
+    '<b class="text-c1">Right Ascension:</b> celestial longitude (0-24h)<br>'+
+    '<b class="text-c1">Declination:</b> celestial latitude (-90° to +90°)<br>'+
+    '<b class="text-c1">Magnitude:</b> apparent brightness (lower = brighter)<br>'+
+    '<b class="text-c1">Spectral type:</b> O-B-A-F-G-K-M'+
+    '</div></div>';
+    html+='<div class="sec"><h4>Top 5 brightest</h4>';
+    var sorted=STARS.slice().sort(function(a,b){return a.mag-b.mag}).slice(0,5);
+    sorted.forEach(function(s){
+      html+='<div style="padding:4px 6px;background:var(--panel3);border-radius:var(--rxs);margin-bottom:3px;font-family:var(--mono);font-size:.6rem;display:flex;justify-content:space-between">'+
+      '<span style="color:var(--c1)">'+s.name+'</span>'+
+      '<span style="color:var(--c3)">mag '+s.mag.toFixed(2)+'</span>'+
+      '</div>';
+    });
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    return '<div class="sec"><h4>Celestial Coordinates</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Like latitude/longitude on Earth, but projected onto the sky:<br><br>'+
+      '<b class="text-c1">RA (Right Ascension):</b><br>'+
+      'Angle from vernal equinox along celestial equator<br>'+
+      'Measured in hours (0-24h), where 1h = 15°<br><br>'+
+      '<b class="text-c1">Dec (Declination):</b><br>'+
+      'Angle from celestial equator<br>'+
+      '+90° = North Celestial Pole<br>'+
+      '-90° = South Celestial Pole'+
+      '</div></div>'+
+      '<div class="sec"><h4>Magnitude Scale</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Apparent magnitude m:<br>'+
+      'm₁ − m₂ = −2.5·log₁₀(F₁/F₂)<br><br>'+
+      'Difference of 5 magnitudes = 100× brightness<br>'+
+      'Each magnitude = 2.512×<br><br>'+
+      'Sirius: −1.46 (brightest)<br>'+
+      'Vega: 0.03 (reference)<br>'+
+      'Naked eye limit: ~6.5<br>'+
+      'Hubble limit: ~30<br><br>'+
+      'Distance modulus:<br>'+
+      'm − M = 5·log₁₀(d/10pc)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Spectral Classification</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      '<span style="color:#9bb0ff">O — 30,000+ K, blue, ionized He</span><br>'+
+      '<span style="color:#aabfff">B — 10,000–30,000 K, blue-white, He</span><br>'+
+      '<span style="color:#cad7ff">A — 7,500–10,000 K, white, H lines</span><br>'+
+      '<span style="color:#f8f7ff">F — 6,000–7,500 K, yellow-white, metals</span><br>'+
+      '<span style="color:#fff4ea">G — 5,200–6,000 K, yellow, Sun-like</span><br>'+
+      '<span style="color:#ffd2a1">K — 3,700–5,200 K, orange, Ca lines</span><br>'+
+      '<span style="color:#ffcc6f">M — 2,500–3,700 K, red, TiO bands</span>'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   TABS
+   ================================================================ */
+var TABS=[
+  {key:'solar',icon:'🪐',label:'Solar'},
+  {key:'hr',icon:'⭐',label:'HR'},
+  {key:'transit',icon:'🌑',label:'Transit'},
+  {key:'planck',icon:'🌡️',label:'Planck'},
+  {key:'redshift',icon:'🔴',label:'Redshift'},
+  {key:'lensing',icon:'🔵',label:'Lensing'},
+  {key:'sky',icon:'✨',label:'Sky'},
+  {key:'about',icon:'ℹ️',label:'About'}
+];
+function buildTabs(){
+  var tabs=$('tbTabs');
+  tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===key)});
+  $('sbMode').textContent=(MODULES[key]&&MODULES[key].title)||key;
+  if(MODULES[key]&&MODULES[key].init)MODULES[key].init();
+  renderLeftPanel();
+  renderRightPanel();
+}
+function switchRp(name,e){
+  STATE.currentRp=name;
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active');});
+  e.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active');});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+  renderRightPanel();
+}
+function renderLeftPanel(){
+  var body=$('lpBody');
+  if(!body)return;
+  var m=MODULES[STATE.currentTab];
+  if(!m){body.innerHTML='';return;}
+  var html='';
+  html+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--c1);font-size:.72rem">'+m.icon+' '+m.title+'</h4><div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.5;margin-top:4px">'+m.desc+'</div></div>';
+  if(m.controls)html+=m.controls();
+  body.innerHTML=html;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var statePane=$('rpState');
+  if(statePane){
+    statePane.innerHTML=
+      '<div class="sec"><h4>Live</h4>'+
+      '<div class="kv">'+
+      '<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>'+
+      '<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,1)+'s</span></div>'+
+      '<div class="row"><span class="k">Playing</span><span class="v">'+(STATE.playing?'yes':'paused')+'</span></div>'+
+      '</div></div>'+
+      '<div class="sec"><h4>Physical constants</h4>'+
+      '<div class="kv">'+
+      '<div class="row"><span class="k">G</span><span class="v">6.674×10⁻¹¹</span></div>'+
+      '<div class="row"><span class="k">c</span><span class="v">299792458 m/s</span></div>'+
+      '<div class="row"><span class="k">h</span><span class="v">6.626×10⁻³⁴ J·s</span></div>'+
+      '<div class="row"><span class="k">k_B</span><span class="v">1.381×10⁻²³ J/K</span></div>'+
+      '<div class="row"><span class="k">σ</span><span class="v">5.670×10⁻⁸</span></div>'+
+      '<div class="row"><span class="k">AU</span><span class="v">1.496×10¹¹ m</span></div>'+
+      '<div class="row"><span class="k">pc</span><span class="v">3.086×10¹⁶ m</span></div>'+
+      '<div class="row"><span class="k">M☉</span><span class="v">1.989×10³⁰ kg</span></div>'+
+      '<div class="row"><span class="k">L☉</span><span class="v">3.828×10²⁶ W</span></div>'+
+      '<div class="row"><span class="k">R☉</span><span class="v">6.957×10⁸ m</span></div>'+
+      '</div></div>';
+  }
+  var mathPane=$('rpMath');
+  if(mathPane&&m&&m.mathPanel)mathPane.innerHTML=m.mathPanel();
+  else if(mathPane)mathPane.innerHTML='<div class="empty">No math panel</div>';
+  var helpPane=$('rpHelp');
+  if(helpPane&&m)helpPane.innerHTML=
+    '<div class="sec"><h4>Module</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.6;color:var(--tx2)">'+
+    '<b class="text-c1">'+m.icon+' '+m.title+'</b><br><br>'+m.desc+'</div></div>';
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){
+  var p=$('rpLogs');
+  if(!p)return;
+  var html='<div class="sec"><h4>Event Log</h4>';
+  if(!LOG.length)html+='<div class="empty" style="padding:20px;font-size:.62rem">No events</div>';
+  else LOG.slice().reverse().forEach(function(l){
+    var color=l.type==='error'?'var(--err)':l.type==='success'?'var(--c4)':'var(--c2)';
+    html+='<div style="padding:4px 6px;border-left:2px solid '+color+';margin-bottom:3px;font-family:var(--mono);font-size:.6rem;background:var(--panel3);border-radius:2px">'+
+      '<span style="color:var(--tx3)">'+new Date(l.t).toTimeString().substr(0,8)+'</span> '+
+      '<span style="color:'+color+'">'+esc(l.msg)+'</span></div>';
+  });
+  html+='</div>';
+  p.innerHTML=html;
+}
+function togglePlay(){
+  STATE.playing=!STATE.playing;
+  $('btnPlay').textContent=STATE.playing?'⏸':'▶';
+  $('tbDot').classList.toggle('on',STATE.playing);
+  toast(STATE.playing?'Playing':'Paused','info',1000);
+}
+function resetModule(){
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+    toast('Reset','success',1000);
+  }
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['cosmos','observatory','paper'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  var next=THEMES[(i+1)%THEMES.length];
+  document.documentElement.setAttribute('data-theme',next);
+  STATE.theme=next;
+  toast('Theme: '+next,'success');
+}
+function exportState(){
+  var data={
+    version:'1.0',
+    timestamp:new Date().toISOString(),
+    solar:{timeYears:STATE.solar.timeYears,scale:STATE.solar.scale,zoom:STATE.solar.zoom},
+    hr:{highlight:STATE.hr.highlight,stars:STATE.hr.stars.length},
+    transit:{starTemp:STATE.transit.starTemp,planetRadius:STATE.transit.planetRadius,period:STATE.transit.period},
+    planck:{temp:STATE.planck.temp},
+    redshift:{velocity:STATE.redshift.velocity,lambda0:STATE.redshift.lambda0},
+    lensing:{mass:STATE.lensing.mass}
+  };
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='astra-config.json';a.click();
+  setTimeout(function(){URL.revokeObjectURL(url)},500);
+  toast('Config exported','success');
+}
+function showHelp(){
+  openModal('❓ ASTRA — Help',
+    '<div class="sec"><h4>🔭 About</h4><div class="text-xs" style="line-height:1.75;color:var(--tx2);font-family:var(--mono)">An astrophysics workbench with real physics — Kepler orbits solved via Newton-Raphson, Planck\'s blackbody law, relativistic Doppler shift, and gravitational lensing from general relativity.</div></div>'+
+    '<div class="sec"><h4>📚 Modules</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">🪐 Solar System</b> — Kepler orbits, Newton-Raphson E solver<br>'+
+    '<b class="text-c1">⭐ HR Diagram</b> — luminosity vs temperature, spectral classes<br>'+
+    '<b class="text-c1">🌑 Transit</b> — exoplanet light curves and depth<br>'+
+    '<b class="text-c1">🌡️ Planck</b> — blackbody spectrum with Wien peak<br>'+
+    '<b class="text-c1">🔴 Redshift</b> — Doppler + Hubble distance<br>'+
+    '<b class="text-c1">🔵 Lensing</b> — Einstein ring, double images<br>'+
+    '<b class="text-c1">✨ Sky Map</b> — bright stars, RA/Dec, spectral types'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">Space</b> — Play/pause<br>'+
+    '<b class="text-c1">R</b> — Reset current module<br>'+
+    '<b class="text-c1">1-7</b> — Jump to module<br>'+
+    '<b class="text-c1">T</b> — Cycle theme<br>'+
+    '<b class="text-c1">?</b> — This help'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',{size:'lg'});
+}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay();}
+  else if(e.key==='r'||e.key==='R')resetModule();
+  else if(e.key>='1'&&e.key<='7'){var idx=parseInt(e.key)-1;if(TABS[idx])switchTab(TABS[idx].key);}
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal();
+});
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+var BOOT_STEPS=[
+  'Loading Kepler orbital solver...',
+  'Compiling Planck radiation function...',
+  'Initializing relativistic Doppler engine...',
+  'Preparing gravitational lensing equations...',
+  'Populating star catalog...',
+  'Computing Wien peak constants...',
+  'Calibrating stellar color temperature...',
+  'Ready.'
+];
+function bootSequence(){
+  /* Create random stars */
+  var sky=$('bootSky');
+  for(var i=0;i<80;i++){
+    var star=document.createElement('div');
+    star.className='boot-star';
+    star.style.left=Math.random()*100+'%';
+    star.style.top=Math.random()*100+'%';
+    var size=Math.random()*2+1;
+    star.style.width=size+'px';
+    star.style.height=size+'px';
+    star.style.animationDelay=Math.random()*3+'s';
+    sky.appendChild(star);
+  }
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  var iv=setInterval(function(){
+    pct+=rnd(8,18);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('ASTRA ready · Press ? for help','success',3500);
+      },400);
+    }
+  },150);
+}
+
+/* ================================================================
+   MAIN LOOP
+   ================================================================ */
+var lastFrameTime=performance.now();
+var fpsAccum=0,fpsFrames=0;
+function mainLoop(now){
+  var dt=Math.min((now-lastFrameTime)/1000,0.05);
+  lastFrameTime=now;
+  fpsAccum+=dt;fpsFrames++;
+  if(fpsAccum>=0.5){
+    $('sbFps').textContent=Math.round(fpsFrames/fpsAccum);
+    fpsAccum=0;fpsFrames=0;
+  }
+  var m=MODULES[STATE.currentTab];
+  if(m&&m.tick){try{m.tick(dt);}catch(e){console.error(e);}}
+  if(m&&m.draw){try{m.draw(CANV.ctx);}catch(e){console.error(e);}}
+  requestAnimationFrame(mainLoop);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  buildTabs();
+  initCanvas();
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+  }
+  renderLeftPanel();
+  renderRightPanel();
+  logMsg('ASTRA initialized','success');
+  bootSequence();
+  requestAnimationFrame(mainLoop);
+  $('tbDot').classList.add('on');
+  $('tbText').textContent='running';
+  setInterval(function(){
+    if(STATE.currentRp==='logs')renderLogs();
+  },1000);
+});
+
+console.log('%c ASTRA ','background:linear-gradient(90deg,#ffc040,#ff60a0,#a060ff);color:#02040a;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cAstronomy Studio','color:#ffc040;font-weight:600');
+console.log('%cOrbits · HR · Transits · Planck · Redshift · Lensing · Sky','color:#40c0ff');
+console.log('%cPress ? for help','color:#98a8d8');
+</script>
+</body></html>

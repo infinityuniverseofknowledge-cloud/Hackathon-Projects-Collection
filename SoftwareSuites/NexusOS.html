@@ -1,0 +1,2526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>NEXUS-OS · Browser Operating System</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#000}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:13px;line-height:1.5;color:#e8eaf2;-webkit-font-smoothing:antialiased;user-select:none}
+:root{
+  --bg:#05060c;--bg2:#0a0c16;--bg3:#11131f;
+  --surface:rgba(20,22,36,.82);--surface2:rgba(28,30,48,.85);--surface3:rgba(38,42,64,.9);
+  --bd:rgba(120,140,220,.14);--bd2:rgba(120,140,220,.28);--bd3:rgba(120,140,220,.5);
+  --tx:#e8eaf2;--tx2:#98a0c0;--tx3:#5a6080;
+  --ac:#5b8def;--ac2:#7da8ff;--ac3:#3d6dd0;
+  --ok:#4ade80;--wn:#fbbf24;--er:#ef4444;--vi:#a78bfa;--pk:#ec4899;--cy:#22d3ee;
+  --serif:'Iowan Old Style',Georgia,serif;
+  --mono:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
+  --shadow:0 20px 60px rgba(0,0,0,.55),0 8px 24px rgba(0,0,0,.35);
+  --shadow2:0 4px 16px rgba(0,0,0,.4);
+}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+button{cursor:pointer}
+::selection{background:rgba(91,141,239,.4);color:#fff}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(120,140,220,.25);border-radius:5px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(120,140,220,.45);background-clip:padding-box;border:2px solid transparent}
+
+/* ── Boot ── */
+#boot{position:fixed;inset:0;z-index:10000;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#5b8def;font-family:var(--mono)}
+#boot.done{opacity:0;pointer-events:none;transition:opacity .6s}
+#boot .boot-logo{font-size:32px;font-weight:900;letter-spacing:14px;color:#5b8def;text-shadow:0 0 40px rgba(91,141,239,.7);margin-bottom:40px;opacity:0;animation:bootIn 1.2s forwards}
+@keyframes bootIn{to{opacity:1;letter-spacing:8px}}
+#boot .boot-spinner{width:200px;height:3px;background:rgba(91,141,239,.15);margin-bottom:20px;overflow:hidden;position:relative}
+#boot .boot-spinner::after{content:'';position:absolute;top:0;left:0;bottom:0;width:40%;background:linear-gradient(90deg,transparent,#5b8def,transparent);animation:bootSlide 1.4s infinite}
+@keyframes bootSlide{0%{left:-40%}100%{left:100%}}
+#boot .boot-msg{font-size:11px;letter-spacing:3px;color:#5a6080;text-transform:uppercase}
+
+/* ── Desktop ── */
+#os{position:fixed;inset:0;display:flex;flex-direction:column;opacity:0;transition:opacity .5s}
+#os.on{opacity:1}
+#desktop{flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 30% 20%,#16203a 0%,#05060c 60%,#000 100%)}
+
+/* Wallpaper layer */
+#wallpaper{position:absolute;inset:0;z-index:0;overflow:hidden}
+#wallpaper::before{content:'';position:absolute;inset:0;background:
+  radial-gradient(circle at 20% 30%,rgba(91,141,239,.15),transparent 40%),
+  radial-gradient(circle at 80% 70%,rgba(167,139,250,.12),transparent 45%),
+  radial-gradient(circle at 50% 100%,rgba(34,211,238,.1),transparent 50%)}
+#wallpaper::after{content:'';position:absolute;inset:0;background-image:
+  linear-gradient(rgba(120,140,220,.04) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(120,140,220,.04) 1px,transparent 1px);
+  background-size:64px 64px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+
+/* Desktop icons */
+#icons{position:absolute;top:20px;left:20px;bottom:80px;right:20px;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:6px;z-index:1;pointer-events:none}
+.icon{width:80px;height:88px;padding:8px 4px;border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:background .12s;pointer-events:auto;position:relative}
+.icon:hover{background:rgba(91,141,239,.14)}
+.icon.selected{background:rgba(91,141,239,.22);outline:1px solid rgba(91,141,239,.5)}
+.icon .ico{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 12px rgba(0,0,0,.4);position:relative}
+.icon .nm{font-size:11px;color:#e8eaf2;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.8);line-height:1.3;max-width:76px;overflow:hidden}
+
+/* Selection box */
+#selbox{position:absolute;border:1px solid #5b8def;background:rgba(91,141,239,.15);display:none;pointer-events:none;z-index:2}
+
+/* ── Windows ── */
+.window{position:absolute;background:var(--surface);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--bd2);border-radius:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden;z-index:100;min-width:280px;min-height:180px}
+.window.active{border-color:var(--bd3);box-shadow:var(--shadow),0 0 0 1px rgba(91,141,239,.3)}
+.window.minimized{display:none}
+.window.maximized{border-radius:0}
+.window.animating{transition:left .25s cubic-bezier(.2,0,.2,1),top .25s cubic-bezier(.2,0,.2,1),width .25s cubic-bezier(.2,0,.2,1),height .25s cubic-bezier(.2,0,.2,1)}
+.win-title{height:36px;background:rgba(28,30,48,.9);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:10px;cursor:default;flex-shrink:0;user-select:none}
+.win-title .app-ico{font-size:16px;flex-shrink:0}
+.win-title .title{font-size:12px;font-weight:600;color:var(--tx);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.win-controls{display:flex;gap:2px;flex-shrink:0}
+.wc{width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--tx2);cursor:pointer;transition:background .12s;line-height:1}
+.wc:hover{background:rgba(120,140,220,.15);color:var(--tx)}
+.wc.close:hover{background:#ef4444;color:#fff}
+.win-body{flex:1;overflow:auto;background:rgba(10,12,22,.5);position:relative;min-height:0}
+
+/* Resize handles */
+.rh{position:absolute;z-index:10}
+.rh-n{top:-3px;left:8px;right:8px;height:6px;cursor:ns-resize}
+.rh-s{bottom:-3px;left:8px;right:8px;height:6px;cursor:ns-resize}
+.rh-e{right:-3px;top:8px;bottom:8px;width:6px;cursor:ew-resize}
+.rh-w{left:-3px;top:8px;bottom:8px;width:6px;cursor:ew-resize}
+.rh-ne{top:-3px;right:-3px;width:12px;height:12px;cursor:nesw-resize}
+.rh-nw{top:-3px;left:-3px;width:12px;height:12px;cursor:nwse-resize}
+.rh-se{bottom:-3px;right:-3px;width:12px;height:12px;cursor:nwse-resize}
+.rh-sw{bottom:-3px;left:-3px;width:12px;height:12px;cursor:nesw-resize}
+
+/* ── Taskbar ── */
+#taskbar{height:48px;background:rgba(10,12,22,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:8px;flex-shrink:0;z-index:5000;position:relative}
+#taskbar::before{content:'';position:absolute;top:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--ac),transparent);opacity:.3}
+
+.start-btn{height:38px;padding:0 14px;background:linear-gradient(180deg,rgba(91,141,239,.25),rgba(91,141,239,.1));border:1px solid rgba(91,141,239,.4);border-radius:6px;color:#e8eaf2;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;cursor:pointer;transition:.12s;flex-shrink:0}
+.start-btn:hover{background:linear-gradient(180deg,rgba(91,141,239,.4),rgba(91,141,239,.2));border-color:var(--ac)}
+.start-btn .logo{width:16px;height:16px;border-radius:3px;background:linear-gradient(135deg,#5b8def,#a78bfa);box-shadow:0 0 12px rgba(91,141,239,.7)}
+
+#win-list{display:flex;gap:4px;flex:1;overflow-x:auto;padding:0 4px;scrollbar-width:none}
+#win-list::-webkit-scrollbar{display:none}
+.tk-item{height:38px;padding:0 12px;background:rgba(28,30,48,.7);border:1px solid var(--bd);border-radius:6px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2);cursor:pointer;transition:.12s;max-width:200px;flex-shrink:0;position:relative;white-space:nowrap}
+.tk-item:hover{background:rgba(40,44,68,.9);color:var(--tx)}
+.tk-item.active{background:rgba(91,141,239,.2);border-color:var(--ac);color:var(--tx)}
+.tk-item .ti-ico{font-size:15px}
+.tk-item .ti-name{overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.tk-item .ti-close{width:16px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;margin-left:2px;color:var(--tx3)}
+.tk-item .ti-close:hover{background:rgba(239,68,68,.4);color:#fff}
+
+#sys-tray{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.tray-item{height:38px;padding:0 10px;background:rgba(28,30,48,.7);border:1px solid var(--bd);border-radius:6px;display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx2);cursor:pointer;transition:.12s;font-variant-numeric:tabular-nums}
+.tray-item:hover{background:rgba(40,44,68,.9);color:var(--tx)}
+
+/* ── Start menu ── */
+#startmenu{position:fixed;bottom:56px;left:10px;width:380px;max-height:520px;background:rgba(15,17,30,.96);backdrop-filter:blur(24px);border:1px solid var(--bd3);border-radius:12px;box-shadow:var(--shadow);z-index:9000;display:none;flex-direction:column;overflow:hidden;animation:startIn .18s cubic-bezier(.2,0,.2,1)}
+#startmenu.on{display:flex}
+@keyframes startIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.sm-search{padding:12px;border-bottom:1px solid var(--bd)}
+.sm-search input{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--bd2);border-radius:6px;padding:8px 12px;color:var(--tx);font-size:12px}
+.sm-search input:focus{border-color:var(--ac)}
+.sm-body{overflow-y:auto;padding:8px}
+.sm-section{padding:8px 6px 4px;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3);font-weight:700}
+.sm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.sm-app{padding:10px 6px;border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:.1s}
+.sm-app:hover{background:rgba(91,141,239,.14)}
+.sm-app .app-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.sm-app .app-name{font-size:10.5px;color:var(--tx2);text-align:center;line-height:1.2}
+
+/* ── Command palette ── */
+#cmd{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);display:none;align-items:flex-start;justify-content:center;padding-top:12vh}
+#cmd.on{display:flex}
+#cmd-box{width:600px;max-width:calc(100% - 40px);background:rgba(15,17,30,.98);backdrop-filter:blur(24px);border:1px solid var(--bd3);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;animation:cmdIn .18s cubic-bezier(.2,0,.2,1)}
+@keyframes cmdIn{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+#cmd-box input{width:100%;padding:18px 22px;background:transparent;border:none;border-bottom:1px solid var(--bd);color:var(--tx);font-size:15px;font-weight:500}
+#cmd-box input::placeholder{color:var(--tx3)}
+#cmd-list{max-height:440px;overflow-y:auto;padding:6px}
+.cmd-item{display:flex;align-items:center;gap:14px;padding:10px 16px;border-radius:8px;cursor:pointer;transition:.1s}
+.cmd-item:hover,.cmd-item.sel{background:rgba(91,141,239,.18)}
+.cmd-item .ci-ico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.cmd-item .ci-body{flex:1;min-width:0}
+.cmd-item .ci-name{font-size:13px;font-weight:500;color:var(--tx)}
+.cmd-item .ci-desc{font-size:11px;color:var(--tx3);margin-top:1px}
+.cmd-item .ci-key{font-size:10px;color:var(--tx3);font-family:var(--mono);padding:2px 6px;background:rgba(0,0,0,.3);border-radius:4px;border:1px solid var(--bd);flex-shrink:0}
+
+/* ── Notifications ── */
+#notifs{position:fixed;bottom:64px;right:16px;z-index:9200;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.notif{padding:12px 16px;background:rgba(15,17,30,.96);backdrop-filter:blur(20px);border:1px solid var(--bd3);border-left:3px solid var(--ac);border-radius:10px;font-size:12px;color:var(--tx);box-shadow:var(--shadow2);min-width:260px;max-width:340px;animation:notifIn .3s cubic-bezier(.2,0,.2,1);pointer-events:auto;display:flex;gap:10px;align-items:flex-start}
+.notif.ok{border-left-color:var(--ok)}
+.notif.wn{border-left-color:var(--wn)}
+.notif.er{border-left-color:var(--er)}
+.notif .n-ico{font-size:16px;flex-shrink:0;line-height:1.2}
+.notif .n-body{flex:1;min-width:0}
+.notif .n-title{font-weight:600;font-size:12px;margin-bottom:2px}
+.notif .n-msg{font-size:11.5px;color:var(--tx2);line-height:1.4}
+@keyframes notifIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+/* ── Context menu ── */
+#ctxmenu{position:fixed;z-index:9800;background:rgba(15,17,30,.98);backdrop-filter:blur(20px);border:1px solid var(--bd3);border-radius:8px;padding:4px;min-width:180px;box-shadow:var(--shadow);display:none}
+#ctxmenu.on{display:block}
+.ctx-item{padding:8px 12px;border-radius:5px;font-size:12px;color:var(--tx);cursor:pointer;display:flex;align-items:center;gap:10px;transition:.1s}
+.ctx-item:hover{background:rgba(91,141,239,.2)}
+.ctx-sep{height:1px;background:var(--bd);margin:4px 6px}
+
+/* ── Common app styles ── */
+.term{background:#000;color:#22d3ee;font-family:var(--mono);font-size:13px;padding:14px;height:100%;overflow-y:auto;white-space:pre-wrap;word-break:break-all;line-height:1.55;cursor:text}
+.term .prompt{color:#5b8def;font-weight:600}
+.term .err{color:#ef4444}
+.term .ok{color:#4ade80}
+.term .wn{color:#fbbf24}
+.term .input-line{display:flex;gap:6px;margin-top:2px}
+.term .input-line input{flex:1;background:transparent;border:none;color:#22d3ee;font-family:inherit;font-size:inherit;caret-color:#22d3ee}
+
+.editor{display:flex;height:100%}
+.editor .sidebar{width:180px;background:rgba(10,12,22,.7);border-right:1px solid var(--bd);overflow-y:auto;flex-shrink:0}
+.editor .sidebar .file{padding:8px 14px;font-size:12px;color:var(--tx2);cursor:pointer;transition:.1s;display:flex;align-items:center;gap:8px}
+.editor .sidebar .file:hover{background:rgba(91,141,239,.1);color:var(--tx)}
+.editor .sidebar .file.active{background:rgba(91,141,239,.18);color:var(--tx);border-left:2px solid var(--ac)}
+.editor .sidebar .file .dot{width:6px;height:6px;border-radius:50%;background:var(--tx3);flex-shrink:0}
+.editor .main{flex:1;display:flex;flex-direction:column;min-width:0}
+.editor .toolbar{height:34px;padding:0 10px;background:rgba(15,17,30,.7);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.editor .toolbar button{padding:4px 10px;background:rgba(91,141,239,.15);border:1px solid var(--bd);border-radius:5px;font-size:11px;color:var(--tx2);cursor:pointer}
+.editor .toolbar button:hover{background:rgba(91,141,239,.3);color:var(--tx)}
+.editor .toolbar .stat{margin-left:auto;font-size:10.5px;color:var(--tx3);font-family:var(--mono)}
+.editor textarea.code{flex:1;background:#000;color:#e8eaf2;font-family:var(--mono);font-size:13px;line-height:1.6;padding:14px;border:none;outline:none;resize:none;tab-size:4;white-space:pre;overflow-wrap:normal;overflow:auto}
+
+.notes{display:flex;height:100%}
+.notes .list{width:220px;background:rgba(10,12,22,.7);border-right:1px solid var(--bd);overflow-y:auto;flex-shrink:0}
+.notes .list .item{padding:12px 14px;font-size:12px;color:var(--tx2);cursor:pointer;border-bottom:1px solid var(--bd);transition:.1s}
+.notes .list .item:hover{background:rgba(91,141,239,.1);color:var(--tx)}
+.notes .list .item.active{background:rgba(91,141,239,.18);color:var(--tx)}
+.notes .list .item .nt{font-weight:600;font-size:12px;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notes .list .item .ns{font-size:10.5px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notes .edit{flex:1;display:flex;flex-direction:column;min-width:0}
+.notes .edit .title-row{padding:12px;border-bottom:1px solid var(--bd)}
+.notes .edit .title-row input{width:100%;background:transparent;border:none;color:var(--tx);font-size:16px;font-weight:600}
+.notes .edit textarea{flex:1;background:transparent;border:none;color:var(--tx);font-size:13px;line-height:1.7;padding:14px;font-family:inherit;resize:none;outline:none}
+.notes .preview{flex:1;padding:20px;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--tx2);border-left:1px solid var(--bd)}
+.notes .preview h1,.notes .preview h2,.notes .preview h3{color:var(--tx);margin:14px 0 8px}
+.notes .preview h1{font-size:20px}.notes .preview h2{font-size:16px}.notes .preview h3{font-size:14px}
+.notes .preview code{background:rgba(0,0,0,.4);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--ac2)}
+.notes .preview pre{background:rgba(0,0,0,.4);padding:12px;border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--ac2);margin:10px 0;overflow-x:auto}
+.notes .preview a{color:var(--ac2)}
+.notes .preview ul,.notes .preview ol{margin:8px 0 8px 20px}
+.notes .preview strong{color:var(--tx)}
+.notes .preview blockquote{border-left:3px solid var(--ac);padding-left:12px;color:var(--tx3);margin:10px 0}
+
+.files{display:flex;height:100%}
+.files .sidebar{width:180px;background:rgba(10,12,22,.7);border-right:1px solid var(--bd);overflow-y:auto;flex-shrink:0}
+.files .sidebar .nav{padding:8px 14px;font-size:12px;color:var(--tx2);cursor:pointer;display:flex;align-items:center;gap:8px}
+.files .sidebar .nav:hover{background:rgba(91,141,239,.1);color:var(--tx)}
+.files .sidebar .nav.active{background:rgba(91,141,239,.18);color:var(--tx)}
+.files .main{flex:1;display:flex;flex-direction:column;min-width:0}
+.files .path{padding:10px 14px;border-bottom:1px solid var(--bd);font-size:11.5px;color:var(--tx3);font-family:var(--mono)}
+.files .path b{color:var(--tx2);font-weight:600}
+.files .grid{flex:1;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;overflow-y:auto;align-content:flex-start}
+.files .grid .fi{padding:12px;border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:.12s;border:1px solid transparent}
+.files .grid .fi:hover{background:rgba(91,141,239,.1);border-color:var(--bd2)}
+.files .grid .fi.selected{background:rgba(91,141,239,.2);border-color:var(--ac)}
+.files .grid .fi .fi-ico{font-size:32px}
+.files .grid .fi .fi-nm{font-size:11px;color:var(--tx);text-align:center;word-break:break-all;line-height:1.3}
+
+.sheet{height:100%;display:flex;flex-direction:column}
+.sheet .toolbar{height:36px;padding:0 10px;background:rgba(15,17,30,.7);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.sheet .toolbar button{padding:5px 12px;background:rgba(91,141,239,.15);border:1px solid var(--bd);border-radius:5px;font-size:11px;color:var(--tx2);cursor:pointer}
+.sheet .toolbar button:hover{background:rgba(91,141,239,.3);color:var(--tx)}
+.sheet .toolbar .cellref{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--tx3);background:rgba(0,0,0,.3);padding:3px 10px;border-radius:4px;border:1px solid var(--bd)}
+.sheet .fx{height:32px;display:flex;align-items:center;padding:0 10px;background:rgba(10,12,22,.7);border-bottom:1px solid var(--bd);gap:8px;flex-shrink:0}
+.sheet .fx .lbl{font-family:var(--mono);font-size:11px;color:var(--tx3);font-weight:700}
+.sheet .fx input{flex:1;background:transparent;border:none;color:var(--tx);font-family:var(--mono);font-size:12px;padding:4px}
+.sheet .grid{flex:1;overflow:auto;background:rgba(10,12,22,.5);position:relative}
+.sheet table{border-collapse:collapse;font-size:12px;font-family:var(--mono);table-layout:fixed}
+.sheet th{background:rgba(28,30,48,.9);color:var(--tx3);font-weight:600;position:sticky;top:0;z-index:2;text-align:center;padding:4px 6px;border:1px solid var(--bd);font-size:11px;user-select:none;cursor:pointer}
+.sheet th.rowh{width:44px;left:0;z-index:3}
+.sheet td{border:1px solid var(--bd);padding:4px 8px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:90px;background:rgba(10,12,22,.4);cursor:cell;font-variant-numeric:tabular-nums;height:24px}
+.sheet td.rh{background:rgba(28,30,48,.9);text-align:center;color:var(--tx3);cursor:pointer;min-width:44px;font-size:11px;position:sticky;left:0;z-index:1}
+.sheet td.sel{background:rgba(91,141,239,.2);outline:2px solid var(--ac);outline-offset:-2px;z-index:2}
+.sheet td.num{text-align:right}
+
+.calc{display:flex;flex-direction:column;height:100%;background:rgba(10,12,22,.5)}
+.calc .display{padding:20px 22px 16px;background:rgba(0,0,0,.4);border-bottom:1px solid var(--bd);text-align:right;flex-shrink:0}
+.calc .display .hist{font-size:12px;color:var(--tx3);font-family:var(--mono);min-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.calc .display .cur{font-size:34px;font-weight:600;color:var(--tx);font-variant-numeric:tabular-nums;min-height:44px;letter-spacing:-.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.calc .pad{flex:1;padding:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;overflow-y:auto}
+.calc .k{padding:0;background:rgba(28,30,48,.8);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:17px;font-weight:500;cursor:pointer;transition:.1s;display:flex;align-items:center;justify-content:center;min-height:44px;font-variant-numeric:tabular-nums}
+.calc .k:hover{background:rgba(45,50,80,.9);border-color:var(--bd2)}
+.calc .k:active{transform:scale(.97)}
+.calc .k.op{background:rgba(91,141,239,.2);color:var(--ac2);font-weight:600}
+.calc .k.eq{background:linear-gradient(180deg,var(--ac),var(--ac3));color:#fff;font-weight:700}
+.calc .k.fn{font-size:13px;color:var(--vi)}
+.calc .k.sci{font-size:12px;color:var(--cy)}
+
+.paint{display:flex;flex-direction:column;height:100%}
+.paint .tools{height:44px;padding:0 10px;background:rgba(15,17,30,.7);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.paint .tools button{width:34px;height:34px;background:rgba(28,30,48,.8);border:1px solid var(--bd);border-radius:6px;color:var(--tx2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
+.paint .tools button:hover{background:rgba(45,50,80,.9);color:var(--tx)}
+.paint .tools button.on{background:rgba(91,141,239,.3);border-color:var(--ac);color:#fff}
+.paint .tools input[type=color]{width:34px;height:34px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;background:transparent}
+.paint .tools input[type=range]{width:100px;accent-color:var(--ac)}
+.paint .canvas-wrap{flex:1;overflow:auto;background:#1a1a1a;display:flex;align-items:center;justify-content:center;padding:20px;position:relative}
+.paint canvas{background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.5);cursor:crosshair;border-radius:4px}
+
+.music{display:flex;flex-direction:column;height:100%;background:rgba(10,12,22,.5);padding:20px;gap:16px}
+.music .section-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--tx3);font-weight:700;margin-bottom:6px}
+.music .keys{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.music .key{padding:18px 0;background:linear-gradient(180deg,#2a2e50,#161830);border:1px solid var(--bd2);border-radius:8px;color:var(--tx);font-size:14px;font-weight:600;cursor:pointer;transition:.1s;text-align:center;user-select:none}
+.music .key:hover{background:linear-gradient(180deg,#3a3e68,#1e2040)}
+.music .key:active,.music .key.on{background:linear-gradient(180deg,var(--ac),var(--ac3));border-color:var(--ac2);color:#fff;box-shadow:0 0 20px rgba(91,141,239,.4)}
+.music .knobs{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px}
+.music .knob-box{padding:14px;background:rgba(0,0,0,.3);border:1px solid var(--bd);border-radius:8px}
+.music .knob-box .kb-label{font-size:10.5px;color:var(--tx3);letter-spacing:1.4px;text-transform:uppercase;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between}
+.music .knob-box .kb-val{color:var(--ac2);font-family:var(--mono);text-transform:none;letter-spacing:0}
+.music .knob-box input[type=range]{width:100%;accent-color:var(--ac)}
+.music .seq{display:grid;grid-template-columns:repeat(16,1fr);gap:4px}
+.music .step{aspect-ratio:1;background:rgba(28,30,48,.8);border:1px solid var(--bd);border-radius:4px;cursor:pointer;transition:.1s}
+.music .step:hover{background:rgba(45,50,80,.9)}
+.music .step.on{background:var(--ac);border-color:var(--ac2);box-shadow:0 0 10px rgba(91,141,239,.5)}
+.music .step.playing{background:#fff;box-shadow:0 0 15px #fff}
+
+.sysmon{padding:16px;height:100%;overflow-y:auto}
+.sysmon .metric{padding:14px;background:rgba(15,17,30,.6);border:1px solid var(--bd);border-radius:8px;margin-bottom:12px}
+.sysmon .m-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.sysmon .m-name{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3);font-weight:700}
+.sysmon .m-val{font-size:15px;font-weight:700;color:var(--tx);font-family:var(--mono)}
+.sysmon .m-bar{height:6px;background:rgba(0,0,0,.4);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.sysmon .m-fill{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));transition:width .3s}
+.sysmon .m-sub{font-size:10.5px;color:var(--tx3);font-family:var(--mono)}
+
+.game{height:100%;background:rgba(10,12,22,.5);padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;overflow-y:auto}
+.game canvas{background:#000;border-radius:8px;box-shadow:0 0 0 1px var(--bd),0 0 40px rgba(91,141,239,.15)}
+.game .hud{display:flex;gap:20px;font-family:var(--mono);font-size:13px;color:var(--tx2)}
+.game .hud b{color:var(--ac2);font-weight:700}
+.game .hud button{padding:5px 14px;background:var(--ac);border:none;border-radius:5px;color:#fff;font-size:12px;cursor:pointer;font-weight:600}
+.game .hud button:hover{background:var(--ac2)}
+.game .msg{font-size:15px;color:var(--tx);font-weight:600;text-align:center}
+
+.calendar{padding:16px;height:100%;overflow-y:auto}
+.calendar .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.calendar .cal-title{font-size:18px;font-weight:600;color:var(--tx)}
+.calendar .cal-nav{display:flex;gap:6px}
+.calendar .cal-nav button{padding:6px 12px;background:rgba(28,30,48,.8);border:1px solid var(--bd);border-radius:5px;color:var(--tx2);cursor:pointer;font-size:12px}
+.calendar .cal-nav button:hover{background:rgba(45,50,80,.9);color:var(--tx)}
+.calendar .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.calendar .dow{padding:8px;text-align:center;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--tx3);font-weight:700}
+.calendar .day{padding:10px 0;text-align:center;font-size:13px;color:var(--tx2);background:rgba(15,17,30,.5);border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-variant-numeric:tabular-nums;min-height:44px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.calendar .day:hover{background:rgba(91,141,239,.15);color:var(--tx)}
+.calendar .day.today{background:rgba(91,141,239,.28);color:#fff;font-weight:700;border-color:var(--ac)}
+.calendar .day.other{opacity:.3}
+.calendar .day .ev{width:5px;height:5px;border-radius:50%;background:var(--pk)}
+</style>
+</head>
+<body>
+<!-- Boot -->
+<div id="boot">
+  <div class="boot-logo">NEXUS-OS</div>
+  <div class="boot-spinner"></div>
+  <div class="boot-msg" id="bootMsg">Initializing kernel…</div>
+</div>
+
+<!-- OS shell -->
+<div id="os">
+  <div id="desktop">
+    <div id="wallpaper"></div>
+    <div id="icons"></div>
+    <div id="selbox"></div>
+    <div id="startmenu">
+      <div class="sm-search"><input id="smSearch" placeholder="Search apps and files…" autocomplete="off"></div>
+      <div class="sm-body" id="smBody"></div>
+    </div>
+  </div>
+  <div id="taskbar">
+    <button class="start-btn" id="startBtn"><span class="logo"></span>START</button>
+    <div id="win-list"></div>
+    <div id="sys-tray">
+      <div class="tray-item" id="trayClock">--:--</div>
+      <div class="tray-item" id="trayDate">--/--</div>
+      <div class="tray-item" id="trayBattery">🔋 100%</div>
+      <div class="tray-item" id="trayNet">📶</div>
+      <div class="tray-item" id="trayMenu" title="Menu">≡</div>
+    </div>
+  </div>
+</div>
+
+<!-- Command palette -->
+<div id="cmd">
+  <div id="cmd-box">
+    <input id="cmdInput" placeholder="Type a command or app name…" autocomplete="off">
+    <div id="cmd-list"></div>
+  </div>
+</div>
+
+<!-- Context menu -->
+<div id="ctxmenu"></div>
+
+<!-- Notifications -->
+<div id="notifs"></div>
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════
+   NEXUS-OS · Kernel · Filesystem · Window Manager
+   ══════════════════════════════════════════════════════════════ */
+
+/* ───────── Utilities ───────── */
+var $=function(id){return document.getElementById(id)};
+var $$=function(s){return document.querySelectorAll(s)};
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c!=null){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function uid(p){return (p||'id')+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function ri(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function pad(n,l){return String(n).padStart(l||2,'0')}
+function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function now(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}
+
+/* ───────── FS: real virtual filesystem with localStorage persistence ───────── */
+var FS={
+  root:null,
+  key:'nexusos.fs.v1',
+  init:function(){
+    var saved=null;
+    try{saved=localStorage.getItem(this.key)}catch(e){}
+    if(saved){
+      try{this.root=JSON.parse(saved)}catch(e){this.root=null}
+    }
+    if(!this.root){
+      this.root={
+        name:'',type:'dir',children:{
+          home:{name:'home',type:'dir',children:{
+            user:{name:'user',type:'dir',children:{
+              Documents:{name:'Documents',type:'dir',children:{
+                'welcome.txt':{name:'welcome.txt',type:'file',content:'Welcome to NEXUS-OS!\n\nThis is a complete browser operating system.\n\nTry the terminal app and type "help" to explore.\n\nCreated: 2026'}
+              }},
+              Projects:{name:'Projects',type:'dir',children:{}}
+            }}
+          }},
+          etc:{name:'etc',type:'dir',children:{
+            'motd':{name:'motd',type:'file',content:'NEXUS-OS v1.0\n"Fortune favors the prepared mind."'}
+          }},
+          tmp:{name:'tmp',type:'dir',children:{}}
+        }
+      };
+      this.save();
+    }
+  },
+  save:function(){try{localStorage.setItem(this.key,JSON.stringify(this.root))}catch(e){}},
+  split:function(path){
+    return path.split('/').filter(function(x){return x&&x!=='.'});
+  },
+  resolve:function(path,cwd){
+    cwd=cwd||'/home/user';
+    if(!path)return cwd;
+    var parts;
+    if(path.charAt(0)==='/')parts=[];
+    else parts=this.split(cwd);
+    var seg=this.split(path);
+    for(var i=0;i<seg.length;i++){
+      if(seg[i]==='..')parts.pop();
+      else parts.push(seg[i]);
+    }
+    return '/'+parts.join('/');
+  },
+  get:function(path){
+    var parts=this.split(path);
+    var n=this.root;
+    for(var i=0;i<parts.length;i++){
+      if(!n.children||!n.children[parts[i]])return null;
+      n=n.children[parts[i]];
+    }
+    return n;
+  },
+  mkdir:function(path){
+    var parts=this.split(path);
+    var n=this.root;
+    for(var i=0;i<parts.length;i++){
+      if(!n.children)n.children={};
+      if(!n.children[parts[i]]){
+        n.children[parts[i]]={name:parts[i],type:'dir',children:{}};
+      }
+      n=n.children[parts[i]];
+    }
+    this.save();
+    return true;
+  },
+  write:function(path,content){
+    var parts=this.split(path);
+    var n=this.root;
+    for(var i=0;i<parts.length-1;i++){
+      if(!n.children[parts[i]]){
+        n.children[parts[i]]={name:parts[i],type:'dir',children:{}};
+      }
+      n=n.children[parts[i]];
+    }
+    var name=parts[parts.length-1];
+    n.children[name]={name:name,type:'file',content:content,modified:Date.now()};
+    this.save();
+    return true;
+  },
+  read:function(path){
+    var n=this.get(path);
+    if(!n)return null;
+    if(n.type!=='file')return null;
+    return n.content;
+  },
+  remove:function(path){
+    var parts=this.split(path);
+    if(!parts.length)return false;
+    var name=parts.pop();
+    var n=this.get('/'+parts.join('/'));
+    if(!n||!n.children||!n.children[name])return false;
+    delete n.children[name];
+    this.save();
+    return true;
+  },
+  list:function(path){
+    var n=this.get(path);
+    if(!n||n.type!=='dir')return null;
+    var out=[];
+    Object.keys(n.children).forEach(function(k){
+      out.push({name:k,type:n.children[k].type,size:n.children[k].type==='file'?(n.children[k].content||'').length:0});
+    });
+    return out;
+  }
+};
+
+/* ───────── Notifications ───────── */
+function notify(title,msg,kind){
+  kind=kind||'info';
+  var icons={info:'ℹ',ok:'✓',wn:'⚠',er:'✕'};
+  var n=el('div',{class:'notif '+(kind==='info'?'':kind)});
+  n.innerHTML='<div class="n-ico">'+(icons[kind]||'ℹ')+'</div><div class="n-body"><div class="n-title">'+esc(title)+'</div><div class="n-msg">'+esc(msg)+'</div></div>';
+  $('notifs').appendChild(n);
+  setTimeout(function(){n.style.opacity='0';n.style.transition='opacity .35s';setTimeout(function(){n.remove()},400)},3200);
+}
+
+/* ───────── Window Manager ───────── */
+var WM={
+  windows:{},
+  zIndex:100,
+  activeId:null,
+  init:function(){
+    /* Desktop selection box */
+    var desktop=$('desktop');
+    var sel=$('selbox');
+    var start=null;
+    desktop.addEventListener('mousedown',function(e){
+      if(e.target!==desktop&&!e.target.closest('#icons'))return;
+      if(e.target.closest('.window'))return;
+      start={x:e.clientX,y:e.clientY};
+      sel.style.display='block';
+      sel.style.left=e.clientX+'px';
+      sel.style.top=e.clientY+'px';
+      sel.style.width='0';
+      sel.style.height='0';
+      /* clear selection */
+      $$('.icon.selected').forEach(function(i){i.classList.remove('selected')});
+    });
+    document.addEventListener('mousemove',function(e){
+      if(!start)return;
+      var x=Math.min(start.x,e.clientX),y=Math.min(start.y,e.clientY);
+      var w=Math.abs(e.clientX-start.x),h=Math.abs(e.clientY-start.y);
+      sel.style.left=x+'px';sel.style.top=y+'px';sel.style.width=w+'px';sel.style.height=h+'px';
+      var rect=sel.getBoundingClientRect();
+      $$('.icon').forEach(function(ic){
+        var ir=ic.getBoundingClientRect();
+        var hit=!(ir.right<rect.left||ir.left>rect.right||ir.bottom<rect.top||ir.top>rect.bottom);
+        ic.classList.toggle('selected',hit);
+      });
+    });
+    document.addEventListener('mouseup',function(){
+      if(start){start=null;sel.style.display='none'}
+    });
+    /* Desktop right-click */
+    desktop.addEventListener('contextmenu',function(e){
+      if(e.target.closest('.window'))return;
+      e.preventDefault();
+      showCtxMenu(e.clientX,e.clientY,[
+        {icon:'📄',label:'New file',action:function(){
+          var name=prompt('File name:','untitled.txt');
+          if(!name)return;
+          FS.write('/home/user/'+name,'');
+          renderDesktopIcons();
+          notify('File created','/home/user/'+name,'ok');
+        }},
+        {icon:'📁',label:'New folder',action:function(){
+          var name=prompt('Folder name:','New folder');
+          if(!name)return;
+          FS.mkdir('/home/user/'+name);
+          renderDesktopIcons();
+          notify('Folder created','/home/user/'+name,'ok');
+        }},
+        {sep:true},
+        {icon:'🔄',label:'Refresh',action:function(){renderDesktopIcons();notify('Refreshed','','ok')}},
+        {icon:'🎨',label:'Change wallpaper',action:function(){
+          var colors=['#16203a','#1a1224','#0f2028','#281414','#0a1f1a'];
+          var c=colors[ri(0,colors.length-1)];
+          $('wallpaper').style.background='radial-gradient(ellipse at 30% 20%,'+c+' 0%,#05060c 60%,#000 100%)';
+          notify('Wallpaper','Changed','ok');
+        }},
+        {sep:true},
+        {icon:'⌘',label:'Command palette',action:function(){Cmd.open()}}
+      ]);
+    });
+  },
+  open:function(appId,opts){
+    opts=opts||{};
+    /* Reuse if singleton already open */
+    if(opts.singleton){
+      for(var k in this.windows){
+        if(this.windows[k].appId===appId){
+          this.restore(k);
+          this.focus(k);
+          return this.windows[k];
+        }
+      }
+    }
+    var app=APPS[appId];
+    if(!app)return null;
+    var id=uid('win');
+    var desktop=$('desktop');
+    var w=opts.width||app.defaultSize[0];
+    var h=opts.height||app.defaultSize[1];
+    var dw=desktop.clientWidth,dh=desktop.clientHeight;
+    /* Cascade open */
+    var count=Object.keys(this.windows).length;
+    var x=Math.min(80+count*26,dw-w-40);
+    var y=Math.min(40+count*22,dh-h-60);
+    if(x<20)x=20;if(y<20)y=20;
+    var win=el('div',{class:'window','data-id':id});
+    win.style.cssText='left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px';
+    var titlebar=el('div',{class:'win-title'});
+    titlebar.innerHTML='<span class="app-ico">'+app.icon+'</span><span class="title">'+esc(opts.title||app.name)+'</span><div class="win-controls"><div class="wc min" title="Minimize">−</div><div class="wc max" title="Maximize">□</div><div class="wc close" title="Close">✕</div></div>';
+    win.appendChild(titlebar);
+    var body=el('div',{class:'win-body'});
+    win.appendChild(body);
+    /* resize handles */
+    ['n','s','e','w','ne','nw','se','sw'].forEach(function(dir){
+      win.appendChild(el('div',{class:'rh rh-'+dir,'data-dir':dir}));
+    });
+    desktop.appendChild(win);
+    var wObj={
+      id:id,appId:appId,el:win,body:body,titlebar:titlebar,
+      state:{x:x,y:y,w:w,h:h,minimized:false,maximized:false,prev:null},
+      ctx:{},
+      cleanup:null
+    };
+    this.windows[id]=wObj;
+    /* attach handlers */
+    this.attachHandlers(wObj);
+    /* init app */
+    try{
+      wObj.cleanup=app.init(body,wObj)||null;
+    }catch(e){
+      body.innerHTML='<div style="padding:20px;color:#ef4444;font-family:monospace">App crashed: '+esc(e.message)+'</div>';
+    }
+    this.focus(id);
+    this.renderTaskbar();
+    return wObj;
+  },
+  attachHandlers:function(w){
+    var self=this;
+    /* Focus on click */
+    w.el.addEventListener('mousedown',function(e){
+      self.focus(w.id);
+    },true);
+    /* Titlebar controls */
+    w.titlebar.querySelector('.min').addEventListener('click',function(e){e.stopPropagation();self.minimize(w.id)});
+    w.titlebar.querySelector('.max').addEventListener('click',function(e){e.stopPropagation();self.maximize(w.id)});
+    w.titlebar.querySelector('.close').addEventListener('click',function(e){e.stopPropagation();self.close(w.id)});
+    w.titlebar.addEventListener('dblclick',function(e){if(e.target.closest('.wc'))return;self.maximize(w.id)});
+    /* Drag */
+    var drag=null;
+    w.titlebar.addEventListener('mousedown',function(e){
+      if(e.target.closest('.wc'))return;
+      if(w.state.maximized)return;
+      drag={x:e.clientX,y:e.clientY,ox:w.state.x,oy:w.state.y};
+      document.addEventListener('mousemove',onDrag);
+      document.addEventListener('mouseup',onDragEnd);
+      e.preventDefault();
+    });
+    function onDrag(e){
+      if(!drag)return;
+      var nx=drag.ox+(e.clientX-drag.x);
+      var ny=drag.oy+(e.clientY-drag.y);
+      nx=clamp(nx,0,$('desktop').clientWidth-w.state.w);
+      ny=clamp(ny,0,$('desktop').clientHeight-40);
+      w.state.x=nx;w.state.y=ny;
+      w.el.style.left=nx+'px';w.el.style.top=ny+'px';
+    }
+    function onDragEnd(){
+      drag=null;
+      document.removeEventListener('mousemove',onDrag);
+      document.removeEventListener('mouseup',onDragEnd);
+    }
+    /* Resize */
+    w.el.querySelectorAll('.rh').forEach(function(handle){
+      handle.addEventListener('mousedown',function(e){
+        e.stopPropagation();e.preventDefault();
+        var dir=handle.getAttribute('data-dir');
+        var start={x:e.clientX,y:e.clientY,x0:w.state.x,y0:w.state.y,w0:w.state.w,h0:w.state.h};
+        function rs(ev){
+          var dx=ev.clientX-start.x;
+          var dy=ev.clientY-start.y;
+          var nx=start.x0,ny=start.y0,nw=start.w0,nh=start.h0;
+          if(dir.indexOf('e')>=0)nw=Math.max(280,start.w0+dx);
+          if(dir.indexOf('s')>=0)nh=Math.max(180,start.h0+dy);
+          if(dir.indexOf('w')>=0){nw=Math.max(280,start.w0-dx);nx=start.x0+(start.w0-nw)}
+          if(dir.indexOf('n')>=0){nh=Math.max(180,start.h0-dy);ny=start.y0+(start.h0-nh)}
+          w.state.x=nx;w.state.y=ny;w.state.w=nw;w.state.h=nh;
+          w.el.style.left=nx+'px';w.el.style.top=ny+'px';
+          w.el.style.width=nw+'px';w.el.style.height=nh+'px';
+        }
+        function re(){
+          document.removeEventListener('mousemove',rs);
+          document.removeEventListener('mouseup',re);
+        }
+        document.addEventListener('mousemove',rs);
+        document.addEventListener('mouseup',re);
+      });
+    });
+  },
+  focus:function(id){
+    var w=this.windows[id];
+    if(!w)return;
+    this.zIndex++;
+    w.el.style.zIndex=this.zIndex;
+    Object.keys(this.windows).forEach(function(k){
+      self_windows_fix.call(this,k);
+    }.bind(this));
+    Object.keys(this.windows).forEach(function(k){
+      var ww=this.windows[k];
+      ww.el.classList.toggle('active',k===id);
+    }.bind(this));
+    this.activeId=id;
+    this.renderTaskbar();
+  },
+  minimize:function(id){
+    var w=this.windows[id];
+    if(!w)return;
+    w.state.minimized=true;
+    w.el.classList.add('minimized');
+    this.renderTaskbar();
+  },
+  restore:function(id){
+    var w=this.windows[id];
+    if(!w)return;
+    w.state.minimized=false;
+    w.el.classList.remove('minimized');
+    this.renderTaskbar();
+  },
+  maximize:function(id){
+    var w=this.windows[id];
+    if(!w)return;
+    if(w.state.maximized){
+      /* Restore */
+      var p=w.state.prev;
+      if(p){
+        w.state.x=p.x;w.state.y=p.y;w.state.w=p.w;w.state.h=p.h;
+      }
+      w.state.maximized=false;
+      w.el.classList.remove('maximized');
+      w.el.style.left=w.state.x+'px';w.el.style.top=w.state.y+'px';
+      w.el.style.width=w.state.w+'px';w.el.style.height=w.state.h+'px';
+    }else{
+      w.state.prev={x:w.state.x,y:w.state.y,w:w.state.w,h:w.state.h};
+      w.state.maximized=true;
+      w.el.classList.add('maximized');
+      w.el.style.left='0px';w.el.style.top='0px';
+      w.el.style.width='100%';w.el.style.height='100%';
+      w.state.x=0;w.state.y=0;
+    }
+  },
+  close:function(id){
+    var w=this.windows[id];
+    if(!w)return;
+    if(w.cleanup)try{w.cleanup()}catch(e){}
+    w.el.remove();
+    delete this.windows[id];
+    if(this.activeId===id)this.activeId=null;
+    this.renderTaskbar();
+  },
+  renderTaskbar:function(){
+    var list=$('win-list');
+    list.innerHTML='';
+    var self=this;
+    Object.keys(this.windows).forEach(function(id){
+      var w=self.windows[id];
+      var app=APPS[w.appId];
+      var item=el('div',{class:'tk-item'+(id===self.activeId?' active':'')});
+      item.innerHTML='<span class="ti-ico">'+app.icon+'</span><span class="ti-name">'+esc(w.titlebar.querySelector('.title').textContent)+'</span><span class="ti-close">✕</span>';
+      item.querySelector('.ti-close').addEventListener('click',function(e){
+        e.stopPropagation();
+        self.close(id);
+      });
+      item.addEventListener('click',function(){
+        if(w.state.minimized)self.restore(id);
+        self.focus(id);
+      });
+      list.appendChild(item);
+    });
+  }
+};
+function self_windows_fix(){/* noop helper */}
+
+/* ───────── Context menu ───────── */
+function showCtxMenu(x,y,items){
+  var menu=$('ctxmenu');
+  menu.innerHTML='';
+  items.forEach(function(it){
+    if(it.sep){
+      menu.appendChild(el('div',{class:'ctx-sep'}));
+    }else{
+      var item=el('div',{class:'ctx-item'});
+      item.innerHTML='<span style="width:18px;text-align:center">'+it.icon+'</span><span>'+esc(it.label)+'</span>';
+      item.addEventListener('click',function(){
+        menu.classList.remove('on');
+        it.action();
+      });
+      menu.appendChild(item);
+    }
+  });
+  menu.style.left=Math.min(x,window.innerWidth-200)+'px';
+  menu.style.top=Math.min(y,window.innerHeight-menu.offsetHeight-20)+'px';
+  menu.classList.add('on');
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#ctxmenu'))$('ctxmenu').classList.remove('on');
+});
+document.addEventListener('contextmenu',function(e){
+  if(e.target.closest('#ctxmenu'))e.preventDefault();
+});
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   NEXUS-OS · Applications
+   ══════════════════════════════════════════════════════════════ */
+
+var APPS={};
+
+/* ───────── Terminal ───────── */
+APPS.terminal={
+  name:'Terminal',icon:'⌨',defaultSize:[720,440],
+  init:function(body,win){
+    var cwd='/home/user';
+    var history=[];
+    var histIdx=-1;
+    var term=el('div',{class:'term'});
+    body.appendChild(term);
+    var out=[];
+    function print(text,cls){
+      out.push({text:text,cls:cls||''});
+      renderOut();
+    }
+    function renderOut(){
+      var html='';
+      out.slice(-300).forEach(function(line){
+        html+='<span class="'+line.cls+'">'+esc(line.text)+'</span>\n';
+      });
+      html+='<div class="input-line"><span class="prompt">user@nexus:'+cwd+'$</span><input id="termInput" autocomplete="off" spellcheck="false"></div>';
+      term.innerHTML=html;
+      var input=term.querySelector('#termInput');
+      input.focus();
+      input.addEventListener('keydown',onKey);
+      term.scrollTop=term.scrollHeight;
+    }
+    function onKey(e){
+      var input=e.target;
+      if(e.key==='Enter'){
+        var cmd=input.value;
+        history.push(cmd);histIdx=history.length;
+        print('user@nexus:'+cwd+'$ '+cmd);
+        if(cmd.trim())runCmd(cmd);
+        input.value='';
+        renderOut();
+      }else if(e.key==='ArrowUp'){
+        e.preventDefault();
+        if(histIdx>0){histIdx--;input.value=history[histIdx]||''}
+      }else if(e.key==='ArrowDown'){
+        e.preventDefault();
+        if(histIdx<history.length-1){histIdx++;input.value=history[histIdx]||''}
+        else{histIdx=history.length;input.value=''}
+      }else if(e.key==='Tab'){
+        e.preventDefault();
+        var parts=input.value.split(' ');
+        if(parts.length===1){
+          var cmds=Object.keys(CMDS).filter(function(c){return c.indexOf(parts[0])===0});
+          if(cmds.length===1)input.value=cmds[0]+' ';
+          else if(cmds.length>1)print(cmds.join('  '),'wn');
+        }
+      }
+    }
+    var CMDS={
+      help:function(){print('Available commands:');Object.keys(CMDS).sort().forEach(function(c){print('  '+c)});print('');print('Extras: use arrow keys for history, Tab for completion.')},
+      ls:function(args){
+        var p=FS.resolve(args[0]||'.',cwd);
+        var list=FS.list(p);
+        if(!list)return print('ls: '+p+': not a directory','err');
+        if(!list.length)return print('');
+        list.sort(function(a,b){return a.name.localeCompare(b.name)});
+        list.forEach(function(f){print((f.type==='dir'?'📁 ':'📄 ')+f.name+(f.type==='file'?'  ('+f.size+' bytes)':''))});
+      },
+      cd:function(args){
+        var p=FS.resolve(args[0]||'/home/user',cwd);
+        var n=FS.get(p);
+        if(!n||n.type!=='dir')return print('cd: '+p+': no such directory','err');
+        cwd=p;
+        win.titlebar.querySelector('.title').textContent='Terminal — '+cwd;
+      },
+      pwd:function(){print(cwd)},
+      cat:function(args){
+        if(!args[0])return print('cat: missing file','err');
+        var p=FS.resolve(args[0],cwd);
+        var c=FS.read(p);
+        if(c===null)return print('cat: '+p+': no such file','err');
+        print(c);
+      },
+      mkdir:function(args){
+        if(!args[0])return print('mkdir: missing name','err');
+        var p=FS.resolve(args[0],cwd);
+        FS.mkdir(p);
+        print('Created '+p,'ok');
+      },
+      touch:function(args){
+        if(!args[0])return print('touch: missing name','err');
+        var p=FS.resolve(args[0],cwd);
+        FS.write(p,'');
+        print('Created '+p,'ok');
+      },
+      write:function(args){
+        if(!args[0])return print('write: missing name','err');
+        var content=prompt('Content for '+args[0]+':','');
+        if(content===null)return;
+        var p=FS.resolve(args[0],cwd);
+        FS.write(p,content);
+        print('Wrote '+content.length+' bytes to '+p,'ok');
+      },
+      rm:function(args){
+        if(!args[0])return print('rm: missing name','err');
+        var p=FS.resolve(args[0],cwd);
+        if(FS.remove(p))print('Removed '+p,'ok');
+        else print('rm: '+p+': not found','err');
+      },
+      echo:function(args,raw){print(raw)},
+      clear:function(){out.length=0;print('')},
+      date:function(){print(new Date().toString())},
+      whoami:function(){print('user')},
+      uname:function(){print('NEXUS-OS 1.0 browser-x86_64')},
+      time:function(){print(now())},
+      calc:function(args){
+        try{
+          var r=eval(args.join(' '));
+          print(String(r),'ok');
+        }catch(e){print('calc: '+e.message,'err')}
+      },
+      open:function(args){
+        if(!args[0])return print('open: missing app','err');
+        if(APPS[args[0]]){
+          WM.open(args[0]);
+          print('Launched '+args[0],'ok');
+        }else{
+          print('open: '+args[0]+': unknown app. Try: '+Object.keys(APPS).join(', '),'err');
+        }
+      },
+      apps:function(){
+        print('Available apps:');
+        Object.keys(APPS).forEach(function(a){print('  '+a.padEnd(12)+' — '+APPS[a].name)});
+      },
+      uptime:function(){
+        var s=Math.floor((Date.now()-KERNEL.bootTime)/1000);
+        var h=Math.floor(s/3600);var m=Math.floor((s%3600)/60);var sec=s%60;
+        print('up '+h+'h '+m+'m '+sec+'s');
+      },
+      free:function(){
+        print('              total        used        free');
+        print('Memory:  '+(16)+' GB  '+(performance.memory?(performance.memory.usedJSHeapSize/1073741824).toFixed(2):'0.00')+' GB  '+(performance.memory?((performance.memory.jsHeapSizeLimit-performance.memory.usedJSHeapSize)/1073741824).toFixed(2):'0.00')+' GB');
+      },
+      who:function(){print('user    pts/0    '+new Date().toISOString().substring(0,19))},
+      fortune:function(){
+        var f=['The best way to predict the future is to invent it.','Simplicity is the ultimate sophistication.','Programs must be written for people to read.','Talk is cheap. Show me the code.','Premature optimization is the root of all evil.','Make it work, make it right, make it fast.'];
+        print(f[ri(0,f.length-1)],'wn');
+      },
+      'cowsay':function(args){
+        var msg=args.join(' ')||'Moo';
+        var len=msg.length;
+        print(' '+'_'.repeat(len+2));
+        print('< '+msg+' >');
+        print(' '+'-'.repeat(len+2));
+        print('        \\   ^__^');
+        print('         \\  (oo)\\_______');
+        print('            (__)\\       )\\/\\');
+        print('                ||----w |');
+        print('                ||     ||');
+      },
+      theme:function(args){
+        var themes={dark:'#5b8def',blue:'#3b82f6',green:'#10b981',purple:'#a855f7',orange:'#f97316'};
+        if(!args[0])return print('Themes: '+Object.keys(themes).join(', '));
+        if(!themes[args[0]])return print('Unknown theme: '+args[0],'err');
+        document.documentElement.style.setProperty('--ac',themes[args[0]]);
+        print('Theme set to '+args[0],'ok');
+      },
+      reboot:function(){if(confirm('Reboot NEXUS-OS?'))location.reload()},
+      shutdown:function(){
+        print('Shutting down…','wn');
+        setTimeout(function(){
+          document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#5a6080;font-family:monospace;font-size:14px;letter-spacing:4px">NEXUS-OS · SHUT DOWN</div>';
+        },500);
+      },
+      exit:function(){WM.close(win.id)}
+    };
+    function runCmd(cmd){
+      var parts=cmd.trim().split(/\s+/);
+      var name=parts[0].toLowerCase();
+      var args=parts.slice(1);
+      if(CMDS[name]){
+        try{CMDS[name](args,cmd.substring(name.length+1))}
+        catch(e){print(name+': '+e.message,'err')}
+      }else{
+        print("command not found: "+name+" — try 'help'",'err');
+      }
+    }
+    print('NEXUS-OS Terminal [Version 1.0]');
+    print('Type "help" for available commands.');
+    print('Type "apps" for available applications.');
+    print('');
+    renderOut();
+    /* click focus */
+    term.addEventListener('click',function(){var i=term.querySelector('#termInput');if(i)i.focus()});
+    return null;
+  }
+};
+
+/* ───────── Code Editor ───────── */
+APPS.editor={
+  name:'Code Editor',icon:'📝',defaultSize:[840,540],
+  init:function(body,win){
+    var files={
+      'main.js':'// NEXUS-OS Editor\n// Write JavaScript here\n\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet("World"));\n\n// Try editing, saving with Ctrl+S\n// Files are stored in the virtual filesystem\n',
+      'style.css':'/* Editor styles */\n:root {\n  --primary: #5b8def;\n  --bg: #05060c;\n}\n\nbody {\n  background: var(--bg);\n  color: #e8eaf2;\n  font-family: system-ui;\n}\n',
+      'index.html':'<!DOCTYPE html>\n<html>\n<head>\n  <title>Hello</title>\n  <link rel="stylesheet" href="style.css">\n</head>\n<body>\n  <h1>Hello, World!</h1>\n  <script src="main.js"><\/script>\n</body>\n</html>\n',
+      'README.md':'# My Project\n\nA project created with NEXUS-OS.\n\n## Features\n\n- Multi-file editing\n- Ctrl+S to save to virtual FS\n- Live status bar\n'
+    };
+    var current='main.js';
+    var editor=el('div',{class:'editor'});
+    var sidebar=el('div',{class:'sidebar'});
+    var main=el('div',{class:'main'});
+    var toolbar=el('div',{class:'toolbar'});
+    var btnNew=el('button',{text:'+ New file'});
+    var btnSave=el('button',{text:'💾 Save'});
+    var btnFormat=el('button',{text:'⌨ Format'});
+    var stat=el('div',{class:'stat'});
+    toolbar.appendChild(btnNew);toolbar.appendChild(btnSave);toolbar.appendChild(btnFormat);toolbar.appendChild(stat);
+    var ta=el('textarea',{class:'code',spellcheck:'false'});
+    ta.value=files[current];
+    main.appendChild(toolbar);main.appendChild(ta);
+    editor.appendChild(sidebar);editor.appendChild(main);
+    body.appendChild(editor);
+    function renderSidebar(){
+      sidebar.innerHTML='';
+      Object.keys(files).forEach(function(name){
+        var f=el('div',{class:'file'+(name===current?' active':'')});
+        f.innerHTML='<span class="dot"></span><span>'+esc(name)+'</span>';
+        f.addEventListener('click',function(){
+          files[current]=ta.value;
+          current=name;
+          ta.value=files[name];
+          updateStat();
+          renderSidebar();
+        });
+        sidebar.appendChild(f);
+      });
+    }
+    function updateStat(){
+      var lines=ta.value.split('\n').length;
+      var chars=ta.value.length;
+      stat.textContent=current+' · '+lines+' lines · '+chars+' chars';
+    }
+    ta.addEventListener('input',updateStat);
+    ta.addEventListener('keydown',function(e){
+      if(e.key==='Tab'){
+        e.preventDefault();
+        var s=ta.selectionStart;
+        ta.value=ta.value.substring(0,s)+'  '+ta.value.substring(ta.selectionEnd);
+        ta.selectionStart=ta.selectionEnd=s+2;
+      }
+      if((e.metaKey||e.ctrlKey)&&e.key==='s'){
+        e.preventDefault();save();
+      }
+    });
+    function save(){
+      files[current]=ta.value;
+      FS.write('/home/user/Projects/'+current,ta.value);
+      notify('Saved',current+' → /home/user/Projects/','ok');
+    }
+    btnSave.addEventListener('click',save);
+    btnNew.addEventListener('click',function(){
+      var name=prompt('File name:','untitled.js');
+      if(!name)return;
+      files[current]=ta.value;
+      files[name]='';
+      current=name;
+      ta.value='';
+      renderSidebar();
+      updateStat();
+    });
+    btnFormat.addEventListener('click',function(){
+      /* Simple JS formatting */
+      var v=ta.value;
+      var indent=0;
+      var out=[];
+      v.split('\n').forEach(function(line){
+        line=line.trim();
+        if(line.match(/^[}\])]/))indent=Math.max(0,indent-1);
+        out.push('  '.repeat(indent)+line);
+        if(line.match(/[{[(]$/)&&!line.match(/^\/\//))indent++;
+      });
+      ta.value=out.join('\n');
+      updateStat();
+      notify('Formatted','','ok');
+    });
+    renderSidebar();
+    updateStat();
+    return function(){files[current]=ta.value};
+  }
+};
+
+/* ───────── Notes ───────── */
+APPS.notes={
+  name:'Notes',icon:'📓',defaultSize:[780,520],
+  init:function(body,win){
+    var notes=JSON.parse(localStorage.getItem('nexusos.notes')||'null')||[
+      {id:uid('n'),title:'Welcome to NEXUS-OS',body:'# Welcome\n\nThis is the **Notes** app.\n\n- Write in **Markdown**\n- Preview renders live\n- Autosaves every change\n\nTry editing this note!\n\n```js\nconst hello = () => "world";\n```\n'}
+    ];
+    var current=notes[0].id;
+    var wrap=el('div',{class:'notes'});
+    var list=el('div',{class:'list'});
+    var edit=el('div',{class:'edit'});
+    var titleRow=el('div',{class:'title-row'});
+    var titleIn=el('input',{placeholder:'Title'});
+    titleRow.appendChild(titleIn);
+    var split=el('div',{style:'flex:1;display:flex;min-height:0'});
+    var ta=el('textarea',{placeholder:'Start writing in Markdown…'});
+    var prev=el('div',{class:'preview'});
+    split.appendChild(ta);split.appendChild(prev);
+    edit.appendChild(titleRow);edit.appendChild(split);
+    wrap.appendChild(list);wrap.appendChild(edit);
+    body.appendChild(wrap);
+    function save(){
+      localStorage.setItem('nexusos.notes',JSON.stringify(notes));
+    }
+    function renderList(){
+      list.innerHTML='';
+      notes.forEach(function(n){
+        var it=el('div',{class:'item'+(n.id===current?' active':'')});
+        it.innerHTML='<div class="nt">'+esc(n.title||'Untitled')+'</div><div class="ns">'+esc((n.body||'').substring(0,50).replace(/\n/g,' '))+'</div>';
+        it.addEventListener('click',function(){commit();current=n.id;loadNote();renderList()});
+        list.appendChild(it);
+      });
+      var add=el('div',{class:'item',style:'color:var(--ac2);font-weight:600'});
+      add.textContent='+ New note';
+      add.addEventListener('click',function(){
+        commit();
+        var n={id:uid('n'),title:'Untitled',body:'# New note\n'};
+        notes.unshift(n);current=n.id;loadNote();renderList();save();
+      });
+      list.appendChild(add);
+    }
+    function loadNote(){
+      var n=notes.find(function(x){return x.id===current});
+      if(!n)return;
+      titleIn.value=n.title;
+      ta.value=n.body;
+      renderPreview();
+    }
+    function commit(){
+      var n=notes.find(function(x){return x.id===current});
+      if(!n)return;
+      n.title=titleIn.value;
+      n.body=ta.value;
+      save();
+    }
+    function renderPreview(){
+      var md=ta.value;
+      var html=md
+        .replace(/^### (.*$)/gm,'<h3>$1</h3>')
+        .replace(/^## (.*$)/gm,'<h2>$1</h2>')
+        .replace(/^# (.*$)/gm,'<h1>$1</h1>')
+        .replace(/```([\s\S]*?)```/g,'<pre>$1</pre>')
+        .replace(/`([^`]+)`/g,'<code>$1</code>')
+        .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g,'<em>$1</em>')
+        .replace(/^> (.*)$/gm,'<blockquote>$1</blockquote>')
+        .replace(/^- (.*)$/gm,'<li>$1</li>')
+        .replace(/(<li>[\s\S]*?<\/li>)/g,function(m){return '<ul>'+m+'</ul>'})
+        .replace(/\n\n/g,'</p><p>')
+        .replace(/\n/g,'<br>');
+      prev.innerHTML='<p>'+html+'</p>';
+    }
+    titleIn.addEventListener('input',function(){commit();renderList()});
+    ta.addEventListener('input',function(){commit();renderPreview()});
+    loadNote();renderList();
+    return commit;
+  }
+};
+
+/* ───────── Files ───────── */
+APPS.files={
+  name:'Files',icon:'📁',defaultSize:[760,520],
+  init:function(body,win){
+    var cwd='/home/user';
+    var wrap=el('div',{class:'files'});
+    var sb=el('div',{class:'sidebar'});
+    var main=el('div',{class:'main'});
+    var path=el('div',{class:'path'});
+    var grid=el('div',{class:'grid'});
+    main.appendChild(path);main.appendChild(grid);
+    wrap.appendChild(sb);wrap.appendChild(main);
+    body.appendChild(wrap);
+    var places=[
+      {icon:'🏠',name:'Home',path:'/home/user'},
+      {icon:'📄',name:'Documents',path:'/home/user/Documents'},
+      {icon:'🛠',name:'Projects',path:'/home/user/Projects'},
+      {icon:'⚙',name:'etc',path:'/etc'},
+      {icon:'📦',name:'tmp',path:'/tmp'}
+    ];
+    places.forEach(function(p){
+      var n=el('div',{class:'nav'});
+      n.innerHTML='<span>'+p.icon+'</span><span>'+esc(p.name)+'</span>';
+      n.addEventListener('click',function(){cwd=p.path;render()});
+      sb.appendChild(n);
+    });
+    function render(){
+      path.innerHTML='📍 <b>'+esc(cwd)+'</b>';
+      grid.innerHTML='';
+      /* parent */
+      if(cwd!=='/'){
+        var par=el('div',{class:'fi'});
+        par.innerHTML='<div class="fi-ico">⬆</div><div class="fi-nm">..</div>';
+        par.addEventListener('dblclick',function(){
+          var parts=cwd.split('/').filter(Boolean);
+          parts.pop();
+          cwd='/'+parts.join('/')||'/';
+          render();
+        });
+        grid.appendChild(par);
+      }
+      var list=FS.list(cwd);
+      if(!list){grid.innerHTML='<div style="padding:20px;color:#5a6080">Directory not found</div>';return}
+      list.sort(function(a,b){
+        if(a.type!==b.type)return a.type==='dir'?-1:1;
+        return a.name.localeCompare(b.name);
+      });
+      list.forEach(function(f){
+        var fi=el('div',{class:'fi'});
+        fi.innerHTML='<div class="fi-ico">'+(f.type==='dir'?'📁':'📄')+'</div><div class="fi-nm">'+esc(f.name)+'</div>';
+        fi.addEventListener('click',function(e){
+          $$('.files .fi.selected').forEach(function(x){x.classList.remove('selected')});
+          fi.classList.add('selected');
+        });
+        fi.addEventListener('dblclick',function(){
+          if(f.type==='dir'){cwd=cwd.replace(/\/$/,'')+'/'+f.name;render()}
+          else{
+            var content=FS.read(cwd.replace(/\/$/,'')+'/'+f.name);
+            var w=WM.open('editor');
+            /* Populate editor */
+            setTimeout(function(){
+              var ta=w.body.querySelector('textarea');
+              if(ta){ta.value=content||''}
+            },50);
+          }
+        });
+        fi.addEventListener('contextmenu',function(e){
+          e.preventDefault();e.stopPropagation();
+          showCtxMenu(e.clientX,e.clientY,[
+            {icon:'📂',label:'Open',action:function(){fi.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))}},
+            {icon:'✏',label:'Rename',action:function(){
+              var nn=prompt('Rename to:',f.name);
+              if(!nn||nn===f.name)return;
+              var oldPath=cwd.replace(/\/$/,'')+'/'+f.name;
+              var newPath=cwd.replace(/\/$/,'')+'/'+nn;
+              var c=FS.read(oldPath);
+              if(c!==null){FS.write(newPath,c);FS.remove(oldPath)}
+              render();
+            }},
+            {sep:true},
+            {icon:'🗑',label:'Delete',action:function(){
+              if(!confirm('Delete '+f.name+'?'))return;
+              FS.remove(cwd.replace(/\/$/,'')+'/'+f.name);
+              render();
+            }}
+          ]);
+        });
+        grid.appendChild(fi);
+      });
+    }
+    render();
+    return null;
+  }
+};
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   NEXUS-OS · More applications
+   ══════════════════════════════════════════════════════════════ */
+
+/* ───────── Spreadsheet ───────── */
+APPS.sheet={
+  name:'Spreadsheet',icon:'▦',defaultSize:[900,560],
+  init:function(body,win){
+    var ROWS=40, COLS=12;
+    var data={};
+    var selected={r:0,c:0};
+    var wrap=el('div',{class:'sheet'});
+    var toolbar=el('div',{class:'toolbar'});
+    var cellRef=el('div',{class:'cellref',text:'A1'});
+    var btnClear=el('button',{text:'Clear cell'});
+    var btnHelp=el('button',{text:'Functions'});
+    toolbar.appendChild(btnClear);toolbar.appendChild(btnHelp);toolbar.appendChild(cellRef);
+    var fx=el('div',{class:'fx'});
+    var fxlbl=el('div',{class:'lbl',text:'fx'});
+    var fxin=el('input',{placeholder:'Type value or =formula'});
+    fx.appendChild(fxlbl);fx.appendChild(fxin);
+    var gridWrap=el('div',{class:'grid'});
+    wrap.appendChild(toolbar);wrap.appendChild(fx);wrap.appendChild(gridWrap);
+    body.appendChild(wrap);
+    function colName(i){
+      var s='';
+      while(i>=0){s=String.fromCharCode(65+i%26)+s;i=Math.floor(i/26)-1}
+      return s;
+    }
+    function cellKey(r,c){return colName(c)+(r+1)}
+    function evalFormula(formula){
+      if(formula==null||formula==='')return '';
+      var s=String(formula);
+      if(s.charAt(0)!=='=')return s;
+      var expr=s.substring(1);
+      try{
+        /* replace cell refs with values */
+        expr=expr.replace(/\b([A-Z]+)(\d+)\b/g,function(m,col,row){
+          var c=0;
+          for(var i=0;i<col.length;i++)c=c*26+col.charCodeAt(i)-64;
+          c=c-1;
+          var r=parseInt(row)-1;
+          var v=data[cellKey(r,c)];
+          if(v==null||v==='')return '0';
+          if(typeof v==='string'&&v.charAt(0)==='='){var er=evalFormula(v);return isNaN(Number(er))?'0':er}
+          return isNaN(Number(v))?'0':v;
+        });
+        /* basic functions */
+        expr=expr.replace(/\bSUM\(([^)]+)\)/g,function(m,args){
+          var parts=args.split(',');
+          var sum=0;
+          parts.forEach(function(p){
+            p=p.trim();
+            if(p.indexOf(':')>=0){
+              var rng=p.split(':');
+              var a=parseRef(rng[0]),b=parseRef(rng[1]);
+              for(var r=a.r;r<=b.r;r++)for(var c=a.c;c<=b.c;c++){
+                var v=data[cellKey(r,c)];var n=Number(v);if(!isNaN(n))sum+=n;
+              }
+            }else{
+              var n=Number(p);if(!isNaN(n))sum+=n;
+            }
+          });
+          return String(sum);
+        });
+        expr=expr.replace(/\bAVG\(([^)]+)\)/g,function(m,args){
+          var parts=args.split(',');var sum=0,count=0;
+          parts.forEach(function(p){
+            p=p.trim();
+            if(p.indexOf(':')>=0){
+              var rng=p.split(':');
+              var a=parseRef(rng[0]),b=parseRef(rng[1]);
+              for(var r=a.r;r<=b.r;r++)for(var c=a.c;c<=b.c;c++){
+                var v=data[cellKey(r,c)];var n=Number(v);if(!isNaN(n)&&v!==''){sum+=n;count++}
+              }
+            }else{var n=Number(p);if(!isNaN(n)){sum+=n;count++}}
+          });
+          return count?String(sum/count):'0';
+        });
+        expr=expr.replace(/\bMIN\(([^)]+)\)/g,function(m,args){
+          var nums=[];
+          args.split(',').forEach(function(p){var n=Number(p.trim());if(!isNaN(n))nums.push(n)});
+          return nums.length?String(Math.min.apply(null,nums)):'0';
+        });
+        expr=expr.replace(/\bMAX\(([^)]+)\)/g,function(m,args){
+          var nums=[];
+          args.split(',').forEach(function(p){var n=Number(p.trim());if(!isNaN(n))nums.push(n)});
+          return nums.length?String(Math.max.apply(null,nums)):'0';
+        });
+        expr=expr.replace(/\bCOUNT\(([^)]+)\)/g,function(m,args){
+          var c=0;
+          args.split(',').forEach(function(p){
+            p=p.trim();
+            if(p.indexOf(':')>=0){
+              var rng=p.split(':');var a=parseRef(rng[0]),b=parseRef(rng[1]);
+              for(var r=a.r;r<=b.r;r++)for(var cc=a.c;cc<=b.c;cc++){
+                var v=data[cellKey(r,cc)];if(v!=null&&v!=='')c++;
+              }
+            }else if(p!=='')c++;
+          });
+          return String(c);
+        });
+        expr=expr.replace(/\bSQRT\(([^)]+)\)/g,function(m,a){return String(Math.sqrt(Number(a)))});
+        expr=expr.replace(/\bABS\(([^)]+)\)/g,function(m,a){return String(Math.abs(Number(a)))});
+        expr=expr.replace(/\bPI\(\)/g,'3.141592653589793');
+        var result=Function('"use strict";return ('+expr+')')();
+        return String(result);
+      }catch(e){return '#ERR'}
+    }
+    function parseRef(ref){
+      var m=ref.match(/^([A-Z]+)(\d+)$/);
+      if(!m)return {r:0,c:0};
+      var c=0;
+      for(var i=0;i<m[1].length;i++)c=c*26+m[1].charCodeAt(i)-64;
+      return {r:parseInt(m[2])-1,c:c-1};
+    }
+    function renderGrid(){
+      var table=el('table');
+      var thead=el('thead');
+      var htr=el('tr');
+      htr.appendChild(el('th',{class:'rowh'}));
+      for(var c=0;c<COLS;c++)htr.appendChild(el('th',{text:colName(c)}));
+      thead.appendChild(htr);table.appendChild(thead);
+      var tbody=el('tbody');
+      for(var r=0;r<ROWS;r++){
+        var tr=el('tr');
+        tr.appendChild(el('td',{class:'rh',text:String(r+1)}));
+        for(var c2=0;c2<COLS;c2++){
+          var key=cellKey(r,c2);
+          var raw=data[key]||'';
+          var val=evalFormula(raw);
+          var td=el('td');
+          td.textContent=val;
+          if(!isNaN(Number(val))&&val!=='')td.classList.add('num');
+          td.setAttribute('data-r',r);
+          td.setAttribute('data-c',c2);
+          if(r===selected.r&&c2===selected.c)td.classList.add('sel');
+          td.addEventListener('click',function(r,c){
+            return function(){selectCell(r,c)}
+          }(r,c2));
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      gridWrap.innerHTML='';
+      gridWrap.appendChild(table);
+    }
+    function selectCell(r,c){
+      selected={r:r,c:c};
+      var key=cellKey(r,c);
+      cellRef.textContent=key;
+      fxin.value=data[key]||'';
+      $$('.sheet td.sel').forEach(function(t){t.classList.remove('sel')});
+      var td=gridWrap.querySelector('td[data-r="'+r+'"][data-c="'+c+'"]');
+      if(td)td.classList.add('sel');
+    }
+    fxin.addEventListener('input',function(){
+      var key=cellKey(selected.r,selected.c);
+      data[key]=fxin.value;
+      var td=gridWrap.querySelector('td[data-r="'+selected.r+'"][data-c="'+selected.c+'"]');
+      if(td){
+        var val=evalFormula(fxin.value);
+        td.textContent=val;
+        td.classList.toggle('num',!isNaN(Number(val))&&val!=='');
+      }
+      /* re-render all to update refs */
+      setTimeout(function(){renderGrid();selectCell(selected.r,selected.c)},0);
+    });
+    fxin.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){selectCell(selected.r+1,selected.c);gridWrap.querySelector('table').focus()}
+    });
+    btnClear.addEventListener('click',function(){fxin.value='';fxin.dispatchEvent(new Event('input'))});
+    btnHelp.addEventListener('click',function(){
+      alert('Functions:\n\n=SUM(A1:A10)\n=AVG(A1:A10)\n=MIN(A1,B2)\n=MAX(A1,B2)\n=COUNT(A1:A10)\n=SQRT(A1)\n=ABS(A1)\n=PI()\n\nArithmetic: + - * / %\nCell refs: A1, B5, etc.');
+    });
+    renderGrid();
+    selectCell(0,0);
+    /* keyboard nav */
+    gridWrap.addEventListener('keydown',function(e){
+      if(e.target.tagName!=='TD')return;
+      if(e.key==='ArrowRight'){e.preventDefault();selectCell(selected.r,Math.min(COLS-1,selected.c+1))}
+      if(e.key==='ArrowLeft'){e.preventDefault();selectCell(selected.r,Math.max(0,selected.c-1))}
+      if(e.key==='ArrowDown'){e.preventDefault();selectCell(Math.min(ROWS-1,selected.r+1),selected.c)}
+      if(e.key==='ArrowUp'){e.preventDefault();selectCell(Math.max(0,selected.r-1),selected.c)}
+    });
+    gridWrap.setAttribute('tabindex','0');
+    return null;
+  }
+};
+
+/* ───────── Calculator ───────── */
+APPS.calc={
+  name:'Calculator',icon:'🔢',defaultSize:[340,540],
+  init:function(body,win){
+    var display='', history='';
+    var wrap=el('div',{class:'calc'});
+    var disp=el('div',{class:'display'});
+    var histEl=el('div',{class:'hist',text:''});
+    var curEl=el('div',{class:'cur',text:'0'});
+    disp.appendChild(histEl);disp.appendChild(curEl);
+    var pad=el('div',{class:'pad'});
+    var layout=[
+      {k:'C',cls:'fn'},{k:'(',cls:'fn'},{k:')',cls:'fn'},{k:'÷',cls:'op'},
+      {k:'√',cls:'sci'},{k:'x²',cls:'sci'},{k:'π',cls:'sci'},{k:'×',cls:'op'},
+      {k:'7'},{k:'8'},{k:'9'},{k:'−',cls:'op'},
+      {k:'4'},{k:'5'},{k:'6'},{k:'+',cls:'op'},
+      {k:'1'},{k:'2'},{k:'3'},{k:'=',cls:'eq'},
+      {k:'0'},{k:'.'},{k:'⌫',cls:'fn'},{k:'%',cls:'op'}
+    ];
+    layout.forEach(function(b){
+      var btn=el('button',{class:'k '+(b.cls||''),text:b.k});
+      btn.addEventListener('click',function(){onKey(b.k)});
+      pad.appendChild(btn);
+    });
+    wrap.appendChild(disp);wrap.appendChild(pad);
+    body.appendChild(wrap);
+    function updateDisplay(){
+      curEl.textContent=display||'0';
+      histEl.textContent=history;
+    }
+    function onKey(k){
+      if(k==='C'){display='';history=''}
+      else if(k==='⌫'){display=display.slice(0,-1)}
+      else if(k==='='){
+        try{
+          var expr=display.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-').replace(/π/g,'('+Math.PI+')').replace(/√/g,'Math.sqrt');
+          var r=Function('"use strict";return ('+expr+')')();
+          history=display+' =';
+          display=String(r);
+        }catch(e){display='Error'}
+      }
+      else if(k==='x²'){try{display=String(Math.pow(eval(display.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-')),2))}catch(e){display='Error'}}
+      else if(k==='√'){display+='√('}
+      else if(k==='π'){display+='π'}
+      else if(k==='%'){display+='%'}
+      else display+=k;
+      updateDisplay();
+    }
+    /* physical keyboard */
+    function onDocKey(e){
+      if(!win.el.classList.contains('active'))return;
+      if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+      var k=e.key;
+      if(k==='Enter'||k==='='){onKey('=');e.preventDefault()}
+      else if(k==='Escape'){onKey('C');e.preventDefault()}
+      else if(k==='Backspace'){onKey('⌫');e.preventDefault()}
+      else if('0123456789.+()-*/'.indexOf(k)>=0)onKey(k==='*'?'×':k==='/'?'÷':k);
+    }
+    document.addEventListener('keydown',onDocKey);
+    updateDisplay();
+    return function(){document.removeEventListener('keydown',onDocKey)};
+  }
+};
+
+/* ───────── Paint ───────── */
+APPS.paint={
+  name:'Paint',icon:'🎨',defaultSize:[800,600],
+  init:function(body,win){
+    var wrap=el('div',{class:'paint'});
+    var tools=el('div',{class:'tools'});
+    var state={tool:'brush',color:'#5b8def',size:4};
+    var toolList=[
+      {k:'brush',icon:'🖌'},{k:'eraser',icon:'◻'},{k:'line',icon:'╱'},
+      {k:'rect',icon:'▭'},{k:'circle',icon:'◯'},{k:'fill',icon:'⬛'},
+      {k:'spray',icon:'✺'}
+    ];
+    var toolBtns={};
+    toolList.forEach(function(t){
+      var b=el('button',{text:t.icon,title:t.k});
+      b.addEventListener('click',function(){
+        state.tool=t.k;
+        Object.keys(toolBtns).forEach(function(k){toolBtns[k].classList.toggle('on',k===t.k)});
+      });
+      toolBtns[t.k]=b;
+      tools.appendChild(b);
+    });
+    toolBtns.brush.classList.add('on');
+    var colorIn=el('input',{type:'color',value:'#5b8def'});
+    colorIn.addEventListener('input',function(){state.color=colorIn.value});
+    tools.appendChild(colorIn);
+    var sizeIn=el('input',{type:'range',min:1,max:40,value:4});
+    sizeIn.addEventListener('input',function(){state.size=parseInt(sizeIn.value)});
+    tools.appendChild(sizeIn);
+    var btnClear=el('button',{text:'🗑',title:'Clear'});
+    tools.appendChild(btnClear);
+    var btnSave=el('button',{text:'💾',title:'Save PNG'});
+    tools.appendChild(btnSave);
+    var cw=el('div',{class:'canvas-wrap'});
+    var canvas=el('canvas',{width:800,height:500});
+    cw.appendChild(canvas);
+    wrap.appendChild(tools);wrap.appendChild(cw);
+    body.appendChild(wrap);
+    var ctx=canvas.getContext('2d');
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle=state.color;
+    ctx.lineWidth=state.size;
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    var drawing=false;
+    var start=null;
+    var snapshot=null;
+    function getPos(e){
+      var r=canvas.getBoundingClientRect();
+      var scaleX=canvas.width/r.width;
+      var scaleY=canvas.height/r.height;
+      return {x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleY};
+    }
+    canvas.addEventListener('mousedown',function(e){
+      drawing=true;
+      start=getPos(e);
+      snapshot=ctx.getImageData(0,0,canvas.width,canvas.height);
+      ctx.strokeStyle=state.tool==='eraser'?'#fff':state.color;
+      ctx.lineWidth=state.size;
+      if(state.tool==='brush'||state.tool==='eraser'){
+        ctx.beginPath();ctx.moveTo(start.x,start.y);
+      }
+    });
+    canvas.addEventListener('mousemove',function(e){
+      if(!drawing)return;
+      var p=getPos(e);
+      if(state.tool==='brush'||state.tool==='eraser'){
+        ctx.lineTo(p.x,p.y);ctx.stroke();
+      }else if(state.tool==='spray'){
+        for(var i=0;i<15;i++){
+          var a=Math.random()*Math.PI*2;
+          var r=Math.random()*state.size*2;
+          ctx.fillStyle=state.color;
+          ctx.fillRect(p.x+Math.cos(a)*r,p.y+Math.sin(a)*r,1,1);
+        }
+      }else{
+        ctx.putImageData(snapshot,0,0);
+        ctx.strokeStyle=state.color;
+        ctx.lineWidth=state.size;
+        ctx.beginPath();
+        if(state.tool==='line'){
+          ctx.moveTo(start.x,start.y);ctx.lineTo(p.x,p.y);
+        }else if(state.tool==='rect'){
+          ctx.rect(start.x,start.y,p.x-start.x,p.y-start.y);
+        }else if(state.tool==='circle'){
+          var rx=Math.abs(p.x-start.x);
+          var ry=Math.abs(p.y-start.y);
+          ctx.ellipse((start.x+p.x)/2,(start.y+p.y)/2,rx/2,ry/2,0,0,Math.PI*2);
+        }
+        ctx.stroke();
+      }
+    });
+    canvas.addEventListener('mouseup',function(e){
+      if(!drawing)return;
+      var p=getPos(e);
+      if(state.tool==='fill'){
+        floodFill(Math.floor(p.x),Math.floor(p.y),state.color);
+      }
+      drawing=false;
+    });
+    canvas.addEventListener('mouseleave',function(){drawing=false});
+    function floodFill(x,y,fillColor){
+      var img=ctx.getImageData(0,0,canvas.width,canvas.height);
+      var data=img.data;
+      var target=hexToRgb(fillColor);
+      var startIdx=(y*canvas.width+x)*4;
+      var sr=data[startIdx],sg=data[startIdx+1],sb=data[startIdx+2];
+      if(Math.abs(sr-target.r)<3&&Math.abs(sg-target.g)<3&&Math.abs(sb-target.b)<3)return;
+      var stack=[[x,y]];
+      var visited={};
+      while(stack.length){
+        var pt=stack.pop();
+        var px=pt[0],py=pt[1];
+        if(px<0||px>=canvas.width||py<0||py>=canvas.height)continue;
+        var key=px+','+py;
+        if(visited[key])continue;
+        visited[key]=1;
+        var i=(py*canvas.width+px)*4;
+        if(Math.abs(data[i]-sr)<20&&Math.abs(data[i+1]-sg)<20&&Math.abs(data[i+2]-sb)<20){
+          data[i]=target.r;data[i+1]=target.g;data[i+2]=target.b;data[i+3]=255;
+          stack.push([px+1,py],[px-1,py],[px,py+1],[px,py-1]);
+        }
+      }
+      ctx.putImageData(img,0,0);
+    }
+    function hexToRgb(h){
+      h=h.replace('#','');
+      return {r:parseInt(h.substr(0,2),16),g:parseInt(h.substr(2,2),16),b:parseInt(h.substr(4,2),16)};
+    }
+    btnClear.addEventListener('click',function(){
+      if(!confirm('Clear canvas?'))return;
+      ctx.fillStyle='#fff';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+    });
+    btnSave.addEventListener('click',function(){
+      var a=document.createElement('a');
+      a.href=canvas.toDataURL('image/png');
+      a.download='nexusos-paint-'+Date.now()+'.png';
+      a.click();
+      notify('Saved','PNG downloaded','ok');
+    });
+    return null;
+  }
+};
+
+/* ───────── Music / Synth ───────── */
+APPS.music={
+  name:'Music',icon:'🎵',defaultSize:[640,540],
+  init:function(body,win){
+    var wrap=el('div',{class:'music'});
+    var AC=null;
+    function ensureAC(){
+      if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)()}
+      return AC;
+    }
+    var settings={wave:'sawtooth',attack:0.01,release:0.5,filter:2000,volume:0.3};
+    /* Piano keys */
+    wrap.appendChild(el('div',{class:'section-title',text:'Keyboard'}));
+    var keys=el('div',{class:'keys'});
+    var notes=['C','D','E','F','G','A','B','C'];
+    var freqs=[261.63,293.66,329.63,349.23,392.00,440.00,493.88,523.25];
+    notes.forEach(function(n,i){
+      var k=el('div',{class:'key',text:n});
+      k.addEventListener('mousedown',function(){playNote(freqs[i]);k.classList.add('on')});
+      k.addEventListener('mouseup',function(){k.classList.remove('on')});
+      k.addEventListener('mouseleave',function(){k.classList.remove('on')});
+      keys.appendChild(k);
+    });
+    wrap.appendChild(keys);
+    /* Controls */
+    wrap.appendChild(el('div',{class:'section-title',text:'Oscillator'}));
+    var knobs=el('div',{class:'knobs'});
+    function addKnob(label,min,max,step,val,onChange){
+      var box=el('div',{class:'knob-box'});
+      var lbl=el('div',{class:'kb-label'});
+      lbl.innerHTML='<span>'+label+'</span><span class="kb-val" id="v_'+label.replace(/ /g,'_')+'">'+val+'</span>';
+      var inp=el('input',{type:'range',min:min,max:max,step:step,value:val});
+      inp.addEventListener('input',function(){
+        lbl.querySelector('.kb-val').textContent=inp.value;
+        onChange(parseFloat(inp.value));
+      });
+      box.appendChild(lbl);box.appendChild(inp);
+      return box;
+    }
+    knobs.appendChild(addKnob('ATTACK',0.001,1,0.001,settings.attack,function(v){settings.attack=v}));
+    knobs.appendChild(addKnob('RELEASE',0.05,3,0.05,settings.release,function(v){settings.release=v}));
+    knobs.appendChild(addKnob('FILTER Hz',200,8000,50,settings.filter,function(v){settings.filter=v}));
+    knobs.appendChild(addKnob('VOLUME',0,1,0.01,settings.volume,function(v){settings.volume=v}));
+    wrap.appendChild(knobs);
+    /* Wave select */
+    var waveBox=el('div',{class:'knob-box'});
+    waveBox.innerHTML='<div class="kb-label"><span>WAVE</span><span class="kb-val">'+settings.wave+'</span></div>';
+    var waveSel=el('select',{style:'width:100%;background:#0a0c16;border:1px solid var(--bd);border-radius:5px;padding:6px;color:#e8eaf2;font-size:12px'});
+    ['sawtooth','square','sine','triangle'].forEach(function(w){
+      var o=el('option',{value:w,text:w});
+      if(w===settings.wave)o.selected=true;
+      waveSel.appendChild(o);
+    });
+    waveSel.addEventListener('change',function(){settings.wave=waveSel.value;waveBox.querySelector('.kb-val').textContent=waveSel.value});
+    waveBox.appendChild(waveSel);
+    wrap.appendChild(waveBox);
+    /* Sequencer */
+    wrap.appendChild(el('div',{class:'section-title',text:'Step Sequencer'}));
+    var seq=el('div',{class:'seq'});
+    var steps=[];
+    for(var s=0;s<16;s++){
+      var st=el('div',{class:'step','data-i':s});
+      st.addEventListener('click',function(i){return function(){steps[i]=!steps[i];st.classList.toggle('on',steps[i])}}(s));
+      steps.push(false);
+      seq.appendChild(st);
+    }
+    wrap.appendChild(seq);
+    var seqRunning=false;
+    var seqIdx=0;
+    var seqTimer=null;
+    var seqBtn=el('button',{text:'▶ Play sequence',style:'padding:8px 16px;background:var(--ac);color:#fff;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;margin-top:8px'});
+    seqBtn.addEventListener('click',function(){
+      seqRunning=!seqRunning;
+      seqBtn.textContent=seqRunning?'⏸ Stop sequence':'▶ Play sequence';
+      if(seqRunning){
+        seqIdx=0;
+        seqTimer=setInterval(function(){
+          var all=seq.querySelectorAll('.step');
+          all.forEach(function(x){x.classList.remove('playing')});
+          all[seqIdx].classList.add('playing');
+          if(steps[seqIdx])playNote(freqs[seqIdx%8],0.2);
+          seqIdx=(seqIdx+1)%16;
+        },200);
+      }else{
+        clearInterval(seqTimer);
+        seq.querySelectorAll('.step').forEach(function(x){x.classList.remove('playing')});
+      }
+    });
+    wrap.appendChild(seqBtn);
+    function playNote(freq,dur){
+      var ac=ensureAC();
+      var osc=ac.createOscillator();
+      var g=ac.createGain();
+      var filt=ac.createBiquadFilter();
+      filt.type='lowpass';filt.frequency.value=settings.filter;
+      osc.type=settings.wave;
+      osc.frequency.value=freq;
+      var t=ac.currentTime;
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(settings.volume,t+settings.attack);
+      g.gain.exponentialRampToValueAtTime(0.001,t+settings.attack+(dur||settings.release));
+      osc.connect(filt);filt.connect(g);g.connect(ac.destination);
+      osc.start(t);osc.stop(t+settings.attack+(dur||settings.release)+0.1);
+    }
+    /* Keyboard */
+    var keyMap={a:0,s:1,d:2,f:3,g:4,h:5,j:6,k:7};
+    function onDocKey(e){
+      if(!win.el.classList.contains('active'))return;
+      if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+      var i=keyMap[e.key.toLowerCase()];
+      if(i!=null){
+        e.preventDefault();
+        playNote(freqs[i]);
+        var ks=keys.querySelectorAll('.key');
+        ks[i].classList.add('on');
+        setTimeout(function(){ks[i].classList.remove('on')},150);
+      }
+    }
+    document.addEventListener('keydown',onDocKey);
+    return function(){
+      document.removeEventListener('keydown',onDocKey);
+      if(seqTimer)clearInterval(seqTimer);
+      if(AC)try{AC.close()}catch(e){}
+    };
+  }
+};
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   NEXUS-OS · System apps · Games · Command Palette · Boot
+   ══════════════════════════════════════════════════════════════ */
+
+/* ───────── System Monitor ───────── */
+APPS.sysmon={
+  name:'System Monitor',icon:'📊',defaultSize:[520,600],
+  init:function(body,win){
+    var wrap=el('div',{class:'sysmon'});
+    body.appendChild(wrap);
+    var hist={cpu:[],mem:[]};
+    function gauge(name,val,sub){
+      var m=el('div',{class:'metric'});
+      m.innerHTML='<div class="m-head"><span class="m-name">'+name+'</span><span class="m-val">'+val+'</span></div><div class="m-bar"><div class="m-fill" style="width:'+parseFloat(val)+'%"></div></div><div class="m-sub">'+sub+'</div>';
+      return m;
+    }
+    function update(){
+      wrap.innerHTML='';
+      var fps=KERNEL.fps;
+      var mem=performance.memory;
+      var memUsed=mem?mem.usedJSHeapSize/1048576:Math.random()*400+200;
+      var memMax=mem?mem.jsHeapSizeLimit/1048576:2048;
+      var memPct=(memUsed/memMax*100);
+      var cpuPct=clamp(30+Math.random()*40,5,100);
+      hist.cpu.push(cpuPct);if(hist.cpu.length>40)hist.cpu.shift();
+      hist.mem.push(memPct);if(hist.mem.length>40)hist.mem.shift();
+      wrap.appendChild(gauge('CPU',cpuPct.toFixed(0)+'%','Real: not measurable in browser · sim'));
+      wrap.appendChild(gauge('MEMORY',memPct.toFixed(1)+'%',memUsed.toFixed(1)+' / '+memMax.toFixed(0)+' MB'));
+      wrap.appendChild(gauge('FPS',String(fps),'60 = smooth'));
+      /* Windows */
+      var winCount=Object.keys(WM.windows).length;
+      wrap.appendChild(gauge('PROCESSES',String(winCount)+' running','Open windows'));
+      /* Storage */
+      var used=0;
+      try{for(var k in localStorage){if(localStorage.hasOwnProperty(k))used+=(localStorage[k]||'').length}}catch(e){}
+      var storagePct=Math.min(100,used/1024/1024*100);
+      wrap.appendChild(gauge('STORAGE',storagePct.toFixed(2)+'%',(used/1024).toFixed(1)+' KB used'));
+      /* Uptime */
+      var up=Math.floor((Date.now()-KERNEL.bootTime)/1000);
+      wrap.appendChild(gauge('UPTIME','',up+'s'));
+    }
+    var t=setInterval(update,1000);
+    update();
+    return function(){clearInterval(t)};
+  }
+};
+
+/* ───────── Calendar ───────── */
+APPS.calendar={
+  name:'Calendar',icon:'📅',defaultSize:[640,560],
+  init:function(body,win){
+    var today=new Date();
+    var view={y:today.getFullYear(),m:today.getMonth()};
+    var wrap=el('div',{class:'calendar'});
+    body.appendChild(wrap);
+    function render(){
+      wrap.innerHTML='';
+      var head=el('div',{class:'cal-head'});
+      var title=el('div',{class:'cal-title',text:new Date(view.y,view.m,1).toLocaleString('en',{month:'long',year:'numeric'})});
+      var nav=el('div',{class:'cal-nav'});
+      var prev=el('button',{text:'‹ Prev'});
+      var next=el('button',{text:'Next ›'});
+      var nowBtn=el('button',{text:'Today'});
+      prev.addEventListener('click',function(){view.m--;if(view.m<0){view.m=11;view.y--}render()});
+      next.addEventListener('click',function(){view.m++;if(view.m>11){view.m=0;view.y++}render()});
+      nowBtn.addEventListener('click',function(){view.y=today.getFullYear();view.m=today.getMonth();render()});
+      nav.appendChild(prev);nav.appendChild(nowBtn);nav.appendChild(next);
+      head.appendChild(title);head.appendChild(nav);
+      wrap.appendChild(head);
+      var grid=el('div',{class:'cal-grid'});
+      ['SUN','MON','TUE','WED','THU','FRI','SAT'].forEach(function(d){
+        grid.appendChild(el('div',{class:'dow',text:d}));
+      });
+      var first=new Date(view.y,view.m,1).getDay();
+      var daysIn=new Date(view.y,view.m+1,0).getDate();
+      var prevDays=new Date(view.y,view.m,0).getDate();
+      /* prev month days */
+      for(var i=first-1;i>=0;i--){
+        var d=el('div',{class:'day other',text:String(prevDays-i)});
+        grid.appendChild(d);
+      }
+      /* current */
+      for(var day=1;day<=daysIn;day++){
+        var isToday=day===today.getDate()&&view.m===today.getMonth()&&view.y===today.getFullYear();
+        var d=el('div',{class:'day'+(isToday?' today':''),text:String(day)});
+        grid.appendChild(d);
+      }
+      /* next month days */
+      var remaining=42-(first+daysIn);
+      for(var k=1;k<=remaining;k++){
+        var d=el('div',{class:'day other',text:String(k)});
+        grid.appendChild(d);
+      }
+      wrap.appendChild(grid);
+      /* Events */
+      var evh=el('div',{style:'margin-top:24px'});
+      evh.innerHTML='<div style="font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3);font-weight:700;margin-bottom:10px">Events</div>';
+      var events=[
+        {date:'Today',title:'Team sync',time:'10:00'},
+        {date:'Tomorrow',title:'Product review',time:'14:30'},
+        {date:'Friday',title:'Release v1.0',time:'17:00'}
+      ];
+      events.forEach(function(e){
+        var row=el('div',{style:'padding:10px 12px;background:rgba(15,17,30,.5);border:1px solid var(--bd);border-radius:6px;margin-bottom:6px;display:flex;gap:12px;align-items:center;font-size:12px'});
+        row.innerHTML='<span style="color:var(--pk);font-weight:600;min-width:80px">'+esc(e.date)+'</span><span style="color:var(--ac2);font-family:var(--mono);min-width:50px">'+e.time+'</span><span style="flex:1;color:var(--tx)">'+esc(e.title)+'</span>';
+        evh.appendChild(row);
+      });
+      wrap.appendChild(evh);
+    }
+    render();
+    return null;
+  }
+};
+
+/* ───────── Snake Game ───────── */
+APPS.snake={
+  name:'Snake',icon:'🐍',defaultSize:[520,600],
+  init:function(body,win){
+    var wrap=el('div',{class:'game'});
+    var hud=el('div',{class:'hud'});
+    var scoreEl=el('div',{html:'Score: <b id="snkScore">0</b>'});
+    var bestEl=el('div',{html:'Best: <b id="snkBest">0</b>'});
+    var restartBtn=el('button',{text:'Restart'});
+    hud.appendChild(scoreEl);hud.appendChild(bestEl);hud.appendChild(restartBtn);
+    var msg=el('div',{class:'msg',text:'Use arrow keys or WASD'});
+    var canvas=el('canvas',{width:400,height:400});
+    wrap.appendChild(hud);wrap.appendChild(canvas);wrap.appendChild(msg);
+    body.appendChild(wrap);
+    var ctx=canvas.getContext('2d');
+    var CELL=20;
+    var W=20,H=20;
+    var snake=[{x:10,y:10}];
+    var dir={x:1,y:0};
+    var nextDir={x:1,y:0};
+    var food={x:ri(0,W-1),y:ri(0,H-1)};
+    var score=0;
+    var best=parseInt(localStorage.getItem('nexusos.snake.best')||'0');
+    $('snkBest')&&($('snkBest').textContent=best);
+    var dead=false;
+    function reset(){
+      snake=[{x:10,y:10}];
+      dir={x:1,y:0};nextDir={x:1,y:0};
+      food={x:ri(0,W-1),y:ri(0,H-1)};
+      score=0;dead=false;
+      msg.textContent='';
+      $('snkScore').textContent='0';
+    }
+    function tick(){
+      if(dead)return;
+      dir=nextDir;
+      var head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+      if(head.x<0||head.x>=W||head.y<0||head.y>=H){die()}
+      else if(snake.some(function(s){return s.x===head.x&&s.y===head.y})){die()}
+      else{
+        snake.unshift(head);
+        if(head.x===food.x&&head.y===food.y){
+          score++;$('snkScore').textContent=score;
+          if(score>best){best=score;localStorage.setItem('nexusos.snake.best',best);$('snkBest').textContent=best}
+          food={x:ri(0,W-1),y:ri(0,H-1)};
+          while(snake.some(function(s){return s.x===food.x&&s.y===food.y}))food={x:ri(0,W-1),y:ri(0,H-1)};
+        }else snake.pop();
+      }
+      draw();
+    }
+    function die(){
+      dead=true;
+      msg.textContent='☠ Game over — score '+score+' · press Restart or Space';
+    }
+    function draw(){
+      ctx.fillStyle='#000';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      /* grid */
+      ctx.strokeStyle='rgba(91,141,239,.06)';
+      for(var i=0;i<=W;i++){
+        ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,H*CELL);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(0,i*CELL);ctx.lineTo(W*CELL,i*CELL);ctx.stroke();
+      }
+      /* food */
+      ctx.fillStyle='#ef4444';
+      ctx.beginPath();
+      ctx.arc(food.x*CELL+CELL/2,food.y*CELL+CELL/2,CELL/2-3,0,Math.PI*2);
+      ctx.fill();
+      /* snake */
+      snake.forEach(function(s,i){
+        var t=i/snake.length;
+        ctx.fillStyle='rgb('+Math.floor(91*(1-t)+167*t)+','+Math.floor(141*(1-t)+139*t)+','+Math.floor(239*(1-t)+250*t)+')';
+        ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2);
+      });
+      /* head eyes */
+      ctx.fillStyle='#000';
+      ctx.fillRect(snake[0].x*CELL+CELL*0.25,snake[0].y*CELL+CELL*0.25,3,3);
+      ctx.fillRect(snake[0].x*CELL+CELL*0.55,snake[0].y*CELL+CELL*0.25,3,3);
+    }
+    function onKey(e){
+      if(!win.el.classList.contains('active'))return;
+      if(e.target.tagName==='INPUT')return;
+      var k=e.key.toLowerCase();
+      if(k==='arrowup'||k==='w'){if(dir.y===0){nextDir={x:0,y:-1}}e.preventDefault()}
+      else if(k==='arrowdown'||k==='s'){if(dir.y===0){nextDir={x:0,y:1}}e.preventDefault()}
+      else if(k==='arrowleft'||k==='a'){if(dir.x===0){nextDir={x:-1,y:0}}e.preventDefault()}
+      else if(k==='arrowright'||k==='d'){if(dir.x===0){nextDir={x:1,y:0}}e.preventDefault()}
+      else if(k===' '){reset()}
+    }
+    document.addEventListener('keydown',onKey);
+    restartBtn.addEventListener('click',reset);
+    var timer=setInterval(tick,110);
+    draw();
+    return function(){
+      clearInterval(timer);
+      document.removeEventListener('keydown',onKey);
+    };
+  }
+};
+
+/* ───────── Minesweeper ───────── */
+APPS.minesweeper={
+  name:'Minesweeper',icon:'💣',defaultSize:[520,600],
+  init:function(body,win){
+    var wrap=el('div',{class:'game'});
+    var W=12,H=12,MINES=20;
+    var hud=el('div',{class:'hud'});
+    var minesEl=el('div',{html:'Mines: <b id="msMines">'+MINES+'</b>'});
+    var flagEl=el('div',{html:'Flags: <b id="msFlags">0</b>'});
+    var timeEl=el('div',{html:'Time: <b id="msTime">0</b>'});
+    var restartBtn=el('button',{text:'Restart'});
+    hud.appendChild(minesEl);hud.appendChild(flagEl);hud.appendChild(timeEl);hud.appendChild(restartBtn);
+    var msg=el('div',{class:'msg',text:''});
+    var canvas=el('canvas',{width:480,height:480});
+    wrap.appendChild(hud);wrap.appendChild(canvas);wrap.appendChild(msg);
+    body.appendChild(wrap);
+    var ctx=canvas.getContext('2d');
+    var CELL=40;
+    var grid, flags, revealed, dead, won, startTime, elapsed, timer;
+    function reset(){
+      grid=[];
+      flags=[];
+      revealed=[];
+      for(var i=0;i<W*H;i++){grid.push(0);flags.push(false);revealed.push(false)}
+      /* place mines */
+      var placed=0;
+      while(placed<MINES){
+        var i=ri(0,W*H-1);
+        if(grid[i]!==-1){grid[i]=-1;placed++}
+      }
+      /* count */
+      for(var y=0;y<H;y++)for(var x=0;x<W;x++){
+        var i2=y*W+x;
+        if(grid[i2]===-1)continue;
+        var count=0;
+        for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){
+          if(!dx&&!dy)continue;
+          var nx=x+dx,ny=y+dy;
+          if(nx>=0&&nx<W&&ny>=0&&ny<H&&grid[ny*W+nx]===-1)count++;
+        }
+        grid[i2]=count;
+      }
+      dead=false;won=false;
+      startTime=Date.now();elapsed=0;
+      msg.textContent='';
+      clearInterval(timer);
+      timer=setInterval(function(){
+        if(!dead&&!won){elapsed=Math.floor((Date.now()-startTime)/1000);$('msTime').textContent=elapsed}
+      },250);
+      $('msFlags').textContent='0';
+      draw();
+    }
+    function reveal(x,y){
+      var i=y*W+x;
+      if(revealed[i]||flags[i]||dead||won)return;
+      revealed[i]=true;
+      if(grid[i]===-1){dead=true;msg.textContent='💥 Boom! Press Restart';return}
+      if(grid[i]===0){
+        for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){
+          if(!dx&&!dy)continue;
+          var nx=x+dx,ny=y+dy;
+          if(nx>=0&&nx<W&&ny>=0&&ny<H)reveal(nx,ny);
+        }
+      }
+      /* check win */
+      var safeRevealed=revealed.filter(function(r,i){return r&&grid[i]!==-1}).length;
+      if(safeRevealed===W*H-MINES){won=true;msg.textContent='🎉 You won in '+elapsed+'s!'}
+    }
+    function draw(){
+      ctx.fillStyle='#0a0c16';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(var y=0;y<H;y++)for(var x=0;x<W;x++){
+        var i=y*W+x;
+        var px=x*CELL,py=y*CELL;
+        if(!revealed[i]){
+          ctx.fillStyle=flags[i]?'#3a2a1a':'#23273f';
+          ctx.fillRect(px+1,py+1,CELL-2,CELL-2);
+          ctx.fillStyle='rgba(255,255,255,.06)';
+          ctx.fillRect(px+1,py+1,CELL-2,3);
+          if(flags[i]){
+            ctx.fillStyle='#ef4444';
+            ctx.font='bold 22px sans-serif';
+            ctx.textAlign='center';ctx.textBaseline='middle';
+            ctx.fillText('⚑',px+CELL/2,py+CELL/2);
+          }
+        }else{
+          ctx.fillStyle='#151a30';
+          ctx.fillRect(px+1,py+1,CELL-2,CELL-2);
+          if(grid[i]===-1){
+            ctx.fillStyle='#ef4444';
+            ctx.font='22px sans-serif';
+            ctx.textAlign='center';ctx.textBaseline='middle';
+            ctx.fillText('💣',px+CELL/2,py+CELL/2);
+          }else if(grid[i]>0){
+            var cols=['','#5b8def','#4ade80','#fbbf24','#a78bfa','#ec4899','#22d3ee','#e8eaf2','#98a0c0'];
+            ctx.fillStyle=cols[grid[i]];
+            ctx.font='bold 18px monospace';
+            ctx.textAlign='center';ctx.textBaseline='middle';
+            ctx.fillText(String(grid[i]),px+CELL/2,py+CELL/2);
+          }
+        }
+      }
+    }
+    canvas.addEventListener('click',function(e){
+      if(dead||won)return;
+      var r=canvas.getBoundingClientRect();
+      var x=Math.floor((e.clientX-r.left)/CELL);
+      var y=Math.floor((e.clientY-r.top)/CELL);
+      if(x>=0&&x<W&&y>=0&&y<H){reveal(x,y);draw()}
+    });
+    canvas.addEventListener('contextmenu',function(e){
+      e.preventDefault();
+      if(dead||won)return;
+      var r=canvas.getBoundingClientRect();
+      var x=Math.floor((e.clientX-r.left)/CELL);
+      var y=Math.floor((e.clientY-r.top)/CELL);
+      if(x>=0&&x<W&&y>=0&&y<H){
+        var i=y*W+x;
+        if(!revealed[i]){
+          flags[i]=!flags[i];
+          $('msFlags').textContent=flags.filter(Boolean).length;
+          draw();
+        }
+      }
+    });
+    restartBtn.addEventListener('click',reset);
+    reset();
+    return function(){clearInterval(timer)};
+  }
+};
+
+/* ───────── Settings ───────── */
+APPS.settings={
+  name:'Settings',icon:'⚙',defaultSize:[560,520],
+  init:function(body,win){
+    var wrap=el('div',{style:'padding:20px;overflow-y:auto;height:100%'});
+    body.appendChild(wrap);
+    var themes=[
+      {n:'Blue (default)',ac:'#5b8def',ac2:'#7da8ff'},
+      {n:'Green',ac:'#10b981',ac2:'#34d399'},
+      {n:'Purple',ac:'#a855f7',ac2:'#c084fc'},
+      {n:'Pink',ac:'#ec4899',ac2:'#f472b6'},
+      {n:'Orange',ac:'#f97316',ac2:'#fb923c'},
+      {n:'Cyan',ac:'#22d3ee',ac2:'#67e8f9'}
+    ];
+    wrap.innerHTML='<h2 style="font-size:18px;font-weight:600;margin-bottom:20px">Settings</h2>';
+    var sec1=el('div',{style:'margin-bottom:24px'});
+    sec1.innerHTML='<div style="font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3);font-weight:700;margin-bottom:10px">Accent color</div>';
+    var colorRow=el('div',{style:'display:flex;gap:10px;flex-wrap:wrap'});
+    themes.forEach(function(t){
+      var sw=el('div',{title:t.n});
+      sw.style.cssText='width:44px;height:44px;border-radius:8px;cursor:pointer;background:linear-gradient(135deg,'+t.ac+','+t.ac2+');border:2px solid transparent;transition:.15s';
+      sw.addEventListener('mouseenter',function(){sw.style.transform='scale(1.1)'});
+      sw.addEventListener('mouseleave',function(){sw.style.transform=''});
+      sw.addEventListener('click',function(){
+        document.documentElement.style.setProperty('--ac',t.ac);
+        document.documentElement.style.setProperty('--ac2',t.ac2);
+        document.documentElement.style.setProperty('--ac3',t.ac);
+        localStorage.setItem('nexusos.theme',JSON.stringify({ac:t.ac,ac2:t.ac2}));
+        notify('Theme','Accent set to '+t.n,'ok');
+      });
+      colorRow.appendChild(sw);
+    });
+    sec1.appendChild(colorRow);
+    wrap.appendChild(sec1);
+    /* Wallpaper */
+    var sec2=el('div',{style:'margin-bottom:24px'});
+    sec2.innerHTML='<div style="font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3);font-weight:700;margin-bottom:10px">Wallpaper</div>';
+    var wallRow=el('div',{style:'display:flex;gap:10px;flex-wrap:wrap'});
+    var wallpapers=[
+      {n:'Nebula',css:'radial-gradient(ellipse at 30% 20%,#16203a 0%,#05060c 60%,#000 100%)'},
+      {n:'Void',css:'radial-gradient(ellipse at 20% 70%,#1a1224 0%,#05060c 60%,#000 100%)'},
+      {n:'Deep',css:'radial-gradient(ellipse at 70% 30%,#0f2028 0%,#05060c 60%,#000 100%)'},
+      {n:'Ember',css:'radial-gradient(ellipse at 50% 80%,#281414 0%,#05060c 60%,#000 100%)'},
+      {n:'Forest',css:'radial-gradient(ellipse at 40% 40%,#0a1f1a 0%,#05060c 60%,#000 100%)'}
+    ];
+    wallpapers.forEach(function(w){
+      var sw=el('div',{title:w.n});
+      sw.style.cssText='width:80px;height:50px;border-radius:6px;cursor:pointer;background:'+w.css+';border:1px solid var(--bd)';
+      sw.addEventListener('click',function(){
+        $('wallpaper').style.background=w.css;
+        localStorage.setItem('nexusos.wallpaper',w.css);
+        notify('Wallpaper','Changed to '+w.n,'ok');
+      });
+      wallRow.appendChild(sw);
+    });
+    sec2.appendChild(wallRow);
+    wrap.appendChild(sec2);
+    /* Data */
+    var sec3=el('div',{style:'margin-bottom:24px'});
+    sec3.innerHTML='<div style="font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3);font-weight:700;margin-bottom:10px">Data</div>';
+    var btnRow=el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'});
+    var b1=el('button',{text:'Export all data'});
+    b1.style.cssText='padding:8px 16px;background:rgba(91,141,239,.15);border:1px solid var(--bd);border-radius:6px;color:var(--tx);cursor:pointer;font-size:12px';
+    b1.addEventListener('click',function(){
+      var data={fs:FS.root,notes:localStorage.getItem('nexusos.notes'),version:'1.0'};
+      var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='nexusos-backup-'+Date.now()+'.json';
+      a.click();
+      notify('Exported','Backup downloaded','ok');
+    });
+    var b2=el('button',{text:'Reset system'});
+    b2.style.cssText='padding:8px 16px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.4);border-radius:6px;color:#ef4444;cursor:pointer;font-size:12px';
+    b2.addEventListener('click',function(){
+      if(!confirm('Reset NEXUS-OS? This will delete all files and notes.'))return;
+      localStorage.clear();
+      location.reload();
+    });
+    btnRow.appendChild(b1);btnRow.appendChild(b2);
+    sec3.appendChild(btnRow);
+    wrap.appendChild(sec3);
+    /* About */
+    var sec4=el('div');
+    sec4.innerHTML='<div style="font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3);font-weight:700;margin-bottom:10px">About</div><div style="font-size:12px;color:var(--tx2);line-height:1.7">NEXUS-OS v1.0<br>Browser-based operating system<br>© '+new Date().getFullYear()+'<br><br>Keyboard shortcuts:<br>• Ctrl/Cmd+K — command palette<br>• Ctrl/Cmd+Alt+T — terminal<br>• Ctrl/Cmd+Alt+E — editor<br>• Esc — close menus</div>';
+    wrap.appendChild(sec4);
+    return null;
+  }
+};
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   NEXUS-OS · Kernel · Shell · Desktop · Boot
+   ══════════════════════════════════════════════════════════════ */
+
+var KERNEL={
+  bootTime:Date.now(),
+  fps:60,
+  lastFrame:performance.now(),
+  frames:0,
+  frameAcc:0,
+  init:function(){
+    FS.init();
+    this.applyStored();
+    this.startClock();
+    this.startFPS();
+    WM.init();
+    this.bindStart();
+    this.bindCommandPalette();
+    this.bindGlobalShortcuts();
+    this.renderDesktopIcons();
+    this.renderStartMenu();
+    this.showBootAnimation();
+  },
+  applyStored:function(){
+    try{
+      var theme=localStorage.getItem('nexusos.theme');
+      if(theme){
+        theme=JSON.parse(theme);
+        if(theme.ac)document.documentElement.style.setProperty('--ac',theme.ac);
+        if(theme.ac2)document.documentElement.style.setProperty('--ac2',theme.ac2);
+      }
+      var wall=localStorage.getItem('nexusos.wallpaper');
+      if(wall){
+        $('wallpaper').style.background=wall;
+      }
+    }catch(e){}
+  },
+  startClock:function(){
+    var update=function(){
+      var d=new Date();
+      var h=pad(d.getHours());var m=pad(d.getMinutes());
+      var dateStr=d.getDate()+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+      if($('trayClock'))$('trayClock').textContent=h+':'+m;
+      if($('trayDate'))$('trayDate').textContent=dateStr;
+      /* battery */
+      if(navigator.getBattery){
+        navigator.getBattery().then(function(b){
+          var pct=Math.floor(b.level*100);
+          if($('trayBattery'))$('trayBattery').textContent=(b.charging?'⚡':'🔋')+' '+pct+'%';
+        });
+      }
+    };
+    update();
+    setInterval(update,1000);
+  },
+  startFPS:function(){
+    var self=this;
+    function loop(now){
+      self.frames++;
+      var dt=now-self.lastFrame;
+      if(dt>=1000){
+        self.fps=Math.round(self.frames*1000/dt);
+        self.frames=0;
+        self.lastFrame=now;
+      }
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  },
+  bindStart:function(){
+    var btn=$('startBtn');
+    var menu=$('startmenu');
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      menu.classList.toggle('on');
+      if(menu.classList.contains('on')){
+        setTimeout(function(){var i=$('smSearch');if(i)i.focus()},100);
+      }
+    });
+    document.addEventListener('click',function(e){
+      if(!e.target.closest('#startmenu')&&!e.target.closest('#startBtn')){
+        menu.classList.remove('on');
+      }
+    });
+    /* Search filter */
+    var search=$('smSearch');
+    search.addEventListener('input',function(){
+      var q=search.value.toLowerCase();
+      $$('.sm-app').forEach(function(a){
+        var name=a.querySelector('.app-name').textContent.toLowerCase();
+        a.style.display=name.indexOf(q)>=0?'':'none';
+      });
+    });
+    $('trayMenu').addEventListener('click',function(e){
+      e.stopPropagation();
+      var r=this.getBoundingClientRect();
+      showCtxMenu(r.left-180,r.top-100,[
+        {icon:'⚙',label:'Settings',action:function(){WM.open('settings')}},
+        {icon:'📊',label:'System Monitor',action:function(){WM.open('sysmon')}},
+        {sep:true},
+        {icon:'🔄',label:'Reboot',action:function(){if(confirm('Reboot?'))location.reload()}},
+        {icon:'⏻',label:'Shut down',action:function(){
+          if(!confirm('Shut down NEXUS-OS?'))return;
+          document.getElementById('os').style.opacity='0';
+          setTimeout(function(){
+            document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#5a6080;font-family:monospace;font-size:16px;letter-spacing:6px">GOODBYE</div>';
+          },600);
+        }}
+      ]);
+    });
+  },
+  renderStartMenu:function(){
+    var body=$('smBody');
+    body.innerHTML='';
+    var favorites=['terminal','editor','notes','files','sheet','calc','paint','music'];
+    var sections=[
+      {title:'Favorites',apps:favorites},
+      {title:'All applications',apps:Object.keys(APPS)}
+    ];
+    sections.forEach(function(sec,i){
+      body.appendChild(el('div',{class:'sm-section',text:sec.title}));
+      var grid=el('div',{class:'sm-grid'});
+      sec.apps.forEach(function(id){
+        var app=APPS[id];
+        if(!app)return;
+        var a=el('div',{class:'sm-app'});
+        a.innerHTML='<div class="app-ico" style="background:linear-gradient(135deg,rgba(91,141,239,.3),rgba(167,139,250,.2))">'+app.icon+'</div><div class="app-name">'+esc(app.name)+'</div>';
+        a.addEventListener('click',function(){
+          WM.open(id);
+          $('startmenu').classList.remove('on');
+        });
+        grid.appendChild(a);
+      });
+      body.appendChild(grid);
+    });
+  },
+  renderDesktopIcons:function(){
+    var icons=$('icons');
+    icons.innerHTML='';
+    var desktopApps=[
+      {id:'terminal',name:'Terminal'},
+      {id:'files',name:'Files'},
+      {id:'editor',name:'Editor'},
+      {id:'notes',name:'Notes'},
+      {id:'sheet',name:'Spreadsheet'},
+      {id:'calc',name:'Calculator'},
+      {id:'paint',name:'Paint'},
+      {id:'music',name:'Music'},
+      {id:'sysmon',name:'Monitor'},
+      {id:'settings',name:'Settings'}
+    ];
+    desktopApps.forEach(function(d){
+      var app=APPS[d.id];
+      var ic=el('div',{class:'icon'});
+      ic.innerHTML='<div class="ico" style="background:linear-gradient(135deg,rgba(91,141,239,.35),rgba(167,139,250,.25))">'+app.icon+'</div><div class="nm">'+esc(d.name)+'</div>';
+      ic.addEventListener('dblclick',function(){WM.open(d.id)});
+      ic.addEventListener('click',function(e){
+        e.stopPropagation();
+        $$('.icon.selected').forEach(function(x){x.classList.remove('selected')});
+        ic.classList.add('selected');
+      });
+      icons.appendChild(ic);
+    });
+  },
+  bindCommandPalette:function(){
+    var backdrop=$('cmd');
+    var input=$('cmdInput');
+    var list=$('cmd-list');
+    var sel=0;
+    var items=[];
+    function buildItems(q){
+      q=(q||'').toLowerCase().trim();
+      var arr=[];
+      Object.keys(APPS).forEach(function(id){
+        var a=APPS[id];
+        arr.push({
+          icon:a.icon,name:a.name,desc:'Open application',kind:'app',
+          action:function(){WM.open(id);Cmd.close()}
+        });
+      });
+      arr.push({icon:'📄',name:'New file',desc:'Create a file',kind:'fs',action:function(){
+        var name=prompt('File name:','untitled.txt');
+        if(name){FS.write('/home/user/'+name,'');KERNEL.renderDesktopIcons();notify('File','Created','ok')}
+        Cmd.close();
+      }});
+      arr.push({icon:'📁',name:'New folder',desc:'Create a folder',kind:'fs',action:function(){
+        var name=prompt('Folder name:','New folder');
+        if(name){FS.mkdir('/home/user/'+name);KERNEL.renderDesktopIcons();notify('Folder','Created','ok')}
+        Cmd.close();
+      }});
+      arr.push({icon:'🎨',name:'Cycle wallpaper',desc:'Change desktop background',kind:'sys',action:function(){
+        var colors=['#16203a','#1a1224','#0f2028','#281414','#0a1f1a'];
+        var c=colors[ri(0,colors.length-1)];
+        $('wallpaper').style.background='radial-gradient(ellipse at 30% 20%,'+c+' 0%,#05060c 60%,#000 100%)';
+        notify('Wallpaper','Cycled','ok');
+        Cmd.close();
+      }});
+      arr.push({icon:'🔄',name:'Reboot',desc:'Restart NEXUS-OS',kind:'sys',action:function(){
+        if(confirm('Reboot?'))location.reload();
+      }});
+      if(q)arr=arr.filter(function(x){return (x.name+' '+x.desc).toLowerCase().indexOf(q)>=0});
+      return arr;
+    }
+    function render(){
+      list.innerHTML='';
+      items=buildItems(input.value);
+      if(!items.length){
+        list.innerHTML='<div style="padding:24px;text-align:center;color:var(--tx3);font-size:12px">No matches</div>';
+        return;
+      }
+      if(sel>=items.length)sel=items.length-1;
+      items.forEach(function(it,i){
+        var row=el('div',{class:'cmd-item'+(i===sel?' sel':'')});
+        row.innerHTML='<div class="ci-ico" style="background:linear-gradient(135deg,rgba(91,141,239,.3),rgba(167,139,250,.2))">'+it.icon+'</div><div class="ci-body"><div class="ci-name">'+esc(it.name)+'</div><div class="ci-desc">'+esc(it.desc)+'</div></div>';
+        row.addEventListener('click',function(){it.action()});
+        list.appendChild(row);
+      });
+    }
+    input.addEventListener('input',function(){sel=0;render()});
+    input.addEventListener('keydown',function(e){
+      if(e.key==='ArrowDown'){e.preventDefault();sel=Math.min(sel+1,items.length-1);render()}
+      else if(e.key==='ArrowUp'){e.preventDefault();sel=Math.max(0,sel-1);render()}
+      else if(e.key==='Enter'){e.preventDefault();if(items[sel])items[sel].action()}
+      else if(e.key==='Escape'){e.preventDefault();Cmd.close()}
+    });
+    backdrop.addEventListener('click',function(e){
+      if(e.target===backdrop)Cmd.close();
+    });
+    window.Cmd={
+      open:function(){backdrop.classList.add('on');input.value='';sel=0;render();setTimeout(function(){input.focus()},30)},
+      close:function(){backdrop.classList.remove('on')}
+    };
+  },
+  bindGlobalShortcuts:function(){
+    document.addEventListener('keydown',function(e){
+      var tag=(e.target.tagName||'').toLowerCase();
+      var isInput=tag==='input'||tag==='textarea'||e.target.isContentEditable;
+      /* Command palette */
+      if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();Cmd.open();return}
+      /* Escape */
+      if(e.key==='Escape'){
+        if($('startmenu').classList.contains('on')){$('startmenu').classList.remove('on');return}
+        if($('cmd').classList.contains('on')){Cmd.close();return}
+      }
+      if(isInput)return;
+      /* App shortcuts */
+      if((e.metaKey||e.ctrlKey)&&e.altKey){
+        var map={t:'terminal',e:'editor',n:'notes',f:'files',c:'calc',p:'paint',m:'music',s:'settings',y:'sysmon'};
+        var app=map[e.key.toLowerCase()];
+        if(app){e.preventDefault();WM.open(app)}
+      }
+      /* Single-key app shortcuts when no window focused */
+      if(!Object.keys(WM.windows).length){
+        if(e.key==='t'&&!e.metaKey&&!e.ctrlKey)WM.open('terminal');
+      }
+    });
+  },
+  showBootAnimation:function(){
+    var msgs=['Initializing kernel…','Loading filesystem…','Starting window manager…','Mounting virtual devices…','Loading applications…','Starting services…','Ready.'];
+    var i=0;
+    var msgEl=$('bootMsg');
+    var timer=setInterval(function(){
+      if(i>=msgs.length){
+        clearInterval(timer);
+        $('boot').classList.add('done');
+        $('os').classList.add('on');
+        setTimeout(function(){
+          notify('Welcome','NEXUS-OS ready. Press Ctrl+K for commands.','ok');
+        },600);
+        /* Welcome terminal */
+        setTimeout(function(){
+          WM.open('terminal');
+        },400);
+        return;
+      }
+      msgEl.textContent=msgs[i++];
+    },230);
+  }
+};
+
+/* ───────── Global keyboard shortcuts (Cmd/Ctrl+S handling etc) ───────── */
+document.addEventListener('keydown',function(e){
+  /* Prevent browser from stealing Ctrl+S in editor */
+  if((e.metaKey||e.ctrlKey)&&e.key==='s'){
+    if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT'){
+      e.preventDefault();
+      /* Editor handles */
+    }
+  }
+});
+
+/* ───────── Initialize ───────── */
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){KERNEL.init()});
+else KERNEL.init();
+
+console.log('%c NEXUS-OS ','background:linear-gradient(90deg,#5b8def,#a78bfa,#ec4899);color:#fff;padding:10px 22px;border-radius:0;font-weight:900;font-size:16px;letter-spacing:6px');
+console.log('Browser Operating System · '+(Object.keys(APPS||{}).length||'?')+' applications');
+console.log('Terminal · Editor · Spreadsheet · Notes · Files · Calculator · Paint · Music · SysMon · Snake · Minesweeper');
+console.log('Ctrl+K for command palette');
+</script>
+</body>
+</html>

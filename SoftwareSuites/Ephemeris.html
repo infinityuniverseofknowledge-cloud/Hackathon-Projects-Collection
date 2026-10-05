@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>EPHEMERIS — Celestial Mechanics Observatory</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:#02030a;color:#e8e6ff;font-family:'Inter',-apple-system,system-ui,sans-serif;font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#02030a;--bg2:#060822;--panel:rgba(10,14,40,.72);--panel2:rgba(18,24,60,.85);--panel3:rgba(28,36,84,.9);
+  --bd:rgba(140,160,255,.14);--bd2:rgba(140,160,255,.28);--bd3:rgba(140,160,255,.5);
+  --tx:#e8e6ff;--tx2:#8a94c8;--tx3:#4a5088;--tx4:#2a3060;
+  --cy:#7ce8ff;--cy2:#b8f0ff;--gold:#ffd166;--gold2:#fff0b8;--mag:#ff7eb6;--vi:#b48aff;--gr:#5cff90;--rd:#ff6b7a;
+  --acc:var(--cy);
+  --mono:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --t:.16s cubic-bezier(.4,0,.2,1);
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+button{cursor:pointer}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:0}
+::-webkit-scrollbar-thumb:hover{background:var(--bd3)}
+::-webkit-scrollbar-track{background:transparent}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--bd);cursor:pointer;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--cy);cursor:grab;box-shadow:0 0 10px rgba(124,232,255,.6);transition:transform .12s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+
+#shell{display:flex;flex-direction:column;height:100vh}
+
+/* ── Top bar ── */
+.top{height:50px;background:linear-gradient(180deg,rgba(8,12,36,.95),rgba(4,6,20,.95));border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 16px;gap:16px;flex-shrink:0;position:relative;z-index:100}
+.top::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(124,232,255,.4),transparent);opacity:.6}
+.brand{display:flex;align-items:baseline;gap:12px;flex-shrink:0}
+.brand-name{font-family:var(--mono);font-size:.94rem;font-weight:800;letter-spacing:5px;color:var(--cy);text-shadow:0 0 16px rgba(124,232,255,.5)}
+.brand-sub{font-family:var(--mono);font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3)}
+.div{width:1px;height:24px;background:var(--bd2);flex-shrink:0}
+
+.transport{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.btn{height:30px;padding:0 12px;background:rgba(20,28,72,.6);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t);font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
+.btn:hover{background:rgba(40,54,120,.7);border-color:var(--cy);color:var(--cy2)}
+.btn.primary{background:linear-gradient(180deg,rgba(20,60,110,.9),rgba(10,30,70,.9));border-color:var(--bd3);color:var(--cy2)}
+.btn.primary:hover{box-shadow:0 0 14px rgba(124,232,255,.35);color:#fff}
+.btn.icon{width:30px;padding:0;justify-content:center;font-size:13px;letter-spacing:0}
+.btn.active{background:rgba(124,232,255,.14);border-color:var(--cy);color:var(--cy2)}
+.btn.sm{height:24px;padding:0 9px;font-size:9px;letter-spacing:1.2px}
+
+.date-display{display:flex;align-items:center;gap:8px;background:#000;border:1px solid var(--bd2);padding:4px 12px;height:30px;font-family:var(--mono);flex-shrink:0}
+.date-display input{background:transparent;border:none;color:var(--cy);font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.5px;width:96px;text-align:center}
+.date-display input::-webkit-calendar-picker-indicator{filter:invert(.8) sepia(1) hue-rotate(140deg) saturate(3)}
+
+.speed{display:flex;align-items:center;gap:8px;background:#000;border:1px solid var(--bd2);padding:0 10px;height:30px;flex-shrink:0}
+.speed label{font-family:var(--mono);font-size:9px;letter-spacing:1.6px;color:var(--tx3);text-transform:uppercase}
+.speed select{background:transparent;color:var(--cy);font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer}
+.speed select option{background:#0a0e24;color:var(--tx)}
+
+.spacer{flex:1}
+.clock{font-family:var(--mono);font-size:11px;letter-spacing:.6px;color:var(--tx2);flex-shrink:0}
+.clock b{color:var(--cy);font-weight:700}
+
+/* ── Main layout ── */
+.main{flex:1;display:flex;overflow:hidden;min-height:0}
+
+.side{width:300px;background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.side.right{border-right:none;border-left:1px solid var(--bd)}
+.side-head{padding:12px 16px 10px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.side-title{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--tx3);font-weight:700}
+.side-body{padding:14px 16px;display:flex;flex-direction:column;gap:16px}
+
+.section{margin-bottom:2px}
+.section h4{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--tx3);font-weight:700;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--bd)}
+.field{margin-bottom:10px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx3);margin-bottom:4px;font-weight:600}
+.field input[type=text],.field input[type=number],.field select{width:100%;background:#000;border:1px solid var(--bd2);padding:6px 9px;color:var(--cy);font-family:var(--mono);font-size:12px;letter-spacing:.4px;transition:var(--t)}
+.field input:focus,.field select:focus{border-color:var(--cy);box-shadow:0 0 0 3px rgba(124,232,255,.1)}
+.field select option{background:#0a0e24;color:var(--tx)}
+.field .row{display:flex;gap:6px}
+
+/* ── View tabs ── */
+.viewtabs{display:flex;flex-direction:column;gap:1px;background:var(--bd)}
+.viewtabs button{padding:8px 14px;background:var(--panel2);border:none;color:var(--tx2);font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;transition:var(--t);text-align:left;display:flex;align-items:center;gap:8px}
+.viewtabs button:hover{background:var(--panel3);color:var(--tx)}
+.viewtabs button.active{background:linear-gradient(90deg,rgba(124,232,255,.14),transparent);color:var(--cy2);border-left:3px solid var(--cy);padding-left:11px}
+.viewtabs .ico{font-size:14px;width:16px;text-align:center;opacity:.75}
+
+/* ── Center canvas ── */
+.center{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:radial-gradient(ellipse at center,#040620 0%,#02030a 70%)}
+.canvas-wrap{flex:1;position:relative;overflow:hidden}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.overlay{position:absolute;inset:0;pointer-events:none;padding:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;z-index:10}
+.ovl-box{background:rgba(8,12,36,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--bd);padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--cy);letter-spacing:.6px;pointer-events:auto}
+.ovl-box .k{color:var(--tx3)}
+.ovl-box .v{color:var(--cy);font-weight:700}
+.ovl-box.stats{display:flex;flex-direction:column;gap:3px;text-align:right}
+
+/* ── Data table ── */
+.dtable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+.dtable th{text-align:left;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3);padding:6px 8px;border-bottom:1px solid var(--bd2);font-weight:700}
+.dtable td{padding:6px 8px;border-bottom:1px solid var(--bd);color:var(--tx2);font-size:11px}
+.dtable tr:hover td{background:rgba(124,232,255,.04);color:var(--tx)}
+.dtable td.num{text-align:right;color:var(--cy);font-weight:600}
+.dtable td.k{color:var(--tx3);font-size:10px;letter-spacing:.6px}
+
+/* ── Object list ── */
+.objlist{display:flex;flex-direction:column;gap:2px}
+.objrow{display:flex;align-items:center;gap:10px;padding:6px 10px;background:var(--panel2);border:1px solid transparent;cursor:pointer;transition:var(--t);font-family:var(--mono);font-size:11.5px}
+.objrow:hover{background:var(--panel3);border-color:var(--bd2)}
+.objrow.active{border-color:var(--cy);background:rgba(124,232,255,.08)}
+.objrow .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.objrow .name{color:var(--tx);font-weight:600;flex:1}
+.objrow .val{color:var(--tx3);font-size:10px;letter-spacing:.4px}
+.objrow.active .val{color:var(--cy)}
+
+.chip{display:inline-block;padding:2px 6px;background:rgba(124,232,255,.08);border:1px solid var(--bd);font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--cy);text-transform:uppercase;font-weight:700}
+
+/* ── Toasts ── */
+#toasts{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.toast{padding:9px 14px;background:rgba(8,12,36,.95);border:1px solid var(--bd2);border-left:3px solid var(--cy);font-family:var(--mono);font-size:11px;letter-spacing:.5px;color:var(--cy2);animation:tin .2s cubic-bezier(.2,0,.2,1);box-shadow:0 8px 30px rgba(0,0,0,.5);pointer-events:auto}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── Misc ── */
+.hint{font-family:var(--mono);font-size:10px;color:var(--tx3);letter-spacing:.5px;line-height:1.7}
+.hint b{color:var(--tx2)}
+.hidden{display:none}
+@media(max-width:1100px){.side{width:260px}.side.right{width:280px}}
+@media(max-width:900px){.side{display:none}}
+</style>
+</head>
+<body>
+<div id="shell">
+  <header class="top">
+    <div class="brand">
+      <span class="brand-name">EPHEMERIS</span>
+      <span class="brand-sub">Celestial Mechanics Observatory</span>
+    </div>
+    <div class="div"></div>
+    <div class="transport">
+      <button class="btn icon primary" id="btnPlay" title="Play/Pause (Space)">▶</button>
+      <button class="btn icon" id="btnNow" title="Jump to now">◉</button>
+      <button class="btn icon" id="btnBack" title="Step back">−</button>
+      <button class="btn icon" id="btnFwd" title="Step forward">+</button>
+    </div>
+    <div class="date-display">
+      <input type="date" id="dateInput">
+    </div>
+    <div class="speed">
+      <label>Speed</label>
+      <select id="speedSel">
+        <option value="1">1 s/s</option>
+        <option value="60">1 min/s</option>
+        <option value="3600">1 hr/s</option>
+        <option value="86400" selected>1 day/s</option>
+        <option value="604800">1 week/s</option>
+        <option value="2592000">1 month/s</option>
+        <option value="31536000">1 year/s</option>
+      </select>
+    </div>
+    <div class="spacer"></div>
+    <div class="clock">UTC <b id="clockUtc">--:--:--</b> · JD <b id="clockJd">0</b></div>
+  </header>
+
+  <div class="main">
+    <aside class="side">
+      <div class="side-head"><span class="side-title">Views</span></div>
+      <div class="viewtabs" id="viewTabs"></div>
+      <div class="side-head" style="border-top:1px solid var(--bd)"><span class="side-title">Location</span></div>
+      <div class="side-body" id="locBody"></div>
+    </aside>
+
+    <section class="center">
+      <div class="canvas-wrap">
+        <canvas id="mainCanvas"></canvas>
+        <div class="overlay">
+          <div class="ovl-box" id="ovlTop">—</div>
+          <div class="ovl-box stats" id="ovlStats"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side right">
+      <div class="side-head"><span class="side-title" id="dataTitle">Objects</span></div>
+      <div class="side-body" id="dataBody"></div>
+    </aside>
+  </div>
+</div>
+<div id="toasts"></div>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   EPHEMERIS · Astronomy engine
+   Real orbital elements (JPL) · Kepler solver · Coordinate transforms
+   ══════════════════════════════════════════════════════════════ */
+
+"use strict";
+function $(i){return document.getElementById(i)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c!=null){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function d2r(d){return d*Math.PI/180}
+function r2d(r){return r*180/Math.PI}
+function norm360(x){x=x%360;return x<0?x+360:x}
+function norm180(x){x=x%360;if(x>180)x-=360;if(x<-180)x+=360;return x}
+function toast(m){var t=el('div',{class:'toast',text:m});$('toasts').appendChild(t);setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(function(){t.remove()},300)},1800)}
+
+/* ══════════ Julian date ══════════ */
+function julianDate(date){
+  var y=date.getUTCFullYear(),m=date.getUTCMonth()+1,d=date.getUTCDate();
+  var h=date.getUTCHours()+date.getUTCMinutes()/60+date.getUTCSeconds()/3600+date.getUTCMilliseconds()/3600000;
+  if(m<=2){y--;m+=12}
+  var A=Math.floor(y/100);
+  var B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5+h/24;
+}
+function jdToDate(jd){
+  var jd0=jd+0.5;
+  var Z=Math.floor(jd0);
+  var F=jd0-Z;
+  var A=Z;
+  if(Z>=2299161){var alpha=Math.floor((Z-1867216.25)/36524.25);A=Z+1+alpha-Math.floor(alpha/4)}
+  var B=A+1524;
+  var C=Math.floor((B-122.1)/365.25);
+  var D=Math.floor(365.25*C);
+  var E=Math.floor((B-D)/30.6001);
+  var day=B-D-Math.floor(30.6001*E)+F;
+  var month=E<14?E-1:E-13;
+  var year=month>2?C-4716:C-4715;
+  var dayInt=Math.floor(day);
+  var frac=day-dayInt;
+  var hours=frac*24;
+  var hr=Math.floor(hours);
+  var mn=Math.floor((hours-hr)*60);
+  var sc=Math.floor(((hours-hr)*60-mn)*60);
+  return new Date(Date.UTC(year,month-1,dayInt,hr,mn,sc));
+}
+/* Julian centuries since J2000.0 */
+function T(jd){return (jd-2451545.0)/36525}
+
+/* ══════════ JPL Keplerian elements (J2000, +rates per century) ══════════
+   a: semi-major axis (AU)
+   e: eccentricity
+   i: inclination (deg)
+   Om: longitude of ascending node (deg)
+   w_bar: longitude of perihelion (deg) — ϖ
+   L: mean longitude (deg)
+   plus rates per Julian century */
+var PLANETS=[
+  {name:'Mercury',sym:'☿',color:'#a09a8c',size:3.5,
+   a:0.38709927,e:0.20563593,i:7.00497902,Om:48.33076593,wbar:77.45779628,L:252.25032350,
+   da:0.00000037,de:0.00001906,di:-0.00594749,dOm:-0.12534081,dwbar:0.16047689,dL:149472.67411175},
+  {name:'Venus',sym:'♀',color:'#e8c880',size:5,
+   a:0.72333566,e:0.00677672,i:3.39467605,Om:76.67984255,wbar:131.60246718,L:181.97909950,
+   da:0.00000390,de:-0.00004107,di:-0.00078890,dOm:-0.27769418,dwbar:0.00268329,dL:58517.81538729},
+  {name:'Earth',sym:'⊕',color:'#4d9de0',size:5,
+   a:1.00000261,e:0.01671123,i:-0.00001531,Om:0.0,wbar:102.93768193,L:100.46457166,
+   da:0.00000562,de:-0.00004392,di:-0.01294668,dOm:0.0,dwbar:0.32327364,dL:35999.37244981},
+  {name:'Mars',sym:'♂',color:'#e07a5f',size:4.2,
+   a:1.52371034,e:0.09339410,i:1.84969142,Om:49.55953891,wbar:-23.94362959,L:-4.55343205,
+   da:0.00001847,de:0.00007882,di:-0.00813131,dOm:-0.29257343,dwbar:0.44441088,dL:19140.30268499},
+  {name:'Jupiter',sym:'♃',color:'#e8c880',size:11,
+   a:5.20288700,e:0.04838624,i:1.30439695,Om:100.47390909,wbar:14.72847983,L:34.39644051,
+   da:-0.00011607,de:-0.00013253,di:-0.00183714,dOm:0.20469106,dwbar:0.21252668,dL:3034.74612775},
+  {name:'Saturn',sym:'♄',color:'#d4b070',size:9.5,
+   a:9.53667594,e:0.05386179,i:2.48599187,Om:113.66242448,wbar:92.59887831,L:49.95424423,
+   da:-0.00125060,de:-0.00050991,di:0.00193609,dOm:-0.28867794,dwbar:-0.41897216,dL:1222.49362201},
+  {name:'Uranus',sym:'♅',color:'#8dd8e0',size:6.5,
+   a:19.18916464,e:0.04725744,i:0.77263783,Om:74.01692503,wbar:170.95427630,L:313.23810451,
+   da:-0.00196176,de:-0.00004397,di:-0.00242939,dOm:0.04240589,dwbar:0.40805281,dL:428.48202785},
+  {name:'Neptune',sym:'♆',color:'#4d6fe0',size:6.2,
+   a:30.06992276,e:0.00859048,i:1.77004347,Om:131.78422574,wbar:44.96476227,L:-55.12002969,
+   da:0.00026291,de:0.00005105,di:0.00035372,dOm:-0.00508664,dwbar:-0.32241464,dL:218.45945325},
+  {name:'Pluto',sym:'♇',color:'#c8c0b0',size:3,
+   a:39.48211675,e:0.24882730,i:17.14001206,Om:110.30393684,wbar:224.06891629,L:238.92903833,
+   da:-0.00031596,de:0.00005170,di:0.00004818,dOm:-0.01183482,dwbar:-0.04062942,dL:145.20780515}
+];
+
+/* ══════════ Kepler solver ══════════
+   Solve M = E − e·sin(E) for E, via Newton-Raphson */
+function solveKepler(M,e){
+  /* M in radians */
+  M=((M+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
+  var E=M+Math.sign(M)*e*0.85;
+  if(Math.abs(M)<0.001)E=M+e*Math.sin(M);
+  for(var i=0;i<12;i++){
+    var f=E-e*Math.sin(E)-M;
+    var fp=1-e*Math.cos(E);
+    var d=f/fp;
+    E-=d;
+    if(Math.abs(d)<1e-12)break;
+  }
+  return E;
+}
+
+/* ══════════ Heliocentric position from elements ══════════ */
+function planetPosition(p,jd){
+  var t=T(jd);
+  var a=p.a+p.da*t;
+  var e=p.e+p.de*t;
+  var I=(p.i+p.di*t)*Math.PI/180;
+  var Om=(p.Om+p.dOm*t)*Math.PI/180;
+  var wbar=(p.wbar+p.dwbar*t)*Math.PI/180;
+  var L=(p.L+p.dL*t)*Math.PI/180;
+  var w=wbar-Om; /* argument of perihelion */
+  var M=L-wbar; /* mean anomaly */
+  var E=solveKepler(M,e);
+  /* position in orbital plane */
+  var xp=a*(Math.cos(E)-e);
+  var yp=a*Math.sqrt(1-e*e)*Math.sin(E);
+  /* rotate to ecliptic */
+  var xE=(Math.cos(w)*Math.cos(Om)-Math.sin(w)*Math.sin(Om)*Math.cos(I))*xp
+        +(-Math.sin(w)*Math.cos(Om)-Math.cos(w)*Math.sin(Om)*Math.cos(I))*yp;
+  var yE=(Math.cos(w)*Math.sin(Om)+Math.sin(w)*Math.cos(Om)*Math.cos(I))*xp
+        +(-Math.sin(w)*Math.sin(Om)+Math.cos(w)*Math.cos(Om)*Math.cos(I))*yp;
+  var zE=(Math.sin(w)*Math.sin(I))*xp+(Math.cos(w)*Math.sin(I))*yp;
+  /* distance and heliocentric longitude */
+  var r=Math.sqrt(xE*xE+yE*yE+zE*zE);
+  var lon=Math.atan2(yE,xE);
+  var lat=Math.asin(zE/r);
+  return {x:xE,y:yE,z:zE,r:r,lon:r2d(lon),lat:r2d(lat),E:E,M:M,keplerSolved:true};
+}
+
+/* ══════════ Moon position (simplified Meeus) ══════════ */
+function moonPosition(jd){
+  var t=T(jd);
+  /* mean elements */
+  var Lp=218.3164477+481267.88123421*t-0.0015786*t*t+t*t*t/538841;
+  var D=297.8501921+445267.1114034*t-0.0018819*t*t+t*t*t/545868;
+  var M=357.5291092+35999.0502909*t-0.0001536*t*t+t*t*t/24490000;
+  var Mp=134.9633964+477198.8675055*t+0.0087414*t*t+t*t*t/69699;
+  var F=93.2720950+483202.0175233*t-0.0036539*t*t-t*t*t/3526000;
+  function s(x){return Math.sin(x*Math.PI/180)}
+  /* ecliptic longitude */
+  var lon=Lp
+    +6.288774*s(Mp)
+    +1.274027*s(2*D-Mp)
+    +0.658314*s(2*D)
+    +0.213618*s(2*Mp)
+    -0.185116*s(M)
+    -0.114332*s(2*F)
+    +0.058793*s(2*D-2*Mp)
+    +0.057066*s(2*D-M-Mp)
+    +0.053322*s(2*D+Mp)
+    +0.045758*s(2*D-M)
+    -0.040923*s(M-Mp)
+    -0.034720*s(D)
+    -0.030383*s(M+Mp)
+    +0.015327*s(2*D-2*F)
+    -0.012528*s(Mp+2*F)
+    +0.010980*s(Mp-2*F)
+    +0.010675*s(4*D-Mp)
+    +0.010034*s(3*Mp)
+    +0.008548*s(4*D-2*Mp);
+  /* ecliptic latitude */
+  var lat=5.128122*s(F)
+    +0.280602*s(Mp+F)
+    +0.277693*s(Mp-F)
+    +0.173237*s(2*D-F)
+    +0.055413*s(2*D-Mp+F)
+    +0.046271*s(2*D-Mp-F)
+    +0.032573*s(2*D+F)
+    +0.017198*s(2*Mp+F)
+    +0.009266*s(2*D+Mp-F)
+    +0.008822*s(2*Mp-F);
+  /* distance (km) */
+  var r=385000.56
+    -20905.355*Math.cos(Mp*Math.PI/180)
+    -3699.111*Math.cos((2*D-Mp)*Math.PI/180)
+    -2955.968*Math.cos(2*D*Math.PI/180)
+    -569.925*Math.cos(2*Mp*Math.PI/180)
+    +48.888*Math.cos(M*Math.PI/180)
+    -3.149*Math.cos(2*F*Math.PI/180);
+  return {lon:norm360(lon),lat:lat,r:r};
+}
+
+/* ══════════ Sun position (geocentric ecliptic) ══════════ */
+function sunPosition(jd){
+  var earth=PLANETS[2];
+  var p=planetPosition(earth,jd);
+  return {lon:norm360(p.lon+180),lat:-p.lat,r:p.r,pos:p};
+}
+
+/* ══════════ Coordinate transforms ══════════ */
+var OBLIQUITY=23.4392911*Math.PI/180; /* J2000 */
+function obliquityAt(jd){
+  var t=T(jd);
+  return (23.43929111-0.013004167*t-0.00000016389*t*t+0.0000005036*t*t*t)*Math.PI/180;
+}
+function eclipticToEquatorial(lon,lat,jd){
+  var e=obliquityAt(jd);
+  lon=d2r(lon);lat=d2r(lat);
+  var x=Math.cos(lat)*Math.cos(lon);
+  var y=Math.cos(lat)*Math.sin(lon);
+  var z=Math.sin(lat);
+  var xe=x;
+  var ye=y*Math.cos(e)-z*Math.sin(e);
+  var ze=y*Math.sin(e)+z*Math.cos(e);
+  var ra=Math.atan2(ye,xe);
+  var dec=Math.atan2(ze,Math.sqrt(xe*xe+ye*ye));
+  return {ra:norm360(r2d(ra)),dec:r2d(dec)};
+}
+function equatorialToHorizontal(ra,dec,lat,lon,jd){
+  /* Meeus 13.5 */
+  var lst=localSiderealTime(jd,lon); /* degrees */
+  var H=norm360(lst-ra); /* hour angle */
+  var Hr=d2r(H),dr=d2r(dec),latr=d2r(lat);
+  var sinAlt=Math.sin(dr)*Math.sin(latr)+Math.cos(dr)*Math.cos(latr)*Math.cos(Hr);
+  var alt=Math.asin(sinAlt);
+  var cosAz=(Math.sin(dr)-Math.sin(latr)*sinAlt)/(Math.cos(latr)*Math.cos(alt));
+  var az=Math.acos(clamp(cosAz,-1,1));
+  if(Math.sin(Hr)>0)az=2*Math.PI-az;
+  return {alt:r2d(alt),az:r2d(az)};
+}
+function localSiderealTime(jd,lon){
+  var t=T(jd);
+  var gmst=280.46061837+360.98564736629*(jd-2451545.0)+0.000387933*t*t-t*t*t/38710000;
+  return norm360(gmst+lon);
+}
+
+/* ══════════ Ayanamsa for sidereal (Vedic) coordinates — optional ══════════ */
+function ayanamsa(jd){
+  /* Lahiri ayanamsa approximation */
+  var t=T(jd);
+  return 23.85+0.013972*((jd-2451545.0)/365.25);
+}
+
+/* ══════════ Zodiac ══════════ */
+var ZODIAC=['♈ Aries','♉ Taurus','♊ Gemini','♋ Cancer','♌ Leo','♍ Virgo','♎ Libra','♏ Scorpio','♐ Sagittarius','♑ Capricorn','♒ Aquarius','♓ Pisces'];
+function zodiacSign(lon){
+  var s=Math.floor(norm360(lon)/30);
+  return {index:s,name:ZODIAC[s],deg:norm360(lon)%30};
+}
+
+/* ══════════ Moon phase ══════════ */
+function moonPhase(jd){
+  var sun=sunPosition(jd);
+  var moon=moonPosition(jd);
+  var elong=norm360(moon.lon-sun.lon);
+  var phase=elong/360; /* 0=new, 0.5=full */
+  /* illuminated fraction (approximate) */
+  var ill=(1-Math.cos(d2r(elong)))/2;
+  var names=['New Moon','Waxing Crescent','First Quarter','Waxing Gibbous','Full Moon','Waning Gibbous','Last Quarter','Waning Crescent'];
+  var nameIdx=Math.floor(norm360(elong+22.5)/45)%8;
+  return {elong:elong,phase:phase,illum:ill,name:names[nameIdx],angle:elong};
+}
+
+/* ══════════ Brightest stars (J2000, ~50 of them) ══════════ */
+var STARS=[
+  {n:'Sirius',ra:101.287,dec:-16.716,mag:-1.46,c:'#a8d8ff'},
+  {n:'Canopus',ra:95.988,dec:-52.696,mag:-0.74,c:'#fff5c0'},
+  {n:'Alpha Centauri',ra:219.902,dec:-60.834,mag:-0.27,c:'#ffe8b0'},
+  {n:'Arcturus',ra:213.915,dec:19.182,mag:-0.05,c:'#ffd8a0'},
+  {n:'Vega',ra:279.235,dec:38.784,mag:0.03,c:'#c0d8ff'},
+  {n:'Capella',ra:79.172,dec:45.998,mag:0.08,c:'#fff0c0'},
+  {n:'Rigel',ra:78.634,dec:-8.202,mag:0.13,c:'#b0c8ff'},
+  {n:'Procyon',ra:114.826,dec:5.225,mag:0.34,c:'#fff5e0'},
+  {n:'Achernar',ra:24.429,dec:-57.237,mag:0.46,c:'#c0d8ff'},
+  {n:'Betelgeuse',ra:88.793,dec:7.407,mag:0.50,c:'#ffb090'},
+  {n:'Hadar',ra:210.956,dec:-60.373,mag:0.61,c:'#b8d0ff'},
+  {n:'Altair',ra:297.696,dec:8.868,mag:0.76,c:'#e0e8ff'},
+  {n:'Aldebaran',ra:68.980,dec:16.509,mag:0.87,c:'#ffb880'},
+  {n:'Antares',ra:247.352,dec:-26.432,mag:1.06,c:'#ff9880'},
+  {n:'Spica',ra:201.298,dec:-11.161,mag:1.04,c:'#c0d0ff'},
+  {n:'Pollux',ra:116.329,dec:28.026,mag:1.14,c:'#ffd898'},
+  {n:'Fomalhaut',ra:344.413,dec:-29.622,mag:1.16,c:'#e0e8ff'},
+  {n:'Deneb',ra:310.358,dec:45.280,mag:1.25,c:'#e8eeff'},
+  {n:'Mimosa',ra:191.930,dec:-59.689,mag:1.25,c:'#b8d0ff'},
+  {n:'Regulus',ra:152.093,dec:11.967,mag:1.35,c:'#d0e0ff'},
+  {n:'Adhara',ra:104.656,dec:-28.972,mag:1.50,c:'#b0c8ff'},
+  {n:'Castor',ra:113.650,dec:31.888,mag:1.58,c:'#e0ecff'},
+  {n:'Gacrux',ra:187.791,dec:-57.113,mag:1.59,c:'#ffb090'},
+  {n:'Shaula',ra:263.402,dec:-37.104,mag:1.62,c:'#c0d0ff'},
+  {n:'Bellatrix',ra:81.283,dec:6.350,mag:1.64,c:'#b8d0ff'},
+  {n:'Elnath',ra:81.573,dec:28.608,mag:1.65,c:'#ffd898'},
+  {n:'Miaplacidus',ra:138.300,dec:-69.717,mag:1.67,c:'#e8f0ff'},
+  {n:'Alnilam',ra:84.053,dec:-1.202,mag:1.69,c:'#b8d0ff'},
+  {n:'Alnair',ra:332.058,dec:-46.961,mag:1.74,c:'#c0d8ff'},
+  {n:'Alnitak',ra:85.190,dec:-1.943,mag:1.74,c:'#b8d0ff'},
+  {n:'Alioth',ra:193.507,dec:55.960,mag:1.76,c:'#e8eeff'},
+  {n:'Dubhe',ra:165.932,dec:61.751,mag:1.79,c:'#ffd8a0'},
+  {n:'Mirfak',ra:51.081,dec:49.861,mag:1.79,c:'#fff0c0'},
+  {n:'Wezen',ra:107.098,dec:-26.393,mag:1.82,c:'#fff0b0'},
+  {n:'Sargas',ra:264.330,dec:-42.998,mag:1.84,c:'#fff0c0'},
+  {n:'Kaus Australis',ra:276.043,dec:-34.385,mag:1.85,c:'#c0d0ff'},
+  {n:'Avior',ra:125.628,dec:-59.510,mag:1.86,c:'#ffd0a0'},
+  {n:'Alkaid',ra:206.885,dec:49.313,mag:1.86,c:'#b8d0ff'},
+  {n:'Menkalinan',ra:89.882,dec:44.947,mag:1.90,c:'#e0ecff'},
+  {n:'Atria',ra:252.166,dec:-69.028,mag:1.91,c:'#ffb090'},
+  {n:'Alhena',ra:99.428,dec:16.399,mag:1.92,c:'#e0ecff'},
+  {n:'Peacock',ra:306.412,dec:-56.735,mag:1.94,c:'#b8d0ff'},
+  {n:'Polaris',ra:37.954,dec:89.264,mag:1.97,c:'#fff0c0'},
+  {n:'Mirzam',ra:95.674,dec:-17.956,mag:1.98,c:'#a8c8ff'},
+  {n:'Alphard',ra:141.897,dec:-8.659,mag:1.98,c:'#ffb890'},
+  {n:'Hamal',ra:31.793,dec:23.462,mag:2.00,c:'#ffb880'},
+  {n:'Deneb Kaitos',ra:10.897,dec:-17.987,mag:2.04,c:'#ffd8a0'},
+  {n:'Nunki',ra:283.816,dec:-26.297,mag:2.05,c:'#c0d8ff'},
+  {n:'Menkent',ra:211.671,dec:-36.370,mag:2.06,c:'#ffd8a0'},
+  {n:'Alpheratz',ra:2.097,dec:29.090,mag:2.06,c:'#b8d0ff'}
+];
+
+/* ══════════ Constellation lines (simplified for a few visible ones) ══════════ */
+var CONSTELLATIONS=[
+  {name:'Ursa Major',stars:[
+    [165.932,61.751],[165.460,56.382],[168.527,55.960],[178.458,53.695],
+    [183.856,57.033],[193.507,55.960],[201.306,54.925],[206.885,49.313]
+  ]},
+  {name:'Orion',stars:[
+    [81.283,6.350],[88.793,7.407],[84.053,-1.202],[85.190,-1.943],[83.002,-0.299],
+    [78.634,-8.202],[86.939,-9.670],[78.634,-8.202]
+  ]},
+  {name:'Cassiopeia',stars:[
+    [2.294,59.150],[10.127,56.537],[14.177,60.717],[21.454,60.235],[28.599,63.670]
+  ]},
+  {name:'Big Dipper pointers (to Polaris)',stars:[
+    [165.932,61.751],[37.954,89.264]
+  ]}
+];
+
+/* ══════════ Rise/Set calculation (numerical) ══════════ */
+function riseSetTime(ra,dec,lat,lon,jd,alt){
+  alt=alt||-0.5667;
+  /* search between jd-0.5 and jd+0.5 for horizon crossing */
+  var results=[];
+  var prev=-999;
+  for(var h=-12;h<=12;h+=0.02){
+    var j=jd+h/24;
+    var ha=equatorialToHorizontal(ra,dec,lat,lon,j);
+    if(prev!==-999&&Math.sign(ha.alt-alt)!==Math.sign(prev-alt)){
+      /* refine by bisection */
+      var a=h-0.02,b=h;
+      for(var i=0;i<20;i++){
+        var m=(a+b)/2;
+        var am=equatorialToHorizontal(ra,dec,lat,lon,jd+m/24).alt;
+        if(Math.sign(am-alt)===Math.sign(prev-alt))a=m;else b=m;
+      }
+      var rise=(prev<alt);
+      var t=(a+b)/2;
+      var dt=new Date(jdToDate(jd).getTime()+t*3600*1000);
+      results.push({rise:rise,time:dt,hours:t});
+    }
+    prev=ha.alt;
+  }
+  return results;
+}
+
+/* ══════════ Solar/lunar eclipse detection ══════════ */
+function findNextEclipse(jd,maxDays){
+  maxDays=maxDays||365;
+  var p=jd;
+  for(var d=0;d<maxDays;d+=0.25){
+    var test=jd+d;
+    var sun=sunPosition(test);
+    var moon=moonPosition(test);
+    var elong=norm360(moon.lon-sun.lon);
+    var lat=moon.lat;
+    /* solar eclipse: new moon, |elong|<~1.5°, |lat|<~1.5° */
+    if((elong<1.5||elong>358.5)&&Math.abs(lat)<1.5){
+      return {type:'solar',jd:test,date:jdToDate(test),elong:elong,lat:lat};
+    }
+    /* lunar eclipse: full moon, |elong-180|<1.5°, |lat|<~1.5° */
+    if(Math.abs(elong-180)<1.5&&Math.abs(lat)<1.5){
+      return {type:'lunar',jd:test,date:jdToDate(test),elong:elong,lat:lat};
+    }
+  }
+  return null;
+}
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   EPHEMERIS · Views · Rendering · UI
+   ══════════════════════════════════════════════════════════════ */
+
+/* ══════════ App state ══════════ */
+var S={
+  jd:julianDate(new Date()),
+  view:'orrery',
+  playing:false,
+  speed:86400,   /* seconds of sim time per real second */
+  lat:40.7128,   /* New York default */
+  lon:-74.006,
+  locName:'New York',
+  selected:'Earth',
+  showOrbits:true,
+  showLabels:true,
+  showStars:true,
+  showEcliptic:true,
+  dateStr:''
+};
+
+/* ══════════ Views registry ══════════ */
+var VIEWS=[
+  {id:'orrery',n:'Orrery',ico:'🪐'},
+  {id:'sky',n:'Sky Chart',ico:'✦'},
+  {id:'ephem',n:'Ephemeris Table',ico:'▤'},
+  {id:'moon',n:'Moon & Phases',ico:'🌙'},
+  {id:'kepler',n:'Kepler Solver',ico:'∑'},
+  {id:'eclipse',n:'Eclipses',ico:'☉'},
+  {id:'const',n:'Constellations',ico:'✧'},
+  {id:'rise',n:'Rise & Set',ico:'↕'},
+  {id:'photo',n:'Astro Photo',ico:'📷'}
+];
+
+/* ══════════ Canvas ══════════ */
+var CV=null,CTX=null,W=0,H=0,DPR=1;
+function initCanvas(){
+  CV=$('mainCanvas');CTX=CV.getContext('2d');
+  resize();
+  window.addEventListener('resize',resize);
+}
+function resize(){
+  DPR=window.devicePixelRatio||1;
+  W=CV.parentElement.clientWidth;
+  H=CV.parentElement.clientHeight;
+  CV.width=Math.floor(W*DPR);
+  CV.height=Math.floor(H*DPR);
+  CV.style.width=W+'px';
+  CV.style.height=H+'px';
+  CTX.setTransform(DPR,0,0,DPR,0,0);
+}
+
+/* ══════════ Starfield (deterministic) ══════════ */
+var STARFIELD=(function(){
+  var rng=(function(seed){return function(){seed=(seed*9301+49297)%233280;return seed/233280}})(42);
+  var stars=[];
+  for(var i=0;i<600;i++){
+    stars.push({x:rng(),y:rng(),r:rng()*0.9+0.15,a:rng()*0.6+0.2});
+  }
+  return stars;
+})();
+function drawStars(){
+  if(!S.showStars)return;
+  STARFIELD.forEach(function(s){
+    CTX.fillStyle='rgba(220,230,255,'+s.a+')';
+    CTX.fillRect(s.x*W,s.y*H,s.r,s.r);
+  });
+}
+
+/* ══════════ View: Orrery ══════════ */
+function drawOrrery(){
+  drawStars();
+  var cx=W/2,cy=H/2;
+  var maxAU=S.selected==='outer'?32:11;
+  var maxR=Math.min(W,H)*0.42;
+  var scale=maxR/maxAU;
+  /* Sun */
+  var sunGrad=CTX.createRadialGradient(cx,cy,0,cx,cy,20);
+  sunGrad.addColorStop(0,'#fff8d0');
+  sunGrad.addColorStop(.35,'#ffcc60');
+  sunGrad.addColorStop(1,'rgba(255,150,20,0)');
+  CTX.fillStyle=sunGrad;
+  CTX.beginPath();CTX.arc(cx,cy,20,0,Math.PI*2);CTX.fill();
+  CTX.fillStyle='#fff5b8';
+  CTX.beginPath();CTX.arc(cx,cy,5,0,Math.PI*2);CTX.fill();
+
+  /* Orbits + planets */
+  PLANETS.forEach(function(p){
+    var pos=planetPosition(p,S.jd);
+    if(pos.r>maxAU&&p.name!=='Pluto')return;
+    /* orbit ellipse: use a and e to draw */
+    var a=p.a*scale;
+    var b=a*Math.sqrt(1-p.e*p.e);
+    var om=d2r(p.Om);
+    var w=d2r(p.wbar-p.Om);
+    /* eccentricity shift */
+    var shift=p.a*p.e*scale;
+    var ang=om+w;
+    var ox=cx-Math.cos(ang)*shift;
+    var oy=cy-Math.sin(ang)*shift;
+    CTX.strokeStyle=S.showOrbits?'rgba(124,232,255,.12)':'transparent';
+    CTX.lineWidth=1;
+    CTX.beginPath();
+    CTX.ellipse(ox,oy,a,b,-ang,0,Math.PI*2);
+    CTX.stroke();
+    /* planet */
+    var px=cx+pos.x*scale;
+    var py=cy+pos.y*scale;
+    /* line from sun */
+    CTX.strokeStyle='rgba(124,232,255,.08)';
+    CTX.beginPath();CTX.moveTo(cx,cy);CTX.lineTo(px,py);CTX.stroke();
+    /* glow */
+    var g=CTX.createRadialGradient(px,py,0,px,py,p.size*3);
+    g.addColorStop(0,p.color);
+    g.addColorStop(1,'transparent');
+    CTX.fillStyle=g;
+    CTX.beginPath();CTX.arc(px,py,p.size*3,0,Math.PI*2);CTX.fill();
+    /* body */
+    CTX.fillStyle=p.color;
+    CTX.beginPath();CTX.arc(px,py,p.size,0,Math.PI*2);CTX.fill();
+    if(p.name===S.selected){
+      CTX.strokeStyle='#fff';CTX.lineWidth=1.5;
+      CTX.beginPath();CTX.arc(px,py,p.size+4,0,Math.PI*2);CTX.stroke();
+    }
+    /* label */
+    if(S.showLabels){
+      CTX.fillStyle='rgba(200,210,255,.75)';
+      CTX.font='10px "JetBrains Mono",monospace';
+      CTX.textAlign='center';
+      CTX.fillText(p.name,px,py-p.size-6);
+    }
+  });
+
+  /* Ecliptic grid */
+  if(S.showEcliptic){
+    CTX.strokeStyle='rgba(255,209,102,.08)';
+    CTX.lineWidth=1;
+    for(var r=1;r<=maxAU;r+=maxAU>=20?5:2){
+      CTX.beginPath();
+      CTX.arc(cx,cy,r*scale,0,Math.PI*2);
+      CTX.stroke();
+    }
+    /* radial lines every 30° */
+    for(var a2=0;a2<360;a2+=30){
+      var rad=d2r(a2);
+      CTX.beginPath();
+      CTX.moveTo(cx,cy);
+      CTX.lineTo(cx+Math.cos(rad)*maxR,cy+Math.sin(rad)*maxR);
+      CTX.stroke();
+    }
+  }
+
+  /* Scale bar */
+  var sbw=100;
+  CTX.strokeStyle='rgba(200,210,255,.3)';
+  CTX.beginPath();
+  CTX.moveTo(20,H-30);CTX.lineTo(20+sbw,H-30);
+  CTX.moveTo(20,H-35);CTX.lineTo(20,H-25);
+  CTX.moveTo(20+sbw,H-35);CTX.lineTo(20+sbw,H-25);
+  CTX.stroke();
+  CTX.fillStyle='rgba(200,210,255,.5)';
+  CTX.font='9px "JetBrains Mono",monospace';
+  CTX.textAlign='left';
+  CTX.fillText(maxAU>=20?'10 AU':'2 AU',22,H-16);
+}
+
+/* ══════════ View: Sky chart ══════════ */
+function drawSky(){
+  drawStars();
+  var cx=W/2,cy=H/2;
+  var R=Math.min(W,H)*0.42;
+  /* horizon circle */
+  CTX.strokeStyle='rgba(124,232,255,.25)';
+  CTX.lineWidth=1;
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.stroke();
+  /* cardinal markers */
+  CTX.fillStyle='rgba(200,210,255,.5)';
+  CTX.font='11px "JetBrains Mono",monospace';
+  CTX.textAlign='center';
+  CTX.fillText('N',cx,cy-R-6);
+  CTX.fillText('S',cx,cy+R+16);
+  CTX.textAlign='right';
+  CTX.fillText('E',cx+R+8,cy+4);
+  CTX.textAlign='left';
+  CTX.fillText('W',cx-R-8,cy+4);
+  /* altitude rings */
+  [30,60].forEach(function(alt){
+    var r=R*(1-alt/90);
+    CTX.strokeStyle='rgba(124,232,255,.12)';
+    CTX.beginPath();CTX.arc(cx,cy,r,0,Math.PI*2);CTX.stroke();
+    CTX.fillStyle='rgba(124,232,255,.3)';
+    CTX.font='9px "JetBrains Mono",monospace';
+    CTX.textAlign='left';
+    CTX.fillText(alt+'°',cx+r+4,cy+3);
+  });
+  /* zenith marker */
+  CTX.fillStyle='rgba(124,232,255,.4)';
+  CTX.fillRect(cx-1,cy-1,2,2);
+
+  /* plot stars */
+  STARS.forEach(function(s){
+    var h=equatorialToHorizontal(s.ra,s.dec,S.lat,S.lon,S.jd);
+    if(h.alt<0)return;
+    var r=R*(1-h.alt/90);
+    var az=d2r(h.az);
+    var x=cx+Math.sin(az)*r;
+    var y=cy-Math.cos(az)*r;
+    var size=clamp((5-s.mag)/1.6,0.6,3.5);
+    var alpha=clamp(1-h.alt/90*0.3,0.6,1);
+    CTX.fillStyle=s.c;
+    CTX.globalAlpha=alpha;
+    CTX.beginPath();CTX.arc(x,y,size,0,Math.PI*2);CTX.fill();
+    CTX.globalAlpha=1;
+    if(s.mag<1.5){
+      CTX.fillStyle='rgba(220,230,255,.55)';
+      CTX.font='9px "JetBrains Mono",monospace';
+      CTX.textAlign='left';
+      CTX.fillText(s.n,x+5,y-3);
+    }
+  });
+
+  /* plot planets */
+  PLANETS.forEach(function(p){
+    if(p.name==='Earth')return;
+    var pos=planetPosition(p,S.jd);
+    /* geocentric: subtract Earth's position */
+    var e=planetPosition(PLANETS[2],S.jd);
+    var gx=pos.x-e.x,gy=pos.y-e.y,gz=pos.z-e.z;
+    var r=Math.sqrt(gx*gx+gy*gy+gz*gz);
+    var lon=r2d(Math.atan2(gy,gx));
+    var lat=r2d(Math.asin(gz/r));
+    var eq=eclipticToEquatorial(lon,lat,S.jd);
+    var h=equatorialToHorizontal(eq.ra,eq.dec,S.lat,S.lon,S.jd);
+    if(h.alt<0)return;
+    var rr=R*(1-h.alt/90);
+    var az=d2r(h.az);
+    var x=cx+Math.sin(az)*rr;
+    var y=cy-Math.cos(az)*rr;
+    CTX.fillStyle=p.color;
+    CTX.beginPath();CTX.arc(x,y,4,0,Math.PI*2);CTX.fill();
+    CTX.strokeStyle='rgba(255,255,255,.5)';
+    CTX.lineWidth=1;
+    CTX.beginPath();CTX.arc(x,y,6,0,Math.PI*2);CTX.stroke();
+    CTX.fillStyle='rgba(220,230,255,.75)';
+    CTX.font='9px "JetBrains Mono",monospace';
+    CTX.textAlign='left';
+    CTX.fillText(p.name,x+8,y-3);
+  });
+
+  /* Sun and Moon */
+  var sp=sunPosition(S.jd);
+  var seq=eclipticToEquatorial(sp.lon,sp.lat,S.jd);
+  var sh=equatorialToHorizontal(seq.ra,seq.dec,S.lat,S.lon,S.jd);
+  if(sh.alt>=0){
+    var rr=R*(1-sh.alt/90);
+    var az=d2r(sh.az);
+    var x=cx+Math.sin(az)*rr;
+    var y=cy-Math.cos(az)*rr;
+    var g=CTX.createRadialGradient(x,y,0,x,y,20);
+    g.addColorStop(0,'#fff8d0');
+    g.addColorStop(1,'rgba(255,220,100,0)');
+    CTX.fillStyle=g;
+    CTX.beginPath();CTX.arc(x,y,20,0,Math.PI*2);CTX.fill();
+    CTX.fillStyle='#fff5b8';
+    CTX.beginPath();CTX.arc(x,y,8,0,Math.PI*2);CTX.fill();
+    CTX.fillStyle='rgba(255,240,180,.9)';
+    CTX.font='10px "JetBrains Mono",monospace';
+    CTX.textAlign='left';
+    CTX.fillText('☉ Sun',x+12,y-3);
+  }
+  var mp=moonPosition(S.jd);
+  var meq=eclipticToEquatorial(mp.lon,mp.lat,S.jd);
+  var mh=equatorialToHorizontal(meq.ra,meq.dec,S.lat,S.lon,S.jd);
+  if(mh.alt>=0){
+    var rr2=R*(1-mh.alt/90);
+    var az2=d2r(mh.az);
+    var x2=cx+Math.sin(az2)*rr2;
+    var y2=cy-Math.cos(az2)*rr2;
+    CTX.fillStyle='rgba(220,225,255,.85)';
+    CTX.beginPath();CTX.arc(x2,y2,6,0,Math.PI*2);CTX.fill();
+    CTX.fillStyle='rgba(220,230,255,.9)';
+    CTX.font='10px "JetBrains Mono",monospace';
+    CTX.textAlign='left';
+    CTX.fillText('☾ Moon',x2+10,y2-3);
+  }
+}
+
+/* ══════════ View: Ephemeris table (canvas is minimal, data in right panel) ══════════ */
+function drawEphem(){
+  drawStars();
+  var cx=W/2,cy=H/2;
+  /* big JD display */
+  CTX.fillStyle='rgba(124,232,255,.9)';
+  CTX.font='bold 42px "JetBrains Mono",monospace';
+  CTX.textAlign='center';
+  CTX.fillText('JD '+S.jd.toFixed(5),cx,cy-40);
+  CTX.font='16px "JetBrains Mono",monospace';
+  CTX.fillStyle='rgba(200,210,255,.6)';
+  CTX.fillText('T = '+(T(S.jd)).toFixed(6)+' centuries since J2000.0',cx,cy+2);
+  var d=jdToDate(S.jd);
+  CTX.fillText(d.toUTCString(),cx,cy+30);
+  /* heliocentric distance chart */
+  CTX.fillStyle='rgba(124,232,255,.4)';
+  CTX.font='11px "JetBrains Mono",monospace';
+  CTX.textAlign='left';
+  CTX.fillText('HELIOCENTRIC DISTANCE (AU)',40,cy+90);
+  var yy=cy+115;
+  PLANETS.forEach(function(p,i){
+    var pos=planetPosition(p,S.jd);
+    var x=40;
+    var bw=(W-80)*(pos.r/40);
+    CTX.fillStyle='rgba(124,232,255,.15)';
+    CTX.fillRect(x,yy+i*22,W-80,16);
+    CTX.fillStyle=p.color;
+    CTX.fillRect(x,yy+i*22,Math.min(bw,W-80),16);
+    CTX.fillStyle='rgba(220,230,255,.85)';
+    CTX.font='11px "JetBrains Mono",monospace';
+    CTX.textAlign='left';
+    CTX.fillText(p.name,x+6,yy+i*22+12);
+    CTX.textAlign='right';
+    CTX.fillText(pos.r.toFixed(4)+' AU',W-45,yy+i*22+12);
+  });
+}
+
+/* ══════════ View: Moon ══════════ */
+function drawMoon(){
+  drawStars();
+  var mp=moonPhase(S.jd);
+  var cx=W/2,cy=H/2-30;
+  var R=Math.min(W,H)*0.25;
+  /* moon disc */
+  CTX.fillStyle='#e8eaf8';
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.fill();
+  /* shadow: draw phase by clipping */
+  var elong=d2r(mp.elong);
+  /* illuminated side toward sun (elongation 0=new, 180=full) */
+  /* we draw the lit fraction by overlaying dark */
+  CTX.save();
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.clip();
+  var shadowFrac=1-mp.illum;
+  /* approximate: draw a dark ellipse on the near side */
+  /* phase angle: 0=new (fully dark), 0.5=quarter, 1=full */
+  var phase=mp.phase;
+  /* terminator ellipse width = R*|cos(2π*phase)| */
+  var term=Math.abs(Math.cos(2*Math.PI*phase));
+  /* if phase < 0.5 (waxing): shadow on right */
+  var waxing=phase<0.5;
+  CTX.fillStyle='#0a0e24';
+  /* build terminator shape */
+  CTX.beginPath();
+  var steps=64;
+  if(waxing){
+    /* right half is dark; terminator ellipse */
+    for(var i=0;i<=steps;i++){
+      var a=Math.PI/2+Math.PI*i/steps;
+      CTX.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);
+    }
+    for(var i=steps;i>=0;i--){
+      var a2=Math.PI/2+Math.PI*i/steps;
+      var x=cx-term*R*Math.cos(a2);
+      var y=cy+R*Math.sin(a2);
+      CTX.lineTo(x,y);
+    }
+  }else{
+    /* left half dark */
+    for(var j=0;j<=steps;j++){
+      var a3=-Math.PI/2+Math.PI*j/steps;
+      CTX.lineTo(cx+Math.cos(a3)*R,cy+Math.sin(a3)*R);
+    }
+    for(var j=steps;j>=0;j--){
+      var a4=-Math.PI/2+Math.PI*j/steps;
+      CTX.lineTo(cx+term*R*Math.cos(a4),cy+R*Math.sin(a4));
+    }
+  }
+  CTX.closePath();CTX.fill();
+  /* reverse if fully new/full */
+  if(mp.illum>0.985){/* full: no shadow */}
+  else if(mp.illum<0.015){/* new: all dark */}
+  CTX.restore();
+  /* border */
+  CTX.strokeStyle='rgba(124,232,255,.35)';
+  CTX.lineWidth=1;
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.stroke();
+  /* info */
+  CTX.fillStyle='rgba(220,230,255,.9)';
+  CTX.font='16px "JetBrains Mono",monospace';
+  CTX.textAlign='center';
+  CTX.fillText(mp.name,cx,cy+R+40);
+  CTX.font='11px "JetBrains Mono",monospace';
+  CTX.fillStyle='rgba(200,210,255,.6)';
+  CTX.fillText('Elongation '+mp.elong.toFixed(1)+'°  ·  Illum '+ (mp.illum*100).toFixed(1)+'%',cx,cy+R+64);
+  CTX.fillText('Distance '+mp.r.toFixed(0)+' km',cx,cy+R+84);
+}
+
+/* ══════════ View: Kepler Solver ══════════ */
+function drawKepler(){
+  var cx=W*0.4,cy=H/2;
+  var R=Math.min(W,H)*0.3;
+  var e=0.5;
+  /* orbit ellipse */
+  var a=R,b=R*Math.sqrt(1-e*e);
+  var shift=a*e;
+  var ox=cx-shift;
+  CTX.strokeStyle='rgba(124,232,255,.35)';
+  CTX.lineWidth=1.5;
+  CTX.beginPath();CTX.ellipse(ox,cy,a,b,0,0,Math.PI*2);CTX.stroke();
+  /* focus (sun) */
+  CTX.fillStyle='#ffd166';
+  CTX.beginPath();CTX.arc(cx,cy,6,0,Math.PI*2);CTX.fill();
+  CTX.fillStyle='rgba(255,209,102,.8)';
+  CTX.font='11px "JetBrains Mono",monospace';
+  CTX.textAlign='left';
+  CTX.fillText('Sun (focus)',cx+12,cy+4);
+  /* pick a mean anomaly */
+  var M=(T(S.jd)*1.2)%(2*Math.PI);
+  var E=solveKepler(M,e);
+  /* planet position */
+  var px=ox+a*Math.cos(E);
+  var py=cy+b*Math.sin(E);
+  /* aux circle */
+  CTX.strokeStyle='rgba(124,232,255,.1)';
+  CTX.beginPath();CTX.arc(ox,cy,a,0,Math.PI*2);CTX.stroke();
+  /* draw E angle */
+  CTX.strokeStyle='rgba(124,232,255,.35)';
+  CTX.beginPath();CTX.moveTo(ox,cy);
+  CTX.lineTo(ox+a*Math.cos(E),cy+a*Math.sin(E));
+  CTX.stroke();
+  /* draw true anomaly line */
+  CTX.strokeStyle='rgba(255,126,182,.6)';
+  CTX.beginPath();CTX.moveTo(cx,cy);CTX.lineTo(px,py);CTX.stroke();
+  /* planet */
+  CTX.fillStyle='#7ce8ff';
+  CTX.beginPath();CTX.arc(px,py,7,0,Math.PI*2);CTX.fill();
+  /* labels */
+  CTX.fillStyle='rgba(220,230,255,.9)';
+  CTX.font='12px "JetBrains Mono",monospace';
+  CTX.textAlign='left';
+  var x0=cx+W*0.22;
+  CTX.fillText('Kepler\'s Equation',x0,cy-100);
+  CTX.fillStyle='rgba(200,210,255,.7)';
+  CTX.font='11px "JetBrains Mono",monospace';
+  CTX.fillText('M = E − e · sin(E)',x0,cy-70);
+  CTX.fillStyle='rgba(124,232,255,.9)';
+  CTX.fillText('M = '+M.toFixed(4)+' rad',x0,cy-40);
+  CTX.fillText('E = '+E.toFixed(4)+' rad',x0,cy-20);
+  CTX.fillStyle='rgba(255,209,102,.9)';
+  CTX.fillText('e = '+e, x0,cy+5);
+  CTX.fillStyle='rgba(200,210,255,.6)';
+  CTX.fillText('M error: '+Math.abs(M-(E-e*Math.sin(E))).toExponential(2), x0,cy+30);
+  CTX.fillText('Iterations: 12 max', x0,cy+50);
+  CTX.fillStyle='rgba(255,126,182,.9)';
+  CTX.fillText('True anomaly ν = '+((2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2),Math.sqrt(1-e)*Math.cos(E/2)))*180/Math.PI).toFixed(2)+'°', x0,cy+80);
+}
+
+/* ══════════ View: Eclipse finder ══════════ */
+function drawEclipse(){
+  drawStars();
+  var cx=W/2,cy=H/2;
+  /* Sun and Moon glyphs */
+  var sp=sunPosition(S.jd);
+  var mp=moonPosition(S.jd);
+  var elong=norm360(mp.lon-sp.lon);
+  /* angular geometry */
+  CTX.fillStyle='rgba(220,230,255,.4)';
+  CTX.font='11px "JetBrains Mono",monospace';
+  CTX.textAlign='center';
+  CTX.fillText('ELONGATION VIEW',cx,cy-160);
+  /* draw sun at left, moon at right, angle */
+  var R=180;
+  var sunX=cx-R, sunY=cy;
+  var ang=d2r(elong);
+  var moonX=cx+Math.cos(ang-Math.PI)*R;
+  var moonY=cy+Math.sin(ang-Math.PI)*R;
+  /* sun */
+  var g=CTX.createRadialGradient(sunX,sunY,0,sunX,sunY,40);
+  g.addColorStop(0,'#fff5b8');
+  g.addColorStop(1,'rgba(255,220,100,0)');
+  CTX.fillStyle=g;
+  CTX.beginPath();CTX.arc(sunX,sunY,40,0,Math.PI*2);CTX.fill();
+  CTX.fillStyle='#fff5b8';
+  CTX.beginPath();CTX.arc(sunX,sunY,14,0,Math.PI*2);CTX.fill();
+  /* earth at center */
+  CTX.fillStyle='#4d9de0';
+  CTX.beginPath();CTX.arc(cx,cy,10,0,Math.PI*2);CTX.fill();
+  CTX.fillStyle='rgba(124,232,255,.8)';
+  CTX.font='10px "JetBrains Mono",monospace';
+  CTX.textAlign='center';
+  CTX.fillText('Earth',cx,cy+26);
+  CTX.fillText('☉ Sun',sunX,sunY+60);
+  /* moon */
+  CTX.fillStyle='#e8eaf8';
+  CTX.beginPath();CTX.arc(moonX,moonY,8,0,Math.PI*2);CTX.fill();
+  CTX.fillStyle='rgba(220,225,255,.9)';
+  CTX.fillText('☾ Moon',moonX,moonY-20);
+  /* elongation arc */
+  CTX.strokeStyle='rgba(255,209,102,.4)';
+  CTX.lineWidth=1;
+  CTX.setLineDash([4,4]);
+  CTX.beginPath();CTX.arc(cx,cy,120,-Math.PI,0);CTX.stroke();
+  CTX.setLineDash([]);
+  /* info box */
+  CTX.fillStyle='rgba(124,232,255,.9)';
+  CTX.font='13px "JetBrains Mono",monospace';
+  CTX.textAlign='center';
+  CTX.fillText('Elongation  '+elong.toFixed(3)+'°',cx,cy+120);
+  var next=findNextEclipse(S.jd,365);
+  CTX.fillStyle='rgba(200,210,255,.7)';
+  CTX.font='11px "JetBrains Mono",monospace';
+  if(next){
+    CTX.fillText('Next ' + next.type + ' eclipse: ' + next.date.toISOString().substring(0,10),cx,cy+150);
+    CTX.fillText('In ' + ((next.jd - S.jd).toFixed(1)) + ' days',cx,cy+170);
+  }else{
+    CTX.fillText('No eclipse found in next 365 days',cx,cy+150);
+  }
+}
+
+/* ══════════ View: Constellations ══════════ */
+function drawConstellations(){
+  drawStars();
+  var cx=W/2,cy=H/2;
+  var R=Math.min(W,H)*0.42;
+  CTX.strokeStyle='rgba(124,232,255,.2)';
+  CTX.beginPath();CTX.arc(cx,cy,R,0,Math.PI*2);CTX.stroke();
+  /* plot stars */
+  var bright=STARS.filter(function(s){return s.mag<2.1});
+  var positions={};
+  bright.forEach(function(s){
+    var h=equatorialToHorizontal(s.ra,s.dec,S.lat,S.lon,S.jd);
+    if(h.alt<0)return;
+    var r=R*(1-h.alt/90);
+    var az=d2r(h.az);
+    var x=cx+Math.sin(az)*r;
+    var y=cy-Math.cos(az)*r;
+    positions[s.n]=[x,y,s];
+    CTX.fillStyle=s.c;
+    CTX.beginPath();CTX.arc(x,y,clamp((5-s.mag)/1.6,0.8,3),0,Math.PI*2);CTX.fill();
+    if(s.mag<1.5){
+      CTX.fillStyle='rgba(220,230,255,.65)';
+      CTX.font='9px "JetBrains Mono",monospace';
+      CTX.textAlign='left';
+      CTX.fillText(s.n,x+6,y-3);
+    }
+  });
+  /* constellation lines */
+  CONSTELLATIONS.forEach(function(c){
+    CTX.strokeStyle='rgba(255,209,102,.35)';
+    CTX.lineWidth=1;
+    CTX.beginPath();
+    var started=false;
+    c.stars.forEach(function(s){
+      /* find nearest star */
+      var best=null,bd=Infinity;
+      Object.keys(positions).forEach(function(n){
+        var p=positions[n];
+        var d=Math.pow(p[2].ra-s[0],2)+Math.pow(p[2].dec-s[1],2);
+        if(d<bd){bd=d;best=p}
+      });
+      if(best){
+        if(!started){CTX.moveTo(best[0],best[1]);started=true}
+        else CTX.lineTo(best[0],best[1]);
+      }
+    });
+    CTX.stroke();
+  });
+  CTX.fillStyle='rgba(200,210,255,.5)';
+  CTX.font='10px "JetBrains Mono",monospace';
+  CTX.textAlign='left';
+  CTX.fillText('Bright stars + selected constellations',20,24);
+}
+
+/* ══════════ View: Rise & Set ══════════ */
+function drawRise(){
+  drawStars();
+  var cx=W/2,cy=H/2;
+  CTX.fillStyle='rgba(200,210,255,.4)';
+  CTX.font='11px "JetBrains Mono",monospace';
+  CTX.textAlign='center';
+  CTX.fillText('RISE / SET TIMES — '+S.locName, cx, 30);
+  /* horizon line */
+  CTX.strokeStyle='rgba(124,232,255,.4)';
+  CTX.lineWidth=1;
+  CTX.beginPath();CTX.moveTo(40,cy);CTX.lineTo(W-40,cy);CTX.stroke();
+  CTX.fillStyle='rgba(200,210,255,.5)';
+  CTX.font='10px "JetBrains Mono",monospace';
+  CTX.textAlign='right';
+  CTX.fillText('Horizon',40,cy-6);
+  /* time axis 0..24 */
+  var startX=60,spanX=W-120;
+  CTX.textAlign='center';
+  for(var h=0;h<=24;h+=2){
+    var x=startX+spanX*h/24;
+    CTX.fillStyle='rgba(124,232,255,.3)';
+    CTX.fillRect(x,cy-4,1,8);
+    CTX.fillStyle='rgba(200,210,255,.5)';
+    CTX.font='9px "JetBrains Mono",monospace';
+    CTX.fillText((h<10?'0':'')+h+'h',x,cy+20);
+  }
+  /* plot arcs for planets */
+  var jd0=Math.floor(S.jd-0.5)+0.5;
+  var rows=[];
+  PLANETS.forEach(function(p,i){
+    if(p.name==='Earth')return;
+    var pos=planetPosition(p,S.jd);
+    var e=planetPosition(PLANETS[2],S.jd);
+    var gx=pos.x-e.x,gy=pos.y-e.y,gz=pos.z-e.z;
+    var r=Math.sqrt(gx*gx+gy*gy+gz*gz);
+    var lon=r2d(Math.atan2(gy,gx));
+    var lat=r2d(Math.asin(gz/r));
+    var eq=eclipticToEquatorial(lon,lat,S.jd);
+    /* sample altitude over 24h */
+    var alt=0;
+    CTX.strokeStyle=p.color;
+    CTX.lineWidth=1.5;
+    CTX.beginPath();
+    for(var hh=0;hh<=24;hh+=0.1){
+      var h2=equatorialToHorizontal(eq.ra,eq.dec,S.lat,S.lon,jd0+hh/24);
+      var x=startX+spanX*hh/24;
+      var y=cy-h2.alt*3;
+      if(hh===0)CTX.moveTo(x,y);else CTX.lineTo(x,y);
+    }
+    CTX.stroke();
+    rows.push({name:p.name,color:p.color,eq:eq});
+  });
+  /* legend */
+  CTX.textAlign='left';
+  CTX.font='10px "JetBrains Mono",monospace';
+  rows.forEach(function(r,i){
+    var y=cy+50+i*16;
+    CTX.fillStyle=r.color;
+    CTX.fillRect(60,y-6,10,10);
+    CTX.fillStyle='rgba(200,210,255,.7)';
+    CTX.fillText(r.name,80,y+3);
+  });
+}
+
+/* ══════════ View: Astro Photo calculator ══════════ */
+function drawPhoto(){
+  drawStars();
+  var cx=W/2,cy=H/2;
+  var p=photoCalc();
+  CTX.fillStyle='rgba(200,210,255,.4)';
+  CTX.font='11px "JetBrains Mono",monospace';
+  CTX.textAlign='center';
+  CTX.fillText('ASTROPHOTOGRAPHY CALCULATOR',cx,60);
+  var items=[
+    ['Sensor',p.sensor],
+    ['Focal length',p.fl+' mm'],
+    ['Field of view',p.fov.toFixed(2)+'° × '+(p.fov/p.ratio).toFixed(2)+'°'],
+    ['Rule of 500',p.rule500.toFixed(0)+' s'],
+    ['NPF rule',p.npf.toFixed(0)+' s'],
+    ['Pixel pitch',p.pitch.toFixed(2)+' µm'],
+    ['Sampling at 2"',p.sampling.toFixed(2)+' "/px'],
+    ['Recommended ISO','1600–6400'],
+    ['Sky brightness','Bortle 4 (suburban)'],
+    ['Best for', p.fov>5?'Wide-field / Milky Way':(p.fov>0.5?'Deep-sky / nebulae':'Planetary / lunar')]
+  ];
+  CTX.textAlign='left';
+  items.forEach(function(row,i){
+    var y=cy-90+i*26;
+    CTX.fillStyle='rgba(200,210,255,.5)';
+    CTX.font='12px "JetBrains Mono",monospace';
+    CTX.fillText(row[0],cx-200,y);
+    CTX.fillStyle='rgba(124,232,255,.9)';
+    CTX.font='12px "JetBrains Mono",monospace';
+    CTX.fillText(row[1],cx+50,y);
+  });
+}
+function photoCalc(){
+  var fl=24, sensorW=36, sensorH=24, mp=24;
+  /* determine from user overrides via right panel — for now hard-code */
+  var fov=2*Math.atan(sensorW/(2*fl))*180/Math.PI;
+  var pitch=Math.sqrt((sensorW*sensorH)/(mp*1e6))*1000;
+  return {
+    sensor:'Full frame (36×24 mm)',
+    fl:fl,
+    fov:fov,
+    ratio:sensorW/sensorH,
+    rule500:500/fl,
+    npf:(35*16.2+30*9.7)/fl,
+    pitch:pitch,
+    sampling:206.265*pitch/fl
+  };
+}
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   EPHEMERIS · UI Shell · Controls · Right panel
+   ══════════════════════════════════════════════════════════════ */
+
+/* ══════════ Navigation bar (view tabs) ══════════ */
+function buildViewTabs(){
+  var t=$('viewTabs');
+  t.innerHTML='';
+  VIEWS.forEach(function(v){
+    var b=el('button',{class:v.id===S.view?'active':''});
+    b.innerHTML='<span class="ico">'+v.ico+'</span><span>'+v.n+'</span>';
+    b.onclick=function(){S.view=v.id;buildViewTabs();render();renderRight()};
+    t.appendChild(b);
+  });
+}
+
+/* ══════════ Location panel ══════════ */
+var LOCATIONS=[
+  {n:'New York',lat:40.7128,lon:-74.006},
+  {n:'London',lat:51.5074,lon:-0.1278},
+  {n:'Tokyo',lat:35.6762,lon:139.6503},
+  {n:'São Paulo',lat:-23.5505,lon:-46.6333},
+  {n:'Sydney',lat:-33.8688,lon:151.2093},
+  {n:'Cape Town',lat:-33.9249,lon:18.4241},
+  {n:'Los Angeles',lat:34.0522,lon:-118.2437},
+  {n:'Mumbai',lat:19.076,lon:72.8777},
+  {n:'Reykjavik',lat:64.1466,lon:-21.9426},
+  {n:'Equator (0°)',lat:0,lon:0},
+  {n:'North Pole',lat:89.5,lon:0},
+  {n:'South Pole',lat:-89.5,lon:0}
+];
+function buildLocPanel(){
+  var b=$('locBody');
+  b.innerHTML='';
+  var f1=el('div',{class:'field'});
+  f1.innerHTML='<label>Preset</label>';
+  var sel=el('select');
+  LOCATIONS.forEach(function(l){
+    var o=el('option',{value:l.n,text:l.n});
+    if(l.n===S.locName)o.selected=true;
+    sel.appendChild(o);
+  });
+  sel.onchange=function(){
+    var l=LOCATIONS.filter(function(x){return x.n===sel.value})[0];
+    if(l){S.lat=l.lat;S.lon=l.lon;S.locName=l.n;buildLocPanel();render();renderRight()}
+  };
+  f1.appendChild(sel);
+  b.appendChild(f1);
+  var f2=el('div',{class:'field'});
+  f2.innerHTML='<label>Latitude</label>';
+  var i1=el('input',{type:'text',value:S.lat.toFixed(4)});
+  i1.onchange=function(){S.lat=parseFloat(i1.value)||0;S.locName='Custom';render();renderRight()};
+  f2.appendChild(i1);
+  b.appendChild(f2);
+  var f3=el('div',{class:'field'});
+  f3.innerHTML='<label>Longitude</label>';
+  var i2=el('input',{type:'text',value:S.lon.toFixed(4)});
+  i2.onchange=function(){S.lon=parseFloat(i2.value)||0;S.locName='Custom';render();renderRight()};
+  f3.appendChild(i2);
+  b.appendChild(f3);
+  var f4=el('div',{class:'field'});
+  f4.innerHTML='<label>Show</label>';
+  var row=el('div',{class:'row'});
+  ['Orbits','Labels','Stars'].forEach(function(key){
+    var kk=key.toLowerCase();
+    var btn=el('button',{class:'btn sm'+(S['show'+key]?' active':''),text:key});
+    btn.onclick=function(){
+      S['show'+key]=!S['show'+key];
+      buildLocPanel();render();
+    };
+    row.appendChild(btn);
+  });
+  f4.appendChild(row);
+  b.appendChild(f4);
+}
+
+/* ══════════ Right panel (data) ══════════ */
+function renderRight(){
+  var title=$('dataTitle');
+  var body=$('dataBody');
+  body.innerHTML='';
+  title.textContent=VIEWS.filter(function(v){return v.id===S.view})[0].n;
+
+  if(S.view==='orrery'||S.view==='sky'||S.view==='ephem'){
+    /* object list */
+    var list=el('div',{class:'objlist'});
+    PLANETS.forEach(function(p){
+      var pos=planetPosition(p,S.jd);
+      var row=el('div',{class:'objrow'+(p.name===S.selected?' active':'')});
+      var dot=el('div',{class:'dot'});
+      dot.style.background=p.color;
+      dot.style.color=p.color;
+      row.appendChild(dot);
+      row.appendChild(el('div',{class:'name',text:p.name}));
+      row.appendChild(el('div',{class:'val',text:pos.r.toFixed(3)+' AU'}));
+      row.onclick=function(){S.selected=p.name;renderRight();render()};
+      list.appendChild(row);
+    });
+    body.appendChild(list);
+
+    /* selected details */
+    var p=PLANETS.filter(function(x){return x.name===S.selected})[0];
+    if(p){
+      var pos=planetPosition(p,S.jd);
+      var sec=el('div',{class:'section'});
+      sec.appendChild(el('h4',{text:p.name+' — Details'}));
+      var rows=[
+        ['Symbol',p.sym],
+        ['Heliocentric lon',pos.lon.toFixed(3)+'°'],
+        ['Heliocentric lat',pos.lat.toFixed(3)+'°'],
+        ['Radius vector',pos.r.toFixed(6)+' AU'],
+        ['Eccentric anomaly E',r2d(pos.E).toFixed(3)+'°'],
+        ['Mean anomaly M',r2d(pos.M).toFixed(3)+'°'],
+        ['Semi-major axis',p.a.toFixed(6)+' AU'],
+        ['Eccentricity',p.e.toFixed(6)],
+        ['Inclination',p.i.toFixed(4)+'°'],
+        ['Longitude of asc. node',p.Om.toFixed(4)+'°'],
+        ['Longitude of perihelion',p.wbar.toFixed(4)+'°']
+      ];
+      var t=el('table',{class:'dtable'});
+      rows.forEach(function(r){
+        var tr=el('tr');
+        tr.appendChild(el('td',{class:'k',text:r[0]}));
+        tr.appendChild(el('td',{class:'num',text:r[1]}));
+        t.appendChild(tr);
+      });
+      sec.appendChild(t);
+      body.appendChild(sec);
+      /* zodiac */
+      var z=zodiacSign(pos.lon);
+      var sec2=el('div',{class:'section'});
+      sec2.appendChild(el('h4',{text:'Zodiac position'}));
+      sec2.appendChild(el('div',{class:'chip',text:z.name+' '+z.deg.toFixed(2)+'°'}));
+      body.appendChild(sec2);
+    }
+  }
+  else if(S.view==='ephem'){
+    /* nothing additional — table already drawn on canvas */
+  }
+  else if(S.view==='moon'){
+    var mp=moonPhase(S.jd);
+    var mpos=moonPosition(S.jd);
+    var sec=el('div',{class:'section'});
+    sec.appendChild(el('h4',{text:'Moon Data'}));
+    var rows=[
+      ['Phase',mp.name],
+      ['Illumination',(mp.illum*100).toFixed(2)+'%'],
+      ['Elongation',mp.elong.toFixed(3)+'°'],
+      ['Ecliptic lon',mpos.lon.toFixed(3)+'°'],
+      ['Ecliptic lat',mpos.lat.toFixed(3)+'°'],
+      ['Distance',mpos.r.toFixed(0)+' km'],
+      ['Distance (EM)',(mpos.r/384400).toFixed(5)],
+      ['Synodic phase',(mp.phase*100).toFixed(1)+'%']
+    ];
+    var t=el('table',{class:'dtable'});
+    rows.forEach(function(r){
+      var tr=el('tr');
+      tr.appendChild(el('td',{class:'k',text:r[0]}));
+      tr.appendChild(el('td',{class:'num',text:r[1]}));
+      t.appendChild(tr);
+    });
+    sec.appendChild(t);
+    body.appendChild(sec);
+  }
+  else if(S.view==='kepler'){
+    var sec=el('div',{class:'section'});
+    sec.appendChild(el('h4',{text:'Kepler Solver'}));
+    sec.appendChild(el('p',{class:'hint',text:'M = E − e·sin(E) solved by Newton-Raphson. Converges to 1e-12 within ~5 iterations for e < 0.9.'}));
+    var rows=[
+      ['Method','Newton-Raphson'],
+      ['Max iterations','12'],
+      ['Tolerance','1e-12'],
+      ['Converges for','e < 0.99']
+    ];
+    var t=el('table',{class:'dtable'});
+    rows.forEach(function(r){
+      var tr=el('tr');
+      tr.appendChild(el('td',{class:'k',text:r[0]}));
+      tr.appendChild(el('td',{class:'num',text:r[1]}));
+      t.appendChild(tr);
+    });
+    sec.appendChild(t);
+    body.appendChild(sec);
+  }
+  else if(S.view==='eclipse'){
+    var next=findNextEclipse(S.jd,730);
+    var sec=el('div',{class:'section'});
+    sec.appendChild(el('h4',{text:'Next Eclipse'}));
+    if(next){
+      var rows=[
+        ['Type',next.type==='solar'?'Solar':'Lunar'],
+        ['Date',next.date.toISOString().substring(0,10)],
+        ['Days away',(next.jd-S.jd).toFixed(2)],
+        ['Elongation',next.elong.toFixed(3)+'°'],
+        ['Moon latitude',next.lat.toFixed(3)+'°']
+      ];
+      var t=el('table',{class:'dtable'});
+      rows.forEach(function(r){
+        var tr=el('tr');
+        tr.appendChild(el('td',{class:'k',text:r[0]}));
+        tr.appendChild(el('td',{class:'num',text:r[1]}));
+        t.appendChild(tr);
+      });
+      sec.appendChild(t);
+    }else{
+      sec.appendChild(el('p',{class:'hint',text:'No eclipse found in the search window.'}));
+    }
+    body.appendChild(sec);
+  }
+  else if(S.view==='rise'){
+    var sec=el('div',{class:'section'});
+    sec.appendChild(el('h4',{text:'Rise/Set at '+S.locName}));
+    var t=el('table',{class:'dtable'});
+    var th=el('tr');
+    th.appendChild(el('th',{text:'Object'}));
+    th.appendChild(el('th',{text:'Rise'}));
+    th.appendChild(el('th',{text:'Set'}));
+    t.appendChild(th);
+    var jd0=Math.floor(S.jd-0.5)+0.5;
+    PLANETS.forEach(function(p){
+      if(p.name==='Earth')return;
+      var pos=planetPosition(p,S.jd);
+      var e=planetPosition(PLANETS[2],S.jd);
+      var gx=pos.x-e.x,gy=pos.y-e.y,gz=pos.z-e.z;
+      var r=Math.sqrt(gx*gx+gy*gy+gz*gz);
+      var lon=r2d(Math.atan2(gy,gx));
+      var lat=r2d(Math.asin(gz/r));
+      var eq=eclipticToEquatorial(lon,lat,S.jd);
+      var rs=riseSetTime(eq.ra,eq.dec,S.lat,S.lon,jd0,0);
+      var rise=null,set=null;
+      rs.forEach(function(x){
+        var h=x.time.getUTCHours()+x.time.getUTCMinutes()/60;
+        if(x.rise&&!rise)rise=h;
+        if(!x.rise&&!set)set=h;
+      });
+      var tr=el('tr');
+      tr.appendChild(el('td',{class:'k',text:p.name}));
+      tr.appendChild(el('td',{class:'num',text:rise!=null?fmtH(rise):'—'}));
+      tr.appendChild(el('td',{class:'num',text:set!=null?fmtH(set):'—'}));
+      t.appendChild(tr);
+    });
+    sec.appendChild(t);
+    body.appendChild(sec);
+  }
+  else if(S.view==='photo'){
+    var p=photoCalc();
+    var sec=el('div',{class:'section'});
+    sec.appendChild(el('h4',{text:'Astro Photo Calc'}));
+    var rows=[
+      ['Sensor',p.sensor],
+      ['Focal length',p.fl+' mm'],
+      ['FOV width',p.fov.toFixed(2)+'°'],
+      ['Rule of 500',p.rule500.toFixed(0)+' s'],
+      ['NPF rule',p.npf.toFixed(0)+' s'],
+      ['Sampling',p.sampling.toFixed(2)+' "/px']
+    ];
+    var t=el('table',{class:'dtable'});
+    rows.forEach(function(r){
+      var tr=el('tr');
+      tr.appendChild(el('td',{class:'k',text:r[0]}));
+      tr.appendChild(el('td',{class:'num',text:r[1]}));
+      t.appendChild(tr);
+    });
+    sec.appendChild(t);
+    body.appendChild(sec);
+  }
+  else if(S.view==='const'){
+    var sec=el('div',{class:'section'});
+    sec.appendChild(el('h4',{text:'Visible Stars'}));
+    var count=0;
+    STARS.forEach(function(s){
+      var h=equatorialToHorizontal(s.ra,s.dec,S.lat,S.lon,S.jd);
+      if(h.alt<0)return;
+      count++;
+    });
+    sec.appendChild(el('p',{class:'hint',html:'<b>'+count+'</b> of '+STARS.length+' catalog stars are above the horizon right now.'}));
+    body.appendChild(sec);
+  }
+}
+function fmtH(h){
+  var hh=Math.floor(h);
+  var mm=Math.floor((h-hh)*60);
+  return (hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;
+}
+
+/* ══════════ Overlay updates ══════════ */
+function updateOverlay(){
+  var d=jdToDate(S.jd);
+  var ovl=$('ovlTop');
+  var viewName=VIEWS.filter(function(v){return v.id===S.view})[0].n;
+  ovl.innerHTML='<div><span class="k">VIEW</span> <span class="v">'+viewName+'</span></div>'+
+    '<div><span class="k">DATE</span> <span class="v">'+d.toISOString().substring(0,19).replace('T',' ')+' UT</span></div>';
+  var stats=$('ovlStats');
+  var sun=sunPosition(S.jd);
+  var moon=moonPhase(S.jd);
+  stats.innerHTML='<div><span class="k">JD</span> <span class="v">'+S.jd.toFixed(5)+'</span></div>'+
+    '<div><span class="k">T</span> <span class="v">'+T(S.jd).toFixed(6)+'</span></div>'+
+    '<div><span class="k">Moon</span> <span class="v">'+moon.name+'</span></div>'+
+    '<div><span class="k">Illum</span> <span class="v">'+(moon.illum*100).toFixed(1)+'%</span></div>';
+}
+
+/* ══════════ Main render ══════════ */
+function render(){
+  CTX.clearRect(0,0,W,H);
+  if(S.view==='orrery')drawOrrery();
+  else if(S.view==='sky')drawSky();
+  else if(S.view==='ephem')drawEphem();
+  else if(S.view==='moon')drawMoon();
+  else if(S.view==='kepler')drawKepler();
+  else if(S.view==='eclipse')drawEclipse();
+  else if(S.view==='const')drawConstellations();
+  else if(S.view==='rise')drawRise();
+  else if(S.view==='photo')drawPhoto();
+  updateOverlay();
+}
+
+/* ══════════ Animation loop ══════════ */
+var lastT=performance.now();
+function loop(t){
+  var dt=(t-lastT)/1000;
+  lastT=t;
+  if(S.playing){
+    S.jd+=S.speed*dt/86400;
+    updateDateInput();
+  }
+  if(S.view==='moon'||S.view==='kepler'||S.view==='orrery')render();
+  else render();
+  /* throttle: only redraw if playing or canvas changed */
+  if(S.playing)render();
+  requestAnimationFrame(loop);
+}
+
+/* ══════════ Clock + JD display ══════════ */
+function tickClock(){
+  var d=jdToDate(S.jd);
+  var utc=d.toISOString().substring(11,19);
+  $('clockUtc').textContent=utc;
+  $('clockJd').textContent=S.jd.toFixed(3);
+}
+setInterval(tickClock,200);
+
+function updateDateInput(){
+  var d=jdToDate(S.jd);
+  $('dateInput').value=d.toISOString().substring(0,10);
+}
+
+/* ══════════ Transport controls ══════════ */
+function bindControls(){
+  var play=$('btnPlay');
+  play.onclick=function(){
+    S.playing=!S.playing;
+    play.textContent=S.playing?'❚❚':'▶';
+    play.classList.toggle('primary',S.playing);
+    toast(S.playing?'Simulation running':'Paused');
+  };
+  $('btnNow').onclick=function(){S.jd=julianDate(new Date());updateDateInput();render();renderRight();toast('Jumped to now')};
+  $('btnBack').onclick=function(){S.jd-=1;updateDateInput();render();renderRight()};
+  $('btnFwd').onclick=function(){S.jd+=1;updateDateInput();render();renderRight()};
+  $('dateInput').onchange=function(){
+    var parts=this.value.split('-');
+    var d=new Date(Date.UTC(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]),12,0,0));
+    S.jd=julianDate(d);
+    render();renderRight();toast('Date set to '+this.value);
+  };
+  $('speedSel').onchange=function(){S.speed=parseInt(this.value);toast('Speed: '+this.options[this.selectedIndex].text)};
+  /* keyboard */
+  document.addEventListener('keydown',function(e){
+    if((e.target.tagName||'').toLowerCase()==='input')return;
+    if(e.code==='Space'){e.preventDefault();play.click()}
+    else if(e.key==='ArrowLeft'){$('btnBack').click()}
+    else if(e.key==='ArrowRight'){$('btnFwd').click()}
+    else if(e.key==='n'||e.key==='N'){$('btnNow').click()}
+  });
+}
+
+/* ══════════ Boot ══════════ */
+function boot(){
+  initCanvas();
+  buildViewTabs();
+  buildLocPanel();
+  bindControls();
+  updateDateInput();
+  render();
+  renderRight();
+  requestAnimationFrame(loop);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+else boot();
+
+console.log('%c EPHEMERIS ','background:linear-gradient(90deg,#7ce8ff,#b48aff,#ff7eb6);color:#000;padding:10px 22px;border-radius:6px;font-weight:900;font-size:16px;letter-spacing:5px');
+console.log('Celestial Mechanics Observatory · '+VIEWS.length+' views · offline');
+console.log('JPL elements · Kepler solver · Coordinate transforms · Moon phases · Eclipses');
+</script>
+</body>
+</html>

@@ -1,0 +1,3171 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="bio">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>BIOFORGE — Computational Biology Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px}
+:root{
+  --bg:#020604;--panel:#04120a;--panel2:#081c12;--panel3:#0c2818;--panel4:#103422;
+  --bd:#0a2418;--bd2:#124028;--tx:#e0ffe8;--tx2:#80c098;--tx3:#3a7050;
+  --p1:#20ff80;--p2:#20e0ff;--p3:#ff40a0;--p4:#ffd040;--p5:#a060ff;--p6:#ff8040;
+  --g1:linear-gradient(135deg,#20ff80,#20e0ff);
+  --gHolo:linear-gradient(120deg,#20ff80,#20e0ff,#a060ff,#ff40a0,#ffd040,#20ff80);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .13s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="paper"]{--bg:#f5fff8;--panel:#fff;--panel2:#f0fff8;--panel3:#e0ffe8;--panel4:#c8f8d8;--bd:#c0e8d0;--bd2:#88c0a0;--tx:#0a2018;--tx2:#2a6040;--tx3:#608070;--p1:#00a040;--p2:#0080c0;--g1:linear-gradient(135deg,#00a040,#0080c0)}
+[data-theme="cell"]{--bg:#0a0810;--panel:#100c18;--panel2:#181020;--panel3:#201828;--panel4:#2a2038;--bd:#28203a;--bd2:#402850;--tx:#e8e0f0;--tx2:#a898b0;--tx3:#605068;--p1:#40ffb0;--p2:#ff80c0;--g1:linear-gradient(135deg,#40ffb0,#ff80c0)}
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+#topbar{height:48px;background:var(--panel);border-bottom:2px solid var(--p1);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:5px;font-size:.92rem;background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:4px;padding:5px 9px;border-radius:4px;cursor:pointer;transition:var(--t1);font-size:.62rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:30px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#020604}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.tb-btn{width:30px;height:30px;border-radius:4px;background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--p1);color:var(--p1)}
+.tb-status{font-family:var(--mono);font-size:.6rem;padding:4px 9px;background:var(--panel2);border:1px solid var(--bd);border-radius:4px;color:var(--p1);font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tb-status .dot{width:7px;height:7px;border-radius:50%;background:var(--panel3)}
+.tb-status .dot.on{background:var(--p1);box-shadow:0 0 10px var(--p1);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:290px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:9px 11px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.panel-title{font-size:.58rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#000a05;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasWrap::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(32,255,128,.012) 0,rgba(32,255,128,.012) 1px,transparent 1px,transparent 3px)}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.co-badge{background:rgba(4,18,10,.92);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:4px;padding:5px 9px;font-family:var(--mono);font-size:.6rem;color:var(--p1);max-width:340px}
+.co-badge.stats{color:var(--p2);display:flex;flex-direction:column;gap:2px;align-items:flex-end;text-align:right;line-height:1.5}
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:30px}
+.rp-tab{flex:1;padding:5px;font-size:.54rem;font-weight:700;text-transform:uppercase;color:var(--tx3);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab.active{color:var(--p1);border-bottom-color:var(--p1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+#statusbar{height:26px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:12px;font-family:var(--mono);font-size:.6rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:4px;white-space:nowrap}
+#statusbar .sb-val{color:var(--p1)}
+.sb-val.c2{color:var(--p2)}.sb-val.c3{color:var(--p4)}.sb-val.c4{color:var(--p5)}.sb-val.c5{color:var(--p3)}
+.sec{margin-bottom:12px}
+.sec h4{font-size:.58rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--tx3);margin-bottom:7px;font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.58rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:3px;text-transform:uppercase;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--p1);text-transform:none}
+.ctrl{margin-bottom:9px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--p1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--p1)}
+.ctrl input,.ctrl select,.ctrl textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:5px 8px;color:var(--tx);font-size:.66rem;font-family:var(--mono)}
+.ctrl textarea{resize:vertical;min-height:60px;line-height:1.5}
+.ctrl input:focus,.ctrl textarea:focus,.ctrl select:focus{border-color:var(--p1);box-shadow:0 0 0 3px rgba(32,255,128,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:4px;background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.66rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--p1);color:var(--p1)}
+.btn.primary{background:var(--g1);color:#020604;border-color:transparent}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:3px 7px;font-size:.58rem}
+.chip-row{display:flex;gap:3px;flex-wrap:wrap}
+.chip{padding:3px 8px;background:var(--panel3);border:1px solid var(--bd);border-radius:999px;cursor:pointer;font-size:.58rem;font-family:var(--mono);color:var(--tx2)}
+.chip:hover{border-color:var(--p1);color:var(--p1)}
+.chip.active{background:var(--g1);color:#020604;border-color:transparent;font-weight:700}
+.kv{font-family:var(--mono);font-size:.6rem;line-height:1.7}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3)}.kv .v{color:var(--p1);text-align:right;font-size:.58rem}
+.empty{text-align:center;padding:28px 18px;color:var(--tx3);font-size:.68rem;font-family:var(--mono)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:9px;max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{font-size:.88rem;color:var(--p1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:18px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:13px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end}
+.modal-x{width:24px;height:24px;color:var(--tx3);cursor:pointer;font-size:.95rem}
+#toasts{position:fixed;bottom:40px;right:18px;z-index:9000;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.toast{padding:9px 14px;border-radius:6px;background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--p1);font-size:.68rem;max-width:320px;min-width:170px;animation:tin .3s;display:flex;align-items:center;gap:9px;font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--p1)}.toast.warn{border-left-color:var(--p4)}.toast.error{border-left-color:var(--p3)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+@media(max-width:1000px){#leftPanel{width:250px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel,#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('dna')">BIOFORGE</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus"><span class="dot" id="tbDot"></span><span id="tbText">booting…</span></div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="togglePlay()">⏸</button>
+      <button class="tb-btn" onclick="stepOnce()">⏭</button>
+      <button class="tb-btn" onclick="resetModule()">↺</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()">🎨</button>
+      <button class="tb-btn" onclick="showHelp()">❓</button>
+    </div>
+  </div>
+  <div id="main">
+    <div id="leftPanel"><div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div><div class="panel-body" id="lpBody"></div></div>
+    <div id="workspace"><div id="canvasWrap"><canvas id="mainCanvas"></canvas>
+      <div id="canvasOverlay"><div class="co-badge" id="coBadge">Ready</div><div class="co-badge stats" id="coStats"></div></div>
+    </div></div>
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+      </div>
+      <div class="rp-body"><div class="rp-pane active" id="rpState"></div><div class="rp-pane" id="rpMath"></div><div class="rp-pane" id="rpLogs"></div></div>
+    </div>
+  </div>
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Len</span><span class="sb-val c2" id="sbLen">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">GC</span><span class="sb-val c3" id="sbGC">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Time</span><span class="sb-val c4" id="sbTime">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Iter</span><span class="sb-val c5" id="sbIter">0</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">DNA</span></div>
+  </div>
+</div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"><div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+<div id="toasts"></div>
+<script>
+"use strict";
+/* ══════ UTILS ══════ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function attr(s){return esc(s).replace(/`/g,'&#96;')}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function randn(){var u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function lerp(a,b,t){return a+(b-a)*t}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2200;var ic={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span>'+(ic[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,o){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(o&&o.size?' '+o.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ══════ CANVAS ══════ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){var w=CANV.canvas.parentElement;CANV.dpr=window.devicePixelRatio||1;CANV.W=w.clientWidth;CANV.H=w.clientHeight;CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);CANV.canvas.style.width=CANV.W+'px';CANV.canvas.style.height=CANV.H+'px';CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0)}
+var INPUT={down:false,x:0,y:0,dx:0,dy:0};
+function cp(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=cp(e);INPUT.down=true;INPUT.x=p.x;INPUT.y=p.y;try{var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p)}catch(err){logMsg('onDown: '+err.message,'error')}}
+function onMove(e){var p=cp(e);INPUT.dx=p.x-INPUT.x;INPUT.dy=p.y-INPUT.y;INPUT.x=p.x;INPUT.y=p.y;try{var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,INPUT.dx,INPUT.dy)}catch(err){}}
+function onUp(){INPUT.down=false;try{var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp()}catch(err){}}
+function onTouchStart(e){if(e.touches.length===1)onDown({clientX:e.touches[0].clientX,clientY:e.touches[0].clientY});e.preventDefault()}
+function onTouchMove(e){if(e.touches.length===1)onMove({clientX:e.touches[0].clientX,clientY:e.touches[0].clientY});e.preventDefault()}
+function onTouchEnd(e){onUp();e.preventDefault()}
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this}}
+
+/* ══════ MODULE REGISTRY ══════ */
+var MODULES={};
+function registerModule(k,d){d.key=k;MODULES[k]=d}
+function setStats(h){var e=$('coStats');if(e)e.innerHTML=h}
+function badge(t){var e=$('coBadge');if(e)e.textContent=t}
+function SV(id,v){var e=$(id);if(e)e.textContent=v}
+
+/* ══════ LOG ══════ */
+var LOG=[];
+function logMsg(msg,type){type=type||'info';LOG.push({t:Date.now(),msg:msg,type:type});if(LOG.length>200)LOG.shift();if(STATE.currentRp==='logs')renderLogs()}
+window.addEventListener('error',function(e){try{logMsg('ERROR: '+e.message,'error')}catch(_){}});
+
+/* ══════════════════════════════════════════════════════════
+   BIOLOGY CONSTANTS
+   ══════════════════════════════════════════════════════════ */
+var NUCLEOTIDES='ATGC';
+var NUCLEOTIDES_RNA='AUGC';
+var AMINO_ACIDS='ACDEFGHIKLMNPQRSTVWY';
+var AA_NAMES={
+  A:'Alanine',R:'Arginine',N:'Asparagine',D:'Aspartate',C:'Cysteine',
+  Q:'Glutamine',E:'Glutamate',G:'Glycine',H:'Histidine',I:'Isoleucine',
+  L:'Leucine',K:'Lysine',M:'Methionine',F:'Phenylalanine',P:'Proline',
+  S:'Serine',T:'Threonine',W:'Tryptophan',Y:'Tyrosine',V:'Valine','*':'Stop'
+};
+var AA_COLOR={
+  A:'#80d080',R:'#4060e0',N:'#40a040',D:'#e04040',C:'#e0e040',
+  Q:'#40c080',E:'#c04040',G:'#a0a0a0',H:'#80a0e0',I:'#80c080',
+  L:'#60a060',K:'#6080e0',M:'#e0d040',F:'#c08060',P:'#d0a080',
+  S:'#a0d0a0',T:'#a0c0c0',W:'#a080e0',Y:'#e0c080',V:'#60a060','*':'#ff2020'
+};
+var AA_HYDRO={
+  A:1.8,R:-4.5,N:-3.5,D:-3.5,C:2.5,Q:-3.5,E:-3.5,G:-0.4,H:-3.2,
+  I:4.5,L:3.8,K:-3.9,M:1.9,F:2.8,P:-1.6,S:-0.8,T:-0.7,W:-0.9,Y:-1.3,V:4.2,'*':0
+};
+var CODON_TABLE={
+  'UUU':'F','UUC':'F','UUA':'L','UUG':'L','CUU':'L','CUC':'L','CUA':'L','CUG':'L',
+  'AUU':'I','AUC':'I','AUA':'I','AUG':'M','GUU':'V','GUC':'V','GUA':'V','GUG':'V',
+  'UCU':'S','UCC':'S','UCA':'S','UCG':'S','CCU':'P','CCC':'P','CCA':'P','CCG':'P',
+  'ACU':'T','ACC':'T','ACA':'T','ACG':'T','GCU':'A','GCC':'A','GCA':'A','GCG':'A',
+  'UAU':'Y','UAC':'Y','UAA':'*','UAG':'*','CAU':'H','CAC':'H','CAA':'Q','CAG':'Q',
+  'AAU':'N','AAC':'N','AAA':'K','AAG':'K','GAU':'D','GAC':'D','GAA':'E','GAG':'E',
+  'UGU':'C','UGC':'C','UGA':'*','UGG':'W','CGU':'R','CGC':'R','CGA':'R','CGG':'R',
+  'AGU':'S','AGC':'S','AGA':'R','AGG':'R','GGU':'G','GGC':'G','GGA':'G','GGG':'G'
+};
+function dnaToRNA(s){return s.replace(/T/g,'U')}
+function rnaToDNA(s){return s.replace(/U/g,'T')}
+function complement(s){return s.split('').map(function(c){return {'A':'T','T':'A','G':'C','C':'G'}[c]||'N'}).join('')}
+function reverseComplement(s){return complement(s).split('').reverse().join('')}
+function translate(rna){
+  var prot='';
+  for(var i=0;i+2<rna.length;i+=3){
+    var c=rna.substr(i,3);
+    prot+=CODON_TABLE[c]||'X';
+  }
+  return prot;
+}
+function translateAll(rna){
+  var p1=translate(rna);
+  return {frame1:p1};
+}
+function gcContent(s){
+  var gc=0,valid=0;
+  for(var i=0;i<s.length;i++){if(s[i]==='G'||s[i]==='C'){gc++;valid++}else if(s[i]==='A'||s[i]==='T'||s[i]==='U')valid++}
+  return valid?gc/valid:0;
+}
+function randomDNA(n,gcBias){
+  gcBias=gcBias==null?0.5:gcBias;
+  var s='';
+  for(var i=0;i<n;i++){
+    var r=Math.random();
+    if(r<gcBias/2)s+='G';
+    else if(r<gcBias)s+='C';
+    else if(r<gcBias+(1-gcBias)/2)s+='A';
+    else s+='T';
+  }
+  return s;
+}
+function meltingTemp(s){
+  // Wallace rule for short oligos, GC% based for longer
+  if(s.length<14){
+    var at=0,gc=0;
+    for(var i=0;i<s.length;i++){if(s[i]==='A'||s[i]==='T')at++;else gc++}
+    return 2*at+4*gc;
+  }
+  return 64.9+41*(gcContent(s)*s.length-16.4)/s.length;
+}
+
+/* ══════════════════════════════════════════════════════════
+   SEQUENCE ALIGNMENT (Needleman-Wunsch + Smith-Waterman)
+   ══════════════════════════════════════════════════════════ */
+function needlemanWunsch(seq1,seq2,match,mismatch,gap){
+  match=match||1;mismatch=mismatch||-1;gap=gap||-1;
+  var n=seq1.length,m=seq2.length;
+  var S=[];
+  for(var i=0;i<=n;i++){S.push(new Array(m+1))}
+  var T=[];
+  for(var i=0;i<=n;i++){T.push(new Array(m+1))}
+  for(var i=0;i<=n;i++){S[i][0]=i*gap;T[i][0]='up'}
+  for(var j=0;j<=m;j++){S[0][j]=j*gap;T[0][j]='left'}
+  T[0][0]='done';
+  for(var i=1;i<=n;i++){
+    for(var j=1;j<=m;j++){
+      var scoreDiag=S[i-1][j-1]+(seq1[i-1]===seq2[j-1]?match:mismatch);
+      var scoreUp=S[i-1][j]+gap;
+      var scoreLeft=S[i][j-1]+gap;
+      var best=Math.max(scoreDiag,scoreUp,scoreLeft);
+      S[i][j]=best;
+      if(best===scoreDiag)T[i][j]='diag';
+      else if(best===scoreUp)T[i][j]='up';
+      else T[i][j]='left';
+    }
+  }
+  // Traceback
+  var a1='',a2='';
+  var i=n,j=m;
+  while(i>0||j>0){
+    var dir=T[i][j];
+    if(dir==='diag'){a1=seq1[i-1]+a1;a2=seq2[j-1]+a2;i--;j--}
+    else if(dir==='up'){a1=seq1[i-1]+a1;a2='-'+a2;i--}
+    else{a1='-'+a1;a2=seq2[j-1]+a2;j--}
+  }
+  return {S:S,T:T,a1:a1,a2:a2,score:S[n][m]};
+}
+function smithWaterman(seq1,seq2,match,mismatch,gap){
+  match=match||2;mismatch=mismatch||-1;gap=gap||-1;
+  var n=seq1.length,m=seq2.length;
+  var S=[];
+  for(var i=0;i<=n;i++){S.push(new Array(m+1).fill(0))}
+  var T=[];
+  for(var i=0;i<=n;i++){T.push(new Array(m+1).fill('done'))}
+  var maxScore=0,maxI=0,maxJ=0;
+  for(var i=1;i<=n;i++){
+    for(var j=1;j<=m;j++){
+      var scoreDiag=S[i-1][j-1]+(seq1[i-1]===seq2[j-1]?match:mismatch);
+      var scoreUp=S[i-1][j]+gap;
+      var scoreLeft=S[i][j-1]+gap;
+      var best=Math.max(0,scoreDiag,scoreUp,scoreLeft);
+      S[i][j]=best;
+      if(best===0)T[i][j]='done';
+      else if(best===scoreDiag)T[i][j]='diag';
+      else if(best===scoreUp)T[i][j]='up';
+      else T[i][j]='left';
+      if(best>maxScore){maxScore=best;maxI=i;maxJ=j}
+    }
+  }
+  var a1='',a2='';
+  var i=maxI,j=maxJ;
+  while(i>0&&j>0&&T[i][j]!=='done'){
+    var dir=T[i][j];
+    if(dir==='diag'){a1=seq1[i-1]+a1;a2=seq2[j-1]+a2;i--;j--}
+    else if(dir==='up'){a1=seq1[i-1]+a1;a2='-'+a2;i--}
+    else{a1='-'+a1;a2=seq2[j-1]+a2;j--}
+  }
+  return {S:S,T:T,a1:a1,a2:a2,score:maxScore,startI:i,startJ:j};
+}
+
+/* ══════════════════════════════════════════════════════════
+   PHYSICS ODE HELPERS
+   ══════════════════════════════════════════════════════════ */
+function rk4(y,t,dt,deriv){
+  var n=y.length;
+  var k1=deriv(y,t);
+  var y2=new Array(n);for(var i=0;i<n;i++)y2[i]=y[i]+k1[i]*dt/2;
+  var k2=deriv(y2,t+dt/2);
+  var y3=new Array(n);for(var i=0;i<n;i++)y3[i]=y[i]+k2[i]*dt/2;
+  var k3=deriv(y3,t+dt/2);
+  var y4=new Array(n);for(var i=0;i<n;i++)y4[i]=y[i]+k3[i]*dt;
+  var k4=deriv(y4,t+dt);
+  var out=new Array(n);
+  for(var i=0;i<n;i++)out[i]=y[i]+(k1[i]+2*k2[i]+2*k3[i]+k4[i])*dt/6;
+  return out;
+}
+function euler(y,dt,deriv){
+  var d=deriv(y);
+  for(var i=0;i<y.length;i++)y[i]+=d[i]*dt;
+  return y;
+}
+
+/* ══════════════════════════════════════════════════════════
+   RANDOM HELPERS
+   ══════════════════════════════════════════════════════════ */
+function randomChoice(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function randomSample(arr,n,replace){
+  replace=replace!==false;
+  var out=[];
+  if(replace){for(var i=0;i<n;i++)out.push(randomChoice(arr))}
+  else{
+    var pool=arr.slice();
+    for(var i=0;i<n&&pool.length;i++){
+      var idx=rnd(0,pool.length-1);
+      out.push(pool[idx]);pool.splice(idx,1);
+    }
+  }
+  return out;
+}
+
+/* ══════════════════════════════════════════════════════════
+   DRAW HELPERS
+   ══════════════════════════════════════════════════════════ */
+function drawSparkline(ctx,x,y,w,h,values,color,fill){
+  if(values.length<2)return;
+  var mx=Math.max.apply(null,values);
+  var mn=Math.min.apply(null,values);
+  if(mx===mn){mx=mn+1}
+  ctx.beginPath();
+  for(var i=0;i<values.length;i++){
+    var px=x+i/(values.length-1)*w;
+    var py=y+h-(values[i]-mn)/(mx-mn)*h;
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  if(fill){
+    ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.closePath();
+    var g=ctx.createLinearGradient(0,y,0,y+h);
+    g.addColorStop(0,color+'88');g.addColorStop(1,color+'00');
+    ctx.fillStyle=g;ctx.fill();
+  }
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+}
+function drawMultiSeries(ctx,x,y,w,h,series,colors,labels){
+  if(!series.length||!series[0].length)return;
+  var mx=-Infinity,mn=Infinity;
+  series.forEach(function(s){s.forEach(function(v){if(v>mx)mx=v;if(v<mn)mn=v})});
+  if(mx===mn){mx=mn+1}
+  series.forEach(function(s,i){
+    ctx.beginPath();
+    for(var j=0;j<s.length;j++){
+      var px=x+j/(s.length-1)*w;
+      var py=y+h-(s[j]-mn)/(mx-mn)*h;
+      if(j===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle=colors[i%colors.length];ctx.lineWidth=2;ctx.stroke();
+  });
+  // Legend
+  if(labels){
+    ctx.font='10px monospace';
+    labels.forEach(function(l,i){
+      ctx.fillStyle=colors[i%colors.length];
+      ctx.fillRect(x+i*70,y-12,10,8);
+      ctx.fillStyle='#e0ffe8';
+      ctx.fillText(l,x+i*70+14,y-5);
+    });
+  }
+}
+function drawHeatmap(ctx,matrix,x,y,w,h,minV,maxV){
+  var n=matrix.length,m=matrix[0].length;
+  var cw=w/m,ch=h/n;
+  for(var i=0;i<n;i++){
+    for(var j=0;j<m;j++){
+      var v=matrix[i][j];
+      var t=(v-minV)/(maxV-minV||1);
+      ctx.fillStyle='hsla('+(240-t*180)+',80%,'+(20+t*50)+'%,'+(0.3+t*0.7)+')';
+      ctx.fillRect(x+j*cw,y+i*ch,cw+0.5,ch+0.5);
+    }
+  }
+}
+</script>
+<script>
+/* ══════ STATE + TABS ══════ */
+var STATE={currentTab:'dna',currentRp:'state',playing:true,time:0,step:0,
+dna:{seq:'',n:60,gcBias:0.5,showFrames:true,frameOffset:0,hoverBase:null,selection:null},
+dogma:{seq:'',rna:'',protein:'',frame:0,showStartStop:true},
+align:{seq1:'',seq2:'',mode:'global',match:1,mismatch:-1,gap:-1,result:null,cursor:null},
+phylo:{n:8,seqLen:40,matrix:null,tree:null,distance:'hamming',showMatrix:true,seqs:null},
+popgen:{N:100,p0:0.5,s:0,generations:0,history:[],drift:true,selection:false,nLoci:20,loci:null},
+epidemic:{S:999,I:1,R:0,N:1000,beta:0.4,gamma:0.1,sigma:0.2,mode:'SIR',history:[],R0:4},
+folding:{n:20,seq:'',lattice:null,energy:0,steps:0,temp:1,method:'MC'},
+md:{n:40,L:1.0,eps:1,sigma:0.3,dt:0.005,temp:1,particles:[],velocities:[],history:[],usePBC:true},
+enzyme:{Vmax:1,Km:0.5,S:10,product:0,t:0,history:[],inhibitor:'none',I:0,Ki:0.5},
+grn:{mode:'repressilator',state:[1,0.5,0.2,1,0.5,0.2],history:[],t:0,alpha:216,beta:0.2,n:2},
+hh:{V:-65,m:0.05,h:0.6,n:0.3,t:0,Iext:10,history:[],gates:[],spikes:[]},
+snn:{n:100,excitatory:0.8,neurons:[],synapses:[],t:0,history:[],raster:[]},
+crispr:{target:'',guides:[],PAM:'NGG',gcMin:0.4,gcMax:0.6,maxOff:3},
+rnafold:{seq:'',pairs:[],structure:'',energy:0,mode:'Nussinov',minLoop:3},
+ga:{popSize:40,generations:0,population:[],best:null,fitness:[],mutation:0.05,crossover:0.8,target:'sphere'},
+mutation:{seq:'',mutations:[],rate:0.01,generations:0,history:[],origSeq:''},
+codon:{seq:'',CAI:0,table:null,compare:''},
+restriction:{seq:'',enzymes:['EcoRI','BamHI','HindIII','PstI','SmaI'],sites:[],selected:'EcoRI'},
+gel:{lanes:[],running:false,progress:0,voltage:100,time:0},
+pathway:{nodes:null,edges:null,fluxes:null,chosen:'Glycolysis'}
+};
+
+var TABS=[
+  {key:'dna',icon:'🧬',label:'DNA Explorer'},
+  {key:'dogma',icon:'📜',label:'Central Dogma'},
+  {key:'align',icon:'🎯',label:'Alignment'},
+  {key:'phylo',icon:'🌳',label:'Phylogeny'},
+  {key:'popgen',icon:'👥',label:'Pop Genetics'},
+  {key:'epidemic',icon:'🦠',label:'Epidemic'},
+  {key:'folding',icon:'📦',label:'Protein Folding'},
+  {key:'md',icon:'⚛',label:'Molecular Dyn'},
+  {key:'enzyme',icon:'⚙',label:'Enzyme Kinetics'},
+  {key:'grn',icon:'🔗',label:'Gene Network'},
+  {key:'hh',icon:'⚡',label:'Hodgkin-Huxley'},
+  {key:'snn',icon:'🧠',label:'Spiking NN'},
+  {key:'crispr',icon:'✂',label:'CRISPR'},
+  {key:'rnafold',icon:'🔷',label:'RNA Folding'},
+  {key:'ga',icon:'🎯',label:'Genetic Algo'},
+  {key:'mutation',icon:'💫',label:'Mutation'},
+  {key:'codon',icon:'📊',label:'Codon Usage'},
+  {key:'restriction',icon:'🔪',label:'Restriction'},
+  {key:'gel',icon:'▮',label:'Gel Electro'},
+  {key:'pathway',icon:'⛓',label:'Metabolic Path'}
+];
+
+/* ══════ 1. DNA EXPLORER ══════ */
+registerModule('dna',{title:'DNA Explorer',icon:'🧬',desc:'Sequence analysis: GC content, reading frames, motif finding.',init:function(){var d=STATE.dna;d.seq=randomDNA(d.n,d.gcBias);this.analyze()},
+analyze:function(){var d=STATE.dna;
+d.gc=gcContent(d.seq);
+d.tm=meltingTemp(d.seq);
+// Codon usage
+d.codons={};
+for(var i=0;i+2<d.seq.length;i+=3){
+  var c=d.seq.substr(i,3);
+  d.codons[c]=(d.codons[c]||0)+1;
+}
+// Repeats detection (simple tandem)
+d.repeats=[];
+for(var len=3;len<=8;len++){
+  var counts={};
+  for(var i=0;i+len<=d.seq.length;i++){
+    var sub=d.seq.substr(i,len);
+    counts[sub]=(counts[sub]||0)+1;
+  }
+  for(var k in counts){
+    if(counts[k]>=3)d.repeats.push({motif:k,count:counts[k],len:len});
+  }
+}
+},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var d=STATE.dna;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('DNA SEQUENCE  ·  '+d.seq.length+' bp',30,30);
+/* DNA double helix visualization */
+var cy=100;
+var px=30;var pw=W-60;
+var cellW=Math.min(24,pw/d.seq.length);
+for(var i=0;i<d.seq.length;i++){
+  var x=px+i*cellW;
+  var nc=d.seq[i];
+  var col={A:'#20e0ff',T:'#ff40a0',G:'#20ff80',C:'#ffd040'}[nc]||'#666';
+  // Two strands with helix offset
+  var yTop=cy+Math.sin(i*0.5)*8;
+  var yBot=cy+30+Math.sin(i*0.5+Math.PI)*8;
+  // Strand backbones
+  if(i>0){
+    var px1=px+(i-1)*cellW;
+    ctx.strokeStyle='rgba(32,255,128,.5)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(px1+cellW/2,cy+Math.sin((i-1)*0.5)*8);ctx.lineTo(x+cellW/2,yTop);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(px1+cellW/2,cy+30+Math.sin((i-1)*0.5+Math.PI)*8);ctx.lineTo(x+cellW/2,yBot);ctx.stroke();
+    // Base pair lines
+    var comp={A:'T',T:'A',G:'C',C:'G'}[nc];
+    var col2={A:'#20e0ff',T:'#ff40a0',G:'#20ff80',C:'#ffd040'}[comp];
+    ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x+cellW/2,yTop+3);ctx.lineTo(x+cellW/2,yBot-3);ctx.stroke();
+  }
+  ctx.fillStyle=col;
+  ctx.fillRect(x+cellW/2-3,yTop-3,6,6);
+  ctx.fillRect(x+cellW/2-3,yBot-3,6,6);
+}
+ctx.fillStyle='#a0c0b0';ctx.font='10px monospace';
+ctx.fillText('5\'─',20,cy+4);
+ctx.fillText('3\'─',20,cy+34);
+ctx.fillText('─3\'',W-40,cy+4);
+ctx.fillText('─5\'',W-40,cy+34);
+/* Sequence text */
+var sy=180;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('SEQUENCE',30,sy);
+ctx.font='13px monospace';
+var cols=Math.floor((W-60)/12);
+for(var i=0;i<d.seq.length;i++){
+  var nc=d.seq[i];
+  var col={A:'#20e0ff',T:'#ff40a0',G:'#20ff80',C:'#ffd040'}[nc]||'#666';
+  ctx.fillStyle=col;
+  var x=30+(i%cols)*12;
+  var y=sy+25+Math.floor(i/cols)*18;
+  ctx.fillText(nc,x,y);
+}
+/* GC content per window */
+var gy=sy+Math.ceil(d.seq.length/cols)*18+50;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('GC CONTENT (window='+Math.max(10,Math.floor(d.seq.length/20))+')',30,gy);
+var winSize=Math.max(10,Math.floor(d.seq.length/20));
+var gcData=[];
+for(var i=0;i+winSize<=d.seq.length;i+=winSize){
+  var w=d.seq.substr(i,winSize);
+  gcData.push(gcContent(w));
+}
+var gw=W-60;var gH=60;
+for(var i=0;i<gcData.length;i++){
+  var v=gcData[i];
+  var bw=gw/gcData.length;
+  var x=30+i*bw;
+  var bh=v*gH;
+  var hue=200-v*200;
+  ctx.fillStyle='hsl('+hue+',80%,60%)';
+  ctx.fillRect(x+2,gy+20+gH-bh,bw-4,bh);
+}
+ctx.strokeStyle='rgba(32,255,128,.3)';
+ctx.beginPath();ctx.moveTo(30,gy+20+gH);ctx.lineTo(30+gw,gy+20+gH);ctx.stroke();
+ctx.fillStyle='#a0c0b0';ctx.font='10px monospace';
+ctx.fillText('0%',10,gy+20+gH+3);
+ctx.fillText('100%',4,gy+25);
+/* Stats */
+var stY=gy+gH+60;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('STATISTICS',30,stY);
+ctx.fillStyle='#e0ffe8';ctx.font='12px monospace';
+ctx.fillText('Length: '+d.seq.length+' bp    GC: '+fmt(d.gc*100,2)+'%    Tm: '+fmt(d.tm,1)+'°C',30,stY+20);
+var counts={A:0,T:0,G:0,C:0};
+for(var i=0;i<d.seq.length;i++)counts[d.seq[i]]++;
+ctx.fillText('A: '+counts.A+' ('+fmt(counts.A/d.seq.length*100,1)+'%)    T: '+counts.T+' ('+fmt(counts.T/d.seq.length*100,1)+'%)',30,stY+40);
+ctx.fillText('G: '+counts.G+' ('+fmt(counts.G/d.seq.length*100,1)+'%)    C: '+counts.C+' ('+fmt(counts.C/d.seq.length*100,1)+'%)',30,stY+58);
+/* Repeats */
+if(d.repeats.length){
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('REPEATS (≥3 occurrences)',30,stY+90);
+  ctx.fillStyle='#e0ffe8';ctx.font='11px monospace';
+  var sorted=d.repeats.sort(function(a,b){return b.count-a.count}).slice(0,8);
+  sorted.forEach(function(r,i){
+    ctx.fillText(r.motif+' × '+r.count+' (len '+r.len+')',30+(i%4)*140,stY+110+Math.floor(i/4)*16);
+  });
+}
+SV('sbLen',d.seq.length);SV('sbGC',fmt(d.gc*100,1)+'%');SV('sbMode','DNA');SV('sbIter',0);
+setStats('<div>Length: '+d.seq.length+' bp</div><div>GC: '+fmt(d.gc*100,2)+'%</div><div>Tm: '+fmt(d.tm,1)+'°C</div><div>Repeats: '+d.repeats.length+'</div>');
+badge('🧬 DNA · '+d.seq.length+' bp · GC '+fmt(d.gc*100,1)+'%')},
+onDown:function(p){var W=CANV.W;var cy=100;var px=30;var pw=W-60;
+var cellW=Math.min(24,pw/STATE.dna.seq.length);
+var i=Math.floor((p.x-px)/cellW);
+if(i>=0&&i<STATE.dna.seq.length){
+  var nc=STATE.dna.seq[i];
+  STATE.dna.seq=STATE.dna.seq.substr(0,i)+'ATGC'[rnd(0,3)]+STATE.dna.seq.substr(i+1);
+  MODULES.dna.analyze();
+}},
+controls:function(){var d=STATE.dna;var h='<div class="sec"><h4>Sequence</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Length</span><span>'+d.n+' bp</span></div><input type="range" min="20" max="200" value="'+d.n+'" oninput="STATE.dna.n=parseInt(this.value);STATE.dna.seq=randomDNA(STATE.dna.n,STATE.dna.gcBias);MODULES.dna.analyze();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>GC bias</span><span>'+fmt(d.gcBias,2)+'</span></div><input type="range" min="0.1" max="0.9" step="0.05" value="'+d.gcBias+'" oninput="STATE.dna.gcBias=parseFloat(this.value)"></div>';
+h+='<button class="btn primary full" onclick="STATE.dna.seq=randomDNA(STATE.dna.n,STATE.dna.gcBias);MODULES.dna.analyze();toast(\'New sequence\',\'success\')">🎲 Random DNA</button>';
+h+='</div>';
+h+='<div class="sec"><h4>Custom sequence</h4>';
+h+='<div class="ctrl"><textarea onchange="STATE.dna.seq=this.value.replace(/[^ATGC]/gi,\'\').toUpperCase();MODULES.dna.analyze();renderLeftPanel()">'+attr(d.seq)+'</textarea></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Analysis</h4><div class="kv">';
+h+='<div class="row"><span class="k">Length</span><span class="v">'+d.seq.length+' bp</span></div>';
+h+='<div class="row"><span class="k">GC</span><span class="v">'+fmt(d.gc*100,2)+'%</span></div>';
+h+='<div class="row"><span class="k">Tm</span><span class="v">'+fmt(d.tm,1)+'°C</span></div>';
+h+='<div class="row"><span class="k">Repeats</span><span class="v">'+d.repeats.length+'</span></div>';
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>GC Content</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">GC% = (G+C)/(A+T+G+C)<br><br>Correlaciona com Tm (estabilidade térmica).<br><br>Wallace: Tm = 2(A+T)+4(G+C) para oligos curtos.<br><br>Predominância: genomas bacterianos variam 25-75%.</div></div>'}});
+
+/* ══════ 2. CENTRAL DOGMA ══════ */
+registerModule('dogma',{title:'Central Dogma',icon:'📜',desc:'DNA → RNA → Protein translation.',init:function(){var d=STATE.dogma;d.seq=randomDNA(60,0.5);this.translate()},
+translate:function(){var d=STATE.dogma;
+// Find first ATG
+var startIdx=d.seq.indexOf('ATG');
+if(startIdx<0)startIdx=0;
+d.rna=dnaToRNA(d.seq.substr(startIdx));
+d.protein=translate(d.rna);
+d.startIdx=startIdx},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var d=STATE.dogma;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('CENTRAL DOGMA:  DNA → RNA → PROTEIN',30,30);
+/* DNA row */
+var yDNA=70;
+ctx.fillStyle='#20e0ff';ctx.font='bold 12px monospace';ctx.fillText('DNA',30,yDNA);
+ctx.font='14px monospace';
+var cols=Math.floor((W-120)/14);
+for(var i=0;i<d.seq.length;i++){
+  var nc=d.seq[i];
+  var col={A:'#20e0ff',T:'#ff40a0',G:'#20ff80',C:'#ffd040'}[nc]||'#666';
+  ctx.fillStyle=i<d.startIdx?'#666':col;
+  var x=110+(i%cols)*14;
+  var y=yDNA+Math.floor(i/cols)*20;
+  ctx.fillText(nc,x,y);
+  if(i<d.startIdx){ctx.strokeStyle='#666';ctx.beginPath();ctx.moveTo(x-2,y+3);ctx.lineTo(x+8,y-13);ctx.stroke()}
+}
+/* Arrow */
+var yArrow=yDNA+Math.ceil(d.seq.length/cols)*20+40;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='center';
+ctx.fillText('↓  TRANSCRIPTION  ↓',W/2,yArrow);
+/* RNA row */
+var yRNA=yArrow+40;
+ctx.textAlign='left';
+ctx.fillStyle='#ffd040';ctx.font='bold 12px monospace';ctx.fillText('RNA',30,yRNA);
+ctx.font='14px monospace';
+for(var i=0;i<d.rna.length;i++){
+  var nc=d.rna[i];
+  var col={A:'#20e0ff',U:'#ff40a0',G:'#20ff80',C:'#ffd040'}[nc]||'#666';
+  ctx.fillStyle=col;
+  var x=110+(i%cols)*14;
+  var y=yRNA+Math.floor(i/cols)*20;
+  ctx.fillText(nc,x,y);
+}
+/* Arrow */
+var yArrow2=yRNA+Math.ceil(d.rna.length/cols)*20+40;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='center';
+ctx.fillText('↓  TRANSLATION  ↓',W/2,yArrow2);
+/* Codons and protein */
+var yCod=yArrow2+40;
+ctx.textAlign='left';
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('Codons',30,yCod);
+ctx.font='12px monospace';
+var codonCols=Math.floor((W-120)/50);
+for(var i=0;i+2<d.rna.length;i+=3){
+  var codon=d.rna.substr(i,3);
+  var aa=CODON_TABLE[codon]||'X';
+  var col=AA_COLOR[aa]||'#666';
+  var ci=i/3;
+  var x=110+(ci%codonCols)*50;
+  var y=yCod+Math.floor(ci/codonCols)*22;
+  // Codon box
+  ctx.fillStyle=col+'44';ctx.fillRect(x-2,y-13,44,18);
+  ctx.strokeStyle=col;ctx.lineWidth=1;ctx.strokeRect(x-2,y-13,44,18);
+  ctx.fillStyle=col;ctx.fillText(codon,x,y);
+  if(codon==='AUG'){ctx.fillStyle='#40ff90';ctx.fillRect(x-4,y-15,48,2)}
+  if(aa==='*'){ctx.fillStyle='#ff2020';ctx.fillRect(x-4,y+4,48,2)}
+}
+/* Protein */
+var yProt=yCod+Math.ceil((d.rna.length/3)/codonCols)*22+50;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+ctx.fillText('Protein',30,yProt);
+ctx.font='bold 14px monospace';
+var protCols=Math.floor((W-120)/22);
+for(var i=0;i<d.protein.length;i++){
+  var aa=d.protein[i];
+  var col=AA_COLOR[aa]||'#666';
+  ctx.fillStyle=col+'44';ctx.fillRect(110+(i%protCols)*20-2,yProt+Math.floor(i/protCols)*22-14,18,18);
+  ctx.strokeStyle=col;ctx.strokeRect(110+(i%protCols)*20-2,yProt+Math.floor(i/protCols)*22-14,18,18);
+  ctx.fillStyle=col;ctx.font='bold 13px monospace';
+  ctx.fillText(aa,110+(i%protCols)*20+2,yProt+Math.floor(i/protCols)*22);
+  ctx.font='bold 14px monospace';
+}
+/* Legend */
+var ly=yProt+Math.ceil(d.protein.length/protCols)*22+30;
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('AMINO ACID PROPERTIES',30,ly);
+ctx.font='10px monospace';
+var legend=[['Hydrophobic',['A','V','I','L','M','F','W','Y','P']],
+            ['Polar',['S','T','C','N','Q']],
+            ['Positive',['K','R','H']],
+            ['Negative',['D','E']],
+            ['Special',['G','*']]];
+legend.forEach(function(g,gi){
+  var x=30+(gi%3)*200;var y=ly+20+Math.floor(gi/3)*20;
+  ctx.fillStyle='#a0c0b0';ctx.font='10px monospace';
+  ctx.fillText(g[0]+':',x,y);
+  g[1].forEach(function(aa,ai){
+    var col=AA_COLOR[aa]||'#666';
+    ctx.fillStyle=col;
+    ctx.fillText(aa,x+80+ai*10,y);
+  });
+});
+SV('sbLen',d.protein.length);SV('sbGC',fmt(gcContent(d.seq)*100,1)+'%');SV('sbMode','Dogma');
+setStats('<div>DNA: '+d.seq.length+' bp</div><div>RNA: '+d.rna.length+' nt</div><div>Protein: '+d.protein.length+' aa</div>');
+badge('📜 Dogma · '+d.protein.length+' aa')},
+onDown:function(){},
+controls:function(){var d=STATE.dogma;var h='<div class="sec"><h4>DNA</h4>';
+h+='<button class="btn primary full" onclick="STATE.dogma.seq=randomDNA(60,0.5);MODULES.dogma.translate();renderLeftPanel()">🎲 New DNA</button>';
+h+='<div class="ctrl" style="margin-top:8px"><textarea onchange="STATE.dogma.seq=this.value.replace(/[^ATGC]/gi,\'\').toUpperCase();MODULES.dogma.translate();renderLeftPanel()">'+attr(d.seq)+'</textarea></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Result</h4><div class="kv">';
+h+='<div class="row"><span class="k">DNA</span><span class="v">'+d.seq.length+' bp</span></div>';
+h+='<div class="row"><span class="k">RNA</span><span class="v">'+d.rna.length+' nt</span></div>';
+h+='<div class="row"><span class="k">Protein</span><span class="v">'+d.protein.length+' aa</span></div>';
+h+='<div class="row"><span class="k">Start ATG</span><span class="v">pos '+d.startIdx+'</span></div>';
+h+='</div></div>';
+h+='<div class="sec"><h4>Protein sequence</h4>';
+h+='<div style="font-family:var(--mono);font-size:.6rem;word-break:break-all;color:var(--p2);line-height:1.5">'+esc(d.protein)+'</div>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Central Dogma</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">DNA → mRNA → Protein<br><br>Transcrição: T→U<br>Tradução: 64 codons → 20 aminoácidos<br><br>Código genético é degenerado (redundante).</div></div>'}});
+
+/* ══════ 3. SEQUENCE ALIGNMENT ══════ */
+registerModule('align',{title:'Sequence Alignment',icon:'🎯',desc:'Needleman-Wunsch and Smith-Waterman DP.',init:function(){var a=STATE.align;
+a.seq1=randomDNA(12,0.5);a.seq2=randomDNA(12,0.5);
+// Make them similar
+a.seq2=a.seq1.split('').map(function(c){return Math.random()<0.8?c:randomChoice(['A','T','G','C'])}).join('');
+this.compute()},
+compute:function(){var a=STATE.align;
+a.result=a.mode==='global'?needlemanWunsch(a.seq1,a.seq2,a.match,a.mismatch,a.gap):smithWaterman(a.seq1,a.seq2,a.match,a.mismatch,a.gap)},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var a=STATE.align;var r=a.result;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('SEQUENCE ALIGNMENT — '+(a.mode==='global'?'Needleman-Wunsch':'Smith-Waterman'),30,30);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Seq1: '+a.seq1,30,55);
+ctx.fillText('Seq2: '+a.seq2,30,72);
+/* DP matrix */
+var mx=200,my=100;
+var cellSize=Math.min(28,(H-200)/(a.seq1.length+1),(W-mx-40)/(a.seq2.length+1));
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('DP MATRIX S[i][j]',30,my-10);
+// Find min/max for coloring
+var minV=Infinity,maxV=-Infinity;
+for(var i=0;i<=a.seq1.length;i++)for(var j=0;j<=a.seq2.length;j++){var v=r.S[i][j];if(v<minV)minV=v;if(v>maxV)maxV=v}
+for(var i=0;i<=a.seq1.length;i++){
+  for(var j=0;j<=a.seq2.length;j++){
+    var x=mx+j*cellSize;
+    var y=my+i*cellSize;
+    var v=r.S[i][j];
+    var t=(v-minV)/(maxV-minV||1);
+    ctx.fillStyle='hsla(140,'+(80-t*40)+'%,'+(15+t*60)+'%,0.9)';
+    ctx.fillRect(x,y,cellSize,cellSize);
+    ctx.strokeStyle='rgba(32,255,128,.2)';ctx.strokeRect(x,y,cellSize,cellSize);
+    ctx.fillStyle='#e0ffe8';ctx.font=Math.min(11,cellSize*0.5)+'px monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(v,x+cellSize/2,y+cellSize/2);
+    ctx.textBaseline='alphabetic';
+  }
+}
+// Row/col headers
+ctx.fillStyle='#ff40a0';ctx.font='bold 12px monospace';ctx.textAlign='center';
+for(var i=0;i<a.seq1.length;i++)ctx.fillText(a.seq1[i],mx-cellSize/2,my+(i+1)*cellSize+cellSize/2+4);
+ctx.fillStyle='#ffd040';
+for(var j=0;j<a.seq2.length;j++)ctx.fillText(a.seq2[j],mx+(j+1)*cellSize+cellSize/2,my-cellSize/2+4);
+// Highlight traceback path
+if(r.T){
+  var i2=a.mode==='global'?a.seq1.length:r.startI+ r.a1.replace(/-/g,'').length;
+  var j2=a.mode==='global'?a.seq2.length:r.startJ+ r.a2.replace(/-/g,'').length;
+  // Actually do simple: for global, start from (n,m). For local, start from max.
+  var ci,cj;
+  if(a.mode==='global'){ci=a.seq1.length;cj=a.seq2.length}
+  else{
+    // Find max
+    var mxs=-Infinity,mi=0,mj=0;
+    for(var i=0;i<=a.seq1.length;i++)for(var j=0;j<=a.seq2.length;j++){if(r.S[i][j]>mxs){mxs=r.S[i][j];mi=i;mj=j}}
+    ci=mi;cj=mj;
+  }
+  ctx.strokeStyle='#ffd040';ctx.lineWidth=2;
+  ctx.beginPath();
+  while(ci>=0&&cj>=0&&(a.mode==='global'||r.S[ci][cj]>0)){
+    var x=mx+cj*cellSize+cellSize/2;
+    var y=my+ci*cellSize+cellSize/2;
+    if(ci===a.seq1.length&&cj===a.seq2.length)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    var d=r.T[ci][cj];
+    if(d==='diag'){ci--;cj--}
+    else if(d==='up'){ci--}
+    else if(d==='left'){cj--}
+    else break;
+  }
+  ctx.stroke();
+}
+// Alignment output
+ctx.textAlign='left';
+var ay=my+(a.seq1.length+1)*cellSize+50;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('ALIGNMENT',30,ay-10);
+ctx.fillStyle='#20e0ff';ctx.font='14px monospace';
+ctx.fillText(r.a1,30,ay+10);
+// Match indicator
+var matchLine='';
+for(var i=0;i<r.a1.length;i++){
+  if(r.a1[i]===r.a2[i])matchLine+='|';
+  else if(r.a1[i]==='-'||r.a2[i]==='-')matchLine+=' ';
+  else matchLine+='.';
+}
+ctx.fillStyle='#ffd040';
+ctx.fillText(matchLine,30,ay+28);
+ctx.fillStyle='#ff40a0';
+ctx.fillText(r.a2,30,ay+46);
+// Score & stats
+ctx.fillStyle='#e0ffe8';ctx.font='12px monospace';
+ctx.fillText('Score: '+r.score+'    Match='+a.match+' Mismatch='+a.mismatch+' Gap='+a.gap,30,ay+80);
+var matches=0,mismatches=0,gaps=0;
+for(var i=0;i<r.a1.length;i++){
+  if(r.a1[i]==='-'||r.a2[i]==='-')gaps++;
+  else if(r.a1[i]===r.a2[i])matches++;
+  else mismatches++;
+}
+ctx.fillText('Matches: '+matches+'  Mismatches: '+mismatches+'  Gaps: '+gaps+'  Identity: '+fmt(matches/(matches+mismatches+gaps)*100,1)+'%',30,ay+100);
+SV('sbLen',a.seq1.length+'×'+a.seq2.length);SV('sbGC','—');SV('sbMode','Alignment');
+setStats('<div>Mode: '+a.mode+'</div><div>Score: '+r.score+'</div><div>Identity: '+fmt(matches/(matches+mismatches+gaps)*100,1)+'%</div>');
+badge('🎯 Alignment · score='+r.score)},
+onDown:function(){},
+controls:function(){var a=STATE.align;var h='<div class="sec"><h4>Mode</h4><div class="chip-row">';
+['global','local'].forEach(function(m){h+='<div class="chip '+(a.mode===m?'active':'')+'" onclick="STATE.align.mode=\''+m+'\';MODULES.align.compute();renderLeftPanel()">'+(m==='global'?'Needleman-Wunsch':'Smith-Waterman')+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Sequences</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Seq1</span></div><input type="text" value="'+attr(a.seq1)+'" onchange="STATE.align.seq1=this.value.replace(/[^ATGC]/gi,\'\').toUpperCase();MODULES.align.compute();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Seq2</span></div><input type="text" value="'+attr(a.seq2)+'" onchange="STATE.align.seq2=this.value.replace(/[^ATGC]/gi,\'\').toUpperCase();MODULES.align.compute();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Scoring</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Match</span><span>'+a.match+'</span></div><input type="range" min="1" max="5" value="'+a.match+'" oninput="STATE.align.match=parseInt(this.value);MODULES.align.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Mismatch</span><span>'+a.mismatch+'</span></div><input type="range" min="-5" max="0" value="'+a.mismatch+'" oninput="STATE.align.mismatch=parseInt(this.value);MODULES.align.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Gap</span><span>'+a.gap+'</span></div><input type="range" min="-5" max="0" value="'+a.gap+'" oninput="STATE.align.gap=parseInt(this.value);MODULES.align.compute()"></div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.align.init();renderLeftPanel()">🎲 Random pair</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Needleman-Wunsch</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Programação dinâmica O(n·m)<br><br>S[i][j] = max(<br>  S[i-1][j-1]+sub,<br>  S[i-1][j]+gap,<br>  S[i][j-1]+gap<br>)<br><br>Smith-Waterman = variante local (reset em 0).</div></div>'}});
+
+/* ══════ 4. PHYLOGENY ══════ */
+registerModule('phylo',{title:'Phylogenetic Tree',icon:'🌳',desc:'UPGMA clustering from sequence distances.',init:function(){this.build()},
+build:function(){var p=STATE.phylo;
+p.seqs=[];
+var template=randomDNA(p.seqLen,0.5);
+for(var i=0;i<p.n;i++){
+  var mut=Math.random()*0.3;
+  var s='';
+  for(var j=0;j<p.seqLen;j++){
+    s+=Math.random()<mut?randomChoice(['A','T','G','C']):template[j];
+  }
+  p.seqs.push({name:'Seq'+i,seq:s});
+}
+// Distance matrix (hamming or p-distance)
+p.matrix=[];
+for(var i=0;i<p.n;i++){
+  p.matrix.push([]);
+  for(var j=0;j<p.n;j++){
+    if(i===j){p.matrix[i].push(0);continue}
+    var diff=0;
+    for(var k=0;k<p.seqLen;k++)if(p.seqs[i].seq[k]!==p.seqs[j].seq[k])diff++;
+    p.matrix[i].push(diff/p.seqLen);
+  }
+}
+// UPGMA
+var clusters=p.seqs.map(function(s,i){return {id:i,name:s.name,size:1,children:null,height:0}});
+var active=clusters.slice();
+while(active.length>1){
+  var minD=Infinity,mini=0,minj=1;
+  for(var i=0;i<active.length;i++)for(var j=i+1;j<active.length;j++){
+    var d=this.clusterDist(active[i],active[j],p);
+    if(d<minD){minD=d;mini=i;minj=j}
+  }
+  var newCluster={
+    id:'c'+clusters.length,
+    name:'',
+    size:active[mini].size+active[minj].size,
+    children:[active[mini],active[minj]],
+    height:minD/2
+  };
+  clusters.push(newCluster);
+  active.splice(Math.max(mini,minj),1);
+  active.splice(Math.min(mini,minj),1);
+  active.push(newCluster);
+}
+p.tree=active[0];
+// store cluster distances
+p.clusterDists={};
+for(var i=0;i<clusters.length;i++)for(var j=0;j<clusters.length;j++){
+  if(clusters[i].children===null||clusters[j].children===null){p.clusterDists[clusters[i].id+'_'+clusters[j].id]=0;continue}
+  p.clusterDists[clusters[i].id+'_'+clusters[j].id]=0;
+}
+// Better: compute distance between two clusters recursively as average of leaf distances
+function avgDist(a,b){
+  if(!a.children&&!b.children){return p.matrix[a.id][b.id]}
+  var aLeaves=a.children?null:[a];
+  if(!aLeaves){aLeaves=a.children[0].children?[]:[a.children[0],a.children[1]]}
+  var bLeaves=b.children?null:[b];
+  if(!bLeaves){bLeaves=b.children[0].children?[]:[b.children[0],b.children[1]]}
+  var sum=0,cnt=0;
+  aLeaves.forEach(function(al){bLeaves.forEach(function(bl){sum+=p.matrix[al.id][bl.id];cnt++})});
+  return sum/cnt;
+}
+},
+clusterDist:function(c1,c2,p){
+  // Get leaves of each
+  function leaves(c){if(!c.children)return [c];return leaves(c.children[0]).concat(leaves(c.children[1]))}
+  var L1=leaves(c1),L2=leaves(c2);
+  var sum=0,cnt=0;
+  L1.forEach(function(a){L2.forEach(function(b){sum+=p.matrix[a.id][b.id];cnt++})});
+  return sum/cnt;
+},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var p=STATE.phylo;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('PHYLOGENETIC TREE (UPGMA)',30,30);
+/* Layout tree */
+function layout(node,depth,x0,x1,y){
+  // count leaves
+}
+var leaves=[];
+function collectLeaves(n,out){if(!n.children){out.push(n);return}collectLeaves(n.children[0],out);collectLeaves(n.children[1],out)}
+collectLeaves(p.tree,leaves);
+var leafY={};
+leaves.forEach(function(l,i){leafY[l.id]=i});
+/* Draw tree in left half */
+var px=30,py=100,pw=W*0.55,ph=H-160;
+var rowH=ph/leaves.length;
+// Compute x for each cluster based on height
+var maxH=0;
+function maxHeight(n){if(!n.children)return n.height;return Math.max(n.height,Math.max(maxHeight(n.children[0]),maxHeight(n.children[1])))}
+maxH=maxHeight(p.tree)||1;
+function drawNode(node){
+  if(!node.children){
+    // leaf
+    var y=py+leafY[node.id]*rowH+rowH/2;
+    ctx.fillStyle='#20e0ff';
+    ctx.beginPath();ctx.arc(px+node.height/maxH*pw,y,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e0ffe8';ctx.font='11px monospace';
+    ctx.fillText(node.name,px+node.height/maxH*pw+10,y+4);
+    return {x:px+node.height/maxH*pw,y:y};
+  }
+  var a=drawNode(node.children[0]);
+  var b=drawNode(node.children[1]);
+  var x=px+node.height/maxH*pw;
+  var y=(a.y+b.y)/2;
+  ctx.strokeStyle='#20ff80';ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(x,a.y);ctx.lineTo(a.x,a.y);
+  ctx.moveTo(x,b.y);ctx.lineTo(b.x,b.y);
+  ctx.moveTo(x,a.y);ctx.lineTo(x,b.y);
+  ctx.stroke();
+  ctx.fillStyle='#ffd040';
+  ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();
+  return {x:x,y:y};
+}
+drawNode(p.tree);
+/* Distance matrix */
+if(p.showMatrix){
+  var mx=W*0.6,my=100;
+  var n=p.n;
+  var cell=Math.min(28,(H-my-60)/n,(W-mx-40)/n);
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('DISTANCE MATRIX',mx,my-10);
+  for(var i=0;i<n;i++){
+    for(var j=0;j<n;j++){
+      var v=p.matrix[i][j];
+      var t=v/0.5;
+      ctx.fillStyle='hsla('+(140-t*140)+',80%,'+(20+t*50)+'%,0.85)';
+      ctx.fillRect(mx+j*cell,my+i*cell,cell,cell);
+      ctx.strokeStyle='rgba(32,255,128,.2)';ctx.strokeRect(mx+j*cell,my+i*cell,cell,cell);
+      ctx.fillStyle=t>0.5?'#000':'#e0ffe8';
+      ctx.font=Math.min(10,cell*0.5)+'px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(fmt(v,2),mx+j*cell+cell/2,my+i*cell+cell/2);
+      ctx.textBaseline='alphabetic';
+    }
+  }
+  ctx.fillStyle='#ff40a0';ctx.font='9px monospace';
+  for(var i=0;i<n;i++){ctx.fillText('S'+i,mx-cell/2,my+(i+1)*cell+cell/2+4)}
+  ctx.fillStyle='#ffd040';
+  for(var j=0;j<n;j++){ctx.fillText('S'+j,mx+j*cell+cell/2,my-cell/2+4)}
+}
+SV('sbLen',p.n);SV('sbGC','—');SV('sbMode','Phylogeny');
+setStats('<div>Taxa: '+p.n+'</div><div>Seq length: '+p.seqLen+' bp</div><div>Method: UPGMA</div>');
+badge('🌳 Phylogeny · '+p.n+' taxa')},
+onDown:function(){},
+controls:function(){var p=STATE.phylo;var h='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Taxa</span><span>'+p.n+'</span></div><input type="range" min="3" max="15" value="'+p.n+'" oninput="STATE.phylo.n=parseInt(this.value);MODULES.phylo.build();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Seq length</span><span>'+p.seqLen+' bp</span></div><input type="range" min="20" max="200" step="10" value="'+p.seqLen+'" oninput="STATE.phylo.seqLen=parseInt(this.value);MODULES.phylo.build();renderLeftPanel()"></div>';
+h+='<div class="chip '+(p.showMatrix?'active':'')+'" onclick="STATE.phylo.showMatrix=!STATE.phylo.showMatrix;renderLeftPanel()">Distance matrix: '+(p.showMatrix?'ON':'OFF')+'</div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.phylo.build();toast(\'New tree\',\'success\')">🎲 New sequences</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>UPGMA</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Unweighted Pair Group Method<br>with Arithmetic Mean<br><br>1. Calcular distância entre pares<br>2. Agrupar os mais próximos<br>3. Recalcular média<br>4. Repetir até 1 cluster<br><br>Assume clock molecular (ultramétrico).</div></div>'}});
+
+/* ══════ 5. POPULATION GENETICS ══════ */
+registerModule('popgen',{title:'Population Genetics',icon:'👥',desc:'Wright-Fisher drift + Hardy-Weinberg + selection.',init:function(){this.reset()},
+reset:function(){var p=STATE.popgen;
+p.loci=[];
+for(var i=0;i<p.nLoci;i++){
+  var f=p.p0;
+  p.loci.push({freq:f,history:[f],fixed:false,fixedAt:null});
+}
+p.generations=0;p.history=[[p.p0,1-p.p0,0]];p.fixedCount=0},
+step:function(){var p=STATE.popgen;
+var N=p.N;
+p.loci.forEach(function(l){
+  if(l.fixed)return;
+  // Selection then drift
+  var f=l.freq;
+  var s=p.s;
+  var wAA=1+s, wAa=1+s*0.5, waa=1;
+  var pF=f,qF=1-f;
+  var wBar=pF*pF*wAA+2*pF*qF*wAa+qF*qF*waa;
+  var pSel=(pF*pF*wAA+pF*qF*wAa)/wBar;
+  // Wright-Fisher sampling from 2N alleles
+  var alleles=0;
+  for(var i=0;i<2*N;i++){
+    if(Math.random()<pSel)alleles++;
+  }
+  f=alleles/(2*N);
+  l.freq=f;
+  l.history.push(f);
+  if(f===0||f===1){l.fixed=true;l.fixedAt=p.generations;l.freq=f}
+});
+p.generations++;
+p.fixedCount=p.loci.filter(function(l){return l.fixed}).length;
+// Aggregate stats
+var mean=0,het=0;
+p.loci.forEach(function(l){mean+=l.freq;het+=2*l.freq*(1-l.freq)});
+mean/=p.nLoci;het/=p.nLoci;
+p.history.push([mean,1-mean,het]);
+if(p.history.length>500)p.history.shift()},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*4;var k=0;while(this._acc>=1&&k<3){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var p=STATE.popgen;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('POPULATION GENETICS — Wright-Fisher',30,30);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('N='+p.N+' · '+p.nLoci+' loci · s='+fmt(p.s,3)+' · gen='+p.generations,30,55);
+/* Loci trajectories */
+var px=40,py=100,pw=W-80,ph=H*0.5-100;
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(px,py,pw,ph);
+ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(px,py,pw,ph);
+/* Draw each locus as a line */
+var maxGen=Math.max(p.generations,50);
+var genScale=pw/Math.max(maxGen,50);
+p.loci.forEach(function(l,li){
+  if(l.history.length<2)return;
+  ctx.beginPath();
+  for(var i=0;i<l.history.length;i++){
+    var x=px+i*genScale;
+    var y=py+ph-l.history[i]*ph;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  var hue=(li*37)%360;
+  ctx.strokeStyle='hsla('+hue+',70%,'+(l.fixed?'30':'55')+'%,'+(l.fixed?0.3:0.7)+')';
+  ctx.lineWidth=1;
+  ctx.stroke();
+});
+/* Reference lines at 0 and 1 */
+ctx.strokeStyle='rgba(255,64,160,.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px+pw,py);ctx.moveTo(px,py+ph);ctx.lineTo(px+pw,py+ph);ctx.stroke();
+ctx.setLineDash([]);
+ctx.fillStyle='#a0c0b0';ctx.font='10px monospace';
+ctx.fillText('1.0',px-30,py+4);
+ctx.fillText('0.5',px-30,py+ph/2+4);
+ctx.fillText('0.0',px-30,py+ph+4);
+/* Stats */
+var sy=py+ph+50;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('STATISTICS',30,sy);
+/* Compute actual stats */
+var meanF=0,het=0;
+p.loci.forEach(function(l){meanF+=l.freq;het+=2*l.freq*(1-l.freq)});
+meanF/=p.nLoci;het/=p.nLoci;
+ctx.fillStyle='#e0ffe8';ctx.font='12px monospace';
+ctx.fillText('Mean allele freq: '+fmt(meanF,4),30,sy+25);
+ctx.fillText('Heterozygosity:   '+fmt(het,4),30,sy+45);
+ctx.fillText('Fixed loci:        '+p.fixedCount+' / '+p.nLoci+' ('+fmt(p.fixedCount/p.nLoci*100,1)+'%)',30,sy+65);
+ctx.fillText('Expected HWE:      '+fmt(2*p.p0*(1-p.p0),4),30,sy+85);
+/* Bar chart of frequencies */
+var bx=W*0.55,by=sy;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('ALLELE FREQUENCY DISTRIBUTION',bx,by);
+var bins=10;var binCounts=new Array(bins).fill(0);
+p.loci.forEach(function(l){var bi=Math.min(bins-1,Math.floor(l.freq*bins));binCounts[bi]++});
+var bw=(W-bx-40)/bins;
+for(var i=0;i<bins;i++){
+  var bh=binCounts[i]/p.nLoci*100;
+  var hue=200-i*20;
+  ctx.fillStyle='hsl('+hue+',80%,60%)';
+  ctx.fillRect(bx+i*bw,by+150-bh*1.5,bw-2,bh*1.5);
+  ctx.fillStyle='#a0c0b0';ctx.font='9px monospace';ctx.textAlign='center';
+  ctx.fillText(fmt(i/bins,1),bx+i*bw+bw/2,by+165);
+}
+ctx.textAlign='left';
+SV('sbLen',p.nLoci+' loci');SV('sbGC',fmt(meanF*100,1)+'%');SV('sbMode','PopGen');SV('sbIter',p.generations);
+setStats('<div>N: '+p.N+'</div><div>Gen: '+p.generations+'</div><div>Fixed: '+p.fixedCount+'/'+p.nLoci+'</div><div>Het: '+fmt(het,3)+'</div>');
+badge('👥 PopGen · gen '+p.generations)},
+onDown:function(){},
+controls:function(){var p=STATE.popgen;var h='<div class="sec"><h4>Population</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>N (population)</span><span>'+p.N+'</span></div><input type="range" min="10" max="500" step="10" value="'+p.N+'" oninput="STATE.popgen.N=parseInt(this.value);MODULES.popgen.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Loci</span><span>'+p.nLoci+'</span></div><input type="range" min="5" max="50" step="5" value="'+p.nLoci+'" oninput="STATE.popgen.nLoci=parseInt(this.value);MODULES.popgen.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>p₀ (initial)</span><span>'+fmt(p.p0,2)+'</span></div><input type="range" min="0.05" max="0.95" step="0.05" value="'+p.p0+'" oninput="STATE.popgen.p0=parseFloat(this.value);MODULES.popgen.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>s (selection)</span><span>'+fmt(p.s,3)+'</span></div><input type="range" min="-0.5" max="0.5" step="0.01" value="'+p.s+'" oninput="STATE.popgen.s=parseFloat(this.value)"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.popgen.reset();toast(\'Reset\',\'success\')">↺ Reset</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="for(var i=0;i<100;i++)MODULES.popgen.step()">⏩ 100 generations</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Wright-Fisher</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">p(t+1) ~ Binomial(2N, p(t))<br><br>Hardy-Weinberg:<br>p² + 2pq + q² = 1<br><br>Drift: variância ∝ p(1-p)/(2N)<br>Fixação: T ~ 2N gerações</div></div>'}});
+
+/* ══════ 6. EPIDEMIC ══════ */
+registerModule('epidemic',{title:'Epidemic Modeling',icon:'🦠',desc:'SIR/SEIR compartmental models with RK4.',init:function(){this.reset()},
+reset:function(){var e=STATE.epidemic;
+if(e.mode==='SIR'){e.y=[e.S-1,1,0];e.labels=['S','I','R'];e.colors=['#20e0ff','#ff40a0','#40ff90']}
+else{e.y=[e.N-2,0,2,0];e.labels=['S','E','I','R'];e.colors=['#20e0ff','#ffd040','#ff40a0','#40ff90']}
+e.t=0;e.history=[e.y.slice()]},
+deriv:function(y){var e=STATE.epidemic;
+if(e.mode==='SIR'){
+  var S=y[0],I=y[1],R=y[2];
+  var dS=-e.beta*S*I/e.N;
+  var dI=e.beta*S*I/e.N-e.gamma*I;
+  var dR=e.gamma*I;
+  return [dS,dI,dR];
+}else{
+  var S=y[0],E=y[1],I=y[2],R=y[3];
+  var dS=-e.beta*S*I/e.N;
+  var dE=e.beta*S*I/e.N-e.sigma*E;
+  var dI=e.sigma*E-e.gamma*I;
+  var dR=e.gamma*I;
+  return [dS,dE,dI,dR];
+}
+},
+step:function(){var e=STATE.epidemic;
+var dt=0.1;
+for(var i=0;i<5;i++){
+  e.y=rk4(e.y,e.t,dt,this.deriv.bind(this));
+  e.t+=dt;
+}
+e.history.push(e.y.slice());
+if(e.history.length>2000)e.history.shift()},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*20;var k=0;while(this._acc>=1&&k<3){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var e=STATE.epidemic;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('EPIDEMIC MODEL — '+e.mode,30,30);
+/* R0 */
+var R0=e.beta/e.gamma;
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('R₀ = β/γ = '+fmt(R0,3)+'   '+(R0>1?'(Epidemic grows)':'(Epidemic dies out)'),30,55);
+/* Chart */
+var px=40,py=100,pw=W-80,ph=H-200;
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(px,py,pw,ph);
+ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(px,py,pw,ph);
+var series=[];
+for(var i=0;i<e.labels.length;i++){
+  series.push(e.history.map(function(h){return h[i]}));
+}
+drawMultiSeries(ctx,px+10,py+20,pw-20,ph-40,series,e.colors,e.labels);
+// Grid
+ctx.strokeStyle='rgba(32,255,128,.1)';
+for(var i=1;i<5;i++){
+  ctx.beginPath();ctx.moveTo(px,py+ph*i/5);ctx.lineTo(px+pw,py+ph*i/5);ctx.stroke();
+}
+ctx.beginPath();ctx.moveTo(px+pw/2,py);ctx.lineTo(px+pw/2,py+ph);ctx.stroke();
+/* Y axis */
+ctx.fillStyle='#a0c0b0';ctx.font='10px monospace';
+ctx.fillText('N',px-20,py+4);
+ctx.fillText('0',px-20,py+ph+4);
+/* Current state */
+var sy=py+ph+40;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('CURRENT STATE (t='+fmt(e.t,1)+')',30,sy);
+e.labels.forEach(function(l,i){
+  ctx.fillStyle=e.colors[i];
+  ctx.fillRect(30+i*130,sy+15,12,12);
+  ctx.fillStyle='#e0ffe8';ctx.font='12px monospace';
+  ctx.fillText(l+': '+fmt(e.y[i],1)+'  ('+fmt(e.y[i]/e.N*100,1)+'%)',48+i*130,sy+26);
+});
+/* Peak infection info */
+var peakI=0,peakT=0;
+e.history.forEach(function(h,i){
+  var infected=e.mode==='SIR'?h[1]:h[2];
+  if(infected>peakI){peakI=infected;peakT=i*0.5}
+});
+ctx.fillStyle='#ffd040';ctx.font='12px monospace';
+ctx.fillText('Peak infected: '+fmt(peakI,0)+' at t='+fmt(peakT,1),30,sy+60);
+ctx.fillText('Final size: '+fmt(e.y[e.y.length-1],0)+' ('+fmt(e.y[e.y.length-1]/e.N*100,1)+'% infected)',30,sy+80);
+/* Herd immunity threshold */
+var HIT=1-1/R0;
+ctx.fillStyle='#a060ff';
+ctx.fillText('Herd immunity threshold: '+fmt(HIT*100,1)+'%',30,sy+100);
+SV('sbLen',fmt(e.t,1));SV('sbGC','—');SV('sbMode','Epidemic');SV('sbIter',e.history.length);
+setStats('<div>R₀: '+fmt(R0,2)+'</div><div>Peak: '+fmt(peakI,0)+'</div><div>t: '+fmt(e.t,1)+'</div>');
+badge('🦠 '+e.mode+' · R₀='+fmt(R0,2))},
+onDown:function(){},
+controls:function(){var e=STATE.epidemic;var h='<div class="sec"><h4>Model</h4><div class="chip-row">';
+['SIR','SEIR'].forEach(function(m){h+='<div class="chip '+(e.mode===m?'active':'')+'" onclick="STATE.epidemic.mode=\''+m+'\';MODULES.epidemic.reset();renderLeftPanel()">'+m+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>N (population)</span><span>'+e.N+'</span></div><input type="range" min="100" max="10000" step="100" value="'+e.N+'" oninput="STATE.epidemic.N=parseInt(this.value);MODULES.epidemic.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>β (contact rate)</span><span>'+fmt(e.beta,2)+'</span></div><input type="range" min="0.05" max="1.5" step="0.02" value="'+e.beta+'" oninput="STATE.epidemic.beta=parseFloat(this.value);MODULES.epidemic.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>γ (recovery)</span><span>'+fmt(e.gamma,3)+'</span></div><input type="range" min="0.02" max="0.5" step="0.005" value="'+e.gamma+'" oninput="STATE.epidemic.gamma=parseFloat(this.value);MODULES.epidemic.reset();renderLeftPanel()"></div>';
+if(e.mode==='SEIR'){
+h+='<div class="ctrl"><div class="lbl"><span>σ (incubation)</span><span>'+fmt(e.sigma,3)+'</span></div><input type="range" min="0.05" max="0.5" step="0.01" value="'+e.sigma+'" oninput="STATE.epidemic.sigma=parseFloat(this.value);MODULES.epidemic.reset();renderLeftPanel()"></div>';
+}
+h+='</div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+h+='<div class="chip" onclick="STATE.epidemic.beta=0.4;STATE.epidemic.gamma=0.1;MODULES.epidemic.reset()">COVID-like</div>';
+h+='<div class="chip" onclick="STATE.epidemic.beta=0.8;STATE.epidemic.gamma=0.35;MODULES.epidemic.reset()">Measles</div>';
+h+='<div class="chip" onclick="STATE.epidemic.beta=0.2;STATE.epidemic.gamma=0.25;MODULES.epidemic.reset()">Flu</div>';
+h+='</div></div>';
+h+='<button class="btn primary full" onclick="MODULES.epidemic.reset();toast(\'Reset\',\'success\')">↺ Reset</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>SIR</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">dS/dt = −βSI/N<br>dI/dt = βSI/N − γI<br>dR/dt = γI<br><br>R₀ = β/γ<br><br>Herd immunity: 1−1/R₀</div></div>'}});
+
+/* ══════ 7. PROTEIN FOLDING ══════ */
+registerModule('folding',{title:'Protein Folding',icon:'📦',desc:'HP 2D lattice model with Monte Carlo.',init:function(){this.reset()},
+reset:function(){var f=STATE.folding;
+// Random HP sequence
+f.seq='';
+for(var i=0;i<f.n;i++)f.seq+=Math.random()<0.5?'H':'P';
+// Random self-avoiding walk on 2D lattice
+f.lattice=[];
+var x=0,y=0;f.lattice.push([0,0]);
+var dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+var prev=null;
+for(var i=1;i<f.n;i++){
+  var candidates=[];
+  for(var d=0;d<4;d++){
+    var nx=x+dirs[d][0],ny=y+dirs[d][1];
+    var occupied=false;
+    for(var j=0;j<f.lattice.length;j++){
+      if(f.lattice[j][0]===nx&&f.lattice[j][1]===ny){occupied=true;break}
+    }
+    if(!occupied)candidates.push([nx,ny]);
+  }
+  if(candidates.length===0){f.n=i;break}
+  var c=randomChoice(candidates);
+  f.lattice.push(c);x=c[0];y=c[1];
+}
+f.n=f.lattice.length;
+f.energy=this.computeEnergy(f.lattice,f.seq);
+f.steps=0;f.history=[f.energy]},
+computeEnergy:function(lattice,seq){
+  var e=0;
+  for(var i=0;i<lattice.length;i++){
+    if(seq[i]!=='H')continue;
+    for(var j=i+1;j<lattice.length;j++){
+      if(seq[j]!=='H')continue;
+      var dx=Math.abs(lattice[i][0]-lattice[j][0]);
+      var dy=Math.abs(lattice[i][1]-lattice[j][1]);
+      if(dx+dy===1)e-=1;
+    }
+  }
+  return e},
+step:function(){var f=STATE.folding;
+// Monte Carlo: try pivot move
+var i=rnd(1,f.lattice.length-1);
+var dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+var dir=randomChoice(dirs);
+// Try to move tail from position i in direction dir (rotation of suffix)
+var oldSuffix=[];
+for(var j=i;j<f.lattice.length;j++)oldSuffix.push(f.lattice[j]);
+var dx=dir[0],dy=dir[1];
+var newLattice=f.lattice.slice(0,i);
+// Reflect suffix: for simplicity, just jiggle last point
+// Try: move last point (simple end move)
+var last=f.lattice[f.lattice.length-1];
+var prevP=f.lattice[f.lattice.length-2];
+var newLast=[prevP[0]+dir[0],prevP[1]+dir[1]];
+// Check self-avoidance
+var collide=false;
+for(var k=0;k<f.lattice.length-1;k++){
+  if(f.lattice[k][0]===newLast[0]&&f.lattice[k][1]===newLast[1]){collide=true;break}
+}
+if(collide)return;
+var oldEnergy=this.computeEnergy(f.lattice,f.seq);
+var testLattice=f.lattice.slice();testLattice[testLattice.length-1]=newLast;
+var newEnergy=this.computeEnergy(testLattice,f.seq);
+var dE=newEnergy-oldEnergy;
+var accept=false;
+if(dE<=0)accept=true;
+else if(Math.random()<Math.exp(-dE/f.temp))accept=true;
+if(accept){
+  f.lattice=testLattice;
+  f.energy=newEnergy;
+}
+f.steps++;
+f.history.push(f.energy);
+if(f.history.length>500)f.history.shift()},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*30;var k=0;while(this._acc>=1&&k<10){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var f=STATE.folding;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('PROTEIN FOLDING — HP Lattice Model',30,30);
+/* Compute bounds */
+var minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+f.lattice.forEach(function(p){if(p[0]<minX)minX=p[0];if(p[0]>maxX)maxX=p[0];if(p[1]<minY)minY=p[1];if(p[1]>maxY)maxY=p[1]});
+var spanX=Math.max(maxX-minX+1,1),spanY=Math.max(maxY-minY+1,1);
+var cell=Math.min((W-120)/spanX,(H-260)/spanY,40);
+var cx=(W-cell*spanX)/2;
+var cy=100;
+/* Draw H-H contacts (favorable) */
+for(var i=0;i<f.lattice.length;i++){
+  if(f.seq[i]!=='H')continue;
+  for(var j=i+1;j<f.lattice.length;j++){
+    if(f.seq[j]!=='H')continue;
+    var dx=Math.abs(f.lattice[i][0]-f.lattice[j][0]);
+    var dy=Math.abs(f.lattice[i][1]-f.lattice[j][1]);
+    if(dx+dy===1){
+      var x1=cx+(f.lattice[i][0]-minX)*cell+cell/2;
+      var y1=cy+(f.lattice[i][1]-minY)*cell+cell/2;
+      var x2=cx+(f.lattice[j][0]-minX)*cell+cell/2;
+      var y2=cy+(f.lattice[j][1]-minY)*cell+cell/2;
+      ctx.strokeStyle='rgba(255,64,160,.7)';ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    }
+  }
+}
+/* Backbone */
+ctx.strokeStyle='#20e0ff';ctx.lineWidth=2;
+ctx.beginPath();
+f.lattice.forEach(function(p,i){
+  var x=cx+(p[0]-minX)*cell+cell/2;
+  var y=cy+(p[1]-minY)*cell+cell/2;
+  if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+});
+ctx.stroke();
+/* Monomers */
+f.lattice.forEach(function(p,i){
+  var x=cx+(p[0]-minX)*cell+cell/2;
+  var y=cy+(p[1]-minY)*cell+cell/2;
+  var col=f.seq[i]==='H'?'#ffd040':'#20e0ff';
+  ctx.fillStyle=col+'88';
+  ctx.beginPath();ctx.arc(x,y,cell*0.3,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='#000';ctx.font='bold '+Math.min(14,cell*0.4)+'px monospace';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(f.seq[i],x,y);
+  ctx.textBaseline='alphabetic';
+});
+ctx.textAlign='left';
+/* Sequence */
+var sy=cy+spanY*cell+40;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('SEQUENCE ('+f.seq.length+' aa)',30,sy);
+ctx.font='12px monospace';
+for(var i=0;i<f.seq.length;i++){
+  ctx.fillStyle=f.seq[i]==='H'?'#ffd040':'#20e0ff';
+  ctx.fillText(f.seq[i],30+i*10,sy+20);
+}
+/* Legend */
+ctx.fillStyle='#e0ffe8';ctx.font='11px monospace';
+ctx.fillText('H = Hydrophobic (favorable contacts)',30,sy+45);
+ctx.fillText('P = Polar/neutral',30,sy+62);
+/* Energy chart */
+var ey=sy+90;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('ENERGY OVER TIME',30,ey);
+drawSparkline(ctx,30,ey+10,W-80,120,f.history,'#ff40a0',true);
+SV('sbLen',f.n);SV('sbGC','—');SV('sbMode','Folding');SV('sbIter',f.steps);
+setStats('<div>Length: '+f.n+' aa</div><div>Energy: '+f.energy+'</div><div>H contacts: '+(-f.energy)+'</div><div>Steps: '+f.steps+'</div>');
+badge('📦 Folding · E='+f.energy)},
+onDown:function(){},
+controls:function(){var f=STATE.folding;var h='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Sequence length</span><span>'+f.n+' aa</span></div><input type="range" min="8" max="40" value="'+f.n+'" oninput="STATE.folding.n=parseInt(this.value);MODULES.folding.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Temperature T</span><span>'+fmt(f.temp,2)+'</span></div><input type="range" min="0.1" max="5" step="0.1" value="'+f.temp+'" oninput="STATE.folding.temp=parseFloat(this.value)"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Sequence</h4>';
+h+='<div class="ctrl"><input type="text" value="'+attr(f.seq)+'" onchange="STATE.folding.seq=this.value.toUpperCase().replace(/[^HP]/g,\'\');MODULES.folding.reset();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.folding.reset();toast(\'New chain\',\'success\')">🎲 New random chain</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="for(var i=0;i<1000;i++)MODULES.folding.step();toast(\'1000 steps\',\'success\')">⚡ 1000 steps</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>HP Model</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Dill (1985)<br><br>2 tipos de resíduos:<br>H (hidrofóbico) — interage<br>P (polar) — não interage<br><br>Energia: −1 por par H-H adjacente<br><br>Metropolis: aceita se ΔE≤0<br>ou com prob e^(−ΔE/T)</div></div>'}});
+</script>
+<script>
+/* ══════ 8. MOLECULAR DYNAMICS ══════ */
+registerModule('md',{title:'Molecular Dynamics',icon:'⚛',desc:'Lennard-Jones particles with velocity Verlet.',init:function(){this.reset()},
+reset:function(){var m=STATE.md;m.particles=[];m.velocities=[];m.history=[];m.energyHistory=[];
+for(var i=0;i<m.n;i++){
+  m.particles.push({
+    x:Math.random()*m.L,y:Math.random()*m.L,
+    fx:0,fy:0
+  });
+  // Maxwell-Boltzmann-like
+  m.velocities.push({vx:randn()*0.3,vy:randn()*0.3});
+}
+m.history.push(m.particles.map(function(p){return [p.x,p.y]}))},
+step:function(){var m=STATE.md;
+var dt=m.dt;
+// Zero forces
+m.particles.forEach(function(p){p.fx=0;p.fy=0});
+var potential=0;
+// Lennard-Jones forces
+for(var i=0;i<m.n;i++){
+  for(var j=i+1;j<m.n;j++){
+    var dx=m.particles[j].x-m.particles[i].x;
+    var dy=m.particles[j].y-m.particles[i].y;
+    if(m.usePBC){
+      if(dx>m.L/2)dx-=m.L;if(dx<-m.L/2)dx+=m.L;
+      if(dy>m.L/2)dy-=m.L;if(dy<-m.L/2)dy+=m.L;
+    }
+    var r2=dx*dx+dy*dy;
+    if(r2<0.0001)r2=0.0001;
+    var r=Math.sqrt(r2);
+    var sr6=Math.pow(m.sigma/r,6);
+    var sr12=sr6*sr6;
+    potential+=4*m.eps*(sr12-sr6);
+    var force=24*m.eps*(2*sr12-sr6)/r2;
+    m.particles[i].fx-=force*dx;
+    m.particles[i].fy-=force*dy;
+    m.particles[j].fx+=force*dx;
+    m.particles[j].fy+=force*dy;
+  }
+}
+// Velocity Verlet
+var kinetic=0;
+for(var i=0;i<m.n;i++){
+  var v=m.velocities[i];
+  v.vx+=m.particles[i].fx*dt*0.5;
+  v.vy+=m.particles[i].fy*dt*0.5;
+  m.particles[i].x+=v.vx*dt;
+  m.particles[i].y+=v.vy*dt;
+  if(m.usePBC){
+    if(m.particles[i].x<0)m.particles[i].x+=m.L;
+    if(m.particles[i].x>=m.L)m.particles[i].x-=m.L;
+    if(m.particles[i].y<0)m.particles[i].y+=m.L;
+    if(m.particles[i].y>=m.L)m.particles[i].y-=m.L;
+  }
+  v.vx+=m.particles[i].fx*dt*0.5;
+  v.vy+=m.particles[i].fy*dt*0.5;
+  kinetic+=0.5*(v.vx*v.vx+v.vy*v.vy);
+}
+// Thermostat (simple velocity rescaling)
+var targetT=m.temp;
+var currentT=kinetic/m.n;
+if(currentT>0.001){
+  var scale=Math.sqrt(targetT/currentT);
+  scale=1+(scale-1)*0.05;
+  for(var i=0;i<m.n;i++){m.velocities[i].vx*=scale;m.velocities[i].vy*=scale}
+}
+m.energyHistory.push(potential+kinetic);
+if(m.energyHistory.length>500)m.energyHistory.shift()},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*200;var k=0;while(this._acc>=1&&k<20){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var m=STATE.md;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('MOLECULAR DYNAMICS — Lennard-Jones',30,30);
+/* Simulation box */
+var sz=Math.min(W-80,H-200);
+var px=(W-sz)/2,py=80;
+ctx.strokeStyle='#20ff80';ctx.lineWidth=2;
+ctx.strokeRect(px,py,sz,sz);
+ctx.fillStyle='rgba(4,18,10,.4)';ctx.fillRect(px,py,sz,sz);
+/* Particles with velocity coloring */
+m.particles.forEach(function(p,i){
+  var v=m.velocities[i];
+  var speed=Math.hypot(v.vx,v.vy);
+  var x=px+p.x/m.L*sz;
+  var y=py+p.y/m.L*sz;
+  // Draw particle
+  var g=ctx.createRadialGradient(x,y,0,x,y,m.sigma*sz/m.L*2);
+  g.addColorStop(0,'rgba(32,255,128,'+(0.4+speed*0.5)+')');
+  g.addColorStop(1,'rgba(32,255,128,0)');
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.arc(x,y,m.sigma*sz/m.L*2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#20ff80';
+  ctx.beginPath();ctx.arc(x,y,Math.max(2,m.sigma*sz/m.L*0.8),0,Math.PI*2);ctx.fill();
+  // Velocity vector
+  ctx.strokeStyle='rgba(32,224,255,.5)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+v.vx*20,y+v.vy*20);ctx.stroke();
+});
+/* Energy chart */
+var ey=py+sz+40;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('TOTAL ENERGY',30,ey);
+if(ey+100<H)drawSparkline(ctx,30,ey+10,W-80,Math.min(100,H-ey-30),m.energyHistory,'#ffd040',true);
+SV('sbLen',m.n+' particles');SV('sbGC','—');SV('sbMode','MD');
+var totalE=m.energyHistory[m.energyHistory.length-1]||0;
+setStats('<div>N: '+m.n+'</div><div>L: '+m.L+'</div><div>E: '+fmt(totalE,2)+'</div><div>T*: '+m.temp+'</div>');
+badge('⚛ MD · '+m.n+' particles')},
+onDown:function(){},
+controls:function(){var m=STATE.md;var h='<div class="sec"><h4>System</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>N particles</span><span>'+m.n+'</span></div><input type="range" min="10" max="150" step="5" value="'+m.n+'" oninput="STATE.md.n=parseInt(this.value);MODULES.md.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>σ (size)</span><span>'+fmt(m.sigma,3)+'</span></div><input type="range" min="0.15" max="0.5" step="0.01" value="'+m.sigma+'" oninput="STATE.md.sigma=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>ε (strength)</span><span>'+fmt(m.eps,2)+'</span></div><input type="range" min="0.1" max="3" step="0.1" value="'+m.eps+'" oninput="STATE.md.eps=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>dt</span><span>'+fmt(m.dt,4)+'</span></div><input type="range" min="0.001" max="0.02" step="0.001" value="'+m.dt+'" oninput="STATE.md.dt=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>T (target)</span><span>'+fmt(m.temp,2)+'</span></div><input type="range" min="0.1" max="5" step="0.1" value="'+m.temp+'" oninput="STATE.md.temp=parseFloat(this.value)"></div>';
+h+='<div class="chip '+(m.usePBC?'active':'')+'" onclick="STATE.md.usePBC=!STATE.md.usePBC;renderLeftPanel()">Periodic BC: '+(m.usePBC?'ON':'OFF')+'</div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.md.reset();toast(\'Reset\',\'success\')">🎲 Reset system</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Lennard-Jones</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">V(r) = 4ε[(σ/r)¹² − (σ/r)⁶]<br><br>F = −dV/dr<br><br>Verlet:<br>v(t+dt/2) = v + F/m·dt/2<br>x(t+dt) = x + v(t+dt/2)·dt</div></div>'}});
+
+/* ══════ 9. ENZYME KINETICS ══════ */
+registerModule('enzyme',{title:'Enzyme Kinetics',icon:'⚙',desc:'Michaelis-Menten + inhibition.',init:function(){this.reset()},
+reset:function(){var e=STATE.enzyme;e.S=10;e.product=0;e.t=0;e.history=[];
+if(e.mode==='progress')e.history=[{t:0,S:e.S,P:0}]},
+deriv:function(y){var e=STATE.enzyme;
+var S=y[0],P=y[1];
+var Vmax=e.Vmax;
+var KmEff=e.Km;
+if(e.inhibitor==='competitive')KmEff=e.Km*(1+e.I/e.Ki);
+else if(e.inhibitor==='noncompetitive')Vmax=e.Vmax/(1+e.I/e.Ki);
+var v=Vmax*S/(KmEff+S);
+return [-v,v];
+},
+step:function(){var e=STATE.enzyme;
+if(e.mode==='progress'){
+  var dt=0.02;
+  var y=rk4([e.S,e.product],e.t,dt,this.deriv.bind(this));
+  e.S=Math.max(0,y[0]);e.product=y[1];e.t+=dt;
+  e.history.push({t:e.t,S:e.S,P:e.product});
+  if(e.history.length>2000)e.history.shift();
+  if(e.S<0.001&&e.product>e.Vmax*0.5){/* complete */}
+}},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*20;var k=0;while(this._acc>=1&&k<4){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var e=STATE.enzyme;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('ENZYME KINETICS — Michaelis-Menten',30,30);
+/* Progress curve */
+var px=40,py=100,pw=W-80,ph=H/2-80;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('PROGRESS CURVE',30,py-10);
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(px,py,pw,ph);
+ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(px,py,pw,ph);
+var series=[e.history.map(function(h){return h.S}),e.history.map(function(h){return h.P})];
+drawMultiSeries(ctx,px+10,py+20,pw-20,ph-40,series,['#20e0ff','#ff40a0'],['Substrate','Product']);
+ctx.fillStyle='#a0c0b0';ctx.font='10px monospace';
+ctx.fillText('Time',px+pw/2,py+ph-10);
+/* Michaelis-Menten curve */
+var my=py+ph+60;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('MICHAELIS-MENTEN CURVE  v = Vmax·[S]/(Km+[S])',30,my-10);
+var vw=W-80,vh=200;
+var KmEff=e.Km;
+var VmaxEff=e.Vmax;
+if(e.inhibitor==='competitive')KmEff=e.Km*(1+e.I/e.Ki);
+else if(e.inhibitor==='noncompetitive')VmaxEff=e.Vmax/(1+e.I/e.Ki);
+var maxS=e.Km*10;
+var maxV=VmaxEff*1.1;
+// Axes
+ctx.strokeStyle='#20ff80';ctx.lineWidth=1;
+ctx.beginPath();ctx.moveTo(60,my+vh);ctx.lineTo(60+vw,my+vh);
+ctx.moveTo(60,my+vh);ctx.lineTo(60,my+20);ctx.stroke();
+// Curve
+ctx.strokeStyle='#20ff80';ctx.lineWidth=2.5;
+ctx.beginPath();
+for(var i=0;i<=100;i++){
+  var S=maxS*i/100;
+  var v=VmaxEff*S/(KmEff+S);
+  var x=60+S/maxS*vw;
+  var y=my+vh-v/maxV*vh;
+  if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+}
+ctx.stroke();
+// Km and Vmax markers
+var xKm=60+KmEff/maxS*vw;
+var yVmax=my+vh-VmaxEff/maxV*vh;
+ctx.strokeStyle='#ff40a0';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+ctx.beginPath();ctx.moveTo(xKm,my+vh);ctx.lineTo(xKm,yVmax);
+ctx.moveTo(60,yVmax);ctx.lineTo(xKm,yVmax);ctx.stroke();
+ctx.setLineDash([]);
+ctx.fillStyle='#ff40a0';ctx.font='10px monospace';
+ctx.fillText('Km = '+fmt(KmEff,2),xKm+4,my+vh-4);
+ctx.fillStyle='#20e0ff';
+ctx.fillText('Vmax = '+fmt(VmaxEff,2),64,yVmax+3);
+ctx.fillStyle='#a0c0b0';
+ctx.fillText('[S]',60+vw-20,my+vh+15);
+ctx.fillText('v',40,my+30);
+/* Lineweaver-Burk (double reciprocal) */
+var lx=60+vw+80,ly=my+20;
+if(lx+300<W){
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('Lineweaver-Burk (1/v vs 1/[S])',lx,ly-10);
+  var lbW=260,lbH=150;
+  ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(lx,ly,lbW,lbH);
+  // Line: 1/v = (Km/Vmax)(1/S) + 1/Vmax
+  var xIntercept=-1/KmEff;
+  var yIntercept=1/VmaxEff;
+  var slope=KmEff/VmaxEff;
+  // Plot 1/S in [0, 2/Km]
+  var maxInvS=2/KmEff;
+  var maxInvV=slope*maxInvS+yIntercept;
+  ctx.strokeStyle='#20e0ff';ctx.lineWidth=2;
+  ctx.beginPath();
+  for(var i=0;i<=20;i++){
+    var invS=maxInvS*i/20;
+    var invV=slope*invS+yIntercept;
+    var x=lx+invS/maxInvS*lbW;
+    var y=ly+lbH-invV/maxInvV*lbH;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  // Intercepts
+  ctx.fillStyle='#ff40a0';ctx.font='10px monospace';
+  ctx.fillText('1/Vmax = '+fmt(yIntercept,2),lx+4,ly+lbH-yIntercept/maxInvV*lbH-4);
+  ctx.fillStyle='#ffd040';
+  ctx.fillText('x-int = -1/Km',lx+4,ly+lbH-4);
+}
+/* Current state */
+var sy=my+vh+40;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('STATE (t='+fmt(e.t,2)+')',30,sy);
+ctx.fillStyle='#e0ffe8';ctx.font='12px monospace';
+ctx.fillText('[S] = '+fmt(e.S,3)+'    [P] = '+fmt(e.product,3)+'    v = '+fmt(VmaxEff*e.S/(KmEff+e.S),4),30,sy+20);
+SV('sbLen',fmt(e.t,1));SV('sbGC','—');SV('sbMode','Enzyme');SV('sbIter',e.history.length);
+setStats('<div>[S]: '+fmt(e.S,2)+'</div><div>[P]: '+fmt(e.product,2)+'</div><div>Km: '+fmt(KmEff,3)+'</div><div>Vmax: '+fmt(VmaxEff,3)+'</div>');
+badge('⚙ Enzyme · [S]='+fmt(e.S,1))},
+onDown:function(){},
+controls:function(){var e=STATE.enzyme;var h='<div class="sec"><h4>Enzyme</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Vmax</span><span>'+fmt(e.Vmax,2)+'</span></div><input type="range" min="0.1" max="3" step="0.05" value="'+e.Vmax+'" oninput="STATE.enzyme.Vmax=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Km</span><span>'+fmt(e.Km,2)+'</span></div><input type="range" min="0.05" max="3" step="0.05" value="'+e.Km+'" oninput="STATE.enzyme.Km=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>[S]₀ initial</span><span>'+fmt(e.S,2)+'</span></div><input type="range" min="0.5" max="30" step="0.5" value="'+e.S+'" oninput="STATE.enzyme.S=parseFloat(this.value);STATE.enzyme.product=0;STATE.enzyme.t=0;STATE.enzyme.history=[{t:0,S:STATE.enzyme.S,P:0}];renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Inhibition</h4><div class="chip-row">';
+['none','competitive','noncompetitive'].forEach(function(m){h+='<div class="chip '+(e.inhibitor===m?'active':'')+'" onclick="STATE.enzyme.inhibitor=\''+m+'\';renderLeftPanel()">'+m+'</div>'});
+h+='</div>';
+if(e.inhibitor!=='none'){
+  h+='<div class="ctrl" style="margin-top:8px"><div class="lbl"><span>[I]</span><span>'+fmt(e.I,2)+'</span></div><input type="range" min="0.1" max="5" step="0.1" value="'+e.I+'" oninput="STATE.enzyme.I=parseFloat(this.value);renderLeftPanel()"></div>';
+  h+='<div class="ctrl"><div class="lbl"><span>Ki</span><span>'+fmt(e.Ki,2)+'</span></div><input type="range" min="0.1" max="5" step="0.1" value="'+e.Ki+'" oninput="STATE.enzyme.Ki=parseFloat(this.value);renderLeftPanel()"></div>';
+}
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.enzyme.reset();toast(\'Reset\',\'success\')">↺ Reset</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Michaelis-Menten</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">v = Vmax·[S]/(Km+[S])<br><br>Km = [S] em que v=Vmax/2<br><br>Lineweaver-Burk:<br>1/v = (Km/Vmax)(1/[S]) + 1/Vmax<br><br>Inibição competitiva: ↑Km efetivo<br>Não-competitiva: ↓Vmax efetivo</div></div>'}});
+
+/* ══════ 10. GENE REGULATORY NETWORK ══════ */
+registerModule('grn',{title:'Gene Network',icon:'🔗',desc:'Repressilator and toggle switch ODEs.',init:function(){this.reset()},
+reset:function(){var g=STATE.grn;
+g.t=0;g.history=[];
+if(g.mode==='repressilator'){
+  g.state=[1,0.5,0.2,1,0.5,0.2]; // m1,p1,m2,p2,m3,p3
+}else{
+  g.state=[1,0.2,1,0.2]; // m1,p1,m2,p2
+}
+},
+deriv:function(y){var g=STATE.grn;
+if(g.mode==='repressilator'){
+  // Elowitz-Leibler repressilator
+  var m1=y[0],p1=y[1],m2=y[2],p2=y[3],m3=y[4],p3=y[5];
+  var a=g.alpha,b=g.beta,n=g.n;
+  var dm1=-m1+a/(1+Math.pow(p3,n));
+  var dp1=b*(m1-p1);
+  var dm2=-m2+a/(1+Math.pow(p1,n));
+  var dp2=b*(m2-p2);
+  var dm3=-m3+a/(1+Math.pow(p2,n));
+  var dp3=b*(m3-p3);
+  return [dm1,dp1,dm2,dp2,dm3,dp3];
+}else{
+  // Toggle switch
+  var u=y[0],v=y[1]; // protein concentrations
+  var a=g.alpha,b=g.beta,n=g.n;
+  var du=a/(1+Math.pow(v,n))-u;
+  var dv=a/(1+Math.pow(u,n))-v;
+  return [du,dv];
+}
+},
+step:function(){var g=STATE.grn;var dt=0.05;
+for(var i=0;i<3;i++){
+  g.state=rk4(g.state,g.t,dt,this.deriv.bind(this));
+  g.t+=dt;
+}
+g.history.push(g.state.slice());
+if(g.history.length>3000)g.history.shift()},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*60;var k=0;while(this._acc>=1&&k<4){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var g=STATE.grn;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('GENE REGULATORY NETWORK — '+(g.mode==='repressilator'?'Repressilator':'Toggle Switch'),30,30);
+/* Chart */
+var px=40,py=100,pw=W-80,ph=H-200;
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(px,py,pw,ph);
+ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(px,py,pw,ph);
+var series=[],colors=[],labels=[];
+if(g.mode==='repressilator'){
+  // Show proteins only
+  series=[g.history.map(function(h){return h[1]}),g.history.map(function(h){return h[3]}),g.history.map(function(h){return h[5]})];
+  colors=['#20e0ff','#ff40a0','#ffd040'];
+  labels=['LacI','TetR','cI'];
+}else{
+  series=[g.history.map(function(h){return h[0]}),g.history.map(function(h){return h[1]})];
+  colors=['#20e0ff','#ff40a0'];
+  labels=['U','V'];
+}
+drawMultiSeries(ctx,px+10,py+30,pw-20,ph-50,series,colors,labels);
+/* Diagram */
+var dy=py+ph+60;
+if(g.mode==='repressilator'){
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('REPRESSION DIAGRAM',30,dy-10);
+  var cx=W/2,cy=dy+80;var r=60;
+  var nodes=[{x:cx,y:cy-r,label:'LacI',col:'#20e0ff',idx:1},
+             {x:cx+r*0.866,y:cy+r/2,label:'TetR',col:'#ff40a0',idx:3},
+             {x:cx-r*0.866,y:cy+r/2,label:'cI',col:'#ffd040',idx:5}];
+  for(var i=0;i<3;i++){
+    var a=nodes[i],b=nodes[(i+1)%3];
+    var dx=b.x-a.x,dy2=b.y-a.y;
+    var len=Math.hypot(dx,dy2);
+    var ux=dx/len,uy=dy2/len;
+    // Arrow from a to b (repression)
+    var x1=a.x+ux*25,y1=a.y+uy*25;
+    var x2=b.x-ux*25,y2=b.y-uy*25;
+    ctx.strokeStyle='rgba(255,64,160,.6)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    // T-bar
+    ctx.beginPath();
+    var perpx=-uy*6,perpy=ux*6;
+    ctx.moveTo(x2+perpx,y2+perpy);ctx.lineTo(x2-perpx,y2-perpy);ctx.stroke();
+  }
+  nodes.forEach(function(n){
+    ctx.fillStyle=n.col+'44';
+    ctx.beginPath();ctx.arc(n.x,n.y,25,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=n.col;ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=n.col;ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(n.label,n.x,n.y);
+    ctx.textBaseline='alphabetic';
+  });
+  ctx.textAlign='left';
+}else{
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('TOGGLE SWITCH',30,dy-10);
+  var cx=W/2,cy=dy+80;
+  // Two nodes with mutual repression
+  ctx.fillStyle='rgba(32,224,255,.2)';ctx.beginPath();ctx.arc(cx-80,cy,35,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#20e0ff';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#20e0ff';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('U',cx-80,cy);
+  ctx.fillStyle='rgba(255,64,160,.2)';ctx.beginPath();ctx.arc(cx+80,cy,35,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#ff40a0';ctx.lineWidth=3;ctx.stroke();
+  ctx.fillStyle='#ff40a0';ctx.fillText('V',cx+80,cy);
+  ctx.textBaseline='alphabetic';
+  // Repression arrows
+  ctx.strokeStyle='rgba(32,224,255,.7)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(cx-45,cy-15);ctx.lineTo(cx+45,cy-15);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx+45,cy-20);ctx.lineTo(cx+45,cy-10);ctx.stroke();
+  ctx.strokeStyle='rgba(255,64,160,.7)';
+  ctx.beginPath();ctx.moveTo(cx+45,cy+15);ctx.lineTo(cx-45,cy+15);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx-45,cy+10);ctx.lineTo(cx-45,cy+20);ctx.stroke();
+  ctx.textAlign='left';
+}
+SV('sbLen',fmt(g.t,2));SV('sbGC','—');SV('sbMode','GeneNet');SV('sbIter',g.history.length);
+setStats('<div>Mode: '+g.mode+'</div><div>t: '+fmt(g.t,1)+'</div><div>α: '+g.alpha+'</div>');
+badge('🔗 '+(g.mode==='repressilator'?'Repressilator':'Toggle')+' · t='+fmt(g.t,1))},
+onDown:function(){},
+controls:function(){var g=STATE.grn;var h='<div class="sec"><h4>Network</h4><div class="chip-row">';
+['repressilator','toggle'].forEach(function(m){h+='<div class="chip '+(g.mode===m?'active':'')+'" onclick="STATE.grn.mode=\''+m+'\';MODULES.grn.reset();renderLeftPanel()">'+m+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>α (synthesis)</span><span>'+g.alpha+'</span></div><input type="range" min="10" max="500" value="'+g.alpha+'" oninput="STATE.grn.alpha=parseInt(this.value);renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>β (decay ratio)</span><span>'+fmt(g.beta,2)+'</span></div><input type="range" min="0.05" max="1" step="0.05" value="'+g.beta+'" oninput="STATE.grn.beta=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>n (Hill coeff)</span><span>'+fmt(g.n,1)+'</span></div><input type="range" min="1" max="5" step="0.1" value="'+g.n+'" oninput="STATE.grn.n=parseFloat(this.value)"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+h+='<div class="chip" onclick="STATE.grn.alpha=216;STATE.grn.beta=0.2;STATE.grn.n=2;MODULES.grn.reset()">Elowitz</div>';
+h+='<div class="chip" onclick="STATE.grn.alpha=300;STATE.grn.beta=0.1;STATE.grn.n=2.5;MODULES.grn.reset()">Oscillating</div>';
+h+='<div class="chip" onclick="STATE.grn.alpha=50;STATE.grn.beta=0.5;STATE.grn.n=3;MODULES.grn.reset()">Stable</div>';
+h+='</div></div>';
+h+='<button class="btn primary full" onclick="MODULES.grn.reset();toast(\'Reset\',\'success\')">↺ Reset</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Repressilator</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">dm_i/dt = −m_i + α/(1+p_j^n)<br>dp_i/dt = β(m_i − p_i)<br><br>3 genes em ciclo de repressão → oscilação<br><br>Elowitz &amp; Leibler (2000)<br>Nature 403:335</div></div>'}});
+
+/* ══════ 11. HODGKIN-HUXLEY ══════ */
+registerModule('hh',{title:'Hodgkin-Huxley',icon:'⚡',desc:'Full neuron action potential model.',init:function(){this.reset()},
+reset:function(){var h=STATE.hh;
+h.V=-65;h.m=0.05;h.h=0.6;h.n=0.3;h.t=0;h.history=[{t:0,V:-65,m:0.05,h:0.6,n:0.3}];
+h.spikes=[];h.lastSpikeTime=-100},
+deriv:function(y){var h=STATE.hh;
+var V=y[0],m=y[1],hh=y[2],n=y[3];
+// Standard HH parameters (squid axon)
+var gNa=120,gK=36,gL=0.3;
+var ENa=50,EK=-77,EL=-54.387;
+var Cm=1;
+// Gating variable steady states
+function alphaM(V){return 0.1*(V+40)/(1-Math.exp(-(V+40)/10))}
+function betaM(V){return 4*Math.exp(-(V+65)/18)}
+function alphaH(V){return 0.07*Math.exp(-(V+65)/20)}
+function betaH(V){return 1/(1+Math.exp(-(V+35)/10))}
+function alphaN(V){return 0.01*(V+55)/(1-Math.exp(-(V+55)/10))}
+function betaN(V){return 0.125*Math.exp(-(V+65)/80)}
+var am=alphaM(V),bm=betaM(V);
+var ah=alphaH(V),bh=betaH(V);
+var an=alphaN(V),bn=betaN(V);
+// Currents
+var INa=gNa*Math.pow(m,3)*hh*(V-ENa);
+var IK=gK*Math.pow(n,4)*(V-EK);
+var IL=gL*(V-EL);
+var Iext=h.Iext;
+var dV=(Iext-INa-IK-IL)/Cm;
+var dm=am*(1-m)-bm*m;
+var dh=ah*(1-hh)-bh*hh;
+var dn=an*(1-n)-bn*n;
+return [dV,dm,dh,dn];
+},
+step:function(){var h=STATE.hh;
+var dt=0.01;
+for(var i=0;i<5;i++){
+  var y=rk4([h.V,h.m,h.h,h.n],h.t,dt,this.deriv.bind(this));
+  h.V=y[0];h.m=y[1];h.h=y[2];h.n=y[3];h.t+=dt;
+  // Spike detection
+  if(h.V>0&&h.t-h.lastSpikeTime>5){h.spikes.push(h.t);h.lastSpikeTime=h.t}
+}
+h.history.push({t:h.t,V:h.V,m:h.m,h:h.h,n:h.n});
+if(h.history.length>5000)h.history.shift()},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*50;var k=0;while(this._acc>=1&&k<4){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var h=STATE.hh;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('HODGKIN-HUXLEY NEURON',30,30);
+/* Voltage trace */
+var px=40,py=100,pw=W-80,ph=H*0.45;
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(px,py,pw,ph);
+ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(px,py,pw,ph);
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('MEMBRANE POTENTIAL V(t)  [mV]',px+8,py+15);
+/* Grid */
+ctx.strokeStyle='rgba(32,255,128,.15)';ctx.lineWidth=1;
+for(var i=1;i<5;i++){ctx.beginPath();ctx.moveTo(px,py+ph*i/5);ctx.lineTo(px+pw,py+ph*i/5);ctx.stroke()}
+// V range: -90 to +60
+var vMin=-90,vMax=60;
+var vScale=ph/(vMax-vMin);
+// Draw trace
+ctx.strokeStyle='#20e0ff';ctx.lineWidth=1.5;ctx.beginPath();
+var hist=h.history;
+if(hist.length>1){
+  for(var i=0;i<hist.length;i++){
+    var x=px+hist[i].t/Math.max(h.t,10)*pw;
+    var y=py+ph-(hist[i].V-vMin)*vScale;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+}
+// Axis labels
+ctx.fillStyle='#a0c0b0';ctx.font='10px monospace';
+ctx.fillText('+60',px-30,py+15);
+ctx.fillText('0',px-20,py+ph-(0-vMin)*vScale+4);
+ctx.fillText('-90',px-30,py+ph);
+ctx.fillText('t →',px+pw-15,py+ph+14);
+/* Current time */
+var curT=hist[hist.length-1].t;
+var curV=hist[hist.length-1].V;
+ctx.fillStyle='#ffd040';ctx.font='12px monospace';
+ctx.fillText('t = '+fmt(curT,1)+' ms   V = '+fmt(curV,1)+' mV',px+10,py+ph-10);
+/* Gating variables */
+var gy=py+ph+50;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('GATING VARIABLES (m, h, n)',30,gy-10);
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(40,gy,W-80,120);
+ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(40,gy,W-80,120);
+var series=[h.history.map(function(x){return x.m}),h.history.map(function(x){return x.h}),h.history.map(function(x){return x.n})];
+drawMultiSeries(ctx,50,gy+15,W-100,90,series,['#ff40a0','#20e0ff','#ffd040'],['m','h','n']);
+/* Spike count */
+var sy=gy+150;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('SPIKES ('+h.spikes.length+')',30,sy);
+ctx.fillStyle='#e0ffe8';ctx.font='11px monospace';
+if(h.spikes.length){
+  var isi=[];
+  for(var i=1;i<h.spikes.length;i++)isi.push(h.spikes[i]-h.spikes[i-1]);
+  if(isi.length){
+    var meanISI=isi.reduce(function(a,b){return a+b},0)/isi.length;
+    ctx.fillText('Mean ISI: '+fmt(meanISI,2)+' ms   Rate: '+fmt(1000/meanISI,1)+' Hz',30,sy+20);
+  }
+  ctx.fillText('Last spikes: '+h.spikes.slice(-5).map(function(x){return fmt(x,1)}).join(', '),30,sy+40);
+}
+SV('sbLen',fmt(h.t,1)+'ms');SV('sbGC','—');SV('sbMode','HH');SV('sbIter',h.spikes.length);
+setStats('<div>V: '+fmt(h.V,1)+' mV</div><div>t: '+fmt(h.t,1)+' ms</div><div>Spikes: '+h.spikes.length+'</div>');
+badge('⚡ HH · V='+fmt(h.V,0)+'mV · '+h.spikes.length+' spikes')},
+onDown:function(){},
+controls:function(){var h=STATE.hh;var h2='<div class="sec"><h4>Stimulus</h4>';
+h2+='<div class="ctrl"><div class="lbl"><span>I_ext (μA/cm²)</span><span>'+fmt(h.Iext,1)+'</span></div><input type="range" min="0" max="30" step="0.5" value="'+h.Iext+'" oninput="STATE.hh.Iext=parseFloat(this.value)"></div>';
+h2+='</div>';
+h2+='<div class="sec"><h4>Current state</h4><div class="kv">';
+h2+='<div class="row"><span class="k">V</span><span class="v">'+fmt(h.V,2)+' mV</span></div>';
+h2+='<div class="row"><span class="k">m (Na+)</span><span class="v">'+fmt(h.m,4)+'</span></div>';
+h2+='<div class="row"><span class="k">h (Na+ inact)</span><span class="v">'+fmt(h.h,4)+'</span></div>';
+h2+='<div class="row"><span class="k">n (K+)</span><span class="v">'+fmt(h.n,4)+'</span></div>';
+h2+='<div class="row"><span class="k">t</span><span class="v">'+fmt(h.t,2)+' ms</span></div>';
+h2+='<div class="row"><span class="k">Spikes</span><span class="v">'+h.spikes.length+'</span></div>';
+h2+='</div></div>';
+h2+='<div class="sec"><h4>Actions</h4>';
+h2+='<button class="btn primary full" onclick="MODULES.hh.reset();toast(\'Reset\',\'success\')">↺ Reset</button>';
+h2+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.hh.history=[];STATE.hh.t=0;STATE.hh.spikes=[]">🧹 Clear trace</button>';
+h2+='</div>';
+return h2},
+mathPanel:function(){return '<div class="sec"><h4>Hodgkin-Huxley (1952)</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">C dV/dt = I − gNa·m³h(V−ENa)<br>       − gK·n⁴(V−EK) − gL(V−EL)<br><br>Gating:<br>dm/dt = αm(V)(1−m) − βm(V)m<br><br>Prêmio Nobel 1963.</div></div>'}});
+
+/* ══════ 12. SPIKING NEURAL NETWORK ══════ */
+registerModule('snn',{title:'Spiking Neural Network',icon:'🧠',desc:'Izhikevich neurons with synaptic connections.',init:function(){this.reset()},
+reset:function(){var s=STATE.snn;s.neurons=[];
+// 80% excitatory (regular spiking), 20% inhibitory (fast spiking)
+for(var i=0;i<s.n;i++){
+  var isExc=Math.random()<s.excitatory;
+  var params=isExc?{a:0.02,b:0.2,c:-65,d:8,color:'#20e0ff'}:{a:0.1,b:0.2,c:-65,d:2,color:'#ff40a0'};
+  s.neurons.push({
+    v:-65,u:params.b*-65,
+    a:params.a,b:params.b,c:params.c,d:params.d,
+    exc:isExc,color:params.color,
+    x:Math.random(),y:Math.random(),
+    lastSpike:-1000
+  });
+}
+// Random connections
+s.synapses=[];
+for(var i=0;i<s.n;i++){
+  for(var k=0;k<5;k++){
+    var j=rnd(0,s.n-1);
+    if(i===j)continue;
+    s.synapses.push({from:i,to:j,weight:s.neurons[i].exc?randn()*3+3:-randn()*3-3});
+  }
+}
+s.t=0;s.raster=[];s.history=[];s.lastSpikeTime=-1000},
+step:function(){var s=STATE.snn;var dt=0.5;s.t+=dt;
+// Input noise
+for(var i=0;i<s.n;i++){
+  var n=s.neurons[i];
+  // Izhikevich model
+  var I=5*randn();
+  if(n.exc)I+=5;
+  n.v+=0.04*n.v*n.v+5*n.v+140-n.u+I;
+  n.u+=n.a*(n.b*n.v-n.u);
+  if(n.v>=30){
+    n.v=n.c;n.u+=n.d;
+    // Propagate to targets
+    s.synapses.forEach(function(syn){
+      if(syn.from===i){
+        // Add synaptic current to target (delayed by storing in target's pending)
+        s.neurons[syn.to].v+=syn.weight;
+      }
+    });
+    // Record spike
+    s.raster.push({neuron:i,t:s.t});
+    n.lastSpike=s.t;
+    if(s.raster.length>5000)s.raster.shift();
+  }
+}
+// Record voltage of first few neurons
+if(s.history.length===0||s.t-s.history[s.history.length-1].t>=1){
+  s.history.push({t:s.t,v0:s.neurons[0].v,v1:s.neurons[1].v,v2:s.neurons[2].v});
+  if(s.history.length>2000)s.history.shift();
+}},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*200;var k=0;while(this._acc>=1&&k<10){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var s=STATE.snn;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('SPIKING NEURAL NETWORK — Izhikevich',30,30);
+/* Network layout */
+var nx=40,ny=80,nw=W*0.4,nh=H-180;
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(nx,ny,nw,nh);
+ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(nx,ny,nw,nh);
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('NETWORK TOPOLOGY',nx+8,ny+15);
+/* Draw synapses (light) */
+ctx.strokeStyle='rgba(32,255,128,.05)';ctx.lineWidth=0.5;
+s.synapses.forEach(function(syn){
+  var a=s.neurons[syn.from],b=s.neurons[syn.to];
+  var x1=nx+a.x*nw,y1=ny+a.y*nh;
+  var x2=nx+b.x*nw,y2=ny+b.y*nh;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+});
+/* Draw neurons - flash if recent spike */
+var now=s.t;
+s.neurons.forEach(function(n,i){
+  var x=nx+n.x*nw,y=nx+0;
+  y=ny+n.y*nh;
+  var since=now-n.lastSpike;
+  var glow=Math.max(0,1-since/20);
+  var r=4+glow*8;
+  ctx.fillStyle=n.color+'44';
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=n.color;ctx.lineWidth=1;
+  ctx.stroke();
+  if(glow>0){
+    var g=ctx.createRadialGradient(x,y,0,x,y,r*2);
+    g.addColorStop(0,n.color+Math.floor(glow*180).toString(16).padStart(2,'0'));
+    g.addColorStop(1,n.color+'00');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r*2,0,Math.PI*2);ctx.fill();
+  }
+});
+/* Voltage traces */
+var vx=nx+nw+40,vy=80,vw=W-vx-40,vh=nh/2;
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(vx,vy,vw,vh);
+ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(vx,vy,vw,vh);
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('VOLTAGE TRACES (first 3)',vx+8,vy+15);
+if(s.history.length>1){
+  var series=[
+    s.history.map(function(h){return h.v0}),
+    s.history.map(function(h){return h.v1}),
+    s.history.map(function(h){return h.v2})
+  ];
+  drawMultiSeries(ctx,vx+10,vy+25,vw-20,vh-40,series,['#20e0ff','#ff40a0','#ffd040']);
+}
+/* Raster plot */
+var rx=vx,ry=vy+vh+30,rw=vw,rh=nh/2-30;
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(rx,ry,rw,rh);
+ctx.strokeStyle='rgba(32,255,128,.3)';ctx.strokeRect(rx,ry,rw,rh);
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('RASTER PLOT',rx+8,ry+15);
+if(s.raster.length){
+  var tStart=s.raster[0].t;
+  var tEnd=s.t;
+  var span=tEnd-tStart||1;
+  s.raster.forEach(function(sp){
+    var x=rx+(sp.t-tStart)/span*rw;
+    var y=ry+rh-((sp.neuron/s.n)*rh*0.9+rh*0.05)-20;
+    ctx.fillStyle=s.neurons[sp.neuron].color;
+    ctx.fillRect(x-0.5,y,1,2);
+  });
+}
+/* Stats */
+var sy=ny+nh+30;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('STATISTICS',30,sy);
+var rate=s.raster.length/(s.n*Math.max(1,s.t/1000));
+ctx.fillStyle='#e0ffe8';ctx.font='12px monospace';
+ctx.fillText('t = '+fmt(s.t,0)+' ms    Neurons: '+s.n+'    Synapses: '+s.synapses.length,30,sy+20);
+ctx.fillText('Total spikes: '+s.raster.length+'    Firing rate: '+fmt(rate,2)+' Hz',30,sy+40);
+SV('sbLen',s.n+' neurons');SV('sbGC','—');SV('sbMode','SNN');SV('sbIter',s.raster.length);
+setStats('<div>Neurons: '+s.n+'</div><div>Synapses: '+s.synapses.length+'</div><div>Spikes: '+s.raster.length+'</div>');
+badge('🧠 SNN · '+s.raster.length+' spikes')},
+onDown:function(){},
+controls:function(){var s=STATE.snn;var h='<div class="sec"><h4>Network</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Neurons</span><span>'+s.n+'</span></div><input type="range" min="20" max="300" step="10" value="'+s.n+'" oninput="STATE.snn.n=parseInt(this.value);MODULES.snn.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Excitatory %</span><span>'+fmt(s.excitatory*100,0)+'%</span></div><input type="range" min="0.5" max="0.95" step="0.05" value="'+s.excitatory+'" oninput="STATE.snn.excitatory=parseFloat(this.value);MODULES.snn.reset();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.snn.reset();toast(\'New network\',\'success\')">🎲 New network</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.snn.raster=[];STATE.snn.history=[]">🧹 Clear traces</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Izhikevich (2003)</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">dv/dt = 0.04v² + 5v + 140 − u + I<br>du/dt = a(bv − u)<br><br>if v ≥ 30: v ← c, u ← u + d<br><br>Parâmetros:<br>RS: a=0.02,b=0.2,c=−65,d=8<br>FS: a=0.1,b=0.2,c=−65,d=2</div></div>'}});
+
+/* ══════ 13. CRISPR GUIDE DESIGN ══════ */
+registerModule('crispr',{title:'CRISPR Guide Design',icon:'✂',desc:'Scan for PAM sites, score guides.',init:function(){this.scan()},
+scan:function(){var c=STATE.crispr;
+if(!c.target)c.target=randomDNA(120,0.5);
+c.guides=[];
+// PAM: NGG (SpCas9)
+for(var i=0;i+23<=c.target.length;i++){
+  var pam=c.target.substr(i+20,3);
+  if(pam[1]==='G'&&pam[2]==='G'){
+    var guide=c.target.substr(i,20);
+    var gc=gcContent(guide);
+    var score=1-Math.abs(gc-0.5)*2;
+    // Penalize homopolymers
+    var maxHomopolymer=1;
+    var runLen=1;
+    for(var k=1;k<guide.length;k++){
+      if(guide[k]===guide[k-1]){runLen++;maxHomopolymer=Math.max(maxHomopolymer,runLen)}
+      else runLen=1;
+    }
+    if(maxHomopolymer>4)score*=0.5;
+    c.guides.push({
+      pos:i,pam:pam,guide:guide,gc:gc,score:score,
+      homopolymer:maxHomopolymer
+    });
+  }
+}
+c.guides.sort(function(a,b){return b.score-a.score});
+c.filtered=c.guides.filter(function(g){return g.gc>=c.gcMin&&g.gc<=c.gcMax}),
+c.filtered=c.guides.filter(function(g){return g.gc>=c.gcMin&&g.gc<=c.gcMax})},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var c=STATE.crispr;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('CRISPR GUIDE DESIGN — SpCas9 (PAM: NGG)',30,30);
+/* Target sequence with PAM sites */
+ctx.fillStyle='#a0c0b0';ctx.font='11px monospace';
+ctx.fillText('Target sequence ('+c.target.length+' bp) — click to edit bases',30,55);
+var cols=Math.floor((W-80)/14);
+for(var i=0;i<c.target.length;i++){
+  var x=30+(i%cols)*14;
+  var y=80+Math.floor(i/cols)*20;
+  // Highlight guide regions
+  var inGuide=-1;
+  for(var k=0;k<c.guides.length;k++){
+    if(i>=c.guides[k].pos&&i<c.guides[k].pos+20){inGuide=k;break}
+  }
+  var isPAM=false;
+  for(var k=0;k<c.guides.length;k++){
+    if(i>=c.guides[k].pos+20&&i<c.guides[k].pos+23){isPAM=true;break}
+  }
+  var bg='transparent';
+  if(isPAM)bg='rgba(255,64,160,.4)';
+  else if(inGuide>=0)bg='rgba(255,208,64,.2)';
+  if(bg!=='transparent'){ctx.fillStyle=bg;ctx.fillRect(x-2,y-14,13,18)}
+  var nc=c.target[i];
+  var col={A:'#20e0ff',T:'#ff40a0',G:'#20ff80',C:'#ffd040'}[nc]||'#666';
+  ctx.fillStyle=col;
+  ctx.fillText(nc,x,y);
+  // Position markers
+  if(i%20===0){ctx.fillStyle='#3a7050';ctx.font='8px monospace';ctx.fillText(i,x,y-15);ctx.font='11px monospace'}
+}
+/* Guides list */
+var gy=80+Math.ceil(c.target.length/cols)*20+60;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('TOP GUIDES ('+c.guides.length+' PAM sites found, showing top 8)',30,gy-10);
+ctx.fillStyle='#e0ffe8';ctx.font='11px monospace';
+ctx.fillText('Rank',30,gy+10);
+ctx.fillText('Position',70,gy+10);
+ctx.fillText('Guide (20nt)',140,gy+10);
+ctx.fillText('PAM',360,gy+10);
+ctx.fillText('GC',410,gy+10);
+ctx.fillText('Score',450,gy+10);
+ctx.fillText('Homopolymer',510,gy+10);
+c.guides.slice(0,8).forEach(function(g,i){
+  var y=gy+30+i*22;
+  ctx.fillStyle='rgba(32,255,128,.05)';
+  ctx.fillRect(28,y-14,W-58,20);
+  ctx.fillStyle='#ffd040';ctx.fillText('#'+(i+1),30,y);
+  ctx.fillStyle='#20e0ff';ctx.fillText(g.pos,70,y);
+  ctx.fillStyle='#e0ffe8';ctx.font='11px monospace';
+  for(var k=0;k<20;k++){
+    var nc=g.guide[k];
+    ctx.fillStyle={A:'#20e0ff',T:'#ff40a0',G:'#20ff80',C:'#ffd040'}[nc];
+    ctx.fillText(nc,140+k*10,y);
+  }
+  ctx.fillStyle='#ff40a0';ctx.font='bold 11px monospace';
+  ctx.fillText(g.pam,360,y);
+  ctx.fillStyle='#20e0ff';
+  ctx.fillText(fmt(g.gc*100,0)+'%',410,y);
+  // Score bar
+  ctx.fillStyle='#a0c0b0';ctx.fillText(fmt(g.score,2),450,y);
+  ctx.fillStyle='#20ff80';ctx.fillRect(490,y-10,g.score*60,8);
+  // Homopolymer warning
+  if(g.homopolymer>4){ctx.fillStyle='#ff40a0';ctx.fillText('⚠'+g.homopolymer,565,y)}
+  else{ctx.fillStyle='#3a7050';ctx.fillText(g.homopolymer,565,y)}
+});
+SV('sbLen',c.target.length+' bp');SV('sbGC',fmt(gcContent(c.target)*100,1)+'%');SV('sbMode','CRISPR');SV('sbIter',c.guides.length);
+setStats('<div>PAM sites: '+c.guides.length+'</div><div>Filtered: '+(c.filtered?c.filtered.length:0)+'</div><div>Top score: '+fmt(c.guides[0]?c.guides[0].score:0,3)+'</div>');
+badge('✂ CRISPR · '+c.guides.length+' guides')},
+onDown:function(p){var W=CANV.W;
+var cols=Math.floor((W-80)/14);
+var i=Math.floor((p.x-30)/14)+Math.floor((p.y-80)/20)*cols;
+if(i>=0&&i<STATE.crispr.target.length){
+  STATE.crispr.target=STATE.crispr.target.substr(0,i)+'ATGC'[rnd(0,3)]+STATE.crispr.target.substr(i+1);
+  MODULES.crispr.scan();
+}},
+controls:function(){var c=STATE.crispr;var h='<div class="sec"><h4>Target</h4>';
+h+='<button class="btn primary full" onclick="STATE.crispr.target=randomDNA(120,0.5);MODULES.crispr.scan();renderLeftPanel()">🎲 Random target</button>';
+h+='<div class="ctrl" style="margin-top:8px"><textarea onchange="STATE.crispr.target=this.value.replace(/[^ATGC]/gi,\'\').toUpperCase();MODULES.crispr.scan();renderLeftPanel()">'+attr(c.target)+'</textarea></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Filters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>GC min</span><span>'+fmt(c.gcMin*100,0)+'%</span></div><input type="range" min="0" max="0.8" step="0.05" value="'+c.gcMin+'" oninput="STATE.crispr.gcMin=parseFloat(this.value);MODULES.crispr.scan()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>GC max</span><span>'+fmt(c.gcMax*100,0)+'%</span></div><input type="range" min="0.2" max="1" step="0.05" value="'+c.gcMax+'" oninput="STATE.crispr.gcMax=parseFloat(this.value);MODULES.crispr.scan()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Stats</h4><div class="kv">';
+h+='<div class="row"><span class="k">PAM sites</span><span class="v">'+c.guides.length+'</span></div>';
+h+='<div class="row"><span class="k">In GC range</span><span class="v">'+(c.filtered?c.filtered.length:0)+'</span></div>';
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>CRISPR-Cas9</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Doudna &amp; Charpentier (2012)<br>Prêmio Nobel Química 2020<br><br>Guide RNA (20 nt) + scaffold<br>PAM: 5\'-NGG-3\' (SpCas9)<br><br>Bom guide: GC 40-60%<br>Evitar homopolymers (TTTT)</div></div>'}});
+
+/* ══════ 14. RNA SECONDARY STRUCTURE ══════ */
+registerModule('rnafold',{title:'RNA Folding',icon:'🔷',desc:'Nussinov algorithm for secondary structure.',init:function(){this.reset()},
+reset:function(){var r=STATE.rnafold;
+r.seq=randomDNA(r.seqLen||30,0.5).replace(/T/g,'U');
+this.fold()},
+fold:function(){var r=STATE.rnafold;
+var seq=r.seq;var n=seq.length;
+var minLoop=r.minLoop;
+// Nussinov DP
+var M=[];
+for(var i=0;i<n;i++){M.push(new Array(n).fill(0))}
+function canPair(a,b){
+  return (a==='A'&&b==='U')||(a==='U'&&a!==b&&b==='A')||(a==='G'&&b==='C')||(a==='C'&&b==='G')||(a==='G'&&b==='U')||(a==='U'&&b==='G');
+}
+for(var len=minLoop+1;len<=n;len++){
+  for(var i=0;i<n-len+1;i++){
+    var j=i+len-1;
+    var best=M[i][j-1];
+    for(var k=i;k<j-minLoop;k++){
+      if(canPair(seq[k],seq[j])){
+        var val=(k>i?M[i][k-1]:0)+1+(k+1<=j-1?M[k+1][j-1]:0);
+        if(val>best)best=val;
+      }
+    }
+    M[i][j]=best;
+  }
+}
+// Traceback
+r.pairs=[];
+function traceback(i,j){
+  while(j>i){
+    if(M[i][j]===M[i][j-1]){j--;continue}
+    var found=false;
+    for(var k=i;k<j-minLoop;k++){
+      if(canPair(seq[k],seq[j])){
+        var val=(k>i?M[i][k-1]:0)+1+(k+1<=j-1?M[k+1][j-1]:0);
+        if(val===M[i][j]){
+          r.pairs.push([k,j]);
+          traceback(k+1,j-1);
+          j=k-1;
+          found=true;
+          break;
+        }
+      }
+    }
+    if(!found)break;
+  }
+}
+if(n>minLoop+1)traceback(0,n-1);
+r.energy=-r.pairs.length;
+// Build structure string
+r.structure=new Array(n).fill('.');
+r.pairs.forEach(function(p){r.structure[p[0]]='(';r.structure[p[1]]=')'});
+r.structure=r.structure.join('');
+r.n=n},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var r=STATE.rnafold;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('RNA SECONDARY STRUCTURE — Nussinov',30,30);
+/* Sequence with brackets */
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('Sequence and structure:',30,65);
+ctx.font='13px monospace';
+var startX=40;var cellW=Math.min(18,(W-80)/r.n);
+for(var i=0;i<r.n;i++){
+  var x=startX+i*cellW;
+  var nc=r.seq[i];
+  var col={A:'#20e0ff',U:'#ff40a0',G:'#20ff80',C:'#ffd040'}[nc]||'#666';
+  ctx.fillStyle=col;ctx.textAlign='center';
+  ctx.fillText(nc,x+cellW/2,90);
+  ctx.fillStyle=r.structure[i]==='('?'#ffd040':r.structure[i]===')'?'#a060ff':'#3a7050';
+  ctx.fillText(r.structure[i],x+cellW/2,110);
+  // Arc diagram
+  var pairsFrom=r.pairs.filter(function(p){return p[0]===i});
+  var pairsTo=r.pairs.filter(function(p){return p[1]===i});
+  pairsFrom.forEach(function(p){
+    var y0=130;var x0=startX+i*cellW+cellW/2;
+    var x1=startX+p[1]*cellW+cellW/2;
+    var radius=Math.abs(x1-x0)/2;
+    var cy=y0+radius*0.7;
+    ctx.strokeStyle='rgba(255,208,64,.5)';ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.arc((x0+x1)/2,cy,radius,Math.PI+0.2,2*Math.PI-0.2);
+    ctx.stroke();
+  });
+}
+ctx.textAlign='left';
+/* Energy plot */
+var ey=130+Math.max(0,(r.n*cellW)/2)+80;
+if(ey<H-150){
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('ENERGY (base pairs)',30,ey-10);
+  ctx.fillStyle='#e0ffe8';ctx.font='12px monospace';
+  ctx.fillText('Free energy estimate: '+r.energy+' kcal/mol',30,ey+15);
+  ctx.fillText('Base pairs: '+r.pairs.length,30,ey+35);
+}
+/* Matrix heatmap */
+var mx=Math.max(30, W*0.55);
+var my=140;
+var cell=Math.min(12,(W-mx-40)/r.n,(H-my-200)/r.n);
+if(cell>2&&mx+cell*r.n<W-20){
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('NUSSINOV DP MATRIX',mx,my-10);
+  for(var i=0;i<r.n;i++){
+    for(var j=0;j<r.n;j++){
+      if(j<i){ctx.fillStyle='rgba(20,30,20,.5)';ctx.fillRect(mx+j*cell,my+i*cell,cell,cell)}
+      else{
+        var v=r.M?r.M[i][j]:0;
+      }
+    }
+  }
+  // Matrix not stored; skip
+}
+SV('sbLen',r.n+' nt');SV('sbGC',fmt(gcContent(r.seq.replace(/U/g,'T'))*100,1)+'%');SV('sbMode','RNA Fold');SV('sbIter',r.pairs.length);
+setStats('<div>Length: '+r.n+' nt</div><div>Pairs: '+r.pairs.length+'</div><div>Energy: '+r.energy+'</div>');
+badge('🔷 RNA Fold · '+r.pairs.length+' pairs')},
+onDown:function(){},
+controls:function(){var r=STATE.rnafold;var h='<div class="sec"><h4>Sequence</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Length</span><span>'+r.n+' nt</span></div></div>';
+h+='<button class="btn primary full" onclick="STATE.rnafold.seq=randomDNA(30,0.5).replace(/T/g,\'U\');MODULES.rnafold.reset();renderLeftPanel()">🎲 Random RNA</button>';
+h+='<div class="ctrl" style="margin-top:8px"><textarea onchange="STATE.rnafold.seq=this.value.toUpperCase().replace(/[^AUGC]/g,\'\');MODULES.rnafold.reset();renderLeftPanel()">'+attr(r.seq)+'</textarea></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Min loop</span><span>'+r.minLoop+'</span></div><input type="range" min="0" max="6" value="'+r.minLoop+'" oninput="STATE.rnafold.minLoop=parseInt(this.value);MODULES.rnafold.fold();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Base pairs</h4><div class="kv">';
+h+='<div class="row"><span class="k">Pairs</span><span class="v">'+r.pairs.length+'</span></div>';
+h+='<div class="row"><span class="k">Energy</span><span class="v">'+r.energy+'</span></div>';
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Nussinov Algorithm</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">M[i][j] = max(#pares em seq[i..j])<br><br>Recorrência:<br>M[i][j] = max(<br>  M[i+1][j],<br>  M[i][j-1],<br>  M[i+1][k-1]+M[k+1][j-1]+1 (se i,j pareia)<br>)<br><br>Complexidade O(n³).</div></div>'}});
+</script>
+<script>
+/* ══════ 15. GENETIC ALGORITHM ══════════ */
+registerModule('ga',{title:'Genetic Algorithm',icon:'🎯',desc:'Evolutionary optimization on 2D function.',init:function(){this.reset()},
+reset:function(){var g=STATE.ga;
+g.population=[];
+for(var i=0;i<g.popSize;i++){
+  var ind={x:randn()*2,y:randn()*2};
+  ind.fitness=this.fitness(ind.x,ind.y);
+  g.population.push(ind);
+}
+g.generations=0;g.fitness=[];
+g.population.forEach(function(ind){g.fitness.push(ind.fitness)});
+g.best=g.population.reduce(function(a,b){return a.fitness>b.fitness?a:b})},
+fitness:function(x,y){
+  var g=STATE.ga;
+  if(g.target==='sphere')return -(x*x+y*y);
+  if(g.target==='rastrigin'){
+    var A=10;
+    return -(A*2+(x*x-Math.cos(2*Math.PI*x))+(y*y-Math.cos(2*Math.PI*y)));
+  }
+  if(g.target==='rosenbrock')return -(Math.pow(1-x,2)+100*Math.pow(y-x*x,2));
+  if(g.target==='ackley'){
+    var a=20,b=0.2,c=2*Math.PI;
+    return -( -a*Math.exp(-b*Math.sqrt(0.5*(x*x+y*y))) - Math.exp(0.5*(Math.cos(c*x)+Math.cos(c*y))) + a + Math.E );
+  }
+  return -(x*x+y*y);
+},
+step:function(){var g=STATE.ga;
+// Sort by fitness
+g.population.sort(function(a,b){return b.fitness-a.fitness});
+// Elitism
+var newPop=[g.population[0],g.population[1]];
+// Generate children
+while(newPop.length<g.popSize){
+  // Tournament selection
+  var p1=this.tournament(),p2=this.tournament();
+  var child1,child2;
+  if(Math.random()<g.crossover){
+    var alpha=Math.random();
+    child1={x:p1.x*alpha+p2.x*(1-alpha),y:p1.y*alpha+p2.y*(1-alpha)};
+    child2={x:p2.x*alpha+p1.x*(1-alpha),y:p2.y*alpha+p1.y*(1-alpha)};
+  }else{
+    child1={x:p1.x,y:p1.y};
+    child2={x:p2.x,y:p2.y};
+  }
+  // Mutation
+  if(Math.random()<g.mutation)child1.x+=randn()*0.5;
+  if(Math.random()<g.mutation)child1.y+=randn()*0.5;
+  if(Math.random()<g.mutation)child2.x+=randn()*0.5;
+  if(Math.random()<g.mutation)child2.y+=randn()*0.5;
+  child1.fitness=this.fitness(child1.x,child1.y);
+  child2.fitness=this.fitness(child2.x,child2.y);
+  newPop.push(child1);if(newPop.length<g.popSize)newPop.push(child2);
+}
+g.population=newPop;
+g.generations++;
+g.fitness.push(g.population[0].fitness);
+if(g.fitness.length>500)g.fitness.shift();
+g.best=g.population[0]},
+tournament:function(){var g=STATE.ga;
+var a=g.population[rnd(0,g.popSize-1)];
+var b=g.population[rnd(0,g.popSize-1)];
+return a.fitness>b.fitness?a:b},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*10;var k=0;while(this._acc>=1&&k<3){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var g=STATE.ga;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('GENETIC ALGORITHM — '+(g.target.charAt(0).toUpperCase()+g.target.slice(1)),30,30);
+/* Fitness landscape */
+var px=40,py=80,pw=W*0.55,ph=H-160;
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('FITNESS LANDSCAPE',px,py-10);
+// Draw landscape
+var res=50;
+for(var i=0;i<res;i++){
+  for(var j=0;j<res;j++){
+    var x=(i/res-0.5)*6;
+    var y=(j/res-0.5)*6;
+    var f=this.fitness(x,y);
+    // Normalize
+    var t=clamp((f+20)/20,0,1);
+    ctx.fillStyle='hsla('+(240-t*180)+',80%,'+(15+t*40)+'%,0.85)';
+    ctx.fillRect(px+i*pw/res,py+j*ph/res,pw/res+0.5,ph/res+0.5);
+  }
+}
+ctx.strokeStyle='rgba(32,255,128,.4)';ctx.lineWidth=2;ctx.strokeRect(px,py,pw,ph);
+// Population
+g.population.forEach(function(ind,i){
+  var x=px+(ind.x/6+0.5)*pw;
+  var y=py+(ind.y/6+0.5)*ph;
+  if(x<px||x>px+pw||y<py||y>py+ph)return;
+  var isBest=i===0;
+  var r=isBest?8:4;
+  ctx.fillStyle=isBest?'#ffd040':'#20e0ff';
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+  if(isBest){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke()}
+});
+/* Fitness chart */
+var fx=px+pw+40,fy=py,fw=W-fx-40,fh=H*0.4;
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('FITNESS OVER GENERATIONS',fx,fy-10);
+drawSparkline(ctx,fx,fy+10,fw,fh-30,g.fitness,'#ff40a0',true);
+/* Stats */
+var sy=fy+fh+40;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('STATISTICS',fx,sy-10);
+ctx.fillStyle='#e0ffe8';ctx.font='12px monospace';
+ctx.fillText('Generation: '+g.generations,fx,sy+15);
+ctx.fillText('Best fitness: '+fmt(g.best.fitness,4),fx,sy+35);
+ctx.fillText('Best (x,y): ('+fmt(g.best.x,3)+', '+fmt(g.best.y,3)+')',fx,sy+55);
+// Population diversity
+var meanF=g.population.reduce(function(a,b){return a+b.fitness},0)/g.popSize;
+var varF=g.population.reduce(function(a,b){return a+Math.pow(b.fitness-meanF,2)},0)/g.popSize;
+ctx.fillText('Mean fitness: '+fmt(meanF,3),fx,sy+75);
+ctx.fillText('Variance: '+fmt(varF,3),fx,sy+95);
+ctx.fillText('Diversity: '+fmt(Math.sqrt(varF),3),fx,sy+115);
+SV('sbLen',g.popSize);SV('sbGC','—');SV('sbMode','GA');SV('sbIter',g.generations);
+setStats('<div>Gen: '+g.generations+'</div><div>Best: '+fmt(g.best.fitness,4)+'</div><div>Pop: '+g.popSize+'</div>');
+badge('🎯 GA · gen '+g.generations+' · f='+fmt(g.best.fitness,3))},
+onDown:function(p){var g=STATE.ga;
+var px=40,py=80,pw=CANV.W*0.55,ph=CANV.H-160;
+if(p.x<px||p.x>px+pw||p.y<py||p.y>py+ph)return;
+var x=(p.x-px)/pw*6-3;
+var y=(p.y-py)/ph*6-3;
+var ind={x:x,y:y,fitness:this.fitness(x,y)};
+g.population[rnd(0,g.popSize-1)]=ind},
+controls:function(){var g=STATE.ga;var h='<div class="sec"><h4>Function</h4><div class="chip-row">';
+['sphere','rastrigin','rosenbrock','ackley'].forEach(function(f){h+='<div class="chip '+(g.target===f?'active':'')+'" onclick="STATE.ga.target=\''+f+'\';MODULES.ga.reset();renderLeftPanel()">'+f+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Pop size</span><span>'+g.popSize+'</span></div><input type="range" min="10" max="150" step="5" value="'+g.popSize+'" oninput="STATE.ga.popSize=parseInt(this.value);MODULES.ga.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Mutation rate</span><span>'+fmt(g.mutation,3)+'</span></div><input type="range" min="0.001" max="0.3" step="0.001" value="'+g.mutation+'" oninput="STATE.ga.mutation=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Crossover rate</span><span>'+fmt(g.crossover,2)+'</span></div><input type="range" min="0" max="1" step="0.05" value="'+g.crossover+'" oninput="STATE.ga.crossover=parseFloat(this.value)"></div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.ga.reset();toast(\'Reset\',\'success\')">🎲 New population</button>';
+h+='<div class="empty" style="padding:6px;font-size:.58rem">Click on landscape to add individual</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Genetic Algorithm</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">1. Tournament selection<br>2. Blend crossover (BLX-α)<br>3. Gaussian mutation<br>4. Elitism (top-2 preserved)<br><br>Funções:<br>Sphere: f=−(x²+y²)<br>Rastrigin: multimodal<br>Rosenbrock: banana valley</div></div>'}});
+
+/* ══════ 16. MUTATION & EVOLUTION ══════ */
+registerModule('mutation',{title:'Mutation & Evolution',icon:'💫',desc:'Mutation accumulation and molecular evolution.',init:function(){this.reset()},
+reset:function(){var m=STATE.mutation;
+m.origSeq=randomDNA(80,0.5);
+m.seq=m.origSeq;
+m.mutations=[];
+m.generations=0;
+m.history=[];
+m.history.push({gen:0,subs:0,transitions:0,transversions:0,indels:0})},
+step:function(){var m=STATE.mutation;
+var newSeq=m.seq.split('');
+var subs=0,transitions=0,transversions=0,indels=0;
+// Substitutions
+for(var i=0;i<newSeq.length;i++){
+  if(Math.random()<m.rate){
+    var orig=newSeq[i];
+    var choices=['A','T','G','C'].filter(function(x){return x!==orig});
+    newSeq[i]=randomChoice(choices);
+    subs++;
+    // Transition (purine↔purine or pyrimidine↔pyrimidine)
+    var purines=['A','G'],pyrimidines=['T','C'];
+    if((purines.indexOf(orig)>=0&&purines.indexOf(newSeq[i])>=0)||(pyrimidines.indexOf(orig)>=0&&pyrimidines.indexOf(newSeq[i])>=0))transitions++;
+    else transversions++;
+  }
+}
+m.seq=newSeq.join('');
+m.generations++;
+m.mutations.push({gen:m.generations,subs:subs,transitions:transitions,transversions:transversions});
+m.history.push({gen:m.generations,subs:subs,transitions:transitions,transversions:transversions,indels:indels});
+if(m.history.length>1000)m.history.shift()},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*3;var k=0;while(this._acc>=1&&k<3){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var m=STATE.mutation;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('MUTATION & MOLECULAR EVOLUTION',30,30);
+/* Orig sequence */
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('ANCESTRAL',30,60);
+ctx.font='12px monospace';
+var cols=Math.floor((W-80)/12);
+for(var i=0;i<m.origSeq.length;i++){
+  var nc=m.origSeq[i];
+  var col={A:'#20e0ff',T:'#ff40a0',G:'#20ff80',C:'#ffd040'}[nc]||'#666';
+  ctx.fillStyle=col+'88';
+  ctx.fillText(nc,30+(i%cols)*12,80+Math.floor(i/cols)*18);
+}
+/* Current sequence with diffs highlighted */
+var startY=80+Math.ceil(m.origSeq.length/cols)*18+40;
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('AFTER '+m.generations+' GENERATIONS',30,startY-10);
+ctx.font='12px monospace';
+var totalSubs=0;
+for(var i=0;i<m.seq.length;i++){
+  var nc=m.seq[i];
+  var orig=m.origSeq[i];
+  var col={A:'#20e0ff',T:'#ff40a0',G:'#20ff80',C:'#ffd040'}[nc]||'#666';
+  var changed=nc!==orig;
+  if(changed){
+    totalSubs++;
+    ctx.fillStyle='#ffd040';ctx.fillRect(30+(i%cols)*12-2,startY+Math.floor(i/cols)*18-13,12,16);
+  }
+  ctx.fillStyle=col;
+  ctx.fillText(nc,30+(i%cols)*12,startY+Math.floor(i/cols)*18);
+  if(changed){
+    ctx.fillStyle='#ff40a0';ctx.font='bold 12px monospace';
+    ctx.fillText('*',30+(i%cols)*12,startY+Math.floor(i/cols)*18+8);
+    ctx.font='12px monospace';
+  }
+}
+/* Statistics */
+var sy=startY+Math.ceil(m.seq.length/cols)*18+50;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('MUTATION SPECTRUM',30,sy);
+var totalTrans=0,totalTransv=0;
+m.history.forEach(function(h){totalTrans+=h.transitions;totalTransv+=h.transversions});
+var totalMut=totalTrans+totalTransv;
+var ratio=totalTransv>0?totalTrans/totalTransv:0;
+ctx.fillStyle='#e0ffe8';ctx.font='12px monospace';
+ctx.fillText('Substitutions: '+totalSubs+' / '+m.seq.length+' bp ('+fmt(totalSubs/m.seq.length*100,2)+'%)',30,sy+25);
+ctx.fillText('Transitions (A↔G, C↔T):   '+totalTrans,30,sy+45);
+ctx.fillText('Transversions (purine↔pyr): '+totalTransv,30,sy+65);
+ctx.fillText('Transition/Transversion ratio: '+fmt(ratio,3),30,sy+85);
+ctx.fillText('(Tipicamente 2-3x mais transições)',30,sy+105);
+/* Mutation rate chart */
+var cy=sy+150;
+if(cy<H-150){
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('MUTATIONS PER GENERATION',30,cy);
+  var series=[m.history.map(function(h){return h.transitions}),m.history.map(function(h){return h.transversions})];
+  drawMultiSeries(ctx,40,cy+10,W-80,100,series,['#20e0ff','#ff40a0'],['Transitions','Transversions']);
+}
+SV('sbLen',m.seq.length+' bp');SV('sbGC',fmt(gcContent(m.seq)*100,1)+'%');SV('sbMode','Mutation');SV('sbIter',m.generations);
+setStats('<div>Gen: '+m.generations+'</div><div>Subs: '+totalSubs+'</div><div>Ts/Tv: '+fmt(ratio,2)+'</div>');
+badge('💫 Mutation · gen '+m.generations)},
+onDown:function(){},
+controls:function(){var m=STATE.mutation;var h='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Rate per bp</span><span>'+m.rate+'</span></div><input type="range" min="0.001" max="0.1" step="0.001" value="'+m.rate+'" oninput="STATE.mutation.rate=parseFloat(this.value)"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.mutation.step();renderLeftPanel()">▶ 1 generation</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="for(var i=0;i<100;i++)MODULES.mutation.step();toast(\'100 gen\',\'success\');renderLeftPanel()">⚡ 100 generations</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.mutation.reset();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Molecular Clock</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Zuckerkandl &amp; Pauling (1962)<br><br>Taxa de substituição ~ constante<br><br>Transições (A↔G, C↔T) mais comuns que transversões.<br><br>Jukes-Cantor:<br>d = −¾ ln(1 − 4/3·p)</div></div>'}});
+
+/* ══════ 17. CODON USAGE ══════════ */
+registerModule('codon',{title:'Codon Usage',icon:'📊',desc:'Codon Adaptation Index and codon bias.',init:function(){this.reset()},
+reset:function(){var c=STATE.codon;c.seq=randomDNA(90,0.6);this.compute()},
+compute:function(){var c=STATE.codon;
+// Build codon usage table
+var codons={};
+for(var i=0;i+2<c.seq.length;i+=3){
+  var codon=c.seq.substr(i,3);
+  if(!/^[ATGC]{3}$/.test(codon))continue;
+  codons[codon]=(codons[codon]||0)+1;
+}
+c.table=codons;
+// Compute relative adaptiveness (simplified CAI)
+// Reference: E. coli preferred codons (rough)
+var preferred={
+  'TTT':0.5,'TTC':1,'TTA':0.1,'TTG':0.1,'CTT':0.1,'CTC':0.1,'CTA':0.05,'CTG':1,
+  'ATT':0.5,'ATC':1,'ATA':0.05,'ATG':1,
+  'GTT':0.5,'GTC':0.3,'GTA':0.2,'GTG':1,
+  'TCT':0.5,'TCC':0.3,'TCA':0.1,'TCG':0.1,'CCT':0.3,'CCC':0.2,'CCA':0.3,'CCG':1,
+  'ACT':0.5,'ACC':1,'ACA':0.1,'ACG':0.1,'GCT':0.5,'GCC':0.5,'GCA':0.3,'GCG':1,
+  'TAT':0.5,'TAC':1,'TAA':1,'TAG':0.05,'CAT':0.5,'CAC':1,'CAA':0.3,'CAG':1,
+  'AAT':0.3,'AAC':1,'AAA':1,'AAG':0.2,'GAT':0.5,'GAC':1,'GAA':1,'GAG':0.2,
+  'TGT':0.5,'TGC':1,'TGA':1,'TGG':1,'CGT':1,'CGC':0.5,'CGA':0.05,'CGG':0.05,
+  'AGT':0.1,'AGC':1,'AGA':0.05,'AGG':0.05,'GGT':1,'GGC':0.5,'GGA':0.05,'GGG':0.05
+};
+// Compute CAI (geometric mean of relative adaptiveness)
+var prod=1,n=0;
+for(var k in codons){
+  if(preferred[k]){
+    prod*=preferred[k];
+    n++;
+  }
+}
+c.CAI=n>0?Math.pow(prod,1/n):0;
+// Also compute per-amino-acid codon usage
+c.byAA={};
+for(var k in codons){
+  var aa=CODON_TABLE[dnaToRNA(k)];
+  if(!c.byAA[aa])c.byAA[aa]=[];
+  c.byAA[aa].push({codon:k,count:codons[k]});
+}
+for(var aa in c.byAA){c.byAA[aa].sort(function(a,b){return b.count-a.count})}
+},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var c=STATE.codon;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('CODON USAGE & ADAPTATION INDEX',30,30);
+/* CAI */
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(30,60,300,90);
+ctx.strokeStyle='#20ff80';ctx.strokeRect(30,60,300,90);
+ctx.fillStyle='#20ff80';ctx.font='bold 11px monospace';
+ctx.fillText('CODON ADAPTATION INDEX (CAI)',45,80);
+ctx.fillStyle='#ffd040';ctx.font='bold 32px monospace';
+ctx.fillText(fmt(c.CAI,4),45,125);
+ctx.fillStyle='#a0c0b0';ctx.font='10px monospace';
+ctx.fillText('0 = random · 1 = highly optimized',45,142);
+/* Codon wheel / grid */
+var gridX=350,gridY=60;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('CODON FREQUENCY TABLE',gridX,80);
+// 4x4 codon table (each row = first base, columns = second/third)
+var codonsList=Object.keys(CODON_TABLE);
+var maxCount=0;
+for(var k in c.table)if(c.table[k]>maxCount)maxCount=c.table[k];
+var cellW=(W-gridX-40)/8;
+var cellH=22;
+codonsList.forEach(function(rnaCodon,i){
+  var dnaCodon=rnaCodon.replace(/U/g,'T');
+  var aa=CODON_TABLE[rnaCodon];
+  var count=c.table[dnaCodon]||0;
+  var t=count/maxCount;
+  var row=Math.floor(i/8);var col=i%8;
+  var x=gridX+col*cellW;
+  var y=gridY+20+row*cellH;
+  var colAA=AA_COLOR[aa]||'#666';
+  ctx.fillStyle='hsla('+(140-t*100)+',70%,'+(15+t*40)+'%,0.9)';
+  ctx.fillRect(x,y,cellW-2,cellH-4);
+  ctx.strokeStyle=colAA;ctx.lineWidth=1;ctx.strokeRect(x,y,cellW-2,cellH-4);
+  ctx.fillStyle='#e0ffe8';ctx.font='9px monospace';ctx.textAlign='center';
+  ctx.fillText(dnaCodon,x+cellW/2-1,y+10);
+  ctx.fillStyle=colAA;
+  ctx.fillText(aa,x+cellW/2-1,y+18);
+  if(count>0){
+    ctx.fillStyle='#ffd040';ctx.font='bold 8px monospace';
+    ctx.fillText(count,x+cellW/2-1,y+8);
+  }
+  ctx.textAlign='left';
+});
+/* Amino acid codon usage */
+var sy=gridY+20+Math.ceil(codonsList.length/8)*cellH+50;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('PER-AMINO-ACID CODON USAGE',30,sy);
+ctx.font='10px monospace';
+var aaList=Object.keys(c.byAA).sort();
+aaList.forEach(function(aa,i){
+  var x=30+(i%3)*280;
+  var y=sy+20+Math.floor(i/3)*22;
+  var colAA=AA_COLOR[aa]||'#666';
+  ctx.fillStyle=colAA;
+  ctx.font='bold 12px monospace';
+  ctx.fillText(aa+':',x,y);
+  ctx.font='10px monospace';
+  var total=c.byAA[aa].reduce(function(a,b){return a+b.count},0);
+  var str=c.byAA[aa].map(function(cd){return cd.codon+':'+cd.count}).join(' ');
+  ctx.fillStyle='#e0ffe8';
+  ctx.fillText(str,x+25,y);
+});
+SV('sbLen',c.seq.length+' bp');SV('sbGC',fmt(gcContent(c.seq)*100,1)+'%');SV('sbMode','Codon');SV('sbIter',Object.keys(c.table).length);
+setStats('<div>CAI: '+fmt(c.CAI,4)+'</div><div>Codons used: '+Object.keys(c.table).length+'</div>');
+badge('📊 Codon · CAI='+fmt(c.CAI,3))},
+onDown:function(){},
+controls:function(){var c=STATE.codon;var h='<div class="sec"><h4>Sequence</h4>';
+h+='<button class="btn primary full" onclick="STATE.codon.seq=randomDNA(90,0.6);MODULES.codon.compute();renderLeftPanel()">🎲 Random sequence</button>';
+h+='<div class="ctrl" style="margin-top:8px"><textarea onchange="STATE.codon.seq=this.value.replace(/[^ATGC]/gi,\'\').toUpperCase();MODULES.codon.compute();renderLeftPanel()">'+attr(c.seq)+'</textarea></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Statistics</h4><div class="kv">';
+h+='<div class="row"><span class="k">Length</span><span class="v">'+c.seq.length+' bp</span></div>';
+h+='<div class="row"><span class="k">CAI</span><span class="v">'+fmt(c.CAI,4)+'</span></div>';
+h+='<div class="row"><span class="k">Unique codons</span><span class="v">'+Object.keys(c.table).length+'</span></div>';
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Codon Adaptation Index</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Sharp &amp; Li (1987)<br><br>CAI = (∏ wᵢ)^(1/L)<br><br>wᵢ = uso relativo do códon i<br>     / códon mais frequente do mesmo aa<br><br>CAI próximo de 1 = otimizado para tradução rápida.</div></div>'}});
+
+/* ══════ 18. RESTRICTION MAPPING ══════ */
+var RESTRICTION_ENZYMES={
+  'EcoRI':{site:'GAATTC',cut:1,color:'#20ff80'},
+  'BamHI':{site:'GGATCC',cut:1,color:'#20e0ff'},
+  'HindIII':{site:'AAGCTT',cut:1,color:'#ffd040'},
+  'PstI':{site:'CTGCAG',cut:5,color:'#ff40a0'},
+  'SmaI':{site:'CCCGGG',cut:3,color:'#a060ff'},
+  'XbaI':{site:'TCTAGA',cut:1,color:'#ff8040'},
+  'SalI':{site:'GTCGAC',cut:1,color:'#40ff90'},
+  'NotI':{site:'GCGGCCGC',cut:2,color:'#ff60ff'},
+  'SacI':{site:'GAGCTC',cut:5,color:'#40ffd0'},
+  'KpnI':{site:'GGTACC',cut:5,color:'#ffb040'}
+};
+registerModule('restriction',{title:'Restriction Mapping',icon:'🔪',desc:'Find restriction sites and predict digests.',init:function(){this.scan()},
+scan:function(){var r=STATE.restriction;
+if(!r.seq)r.seq=randomDNA(200,0.5);
+r.sites=[];
+r.enzymes.forEach(function(name){
+  var enz=RESTRICTION_ENZYMES[name];
+  if(!enz)return;
+  var site=enz.site;
+  for(var i=0;i+site.length<=r.seq.length;i++){
+    if(r.seq.substr(i,site.length)===site){
+      r.sites.push({enzyme:name,pos:i+enz.cut,site:site,color:enz.color});
+    }
+  }
+});
+r.sites.sort(function(a,b){return a.pos-b.pos});
+// Digest fragments
+r.fragments=[];
+var positions=[0].concat(r.sites.map(function(s){return s.pos})).concat([r.seq.length]);
+for(var i=0;i<positions.length-1;i++){
+  r.fragments.push({start:positions[i],end:positions[i+1],len:positions[i+1]-positions[i]});
+}
+r.fragments.sort(function(a,b){return b.len-a.len})},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var r=STATE.restriction;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('RESTRICTION MAPPING',30,30);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Sequence: '+r.seq.length+' bp  ·  '+r.sites.length+' sites  ·  '+r.fragments.length+' fragments',30,55);
+/* Linear map */
+var my=100;var mx=40;var mw=W-80;var mh=30;
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(mx,my,mw,mh);
+ctx.strokeStyle='#20ff80';ctx.lineWidth=2;ctx.strokeRect(mx,my,mw,mh);
+// Ruler
+ctx.fillStyle='#a0c0b0';ctx.font='9px monospace';
+for(var i=0;i<=10;i++){
+  var x=mx+i/10*mw;
+  ctx.fillStyle='#a0c0b0';
+  ctx.fillRect(x,my+mh,1,6);
+  ctx.fillText(Math.round(i/10*r.seq.length),x-10,my+mh+18);
+}
+// Sites
+r.sites.forEach(function(s){
+  var x=mx+s.pos/r.seq.length*mw;
+  ctx.fillStyle=s.color;
+  ctx.fillRect(x-1,my-4,2,mh+8);
+  // Rotated label
+  ctx.save();
+  ctx.translate(x,my-8);
+  ctx.rotate(-Math.PI/3);
+  ctx.fillStyle=s.color;ctx.font='bold 9px monospace';
+  ctx.fillText(s.enzyme+'@'+s.pos,0,0);
+  ctx.restore();
+});
+/* Digestion reaction */
+var dy=my+80;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('DIGEST FRAGMENTS (sorted by size)',30,dy-10);
+// Draw fragments as horizontal bars with size
+var maxLen=Math.max.apply(null,r.fragments.map(function(f){return f.len}))||1;
+r.fragments.forEach(function(f,i){
+  var y=dy+20+i*22;
+  var w=f.len/maxLen*(W-200);
+  var hue=(f.len/maxLen)*180+20;
+  ctx.fillStyle='hsl('+hue+',80%,50%)';
+  ctx.fillRect(60,y,w,16);
+  ctx.strokeStyle='rgba(32,255,128,.5)';ctx.strokeRect(60,y,w,16);
+  ctx.fillStyle='#e0ffe8';ctx.font='11px monospace';
+  ctx.fillText(f.len+' bp',W-120,y+12);
+  ctx.fillStyle='#a0c0b0';ctx.font='9px monospace';
+  ctx.fillText('#'+i+' ('+f.start+'-'+f.end+')',W-60,y+12);
+});
+/* Enzyme list */
+var ey=dy+20+r.fragments.length*22+40;
+if(ey<H-100){
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('ENZYMES USED',30,ey);
+  ctx.font='11px monospace';
+  r.enzymes.forEach(function(name,i){
+    var enz=RESTRICTION_ENZYMES[name];
+    if(!enz)return;
+    var count=r.sites.filter(function(s){return s.enzyme===name}).length;
+    ctx.fillStyle=enz.color;
+    ctx.fillText(name+' ('+enz.site+')',30+(i%3)*220,ey+20+Math.floor(i/3)*18);
+    ctx.fillStyle='#e0ffe8';
+    ctx.fillText(': '+count+' sites',30+(i%3)*220+120,ey+20+Math.floor(i/3)*18);
+  });
+}
+SV('sbLen',r.seq.length+' bp');SV('sbGC',fmt(gcContent(r.seq)*100,1)+'%');SV('sbMode','Restriction');SV('sbIter',r.sites.length);
+setStats('<div>Sites: '+r.sites.length+'</div><div>Fragments: '+r.fragments.length+'</div>');
+badge('🔪 Restriction · '+r.sites.length+' sites')},
+onDown:function(){},
+controls:function(){var r=STATE.restriction;var h='<div class="sec"><h4>Sequence</h4>';
+h+='<button class="btn primary full" onclick="STATE.restriction.seq=randomDNA(200,0.5);MODULES.restriction.scan();renderLeftPanel()">🎲 Random sequence</button>';
+h+='<div class="ctrl" style="margin-top:8px"><textarea onchange="STATE.restriction.seq=this.value.replace(/[^ATGC]/gi,\'\').toUpperCase();MODULES.restriction.scan();renderLeftPanel()">'+attr(r.seq)+'</textarea></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Enzymes</h4><div class="chip-row">';
+Object.keys(RESTRICTION_ENZYMES).forEach(function(name){
+  var active=r.enzymes.indexOf(name)>=0;
+  h+='<div class="chip '+(active?'active':'')+'" onclick="if(STATE.restriction.enzymes.indexOf(\''+name+'\')>=0){STATE.restriction.enzymes=STATE.restriction.enzymes.filter(function(x){return x!==\''+name+'\'});}else{STATE.restriction.enzymes.push(\''+name+'\');}MODULES.restriction.scan();renderLeftPanel()">'+name+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Restriction Enzymes</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Endonucleases reconhecem sequências palindrômicas.<br><br>EcoRI: G^AATTC<br>BamHI: G^GATCC<br>HindIII: A^AGCTT<br><br>Usados em clonagem, Southern blot, RFLP.</div></div>'}});
+
+/* ══════ 19. GEL ELECTROPHORESIS ══════════ */
+registerModule('gel',{title:'Gel Electrophoresis',icon:'▮',desc:'Simulate agarose gel separation by size.',init:function(){this.reset()},
+reset:function(){var g=STATE.gel;g.lanes=[];g.t=0;g.progress=0;g.running=true;
+// Create 4 sample lanes + ladder
+g.lanes.push({name:'Ladder',fragments:[10000,8000,6000,5000,4000,3000,2000,1500,1000,500,200],color:'#ffd040'});
+g.lanes.push({name:'Sample A',fragments:[5000,3000,1200],color:'#20ff80'});
+g.lanes.push({name:'Sample B',fragments:[4500,2500,1000],color:'#20e0ff'});
+g.lanes.push({name:'Sample C',fragments:[7000,2000,800,400],color:'#ff40a0'});
+g.lanes.push({name:'Digest D',fragments:[3500,3000,2000,900],color:'#a060ff'});
+},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;var g=STATE.gel;g.t+=dt;g.progress=Math.min(1,g.progress+dt*0.1)},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var g=STATE.gel;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('GEL ELECTROPHORESIS — Agarose 1%',30,30);
+ctx.fillStyle='#20e0ff';ctx.font='11px monospace';
+ctx.fillText('Migration distance ∝ log(MW)  ·  Smaller fragments migrate faster',30,52);
+/* Gel frame */
+var gx=60,gy=80,gw=W-120,gh=H-160;
+ctx.fillStyle='rgba(10,20,15,.9)';ctx.fillRect(gx,gy,gw,gh);
+ctx.strokeStyle='#20ff80';ctx.lineWidth=2;ctx.strokeRect(gx,gy,gw,gh);
+/* Lane separators */
+var laneW=gw/g.lanes.length;
+for(var i=0;i<=g.lanes.length;i++){
+  ctx.strokeStyle='rgba(32,255,128,.3)';
+  ctx.beginPath();ctx.moveTo(gx+i*laneW,gy);ctx.lineTo(gx+i*laneW,gy+gh);ctx.stroke();
+}
+/* Loading wells */
+for(var i=0;i<g.lanes.length;i++){
+  var x=gx+i*laneW+laneW/2;
+  ctx.fillStyle='rgba(10,30,20,.9)';
+  ctx.fillRect(x-15,gy+5,30,12);
+  ctx.strokeStyle='#20ff80';ctx.lineWidth=1;ctx.strokeRect(x-15,gy+5,30,12);
+}
+/* Draw bands */
+var maxBp=10000;
+var minBp=200;
+for(var i=0;i<g.lanes.length;i++){
+  var lane=g.lanes[i];
+  var x=gx+i*laneW+laneW/2;
+  // Sort fragments by size desc (largest migrate slowest)
+  var sorted=lane.fragments.slice().sort(function(a,b){return b-a});
+  sorted.forEach(function(bp){
+    // Migration distance: log scale
+    var logBp=Math.log10(bp);
+    var logMin=Math.log10(minBp);
+    var logMax=Math.log10(maxBp);
+    var t=(logMax-logBp)/(logMax-logMin); // 0=slow (large), 1=fast (small)
+    var y=gy+30+t*(gh-60)*g.progress;
+    // Band width and intensity by amount
+    var w=20+Math.log10(bp)*2;
+    var intensity=0.7+Math.random()*0.3;
+    ctx.fillStyle=lane.color;
+    ctx.globalAlpha=intensity;
+    ctx.fillRect(x-w/2,y-2,w,4);
+    ctx.globalAlpha=1;
+    // Glow
+    ctx.shadowColor=lane.color;ctx.shadowBlur=8;
+    ctx.fillRect(x-w/2,y-1,w,2);
+    ctx.shadowBlur=0;
+  });
+  // Lane label
+  ctx.fillStyle=lane.color;ctx.font='bold 11px monospace';ctx.textAlign='center';
+  ctx.fillText(lane.name,x,gy-8);
+  ctx.textAlign='left';
+}
+/* Size ruler (left) */
+ctx.fillStyle='#a0c0b0';ctx.font='9px monospace';
+var sizes=[10000,5000,2000,1000,500,200];
+sizes.forEach(function(bp){
+  var logBp=Math.log10(bp);
+  var logMin=Math.log10(minBp);
+  var logMax=Math.log10(maxBp);
+  var t=(logMax-logBp)/(logMax-logMin);
+  var y=gy+30+t*(gh-60)*g.progress;
+  if(y<gy+gh){
+    ctx.fillStyle='rgba(160,192,176,.6)';
+    ctx.fillRect(gx-30,y-1,20,2);
+    ctx.fillStyle='#a0c0b0';
+    ctx.fillText(bp>=1000?(bp/1000)+'kb':bp+'bp',gx-30,y+3);
+  }
+});
+/* Progress */
+ctx.fillStyle='#e0ffe8';ctx.font='11px monospace';
+ctx.fillText('Run progress: '+fmt(g.progress*100,0)+'%',gx,gy+gh+22);
+ctx.fillText('Voltage: 100V    Time: '+fmt(g.t,1)+'s',gx,gy+gh+40);
+SV('sbLen',g.lanes.length+' lanes');SV('sbGC','—');SV('sbMode','Gel');SV('sbIter',fmt(g.progress*100,0));
+setStats('<div>Lanes: '+g.lanes.length+'</div><div>Progress: '+fmt(g.progress*100,0)+'%</div>');
+badge('▮ Gel · '+fmt(g.progress*100,0)+'%')},
+onDown:function(){},
+controls:function(){var g=STATE.gel;var h='<div class="sec"><h4>Simulation</h4>';
+h+='<div class="kv"><div class="row"><span class="k">Progress</span><span class="v">'+fmt(g.progress*100,0)+'%</span></div></div>';
+h+='<button class="btn primary full" style="margin-top:8px" onclick="MODULES.gel.reset()">▶ Run gel</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.gel.progress=1">⏭ Complete</button>';
+h+='</div>';
+h+='<div class="sec"><h4>Lanes</h4>';
+g.lanes.forEach(function(l,i){
+  h+='<div style="font-family:var(--mono);font-size:.58rem;color:'+l.color+';padding:3px 0">'+l.name+': '+l.fragments.length+' bands</div>';
+});
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Electrophoresis</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">DNA tem carga negativa (fosfato)<br>Migra para o ânodo (+)<br><br>Velocidade ∝ 1/log(MW)<br><br>Agarose: separa 200 bp - 10 kb<br>PAGE: separa 1 bp - 1 kb</div></div>'}});
+
+/* ══════ 20. METABOLIC PATHWAY ══════════ */
+registerModule('pathway',{title:'Metabolic Pathway',icon:'⛓',desc:'Glycolysis pathway with flux analysis.',init:function(){this.build()},
+build:function(){var p=STATE.pathway;
+// Simplified glycolysis
+p.nodes=[
+  {id:'GLC',name:'Glucose',x:0.1,y:0.5},
+  {id:'G6P',name:'G6P',x:0.25,y:0.5},
+  {id:'F6P',name:'F6P',x:0.38,y:0.5},
+  {id:'FBP',name:'F-1,6-BP',x:0.5,y:0.5},
+  {id:'GAP',name:'GAP',x:0.62,y:0.5},
+  {id:'PEP',name:'PEP',x:0.78,y:0.5},
+  {id:'PYR',name:'Pyruvate',x:0.9,y:0.5}
+];
+p.edges=[
+  {from:'GLC',to:'G6P',enzyme:'HK',flux:1.0},
+  {from:'G6P',to:'F6P',enzyme:'PGI',flux:1.0},
+  {from:'F6P',to:'FBP',enzyme:'PFK-1',flux:0.8,limiting:true},
+  {from:'FBP',to:'GAP',enzyme:'Aldolase',flux:0.8},
+  {from:'GAP',to:'PEP',enzyme:'GAPDH...',flux:0.8},
+  {from:'PEP',to:'PYR',enzyme:'PK',flux:0.8}
+];
+// ATP/NADH production
+p.ATP=0;p.NADH=0;p.glucoseConsumed=0;p.t=0;
+p.fluxes=p.edges.map(function(e){return e.flux})},
+step:function(){var p=STATE.pathway;var dt=0.1;
+// Simplified: substrate flux with feedback
+var flux=p.edges[0].flux;
+p.glucoseConsumed+=flux*dt*0.1;
+// ATP: 2 net per glucose (2 invested - 4 produced)
+p.ATP+=flux*dt*0.1*2;
+p.NADH+=flux*dt*0.1*2;
+p.t+=dt},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*20;var k=0;while(this._acc>=1&&k<3){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#000a05';ctx.fillRect(0,0,W,H);
+var p=STATE.pathway;
+ctx.fillStyle='#20ff80';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('METABOLIC PATHWAY — Glycolysis',30,30);
+ctx.fillStyle='#20e0ff';ctx.font='11px monospace';
+ctx.fillText('Glucose → 2 Pyruvate + 2 ATP + 2 NADH',30,52);
+/* Draw pathway */
+var px=40,py=100,pw=W-80,ph=H*0.55;
+// Nodes as molecules
+p.nodes.forEach(function(n){
+  var x=px+n.x*pw;
+  var y=py+n.y*ph;
+  // Circle
+  ctx.fillStyle='rgba(32,255,128,.15)';
+  ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#20ff80';ctx.lineWidth=2;ctx.stroke();
+  // Name
+  ctx.fillStyle='#e0ffe8';ctx.font='bold 11px monospace';ctx.textAlign='center';
+  ctx.fillText(n.name,x,y+4);
+});
+// Edges with enzymes
+p.edges.forEach(function(e){
+  var from=p.nodes.filter(function(n){return n.id===e.from})[0];
+  var to=p.nodes.filter(function(n){return n.id===e.to})[0];
+  var x1=px+from.x*pw+22;
+  var y1=py+from.y*ph;
+  var x2=px+to.x*pw-22;
+  var y2=py+to.y*ph;
+  // Arrow
+  ctx.strokeStyle=e.limiting?'#ff40a0':'#20e0ff';
+  ctx.lineWidth=e.limiting?3:2;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  // Arrowhead
+  var angle=Math.atan2(y2-y1,x2-x1);
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-10*Math.cos(angle-0.4),y2-10*Math.sin(angle-0.4));
+  ctx.lineTo(x2-10*Math.cos(angle+0.4),y2-10*Math.sin(angle+0.4));
+  ctx.closePath();
+  ctx.fillStyle=e.limiting?'#ff40a0':'#20e0ff';
+  ctx.fill();
+  // Enzyme label
+  var mx=(x1+x2)/2;
+  var my=(y1+y2)/2-8;
+  ctx.fillStyle=e.limiting?'#ff40a0':'#ffd040';
+  ctx.font='9px monospace';ctx.textAlign='center';
+  ctx.fillText(e.enzyme,mx,my);
+  // Flux indicator
+  ctx.fillStyle='#20ff80';
+  ctx.font='bold 10px monospace';
+  ctx.fillText('v='+fmt(e.flux,2),mx,my+12);
+});
+ctx.textAlign='left';
+/* Energy production */
+var ey=py+ph+50;
+ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+ctx.fillText('ENERGY PRODUCTION',30,ey);
+ctx.fillStyle='rgba(4,18,10,.6)';ctx.fillRect(30,ey+10,W-80,90);
+ctx.strokeStyle='#20ff80';ctx.strokeRect(30,ey+10,W-80,90);
+ctx.fillStyle='#ffd040';ctx.font='bold 20px monospace';
+ctx.fillText('ATP',50,ey+45);
+ctx.fillStyle='#ffd040';ctx.font='bold 28px monospace';
+ctx.fillText(fmt(p.ATP,1),50,ey+80);
+ctx.fillStyle='#20e0ff';ctx.font='bold 20px monospace';
+ctx.fillText('NADH',300,ey+45);
+ctx.fillStyle='#20e0ff';ctx.font='bold 28px monospace';
+ctx.fillText(fmt(p.NADH,1),300,ey+80);
+ctx.fillStyle='#20ff80';ctx.font='bold 20px monospace';
+ctx.fillText('Glucose consumed',500,ey+45);
+ctx.fillStyle='#20ff80';ctx.font='bold 28px monospace';
+ctx.fillText(fmt(p.glucoseConsumed,2),500,ey+80);
+/* Rate limiting step info */
+var ry=ey+130;
+if(ry<H-60){
+  ctx.fillStyle='#20ff80';ctx.font='bold 12px monospace';
+  ctx.fillText('RATE-LIMITING STEP: PFK-1 (phosphofructokinase-1)',30,ry);
+  ctx.fillStyle='#e0ffe8';ctx.font='11px monospace';
+  ctx.fillText('Regulated by: ATP (inhibitor), AMP (activator), F-2,6-BP (activator)',30,ry+20);
+  ctx.fillText('Committed step of glycolysis — determines overall flux',30,ry+40);
+}
+SV('sbLen',fmt(p.t,1));SV('sbGC','—');SV('sbMode','Metabolic');SV('sbIter',p.nodes.length);
+setStats('<div>ATP: '+fmt(p.ATP,1)+'</div><div>NADH: '+fmt(p.NADH,1)+'</div><div>Glucose: '+fmt(p.glucoseConsumed,2)+'</div>');
+badge('⛓ Glycolysis · ATP='+fmt(p.ATP,0))},
+onDown:function(){},
+controls:function(){var p=STATE.pathway;var h='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Glucose supply</span><span>'+fmt(p.edges[0].flux,2)+'</span></div><input type="range" min="0.1" max="2" step="0.1" value="'+p.edges[0].flux+'" oninput="STATE.pathway.edges[0].flux=parseFloat(this.value);STATE.pathway.edges[1].flux=parseFloat(this.value);MODULES.pathway.updateFlux()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>State</h4><div class="kv">';
+h+='<div class="row"><span class="k">ATP</span><span class="v">'+fmt(p.ATP,2)+'</span></div>';
+h+='<div class="row"><span class="k">NADH</span><span class="v">'+fmt(p.NADH,2)+'</span></div>';
+h+='<div class="row"><span class="k">Glucose</span><span class="v">'+fmt(p.glucoseConsumed,2)+'</span></div>';
+h+='</div></div>';
+h+='<button class="btn primary full" onclick="STATE.pathway.ATP=0;STATE.pathway.NADH=0;STATE.pathway.glucoseConsumed=0;STATE.pathway.t=0;toast(\'Reset\',\'success\')">↺ Reset</button>';
+return h},
+updateFlux:function(){
+  var p=STATE.pathway;
+  var v=p.edges[0].flux;
+  // PFK-1 limiting factor
+  var pfkFlux=Math.min(1.2,v*0.8)*0.8;
+  p.edges[2].flux=pfkFlux;
+  p.edges[3].flux=pfkFlux;
+  p.edges[4].flux=pfkFlux;
+  p.edges[5].flux=pfkFlux;
+},
+mathPanel:function(){return '<div class="sec"><h4>Glycolysis</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">10 reações enzimáticas:<br>Glucose → G6P → F6P → F-1,6-BP<br>→ GAP → ... → PEP → Pyruvate<br><br>Net: 1 glucose → 2 ATP + 2 NADH + 2 pyruvate<br><br>PFK-1 = rate-limiting (allosteric regulation).</div></div>'}});
+
+/* ══════════════════════════════════════════════════════════════
+   UI + BOOT
+   ══════════════════════════════════════════════════════════════ */
+function buildTabs(){var t=$('tbTabs');t.innerHTML='';
+TABS.forEach(function(x){var i=el('div',{class:'tb-tab'+(x.key===STATE.currentTab?' active':''),'data-tab':x.key});
+i.innerHTML='<span class="tab-icon">'+x.icon+'</span><span>'+x.label+'</span>';
+i.onclick=function(){switchTab(x.key)};
+t.appendChild(i)})}
+function switchTab(k){STATE.currentTab=k;
+$$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===k)});
+var m=MODULES[k];
+SV('sbMode',(m&&m.title)||k);
+try{if(m&&m.init)m.init()}catch(e){logMsg('init('+k+') error: '+e.message,'error')}
+renderLeftPanel();renderRightPanel()}
+function switchRp(name,e){STATE.currentRp=name;
+$$('.rp-tab').forEach(function(t){t.classList.remove('active')});
+e.classList.add('active');
+$$('.rp-pane').forEach(function(p){p.classList.remove('active')});
+var p=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+if(p)p.classList.add('active');
+renderRightPanel()}
+function renderLeftPanel(){
+  var b=$('lpBody');if(!b)return;
+  var m=MODULES[STATE.currentTab];if(!m){b.innerHTML='';return}
+  var h='';
+  h+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--p1);font-size:.7rem">'+m.icon+' '+m.title+'</h4>';
+  h+='<div style="font-size:.6rem;color:var(--tx3);font-family:var(--mono);line-height:1.5;margin-top:4px">'+esc(m.desc||'')+'</div></div>';
+  try{if(m.controls)h+=m.controls()}
+  catch(e){h+='<div class="sec"><div class="empty" style="color:var(--p3)">controls error: '+esc(e.message)+'</div></div>';logMsg('controls('+m.key+') error: '+e.message,'error')}
+  b.innerHTML=h;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var s=$('rpState');
+  if(s){
+    var stats='<div class="sec"><h4>Live State</h4><div class="kv">';
+    stats+='<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>';
+    stats+='<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,1)+'s</span></div>';
+    stats+='<div class="row"><span class="k">Tab</span><span class="v">'+STATE.currentTab+'</span></div>';
+    stats+='</div></div>';
+    s.innerHTML=stats;
+  }
+  var mp=$('rpMath');
+  if(mp){try{if(m&&m.mathPanel)mp.innerHTML=m.mathPanel();else mp.innerHTML='<div class="empty">No math panel</div>'}catch(e){mp.innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){var p=$('rpLogs');if(!p)return;
+var h='<div class="sec"><h4>Log</h4>';
+if(!LOG.length)h+='<div class="empty">No events</div>';
+else LOG.slice().reverse().forEach(function(l){
+  var c=l.type==='error'?'var(--p3)':l.type==='success'?'var(--p1)':'var(--p2)';
+  h+='<div style="padding:3px 6px;border-left:2px solid '+c+';margin-bottom:3px;font-family:var(--mono);font-size:.58rem;color:'+c+'">'+esc(l.msg)+'</div>'
+});
+h+='</div>';p.innerHTML=h}
+function togglePlay(){STATE.playing=!STATE.playing;$('btnPlay').textContent=STATE.playing?'⏸':'▶';$('tbDot').classList.toggle('on',STATE.playing);toast(STATE.playing?'Playing':'Paused','info',900)}
+function stepOnce(){var m=MODULES[STATE.currentTab];if(m&&m.step)m.step();else toast('No step','info',900)}
+function resetModule(){var m=MODULES[STATE.currentTab];if(m&&m.init){m.init();toast('Reset','success',900)}}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['bio','paper','cell'];
+function toggleTheme(){var c=document.documentElement.getAttribute('data-theme');var i=THEMES.indexOf(c);var n=THEMES[(i+1)%THEMES.length];document.documentElement.setAttribute('data-theme',n);toast('Theme: '+n,'success')}
+function showHelp(){openModal('❓ BIOFORGE — Help','<div class="sec"><h4>🧬 20 Módulos Biológicos</h4><div style="font-size:.6rem;line-height:1.85;color:var(--tx2);font-family:var(--mono)"><b style="color:var(--p1)">DNA</b> · <b style="color:var(--p1)">Dogma</b> · <b style="color:var(--p1)">Alignment</b> · <b style="color:var(--p1)">Phylogeny</b><br><b style="color:var(--p1)">PopGen</b> · <b style="color:var(--p1)">Epidemic</b> · <b style="color:var(--p1)">Folding</b> · <b style="color:var(--p1)">MD</b><br><b style="color:var(--p1)">Enzyme</b> · <b style="color:var(--p1)">GeneNet</b> · <b style="color:var(--p1)">HH Neuron</b><br><b style="color:var(--p1)">SNN</b> · <b style="color:var(--p1)">CRISPR</b> · <b style="color:var(--p1)">RNA Fold</b><br><b style="color:var(--p1)">GA</b> · <b style="color:var(--p1)">Mutation</b> · <b style="color:var(--p1)">Codon</b><br><b style="color:var(--p1)">Restriction</b> · <b style="color:var(--p1)">Gel</b> · <b style="color:var(--p1)">Pathway</b></div></div><div class="sec"><h4>🔬 Algoritmos Reais</h4><div style="font-family:var(--mono);font-size:.62rem;line-height:1.9;color:var(--tx2)">Needleman-Wunsch · Smith-Waterman · UPGMA<br>Wright-Fisher · SIR/SEIR (RK4) · Lennard-Jones<br>Nussinov · Hodgkin-Huxley · Izhikevich<br>Michaelis-Menten · Repressilator (Elowitz)</div></div><div class="sec"><h4>⌨️ Atalhos</h4><div style="font-family:var(--mono);font-size:.62rem;line-height:1.9;color:var(--tx2)">Space=Play · →=Step · R=Reset · T=Tema · ?=Help</div></div>','<button class="btn primary" onclick="closeModal()">Got it</button>',{size:'lg'})}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay()}
+  else if(e.key==='ArrowRight'){e.preventDefault();stepOnce()}
+  else if(e.key==='r'||e.key==='R')resetModule();
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal()
+});
+var lastT=performance.now(),fAcc=0,fFr=0;
+function loop(now){
+  var dt=Math.min((now-lastT)/1000,0.05);lastT=now;
+  fAcc+=dt;fFr++;
+  if(fAcc>=0.5){var e=$('sbFps');if(e)e.textContent=Math.round(fFr/fAcc);fAcc=0;fFr=0}
+  var m=MODULES[STATE.currentTab];
+  if(m&&m.tick){try{m.tick(dt)}catch(e){logMsg('tick error: '+e.message,'error')}}
+  if(m&&m.draw){try{CANV.ctx.clearRect(0,0,CANV.W,CANV.H);m.draw(CANV.ctx)}catch(e){
+    logMsg('draw('+m.key+') error: '+e.message,'error');
+    try{CANV.ctx.fillStyle='#000a05';CANV.ctx.fillRect(0,0,CANV.W,CANV.H);CANV.ctx.fillStyle='#20ff80';CANV.ctx.font='bold 14px monospace';CANV.ctx.textAlign='center';CANV.ctx.textBaseline='middle';CANV.ctx.fillText('Render error: '+e.message,CANV.W/2,CANV.H/2)}catch(_){}
+  }}
+  requestAnimationFrame(loop);
+}
+window.addEventListener('DOMContentLoaded',function(){
+  logMsg('DOMContentLoaded','success');
+  try{buildTabs()}catch(e){logMsg('buildTabs: '+e.message,'error')}
+  try{initCanvas()}catch(e){logMsg('initCanvas: '+e.message,'error')}
+  try{var m=MODULES[STATE.currentTab];if(m&&m.init)m.init()}catch(e){logMsg('init: '+e.message,'error')}
+  try{renderLeftPanel()}catch(e){logMsg('renderLeftPanel: '+e.message,'error')}
+  try{renderRightPanel()}catch(e){logMsg('renderRightPanel: '+e.message,'error')}
+  logMsg('BIOFORGE ready','success');
+  requestAnimationFrame(loop);
+  $('tbDot').classList.add('on');
+  $('tbText').textContent='running';
+  toast('BIOFORGE ready — 20 módulos de biologia computacional','success',3000);
+});
+console.log('%c BIOFORGE ','background:linear-gradient(90deg,#20ff80,#20e0ff,#a060ff,#ff40a0,#ffd040);color:#020604;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('Needleman-Wunsch · Smith-Waterman · UPGMA · Wright-Fisher · SIR/SEIR · Lennard-Jones · Nussinov · Hodgkin-Huxley · Izhikevich · Michaelis-Menten · Repressilator');
+</script>
+</body></html>

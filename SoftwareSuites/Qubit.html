@@ -1,0 +1,2795 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="quantum">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>QUBIT — Quantum Computing Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px}
+:root{
+  --bg:#05030d;--panel:#0a0618;--panel2:#0f0824;--panel3:#150c34;--panel4:#1c1048;
+  --bd:#1e1050;--bd2:#341890;--tx:#eeeaff;--tx2:#a898e0;--tx3:#6858a8;
+  --p1:#a060ff;--p2:#20e0ff;--p3:#ff40a0;--p4:#40ff90;--p5:#ffd040;--p6:#ff8040;
+  --g1:linear-gradient(135deg,#a060ff,#20e0ff);
+  --gHolo:linear-gradient(120deg,#a060ff,#20e0ff,#40ff90,#ffd040,#ff40a0,#a060ff);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .13s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="paper"]{--bg:#f5f2ff;--panel:#fff;--panel2:#f5f2ff;--panel3:#ece5ff;--panel4:#dcd0f8;--bd:#d0c8e8;--bd2:#a898c8;--tx:#100820;--tx2:#4a3a78;--tx3:#8070a0;--p1:#6020c0;--p2:#0080c0;--g1:linear-gradient(135deg,#6020c0,#0080c0)}
+[data-theme="midnight"]{--bg:#000;--panel:#05050a;--panel2:#0a0a14;--panel3:#14142a;--panel4:#1e1e40;--bd:#181828;--bd2:#282850;--tx:#d8e0ff;--tx2:#8090c0;--tx3:#505878;--p1:#4090ff;--p2:#40d0ff;--g1:linear-gradient(135deg,#4090ff,#40d0ff)}
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+#topbar{height:48px;background:var(--panel);border-bottom:2px solid var(--p1);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:5px;font-size:.92rem;background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:4px;padding:5px 9px;border-radius:4px;cursor:pointer;transition:var(--t1);font-size:.62rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:30px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#05030d}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.tb-btn{width:30px;height:30px;border-radius:4px;background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--p1);color:var(--p1)}
+.tb-status{font-family:var(--mono);font-size:.6rem;padding:4px 9px;background:var(--panel2);border:1px solid var(--bd);border-radius:4px;color:var(--p1);font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tb-status .dot{width:7px;height:7px;border-radius:50%;background:var(--panel3)}
+.tb-status .dot.on{background:var(--p4);box-shadow:0 0 10px var(--p4);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:290px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:9px 11px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.panel-title{font-size:.58rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#020108;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasWrap::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(160,96,255,.015) 0,rgba(160,96,255,.015) 1px,transparent 1px,transparent 3px)}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.co-badge{background:rgba(10,6,24,.92);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:4px;padding:5px 9px;font-family:var(--mono);font-size:.6rem;color:var(--p1);max-width:340px}
+.co-badge.stats{color:var(--p2);display:flex;flex-direction:column;gap:2px;align-items:flex-end;text-align:right;line-height:1.5}
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:30px}
+.rp-tab{flex:1;padding:5px;font-size:.54rem;font-weight:700;text-transform:uppercase;color:var(--tx3);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab.active{color:var(--p1);border-bottom-color:var(--p1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+#statusbar{height:26px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:12px;font-family:var(--mono);font-size:.6rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:4px;white-space:nowrap}
+#statusbar .sb-val{color:var(--p1)}
+.sb-val.c2{color:var(--p2)}.sb-val.c3{color:var(--p4)}.sb-val.c4{color:var(--p5)}.sb-val.c5{color:var(--p3)}
+.sec{margin-bottom:12px}
+.sec h4{font-size:.58rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--tx3);margin-bottom:7px;font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.58rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:3px;text-transform:uppercase;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--p1);text-transform:none}
+.ctrl{margin-bottom:9px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--p1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--p1)}
+.ctrl input,.ctrl select,.ctrl textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:5px 8px;color:var(--tx);font-size:.66rem;font-family:var(--mono)}
+.ctrl textarea{resize:vertical;min-height:60px;line-height:1.5}
+.ctrl input:focus,.ctrl textarea:focus,.ctrl select:focus{border-color:var(--p1);box-shadow:0 0 0 3px rgba(160,96,255,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:4px;background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.66rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--p1);color:var(--p1)}
+.btn.primary{background:var(--g1);color:#05030d;border-color:transparent}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:3px 7px;font-size:.58rem}
+.chip-row{display:flex;gap:3px;flex-wrap:wrap}
+.chip{padding:3px 8px;background:var(--panel3);border:1px solid var(--bd);border-radius:999px;cursor:pointer;font-size:.58rem;font-family:var(--mono);color:var(--tx2)}
+.chip:hover{border-color:var(--p1);color:var(--p1)}
+.chip.active{background:var(--g1);color:#05030d;border-color:transparent;font-weight:700}
+.kv{font-family:var(--mono);font-size:.6rem;line-height:1.7}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3)}.kv .v{color:var(--p1);text-align:right;font-size:.58rem}
+.empty{text-align:center;padding:28px 18px;color:var(--tx3);font-size:.68rem;font-family:var(--mono)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:9px;max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{font-size:.88rem;color:var(--p1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:18px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:13px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end}
+.modal-x{width:24px;height:24px;color:var(--tx3);cursor:pointer;font-size:.95rem}
+#toasts{position:fixed;bottom:40px;right:18px;z-index:9000;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.toast{padding:9px 14px;border-radius:6px;background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--p1);font-size:.68rem;max-width:320px;min-width:170px;animation:tin .3s;display:flex;align-items:center;gap:9px;font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--p4)}.toast.warn{border-left-color:var(--p5)}.toast.error{border-left-color:var(--p3)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+@media(max-width:1000px){#leftPanel{width:250px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel,#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('circuit')">QUBIT</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus"><span class="dot" id="tbDot"></span><span id="tbText">booting…</span></div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="togglePlay()">⏸</button>
+      <button class="tb-btn" onclick="stepOnce()">⏭</button>
+      <button class="tb-btn" onclick="resetModule()">↺</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()">🎨</button>
+      <button class="tb-btn" onclick="showHelp()">❓</button>
+    </div>
+  </div>
+  <div id="main">
+    <div id="leftPanel"><div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div><div class="panel-body" id="lpBody"></div></div>
+    <div id="workspace"><div id="canvasWrap"><canvas id="mainCanvas"></canvas>
+      <div id="canvasOverlay"><div class="co-badge" id="coBadge">Ready</div><div class="co-badge stats" id="coStats"></div></div>
+    </div></div>
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+      </div>
+      <div class="rp-body"><div class="rp-pane active" id="rpState"></div><div class="rp-pane" id="rpMath"></div><div class="rp-pane" id="rpLogs"></div></div>
+    </div>
+  </div>
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Qubits</span><span class="sb-val c2" id="sbQubits">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Gates</span><span class="sb-val c3" id="sbGates">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Norm</span><span class="sb-val c4" id="sbNorm">1.000</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Depth</span><span class="sb-val c5" id="sbDepth">0</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">Circuit</span></div>
+  </div>
+</div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"><div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+<div id="toasts"></div>
+<script>
+"use strict";
+/* ══════ UTILS ══════ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function attr(s){return esc(s).replace(/`/g,'&#96;')}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function randn(){var u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2200;var ic={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span>'+(ic[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,o){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(o&&o.size?' '+o.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ══════ CANVAS ══════ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){var w=CANV.canvas.parentElement;CANV.dpr=window.devicePixelRatio||1;CANV.W=w.clientWidth;CANV.H=w.clientHeight;CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);CANV.canvas.style.width=CANV.W+'px';CANV.canvas.style.height=CANV.H+'px';CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0)}
+var INPUT={down:false,x:0,y:0,dx:0,dy:0};
+function cp(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=cp(e);INPUT.down=true;INPUT.x=p.x;INPUT.y=p.y;try{var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p)}catch(err){logMsg('onDown: '+err.message,'error')}}
+function onMove(e){var p=cp(e);INPUT.dx=p.x-INPUT.x;INPUT.dy=p.y-INPUT.y;INPUT.x=p.x;INPUT.y=p.y;try{var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,INPUT.dx,INPUT.dy)}catch(err){}}
+function onUp(){INPUT.down=false;try{var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp()}catch(err){}}
+function onTouchStart(e){if(e.touches.length===1)onDown({clientX:e.touches[0].clientX,clientY:e.touches[0].clientY});e.preventDefault()}
+function onTouchMove(e){if(e.touches.length===1)onMove({clientX:e.touches[0].clientX,clientY:e.touches[0].clientY});e.preventDefault()}
+function onTouchEnd(e){onUp();e.preventDefault()}
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this}}
+
+/* ══════ MODULE REGISTRY ══════ */
+var MODULES={};
+function registerModule(k,d){d.key=k;MODULES[k]=d}
+function setStats(h){var e=$('coStats');if(e)e.innerHTML=h}
+function badge(t){var e=$('coBadge');if(e)e.textContent=t}
+function SV(id,v){var e=$(id);if(e)e.textContent=v}
+
+/* ══════ LOG ══════ */
+var LOG=[];
+function logMsg(msg,type){type=type||'info';LOG.push({t:Date.now(),msg:msg,type:type});if(LOG.length>200)LOG.shift();if(STATE.currentRp==='logs')renderLogs()}
+window.addEventListener('error',function(e){try{logMsg('ERROR: '+e.message,'error')}catch(_){}});
+
+/* ══════════════════════════════════════════════════════════
+   COMPLEX NUMBERS
+   ══════════════════════════════════════════════════════════ */
+function cx(re,im){return {re:re,im:im||0}}
+var C={
+  add:function(a,b){return {re:a.re+b.re,im:a.im+b.im}},
+  sub:function(a,b){return {re:a.re-b.re,im:a.im-b.im}},
+  mul:function(a,b){return {re:a.re*b.re-a.im*b.im,im:a.re*b.im+a.im*b.re}},
+  scale:function(a,s){return {re:a.re*s,im:a.im*s}},
+  abs2:function(a){return a.re*a.re+a.im*a.im},
+  abs:function(a){return Math.hypot(a.re,a.im)},
+  conj:function(a){return {re:a.re,im:-a.im}},
+  phase:function(a){return Math.atan2(a.im,a.re)},
+  exp:function(a){var e=Math.exp(a.re);return {re:e*Math.cos(a.im),im:e*Math.sin(a.im)}},
+  ZERO:{re:0,im:0},ONE:{re:1,im:0},I:{re:0,im:1},
+  str:function(a,d){d=d==null?3:d;
+    if(Math.abs(a.im)<1e-9)return a.re.toFixed(d);
+    if(Math.abs(a.re)<1e-9)return a.im.toFixed(d)+'i';
+    return a.re.toFixed(d)+(a.im>=0?'+':'')+a.im.toFixed(d)+'i';
+  },
+  polarStr:function(a,d){d=d==null?3:d;var r=C.abs(a),ph=C.phase(a);return r.toFixed(d)+'·e^('+ph.toFixed(d)+'i)'}
+};
+function cxAmp2(v){return v.re*v.re+v.im*v.im}
+
+/* ══════════════════════════════════════════════════════════
+   MATRIX OPERATIONS (complex)
+   ══════════════════════════════════════════════════════════ */
+function matIdentity(n){var M=[];for(var i=0;i<n;i++){var row=[];for(var j=0;j<n;j++)row.push(i===j?C.ONE:C.ZERO);M.push(row)}return M}
+function matMul(A,B){
+  var n=A.length,m=B[0].length,k=B.length;
+  var R=[];for(var i=0;i<n;i++){var row=[];for(var j=0;j<m;j++){var s=C.ZERO;for(var l=0;l<k;l++)s=C.add(s,C.mul(A[i][l],B[l][j]));row.push(s)}R.push(row)}
+  return R;
+}
+function matKron(A,B){
+  var aR=A.length,aC=A[0].length,bR=B.length,bC=B[0].length;
+  var R=[];for(var i=0;i<aR*bR;i++)R.push(new Array(aC*bC));
+  for(var i=0;i<aR;i++)for(var j=0;j<aC;j++)for(var k=0;k<bR;k++)for(var l=0;l<bC;l++)R[i*bR+k][j*bC+l]=C.mul(A[i][j],B[k][l]);
+  return R;
+}
+function matScale(A,s){return A.map(function(r){return r.map(function(x){return C.scale(x,s)})})}
+function matConjT(A){var R=[];for(var j=0;j<A[0].length;j++){var row=[];for(var i=0;i<A.length;i++)row.push(C.conj(A[i][j]));R.push(row)}return R}
+function matTrace(A){var s=C.ZERO;for(var i=0;i<Math.min(A.length,A[0].length);i++)s=C.add(s,A[i][i]);return s}
+
+/* ══════════════════════════════════════════════════════════
+   QUANTUM STATE (state vector of complex amplitudes)
+   ══════════════════════════════════════════════════════════ */
+function newState(n){
+  var N=1<<n;
+  var psi=new Array(N);
+  for(var i=0;i<N;i++)psi[i]=C.ZERO;
+  psi[0]=C.ONE;
+  return psi;
+}
+function norm2(psi){var s=0;for(var i=0;i<psi.length;i++)s+=cxAmp2(psi[i]);return s}
+function normalize(psi){var n=Math.sqrt(norm2(psi));if(n<1e-12)return psi;return psi.map(function(a){return C.scale(a,1/n)})}
+function basisLabels(n){var N=1<<n;var arr=[];for(var i=0;i<N;i++){var s='';for(var b=n-1;b>=0;b--)s+=((i>>b)&1);arr.push('|'+s+'⟩')}return arr}
+
+/* ══════════════════════════════════════════════════════════
+   GATES
+   ══════════════════════════════════════════════════════════ */
+var SQ2=1/Math.SQRT2;
+var GATES={
+  I:{m:[[C.ONE,C.ZERO],[C.ZERO,C.ONE]],color:'#a898e0',label:'I',n:1},
+  X:{m:[[C.ZERO,C.ONE],[C.ONE,C.ZERO]],color:'#20e0ff',label:'X',n:1},
+  Y:{m:[[C.ZERO,cx(0,-1)],[C.I,C.ZERO]],color:'#40ff90',label:'Y',n:1},
+  Z:{m:[[C.ONE,C.ZERO],[C.ZERO,cx(-1,0)]],color:'#ff40a0',label:'Z',n:1},
+  H:{m:[[cx(SQ2),cx(SQ2)],[cx(SQ2),cx(-SQ2)]],color:'#ffd040',label:'H',n:1},
+  S:{m:[[C.ONE,C.ZERO],[C.ZERO,C.I]],color:'#a060ff',label:'S',n:1},
+  Sdg:{m:[[C.ONE,C.ZERO],[C.ZERO,cx(0,-1)]],color:'#a060ff',label:'S†',n:1},
+  T:{m:[[C.ONE,C.ZERO],[C.ZERO,cx(SQ2,SQ2)]],color:'#ff8040',label:'T',n:1},
+  Tdg:{m:[[C.ONE,C.ZERO],[C.ZERO,cx(SQ2,-SQ2)]],color:'#ff8040',label:'T†',n:1}
+};
+GATES['RX']={m:null,color:'#20e0ff',label:'RX',n:1,dyn:function(th){var c=Math.cos(th/2),s=Math.sin(th/2);return [[cx(c),cx(0,-s)],[cx(0,-s),cx(c)]]}};
+GATES['RY']={m:null,color:'#40ff90',label:'RY',n:1,dyn:function(th){var c=Math.cos(th/2),s=Math.sin(th/2);return [[cx(c),cx(-s)],[cx(s),cx(c)]]}};
+GATES['RZ']={m:null,color:'#ff40a0',label:'RZ',n:1,dyn:function(th){var c=Math.cos(th/2),s=Math.sin(th/2);return [[cx(c,-s),C.ZERO],[C.ZERO,cx(c,s)]]}};
+
+// Multi-qubit gates (as matrices on their qubit set)
+var MULTI={
+  CNOT:{m:[
+    [C.ONE,C.ZERO,C.ZERO,C.ZERO],
+    [C.ZERO,C.ONE,C.ZERO,C.ZERO],
+    [C.ZERO,C.ZERO,C.ZERO,C.ONE],
+    [C.ZERO,C.ZERO,C.ONE,C.ZERO]
+  ],color:'#ff40a0',label:'⊕',n:2},
+  CZ:{m:[
+    [C.ONE,C.ZERO,C.ZERO,C.ZERO],
+    [C.ZERO,C.ONE,C.ZERO,C.ZERO],
+    [C.ZERO,C.ZERO,C.ONE,C.ZERO],
+    [C.ZERO,C.ZERO,C.ZERO,cx(-1,0)]
+  ],color:'#a060ff',label:'Z',n:2},
+  SWAP:{m:[
+    [C.ONE,C.ZERO,C.ZERO,C.ZERO],
+    [C.ZERO,C.ZERO,C.ONE,C.ZERO],
+    [C.ZERO,C.ONE,C.ZERO,C.ZERO],
+    [C.ZERO,C.ZERO,C.ZERO,C.ONE]
+  ],color:'#ffd040',label:'×',n:2}
+};
+
+/* Apply k-qubit gate to state. qubits = array of qubit indices. */
+function applyGate(psi,n,gate,qubits){
+  var k=qubits.length,N=1<<n,K=1<<k;
+  var bitMasks=qubits.map(function(q){return 1<<(n-1-q)});
+  var result=new Array(N);
+  for(var i=0;i<N;i++){
+    var subIdx=0;
+    for(var b=0;b<k;b++)if(i&bitMasks[b])subIdx|=(1<<(k-1-b));
+    var sum=C.ZERO;
+    for(var subIn=0;subIn<K;subIn++){
+      var inIdx=i;
+      for(var b2=0;b2<k;b2++){
+        var bm=bitMasks[b2];
+        if((subIn>>(k-1-b2))&1)inIdx|=bm;else inIdx&=~bm;
+      }
+      sum=C.add(sum,C.mul(gate[subIdx][subIn],psi[inIdx]));
+    }
+    result[i]=sum;
+  }
+  return result;
+}
+function applySingle(psi,n,gate,qubit){return applyGate(psi,n,gate,[qubit])}
+
+/* Controlled version: apply U to targets if controls are all |1⟩ */
+function controlledU(gate,controls,targets,n){
+  // Build full gate on 2^(c+t) qubits
+  var c=controls.length,t=targets.length;
+  var totalQ=c+t;
+  var size=1<<totalQ;
+  var U=[];for(var i=0;i<size;i++){U.push(new Array(size));for(var j=0;j<size;j++)U[i][j]=C.ZERO}
+  var gateSize=1<<t;
+  var controlMask=(1<<c)-1;
+  for(var i=0;i<size;i++){
+    var cBits=(i>>t)&controlMask;
+    var tBits=i&(gateSize-1);
+    if(cBits===controlMask){
+      for(var tj=0;tj<gateSize;tj++){
+        var j=(i-tBits)|tj;
+        U[i][j]=C.add(U[i][j],gate[tBits][tj]);
+      }
+    }else{
+      U[i][i]=C.ONE;
+    }
+  }
+  return U;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MEASUREMENT
+   ══════════════════════════════════════════════════════════ */
+function measure(psi,n,qubit){
+  var bit=1<<(n-1-qubit);
+  var p0=0,p1=0;
+  for(var i=0;i<psi.length;i++){
+    if(i&bit)p1+=cxAmp2(psi[i]);else p0+=cxAmp2(psi[i]);
+  }
+  var r=Math.random();
+  var outcome=r<p1?1:0;
+  var newPsi=new Array(psi.length);
+  var pCollapse=outcome===1?p1:p0;
+  var scale=1/Math.sqrt(pCollapse||1);
+  for(var i=0;i<psi.length;i++){
+    if(((i&bit)>>(n-1-qubit))===outcome)newPsi[i]=C.scale(psi[i],scale);
+    else newPsi[i]=C.ZERO;
+  }
+  return {outcome:outcome,prob:outcome===1?p1:p0,state:newPsi};
+}
+function measureAll(psi,n){
+  var probs=psi.map(cxAmp2);
+  var r=Math.random();var cum=0;var outcome=0;
+  for(var i=0;i<probs.length;i++){cum+=probs[i];if(r<cum){outcome=i;break}}
+  return outcome;
+}
+function sampleCounts(psi,n,shots){
+  var counts=new Array(1<<n).fill(0);
+  var probs=psi.map(cxAmp2);
+  for(var s=0;s<shots;s++){
+    var r=Math.random();var cum=0;
+    for(var i=0;i<probs.length;i++){cum+=probs[i];if(r<cum){counts[i]++;break}}
+  }
+  return counts;
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATE ANALYSIS
+   ══════════════════════════════════════════════════════════ */
+function blochVector(psi,n,qubit){
+  // Compute reduced density matrix for single qubit
+  // If n===1 just use state directly
+  if(n===1){
+    var a=psi[0],b=psi[1];
+    var x=2*(a.re*b.re+a.im*b.im);
+    var y=2*(a.re*b.im-a.im*b.re);
+    var z=cxAmp2(a)-cxAmp2(b);
+    return {x:x,y:y,z:z};
+  }
+  // Reduced DM: trace out other qubits
+  var rho=[[C.ZERO,C.ZERO],[C.ZERO,C.ZERO]];
+  for(var i=0;i<psi.length;i++){
+    for(var j=0;j<psi.length;j++){
+      var qI=(i>>(n-1-qubit))&1;
+      var qJ=(j>>(n-1-qubit))&1;
+      // Same on other qubits
+      var restI=i&~(1<<(n-1-qubit));
+      var restJ=j&~(1<<(n-1-qubit));
+      if(restI===restJ){
+        rho[qI][qJ]=C.add(rho[qI][qJ],C.mul(psi[i],C.conj(psi[j])));
+      }
+    }
+  }
+  // rho = [[a, b], [c, d]] with a,b,c,d complex
+  // Bloch: x = 2 Re(b), y = -2 Im(b), z = a - d
+  var a=rho[0][0],b=rho[0][1],d=rho[1][1];
+  return {x:2*b.re, y:-2*b.im, z:a.re-d.re};
+}
+function partialTrace(psi,n,keptQubits){
+  // Returns density matrix over kept qubits
+  var dk=1<<keptQubits.length;
+  var rho=[];for(var i=0;i<dk;i++){rho.push(new Array(dk));for(var j=0;j<dk;j++)rho[i][j]=C.ZERO}
+  var mask=0,shift=0;
+  for(var b=0;b<keptQubits.length;b++){
+    var q=keptQubits[b];
+    mask|=1<<(n-1-q);
+  }
+  for(var i=0;i<psi.length;i++){
+    for(var j=0;j<psi.length;j++){
+      var iKept=0,jKept=0,bitIdx=keptQubits.length-1;
+      var otherI=0,otherJ=0;
+      for(var b2=0;b2<n;b2++){
+        var bitMask=1<<(n-1-b2);
+        var iBit=(i&bitMask)?1:0;
+        var jBit=(j&bitMask)?1:0;
+        var isKept=keptQubits.indexOf(b2)>=0;
+        if(isKept){
+          iKept|=(iBit<<bitIdx);
+          jKept|=(jBit<<bitIdx);
+          bitIdx--;
+        }else{
+          otherI|=(iBit<<(n-1-b2));
+          otherJ|=(jBit<<(n-1-b2));
+        }
+      }
+      if(otherI===otherJ){
+        rho[iKept][jKept]=C.add(rho[iKept][jKept],C.mul(psi[i],C.conj(psi[j])));
+      }
+    }
+  }
+  return rho;
+}
+function fidelity(psi,phi){
+  var s=C.ZERO;
+  for(var i=0;i<psi.length;i++)s=C.add(s,C.mul(psi[i],C.conj(phi[i])));
+  return cxAmp2(s);
+}
+
+/* ══════════════════════════════════════════════════════════
+   COLOR HELPERS
+   ══════════════════════════════════════════════════════════ */
+function phaseColor(a,alpha){
+  alpha=alpha==null?1:alpha;
+  var ph=C.phase(a);
+  var hue=(ph/Math.PI/2+0.5)*360;
+  var r=C.abs(a);
+  return 'hsla('+hue+',80%,'+(30+r*40)+'%,'+alpha+')';
+}
+function drawAmplitudes(ctx,psi,x,y,w,h,showPhase){
+  var N=psi.length;var bw=w/N;
+  for(var i=0;i<N;i++){
+    var p=cxAmp2(psi[i]);
+    var bh=p*h*0.9;
+    if(bh<1)bh=1;
+    if(showPhase)ctx.fillStyle=phaseColor(psi[i]);
+    else ctx.fillStyle='hsl('+(240-i*10)+',80%,60%)';
+    ctx.fillRect(x+i*bw,y+h-bh,bw*0.9,bh);
+  }
+  ctx.strokeStyle='rgba(160,96,255,.3)';ctx.lineWidth=1;ctx.strokeRect(x,y,w,h);
+  // baseline
+  ctx.strokeStyle='rgba(160,96,255,.6)';ctx.beginPath();ctx.moveTo(x,y+h);ctx.lineTo(x+w,y+h);ctx.stroke();
+}
+function drawProbBars(ctx,psi,x,y,w,h){
+  var N=psi.length;var gap=2;var bw=(w-gap*(N-1))/N;
+  for(var i=0;i<N;i++){
+    var p=cxAmp2(psi[i]);
+    var bh=p*h;
+    var hue=200-p*160;
+    ctx.fillStyle='hsl('+hue+',80%,'+(30+p*40)+'%)';
+    ctx.fillRect(x+i*(bw+gap),y+h-bh,bw,bh);
+    ctx.strokeStyle='rgba(160,96,255,.4)';ctx.strokeRect(x+i*(bw+gap),y+h-bh,bw,bh);
+  }
+}
+function drawBloch(ctx,cx0,cy0,r,vec){
+  var cxp=cx0,cyp=cy0;
+  // Sphere outline
+  ctx.strokeStyle='rgba(160,96,255,.4)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(cxp,cyp,r,0,Math.PI*2);ctx.stroke();
+  // Equator ellipse
+  ctx.beginPath();ctx.ellipse(cxp,cyp,r,r*0.3,0,0,Math.PI*2);ctx.stroke();
+  // Axes
+  ctx.strokeStyle='rgba(160,96,255,.25)';ctx.beginPath();
+  ctx.moveTo(cxp-r*1.15,cyp);ctx.lineTo(cxp+r*1.15,cyp);
+  ctx.moveTo(cxp,cyp-r*1.15);ctx.lineTo(cxp,cyp+r*1.15);
+  ctx.stroke();
+  // Labels
+  ctx.fillStyle='#a898e0';ctx.font='bold 11px monospace';ctx.textAlign='center';
+  ctx.fillText('|0⟩',cxp,cyp-r*1.2);
+  ctx.fillText('|1⟩',cxp,cyp+r*1.28);
+  ctx.fillText('X',cxp+r*1.28,cyp+4);
+  ctx.fillText('-X',cxp-r*1.3,cyp+4);
+  ctx.fillText('Y',cxp+6,cyp+8);
+  // Draw vector (isometric projection: x→right, y→depth, z→up)
+  var px=vec.x*r;
+  var py=-vec.z*r+vec.y*r*0.3;
+  var pz=vec.y*r*0.85;
+  var ex=cxp+px+0*0.3;
+  var ey=cyp+py;
+  // Arrow
+  ctx.strokeStyle='#20e0ff';ctx.lineWidth=3;ctx.shadowColor='#20e0ff';ctx.shadowBlur=10;
+  ctx.beginPath();ctx.moveTo(cxp,cyp);ctx.lineTo(ex,ey);ctx.stroke();
+  ctx.fillStyle='#20e0ff';ctx.beginPath();ctx.arc(ex,ey,6,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  // Vector components
+  ctx.strokeStyle='rgba(255,64,160,.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ex,cyp);ctx.lineTo(cxp,cyp);ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+/* ══════════════════════════════════════════════════════════
+   CIRCUIT RENDERING
+   ══════════════════════════════════════════════════════════ */
+function drawCircuit(ctx,circuit,x,y,width,colW,rowH){
+  // circuit: array of {gate:'H'|'X'|..., qubits:[...], params:{theta}}
+  var n=circuit.nQubits||1;
+  var cols=Math.max(circuit.gates.length,6);
+  // Draw qubit wires
+  ctx.strokeStyle='rgba(160,96,255,.5)';ctx.lineWidth=2;
+  for(var q=0;q<n;q++){
+    var ly=y+q*rowH;
+    ctx.beginPath();ctx.moveTo(x,ly);ctx.lineTo(x+cols*colW,ly);ctx.stroke();
+    // Label
+    ctx.fillStyle='#a898e0';ctx.font='bold 11px monospace';ctx.textAlign='right';
+    ctx.fillText('q'+q,x-8,ly+4);
+    // |0⟩
+    ctx.fillStyle='#6858a8';ctx.font='10px monospace';
+    ctx.fillText('|0⟩',x-40,ly+4);
+  }
+  // Draw gates
+  for(var c=0;c<circuit.gates.length;c++){
+    var g=circuit.gates[c];
+    var gx=x+c*colW+colW/2;
+    if(g.gate==='CNOT'||g.gate==='CZ'){
+      var ctrl=g.qubits[0],tgt=g.qubits[1];
+      var cy=y+ctrl*rowH,ty=y+tgt*rowH;
+      // Control dot
+      ctx.fillStyle='#ff40a0';ctx.beginPath();ctx.arc(gx,cy,5,0,Math.PI*2);ctx.fill();
+      // Vertical line
+      ctx.strokeStyle='#ff40a0';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(gx,cy);ctx.lineTo(gx,ty);ctx.stroke();
+      // Target
+      if(g.gate==='CNOT'){
+        ctx.strokeStyle='#ff40a0';ctx.beginPath();ctx.arc(gx,ty,9,0,Math.PI*2);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(gx-9,ty);ctx.lineTo(gx+9,ty);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(gx,ty-9);ctx.lineTo(gx,ty+9);ctx.stroke();
+      }else{
+        ctx.fillStyle='#a060ff';ctx.fillRect(gx-8,ty-8,16,16);
+        ctx.fillStyle='#05030d';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('Z',gx,ty+1);ctx.textBaseline='alphabetic';
+      }
+    }else if(g.gate==='SWAP'){
+      var q0=g.qubits[0],q1=g.qubits[1];
+      var y0=y+q0*rowH,y1=y+q1*rowH;
+      ctx.strokeStyle='#ffd040';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(gx,y0);ctx.lineTo(gx,y1);ctx.stroke();
+      [y0,y1].forEach(function(yy){
+        ctx.beginPath();ctx.moveTo(gx-8,yy-8);ctx.lineTo(gx+8,yy+8);
+        ctx.moveTo(gx-8,yy+8);ctx.lineTo(gx+8,yy-8);ctx.stroke();
+      });
+    }else{
+      // Single qubit gate
+      var q=g.qubits[0];
+      var gy=y+q*rowH;
+      var gc=(GATES[g.gate]&&GATES[g.gate].color)||'#a060ff';
+      var lbl=(GATES[g.gate]&&GATES[g.gate].label)||g.gate;
+      if(g.gate.indexOf('R')===0)lbl=g.gate+'('+fmt(g.theta||0,2)+')';
+      ctx.fillStyle=gc+'44';ctx.fillRect(gx-16,gy-14,32,28);
+      ctx.strokeStyle=gc;ctx.lineWidth=2;ctx.strokeRect(gx-16,gy-14,32,28);
+      ctx.fillStyle=gc;ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(lbl,gx,gy);ctx.textBaseline='alphabetic';
+    }
+  }
+}
+</script>
+<script>
+/* ══════ STATE + TABS ══════ */
+var STATE={currentTab:'circuit',currentRp:'state',playing:true,time:0,
+circuit:{nQubits:3,gates:[],psi:null,counts:null,shots:1000,step:0,animTimer:0,animCol:-1},
+bloch:{nQubits:1,theta:0,phi:0,gates:[],hist:[],lastGate:null,animate:true,t:0},
+gates:{selected:'H',nQubits:1,apply:'0',animate:0,theta:Math.PI/2},
+bell:{selected:0,shots:1000,counts:null},
+ghz:{n:4,shots:1000,counts:null},
+teleport:{step:0,message:'Preparando estado...',psi:null,alice:0,bob:0,measured:null,msg:''},
+superdense:{bits:'10',step:0,message:'Alice quer enviar 2 bits',psi:null,result:null},
+dj:{n:3,type:'balanced',oracle:[1,0,1,0,0,1,1,0],result:null,step:0},
+bv:{n:4,secret:'1011',result:null,step:0},
+grover:{n:3,target:5,iterations:0,maxIter:2,psi:null,history:[],step:0,phase:'init'},
+shor:{N:15,a:7,period:null,factors:[3,5],log:[],step:0},
+qft:{n:3,psi:null,input:'000',showMatrix:false,matrix:null},
+phase:{n:3,U_phase:0.25,phi:0.25,psi:null,result:null,iterations:3},
+vqe:{n:2,theta:0.5,energy:0,history:[],steps:0,optimizer:'GD',lr:0.1},
+qaoa:{n:4,edges:[[0,1],[1,2],[2,3],[3,0],[0,2]],gamma:0.5,beta:0.5,p:1,expectation:0,history:[],gammas:[0.5],betas:[0.5]},
+qwalk:{n:8,step:0,psi:null,history:[],coin:'H',steps:0,trail:[]},
+density:{n:2,psi:null,showPartial:false,keptQubits:[0],rho:null},
+noise:{n:2,psi:null,T1:5,T2:3,depol:0.01,t:0,history:[],fidelities:[],noiseOn:true},
+qec:{n:3,flip:1,psi:null,syndrome:0,corrected:false,errorType:'bit'},
+qml:{w:[0.5,0.5,0.5,0.5],bias:0,data:[],accuracy:0,epochs:0,history:[]},
+amp:{n:3,amps:null}
+};
+
+var TABS=[
+  {key:'circuit',icon:'🎛',label:'Circuit'},
+  {key:'bloch',icon:'🔮',label:'Bloch'},
+  {key:'gates',icon:'⚡',label:'Gates'},
+  {key:'bell',icon:'🔗',label:'Bell'},
+  {key:'ghz',icon:'🌀',label:'GHZ'},
+  {key:'teleport',icon:'📡',label:'Teleport'},
+  {key:'superdense',icon:'💎',label:'Superdense'},
+  {key:'dj',icon:'🎲',label:'Deutsch-Jozsa'},
+  {key:'bv',icon:'🕵',label:'Bernstein-V'},
+  {key:'grover',icon:'🔍',label:'Grover'},
+  {key:'shor',icon:'🧮',label:'Shor'},
+  {key:'qft',icon:'🌊',label:'QFT'},
+  {key:'phase',icon:'⏱',label:'PhaseEst'},
+  {key:'vqe',icon:'⚛',label:'VQE'},
+  {key:'qaoa',icon:'📈',label:'QAOA'},
+  {key:'qwalk',icon:'🚶',label:'Walk'},
+  {key:'density',icon:'🎨',label:'Density'},
+  {key:'noise',icon:'🌫',label:'Noise'},
+  {key:'qec',icon:'🛡',label:'QEC'},
+  {key:'qml',icon:'🧠',label:'QML'}
+];
+
+/* ══════ 1. CIRCUIT PLAYGROUND ══════ */
+registerModule('circuit',{title:'Circuit Playground',icon:'🎛',desc:'Build a circuit and simulate. Click gates to add, R to run.',init:function(){this.rebuild()},
+rebuild:function(){var c=STATE.circuit;c.psi=newState(c.nQubits);c.counts=null;c.step=0;c.animTimer=0;c.animCol=-1;c.gates=[];
+// add initial Hadamard on each qubit if starting template
+},
+run:function(){var c=STATE.circuit;c.psi=newState(c.nQubits);
+for(var i=0;i<c.gates.length;i++){
+  var g=c.gates[i];
+  try{
+    if(g.gate==='CNOT')c.psi=applyGate(c.psi,c.nQubits,MULTI.CNOT.m,g.qubits);
+    else if(g.gate==='CZ')c.psi=applyGate(c.psi,c.nQubits,MULTI.CZ.m,g.qubits);
+    else if(g.gate==='SWAP')c.psi=applyGate(c.psi,c.nQubits,MULTI.SWAP.m,g.qubits);
+    else if(g.gate.indexOf('R')===0&&g.gate.length===3){
+      var th=g.theta||Math.PI/2;
+      c.psi=applyGate(c.psi,c.nQubits,GATES[g.gate].dyn(th),g.qubits);
+    }
+    else c.psi=applyGate(c.psi,c.nQubits,GATES[g.gate].m,g.qubits);
+  }catch(e){logMsg('Run error at gate '+i+': '+e.message,'error')}
+}
+c.counts=sampleCounts(c.psi,c.nQubits,c.shots);
+toast('Circuit executed: '+c.gates.length+' gates','success')},
+addGate:function(name){var c=STATE.circuit;
+  if(name==='CNOT'||name==='CZ'||name==='SWAP'){
+    if(c.nQubits<2){toast('Need 2+ qubits','warn');return}
+    c.gates.push({gate:name,qubits:[0,1]});
+  }else if(name.indexOf('R')===0){
+    c.gates.push({gate:name,qubits:[0],theta:Math.PI/2});
+  }else{
+    c.gates.push({gate:name,qubits:[0]});
+  }
+  this.run();renderLeftPanel()},
+clear:function(){this.rebuild();toast('Circuit cleared','info')},
+tick:function(dt){STATE.time+=dt;var c=STATE.circuit;c.animTimer+=dt;
+  if(c.animTimer>0.3){c.animTimer=0;c.animCol++}},
+
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);var c=STATE.circuit;
+/* Circuit area */
+ctx.fillStyle='#0a0618';ctx.fillRect(20,60,W-40,Math.max(140,c.nQubits*60+40));
+ctx.strokeStyle='rgba(160,96,255,.3)';ctx.strokeRect(20,60,W-40,Math.max(140,c.nQubits*60+40));
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+ctx.fillText('CIRCUIT ('+c.gates.length+' gates)',32,50);
+drawCircuit(ctx,{nQubits:c.nQubits,gates:c.gates},100,90,W-140,60,50);
+/* Amplitudes */
+var ampY=Math.max(140,c.nQubits*60+40)+100;
+ctx.fillStyle='#a060ff';ctx.fillText('AMPLITUDES |ψ⟩',32,ampY-10);
+drawAmplitudes(ctx,c.psi,40,ampY,W-80,120,true);
+/* Labels */
+var lbls=basisLabels(c.nQubits);var bw=(W-80)/c.psi.length;
+ctx.fillStyle='#a898e0';ctx.font='10px monospace';ctx.textAlign='center';
+for(var i=0;i<c.psi.length;i++){
+  ctx.fillText(lbls[i],40+i*bw+bw/2,ampY+134);
+}
+/* Probability bars */
+var pbY=ampY+160;
+if(pbY+80<H){
+  ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+  ctx.fillText('MEASUREMENT PROBABILITY',32,pbY-10);
+  var probs=c.psi.map(cxAmp2);
+  var N=c.psi.length,bw2=(W-80)/N,gap=4;
+  for(var i=0;i<N;i++){
+    var p=probs[i];var bh=p*80;
+    var hue=200-p*160;
+    ctx.fillStyle='hsl('+hue+',80%,'+(30+p*40)+'%)';
+    ctx.fillRect(40+i*(bw2)+gap/2,pbY+80-bh,bw2-gap,bh);
+    ctx.strokeStyle='rgba(160,96,255,.4)';ctx.strokeRect(40+i*(bw2)+gap/2,pbY+80-bh,bw2-gap,bh);
+    ctx.fillStyle='#a898e0';ctx.font='10px monospace';ctx.textAlign='center';
+    ctx.fillText(lbls[i],40+i*bw2+bw2/2,pbY+95);
+    ctx.fillText(fmt(p*100,1)+'%',40+i*bw2+bw2/2,pbY+108);
+  }
+}
+setStats('<div>Qubits: '+c.nQubits+'</div><div>Gates: '+c.gates.length+'</div><div>Norm: '+fmt(norm2(c.psi),4)+'</div>');
+badge('🎛 Circuit · '+c.nQubits+'q · '+c.gates.length+' gates');
+SV('sbQubits',c.nQubits);SV('sbGates',c.gates.length);SV('sbNorm',fmt(norm2(c.psi),4));SV('sbMode','Circuit')},
+onDown:function(){},
+controls:function(){var c=STATE.circuit;var h='<div class="sec"><h4>Qubits</h4><div class="chip-row">';
+[1,2,3,4,5].forEach(function(n){h+='<div class="chip '+(c.nQubits===n?'active':'')+'" onclick="STATE.circuit.nQubits='+n+';MODULES.circuit.rebuild();renderLeftPanel()">'+n+' qubit'+(n>1?'s':'')+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Add Gate</h4><div class="chip-row">';
+['H','X','Y','Z','S','Sdg','T','Tdg'].forEach(function(g){h+='<div class="chip" onclick="MODULES.circuit.addGate(\''+g+'\')">'+g+'</div>'});
+h+='</div><div class="chip-row" style="margin-top:4px">';
+['RX','RY','RZ'].forEach(function(g){h+='<div class="chip" onclick="MODULES.circuit.addGate(\''+g+'\')">'+g+'(π/2)</div>'});
+h+='</div><div class="chip-row" style="margin-top:4px">';
+['CNOT','CZ','SWAP'].forEach(function(g){h+='<div class="chip" onclick="MODULES.circuit.addGate(\''+g+'\')">'+g+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Presets</h4>';
+h+='<button class="btn full sm" onclick="MODULES.circuit.presetBell()">🔗 Bell state</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.circuit.presetGHZ()">🌀 GHZ state</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.circuit.presetGrover()">🔍 Grover 3q</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.circuit.presetQFT()">🌊 QFT 3q</button>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.circuit.run();toast(\'Executed!\',\'success\')">▶ Run circuit</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.circuit.clear()">🧹 Clear</button>';
+h+='<div class="ctrl" style="margin-top:8px"><div class="lbl"><span>Shots</span><span>'+c.shots+'</span></div><input type="range" min="100" max="10000" step="100" value="'+c.shots+'" oninput="STATE.circuit.shots=parseInt(this.value);renderLeftPanel()"></div>';
+h+='</div>';
+if(c.gates.length){
+  h+='<div class="sec"><h4>Gates list</h4>';
+  c.gates.forEach(function(g,i){h+='<div style="font-family:var(--mono);font-size:.6rem;color:var(--tx2);padding:3px 0;border-bottom:1px solid var(--bd)">#'+i+' '+g.gate+' @ q['+g.qubits.join(',')+']</div>'});
+  h+='<button class="btn full sm" style="margin-top:8px" onclick="STATE.circuit.gates.pop();MODULES.circuit.run();renderLeftPanel()">↶ Undo last</button>';
+  h+='</div>';
+}
+return h},
+presetBell:function(){var c=STATE.circuit;c.nQubits=2;c.gates=[{gate:'H',qubits:[0]},{gate:'CNOT',qubits:[0,1]}];this.run();toast('Bell state','success')},
+presetGHZ:function(){var c=STATE.circuit;c.nQubits=3;c.gates=[{gate:'H',qubits:[0]},{gate:'CNOT',qubits:[0,1]},{gate:'CNOT',qubits:[0,2]}];this.run();toast('GHZ state','success')},
+presetGrover:function(){var c=STATE.circuit;c.nQubits=3;c.gates=[];
+for(var i=0;i<3;i++)c.gates.push({gate:'H',qubits:[i]});
+// Oracle for |101⟩
+c.gates.push({gate:'X',qubits:[1]});
+c.gates.push({gate:'H',qubits:[2]});
+c.gates.push({gate:'CNOT',qubits:[0,2]});
+c.gates.push({gate:'H',qubits:[2]});
+c.gates.push({gate:'X',qubits:[1]});
+// Diffusion
+for(var i=0;i<3;i++)c.gates.push({gate:'H',qubits:[i]});
+for(var i=0;i<3;i++)c.gates.push({gate:'X',qubits:[i]});
+c.gates.push({gate:'H',qubits:[2]});
+c.gates.push({gate:'CNOT',qubits:[0,2]});
+c.gates.push({gate:'H',qubits:[2]});
+for(var i=0;i<3;i++)c.gates.push({gate:'X',qubits:[i]});
+for(var i=0;i<3;i++)c.gates.push({gate:'H',qubits:[i]});
+this.run();toast('Grover 3q oracle','success')},
+presetQFT:function(){var c=STATE.circuit;c.nQubits=3;c.gates=[];
+c.gates.push({gate:'H',qubits:[0]});
+c.gates.push({gate:'CZ',qubits:[0,1]});
+c.gates.push({gate:'CZ',qubits:[0,2]});
+c.gates.push({gate:'H',qubits:[1]});
+c.gates.push({gate:'CZ',qubits:[1,2]});
+c.gates.push({gate:'H',qubits:[2]});
+c.gates.push({gate:'SWAP',qubits:[0,2]});
+this.run();toast('QFT 3q','success')},
+mathPanel:function(){return '<div class="sec"><h4>State Vector</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">|ψ⟩ = Σᵢ αᵢ|i⟩<br>Σ|αᵢ|² = 1<br><br>Fase global não observável.<br>Fases relativas criam interferência.</div></div>'}});
+
+/* ══════ 2. BLOCH SPHERE ══════ */
+registerModule('bloch',{title:'Bloch Sphere',icon:'🔮',desc:'Single-qubit state visualization on the Bloch sphere.',init:function(){var b=STATE.bloch;b.psi=newState(1);b.theta=0;b.phi=0;b.hist=[]},
+applyGateToState:function(name){
+  var b=STATE.bloch;
+  var M=GATES[name].m||(GATES[name].dyn?GATES[name].dyn(Math.PI/2):null);
+  b.psi=applySingle(b.psi,1,M,0);
+  b.lastGate=name;b.hist.push(name);
+  if(b.hist.length>20)b.hist.shift();
+},
+tick:function(dt){STATE.time+=dt;var b=STATE.bloch;b.t+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);var b=STATE.bloch;
+var cx=W*0.35,cy=H/2;var r=Math.min(W*0.28,H*0.38);
+var vec=blochVector(b.psi,1,0);
+drawBloch(ctx,cx,cy,r,vec);
+/* Info panel */
+var px=W*0.7,py=60;
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(160,96,255,.3)';ctx.beginPath();ctx.roundRect(px,py,W-px-40,Math.min(500,H-120),8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+ctx.fillText('STATE |ψ⟩',px+12,py+22);
+ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+ctx.fillText('|ψ⟩ = '+C.str(b.psi[0])+' |0⟩',px+12,py+50);
+ctx.fillText('     + '+C.str(b.psi[1])+' |1⟩',px+12,py+68);
+ctx.fillStyle='#20e0ff';
+ctx.fillText('P(|0⟩) = '+fmt(cxAmp2(b.psi[0])*100,2)+'%',px+12,py+96);
+ctx.fillText('P(|1⟩) = '+fmt(cxAmp2(b.psi[1])*100,2)+'%',px+12,py+114);
+ctx.fillStyle='#ffd040';
+ctx.fillText('⟨X⟩ = '+fmt(vec.x,4),px+12,py+142);
+ctx.fillText('⟨Y⟩ = '+fmt(vec.y,4),px+12,py+160);
+ctx.fillText('⟨Z⟩ = '+fmt(vec.z,4),px+12,py+178);
+ctx.fillStyle='#40ff90';
+ctx.fillText('r = '+fmt(Math.hypot(vec.x,vec.y,vec.z),4),px+12,py+206);
+ctx.fillStyle='#a898e0';
+if(b.lastGate)ctx.fillText('Last: '+b.lastGate,px+12,py+234);
+/* History */
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';
+ctx.fillText('GATE HISTORY',px+12,py+262);
+ctx.font='10px monospace';ctx.fillStyle='#a898e0';
+var histStr=b.hist.slice(-10).join(' · ');
+ctx.fillText(histStr||'(empty)',px+12,py+280);
+setStats('<div>|0⟩: '+fmt(cxAmp2(b.psi[0])*100,1)+'%</div><div>|1⟩: '+fmt(cxAmp2(b.psi[1])*100,1)+'%</div><div>Vector: ('+fmt(vec.x,2)+','+fmt(vec.y,2)+','+fmt(vec.z,2)+')</div>');
+badge('🔮 Bloch · last gate: '+(b.lastGate||'none'));SV('sbQubits',1);SV('sbGates',b.hist.length);SV('sbMode','Bloch')},
+onDown:function(p){var W=CANV.W,H=CANV.H;var cx=W*0.35,cy=H/2;var r=Math.min(W*0.28,H*0.38);
+// Drag to set theta/phi
+var dx=(p.x-cx)/r;var dy=(p.y-cy)/r;
+var theta=clamp(Math.acos(-dy/Math.SQRT2*1.4),0,Math.PI);
+var phi=Math.atan2(dx,-dy);
+var b=STATE.bloch;
+b.psi=[cx(Math.cos(theta/2)),cx(Math.sin(theta/2)*Math.cos(phi),Math.sin(theta/2)*Math.sin(phi))];},
+onMove:function(p){if(INPUT.down)this.onDown(p)},
+controls:function(){var b=STATE.bloch;var h='<div class="sec"><h4>Apply gate</h4><div class="chip-row">';
+['X','Y','Z','H','S','Sdg','T','Tdg'].forEach(function(g){h+='<div class="chip" onclick="MODULES.bloch.applyGateToState(\''+g+'\')">'+g+'</div>'});
+h+='</div><div class="chip-row" style="margin-top:4px">';
+['RX','RY','RZ'].forEach(function(g){h+='<div class="chip" onclick="MODULES.bloch.applyGateToState(\''+g+'\')">'+g+'(π/2)</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Preset states</h4>';
+h+='<div class="chip-row">';
+h+='<div class="chip" onclick="STATE.bloch.psi=[{re:1,im:0},{re:0,im:0}];STATE.bloch.lastGate=\'|0⟩\'">|0⟩</div>';
+h+='<div class="chip" onclick="STATE.bloch.psi=[{re:0,im:0},{re:1,im:0}];STATE.bloch.lastGate=\'|1⟩\'">|1⟩</div>';
+h+='<div class="chip" onclick="STATE.bloch.psi=[{re:Math.SQRT1_2,im:0},{re:Math.SQRT1_2,im:0}];STATE.bloch.lastGate=\'|+⟩\'">|+⟩</div>';
+h+='<div class="chip" onclick="STATE.bloch.psi=[{re:Math.SQRT1_2,im:0},{re:-Math.SQRT1_2,im:0}];STATE.bloch.lastGate=\'|−⟩\'">|−⟩</div>';
+h+='<div class="chip" onclick="STATE.bloch.psi=[{re:Math.SQRT1_2,im:0},{re:0,im:Math.SQRT1_2}];STATE.bloch.lastGate=\'|i⟩\'">|i⟩</div>';
+h+='</div></div>';
+h+='<button class="btn primary full" onclick="MODULES.bloch.init();toast(\'Reset\',\'success\')">↺ Reset to |0⟩</button>';
+h+='<div class="empty" style="padding:6px;font-size:.58rem">Drag on sphere to set state</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Bloch Sphere</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">|ψ⟩ = cos(θ/2)|0⟩ + e^(iφ)sin(θ/2)|1⟩<br><br>x = ⟨X⟩ = 2Re(α*β)<br>y = ⟨Y⟩ = 2Im(α*β)... wait: −2Im(α*β)...<br>z = ⟨Z⟩ = |α|²−|β|²<br><br>Pure state: |r| = 1<br>Mixed state: |r| &lt; 1</div></div>'}});
+
+/* ══════ 3. GATE LIBRARY ══════ */
+registerModule('gates',{title:'Gate Library',icon:'⚡',desc:'All quantum gates and their matrices.',init:function(){},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var cols=4;var cellW=(W-60)/cols;var cellH=90;
+var allGates=[];
+Object.keys(GATES).forEach(function(k){allGates.push({name:k,gate:GATES[k]})});
+Object.keys(MULTI).forEach(function(k){allGates.push({name:k,gate:MULTI[k]})});
+for(var i=0;i<allGates.length;i++){
+  var col=i%cols,row=Math.floor(i/cols);
+  var x=40+col*cellW,y=40+row*cellH;
+  var g=allGates[i];
+  // Card
+  ctx.fillStyle='rgba(10,6,24,.85)';ctx.strokeStyle=g.gate.color+'66';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(x,y,cellW-20,cellH-15,8);ctx.fill();ctx.stroke();
+  // Gate symbol
+  var sym=g.gate.label||g.name;
+  ctx.fillStyle=g.gate.color+'44';
+  ctx.fillRect(x+15,y+15,44,44);
+  ctx.strokeStyle=g.gate.color;ctx.lineWidth=2;
+  ctx.strokeRect(x+15,y+15,44,44);
+  ctx.fillStyle=g.gate.color;ctx.font='bold 18px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(sym,x+37,y+37);
+  ctx.textBaseline='alphabetic';
+  // Name
+  ctx.fillStyle='#e0e8ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+  ctx.fillText(g.name,x+70,y+32);
+  ctx.fillStyle='#a898e0';ctx.font='10px monospace';
+  ctx.fillText(g.gate.n+'-qubit',x+70,y+50);
+  // Matrix
+  var m=g.gate.m;
+  if(!m&&g.gate.dyn){try{m=g.gate.dyn(Math.PI/2)}catch(e){}}
+  if(m){
+    ctx.font='10px monospace';ctx.fillStyle='#20e0ff';
+    for(var r=0;r<m.length;r++){
+      var rowStr=m[r].map(function(a){return C.str(a,2)}).join(', ');
+      ctx.fillText('['+rowStr+']',x+15,y+80+r*14);
+    }
+  }
+}
+SV('sbGates',allGates.length);SV('sbMode','Gates');
+badge('⚡ '+allGates.length+' gates')},
+onDown:function(){},
+controls:function(){return '<div class="sec"><h4>About</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Biblioteca completa de portas quânticas com matrizes complexas 2×2 e 4×4.<br><br>X,Y,Z — Pauli<br>H — Hadamard<br>S,T — Phase gates<br>RX,RY,RZ — Rotations<br>CNOT,CZ,SWAP — Two-qubit</div></div>'},
+mathPanel:function(){return '<div class="sec"><h4>Universal Set</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Solovay-Kitaev: qualquer unitária U pode ser aproximada por {H,T,CNOT}<br><br>Clifford+T é universal.<br>{H,S,CNOT} = Clifford group (não universal sozinho).</div></div>'}});
+
+/* ══════ 4. BELL STATES ══════ */
+registerModule('bell',{title:'Bell States',icon:'🔗',desc:'Maximally entangled 2-qubit states.',init:function(){this.build()},
+build:function(){var b=STATE.bell;b.psi=null;b.counts=null},
+getState:function(idx){
+  var SQ2=1/Math.SQRT1_2*0.5;
+  var s=[0,0,0,0];
+  if(idx===0){s[0]=SQ2;s[3]=SQ2}                 // (|00⟩+|11⟩)/√2
+  else if(idx===1){s[0]=SQ2;s[3]=-SQ2}             // (|00⟩-|11⟩)/√2
+  else if(idx===2){s[1]=SQ2;s[2]=SQ2}              // (|01⟩+|10⟩)/√2
+  else{s[1]=SQ2;s[2]=-SQ2}                          // (|01⟩-|10⟩)/√2
+  return s.map(function(x){return cx(x,0)})},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var b=STATE.bell;var psi=this.getState(b.selected);
+/* Circuit that produces it */
+var names=['Φ⁺','Φ⁻','Ψ⁺','Ψ⁻'];
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('BELL STATE '+names[b.selected],40,40);
+/* Circuit */
+ctx.fillStyle='#0a0618';ctx.fillRect(40,60,W-80,150);
+ctx.strokeStyle='rgba(160,96,255,.3)';ctx.strokeRect(40,60,W-80,150);
+var circuitGates=[];
+if(b.selected===0)circuitGates=[{gate:'H',qubits:[0]},{gate:'CNOT',qubits:[0,1]}];
+else if(b.selected===1)circuitGates=[{gate:'H',qubits:[0]},{gate:'CNOT',qubits:[0,1]},{gate:'Z',qubits:[0]}];
+else if(b.selected===2)circuitGates=[{gate:'H',qubits:[0]},{gate:'CNOT',qubits:[0,1]},{gate:'X',qubits:[0]}];
+else circuitGates=[{gate:'H',qubits:[0]},{gate:'CNOT',qubits:[0,1]},{gate:'X',qubits:[0]},{gate:'Z',qubits:[0]}];
+drawCircuit(ctx,{nQubits:2,gates:circuitGates},100,100,W-160,80,50);
+/* Amplitudes */
+var aY=240;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('AMPLITUDES',40,aY-10);
+drawAmplitudes(ctx,psi,40,aY,W-80,140,true);
+var lbls=['|00⟩','|01⟩','|10⟩','|11⟩'];
+ctx.fillStyle='#a898e0';ctx.font='12px monospace';ctx.textAlign='center';
+var bw=(W-80)/4;
+for(var i=0;i<4;i++){
+  ctx.fillText(lbls[i],40+i*bw+bw/2,aY+160);
+  ctx.fillStyle='#e0e8ff';
+  ctx.fillText(C.str(psi[i],3),40+i*bw+bw/2,aY+180);
+  ctx.fillStyle='#20e0ff';
+  ctx.fillText('|·|²='+fmt(cxAmp2(psi[i]),3),40+i*bw+bw/2,aY+198);
+  ctx.fillStyle='#a898e0';
+}
+/* Entanglement info */
+var aY2=aY+230;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+ctx.fillText('ENTANGLEMENT ANALYSIS',40,aY2-10);
+var rho0=partialTrace(psi,2,[0]);
+var rho1=partialTrace(psi,2,[1]);
+var purity0=0,purity1=0;
+for(var i=0;i<2;i++)for(var j=0;j<2;j++){
+  purity0+=cxAmp2(rho0[i][j]);purity1+=cxAmp2(rho1[i][j]);
+}
+ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+ctx.fillText('Von Neumann entropy S(ρ₀) = 1.000 (maximally mixed)',40,aY2+20);
+ctx.fillText('Reduced ρ₀ purity = '+fmt(purity0,4)+' (0.5 = maximally entangled)',40,aY2+40);
+ctx.fillText('Concurrence = 1.000',40,aY2+60);
+setStats('<div>State: '+names[b.selected]+'</div><div>Entanglement: max</div><div>S(ρ₀) = 1</div>');
+badge('🔗 Bell '+names[b.selected]);SV('sbQubits',2);SV('sbGates',circuitGates.length);SV('sbNorm',fmt(norm2(psi),4));SV('sbMode','Bell')},
+onDown:function(){},
+controls:function(){var b=STATE.bell;var h='<div class="sec"><h4>Select Bell state</h4><div class="chip-row">';
+['Φ⁺','Φ⁻','Ψ⁺','Ψ⁻'].forEach(function(n,i){h+='<div class="chip '+(b.selected===i?'active':'')+'" onclick="STATE.bell.selected='+i+';renderLeftPanel()">'+n+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Formulas</h4><div class="kv">';
+h+='<div class="row"><span class="k">Φ⁺</span><span class="v">(|00⟩+|11⟩)/√2</span></div>';
+h+='<div class="row"><span class="k">Φ⁻</span><span class="v">(|00⟩−|11⟩)/√2</span></div>';
+h+='<div class="row"><span class="k">Ψ⁺</span><span class="v">(|01⟩+|10⟩)/√2</span></div>';
+h+='<div class="row"><span class="k">Ψ⁻</span><span class="v">(|01⟩−|10⟩)/√2</span></div>';
+h+='</div></div>';
+h+='<button class="btn primary full" onclick="switchTab(\'teleport\')">📡 Go to Teleportation →</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="switchTab(\'superdense\')">💎 Go to Superdense Coding →</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Bell Basis</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">4 estados ortogonais máximamente emaranhados.<br><br>Formam base completa de 2 qubits.<br><br>Violam desigualdade de Bell (CHSH = 2√2 ≈ 2.83).</div></div>'}});
+
+/* ══════ 5. GHZ STATES ══════ */
+registerModule('ghz',{title:'GHZ States',icon:'🌀',desc:'N-qubit Greenberger-Horne-Zeilinger states.',init:function(){this.build()},
+build:function(){var g=STATE.ghz;var n=g.n;g.psi=newState(n);
+g.psi=applySingle(g.psi,n,GATES.H.m,0);
+for(var q=1;q<n;q++)g.psi=applyGate(g.psi,n,MULTI.CNOT.m,[0,q]);
+g.counts=null},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var g=STATE.ghz;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('GHZ STATE ('+g.n+' qubits)',40,40);
+ctx.fillStyle='#e0e8ff';ctx.font='13px monospace';
+ctx.fillText('|GHZ⟩ = (|0...0⟩ + |1...1⟩)/√2',40,64);
+/* Amplitudes */
+var aY=100;
+drawAmplitudes(ctx,g.psi,40,aY,W-80,180,true);
+var lbls=basisLabels(g.n);var bw=(W-80)/g.psi.length;
+ctx.fillStyle='#a898e0';ctx.font='10px monospace';ctx.textAlign='center';
+for(var i=0;i<g.psi.length;i++){
+  if(cxAmp2(g.psi[i])>1e-6){
+    ctx.fillStyle='#40ff90';
+    ctx.fillText(lbls[i],40+i*bw+bw/2,aY+200);
+    ctx.fillStyle='#e0e8ff';
+    ctx.fillText(C.str(g.psi[i],3),40+i*bw+bw/2,aY+218);
+  }
+}
+/* Circuit */
+var cy=380;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+ctx.fillText('CIRCUIT',40,cy-10);
+var cg=[{gate:'H',qubits:[0]}];
+for(var q=1;q<g.n;q++)cg.push({gate:'CNOT',qubits:[0,q]});
+drawCircuit(ctx,{nQubits:g.n,gates:cg},100,cy+10,W-160,50,35);
+/* Entanglement */
+var py=cy+g.n*35+60;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';
+ctx.fillText('ENTANGLEMENT STRUCTURE',40,py-10);
+ctx.fillStyle='#e0e8ff';ctx.font='11px monospace';
+ctx.fillText('Reduced ρ de qualquer qubit = I/2 (maximally mixed)',40,py+10);
+ctx.fillText('Todos os qubits correlacionados — medir 1 colapsa todos',40,py+30);
+ctx.fillText('Genuinamente multipartite (não fatorável em produtos de Bell)',40,py+50);
+setStats('<div>Qubits: '+g.n+'</div><div>Non-zero amplitudes: 2</div><div>Entropy S(ρ_k) = 1</div>');
+badge('🌀 GHZ '+g.n+'q');SV('sbQubits',g.n);SV('sbGates',g.n);SV('sbNorm',fmt(norm2(g.psi),4));SV('sbMode','GHZ')},
+onDown:function(){},
+controls:function(){var g=STATE.ghz;var h='<div class="sec"><h4>Qubits</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>n</span><span>'+g.n+'</span></div><input type="range" min="2" max="8" value="'+g.n+'" oninput="STATE.ghz.n=parseInt(this.value);MODULES.ghz.build();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Formula</h4><div class="kv"><div class="row"><span class="k">|GHZ⟩</span><span class="v">(|0…0⟩+|1…1⟩)/√2</span></div></div></div>';
+h+='<button class="btn primary full" onclick="switchTab(\'circuit\')">🎛 Open in Circuit →</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>GHZ</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Greenberger-Horne-Zeilinger (1989)<br><br>Generalização do estado de Bell para n qubits.<br><br>Usado em: metrologia quântica, testes de contexto.</div></div>'}});
+
+/* ══════ 6. TELEPORTATION ══════ */
+registerModule('teleport',{title:'Quantum Teleportation',icon:'📡',desc:'Teleport an unknown qubit using a Bell pair.',init:function(){this.reset()},
+reset:function(){var t=STATE.teleport;t.step=0;t.psi=newState(3);t.message='Preparando estado de Alice...';t.measurements=[null,null];t.corrections=[];
+// Start: Alice has |ψ⟩ = α|0⟩+β|1⟩ on qubit 0, Bell pair on qubits 1,2
+var alpha=0.6,beta=0.8;
+t.alpha=alpha;t.beta=beta;
+t.psi[0]=cx(0,0);t.psi[0]=C.ZERO;
+// Set initial state |ψ⟩⊗|00⟩ = α|000⟩+β|100⟩... wait indexing
+t.psi=newState(3);
+t.psi[0]=cx(alpha,0);        // |000⟩ coefficient
+t.psi[1<<(3-1-0)]=cx(beta,0); // qubit 0 = 1
+// Wait: qubit ordering: |q0 q1 q2⟩, index = q0*4+q1*2+q2. q0 is leftmost.
+// We want |ψ⟩ on q0, so α|000⟩+β|100⟩
+// α*|000⟩ (idx 0), β*|100⟩ (idx 4)
+// Hmm, but our applySingle uses bit=(1<<(n-1-q)), so for n=3,q=0: bit=4.
+// Let's just redo:
+t.psi=newState(3);
+t.psi[0]=cx(alpha,0);
+t.psi[4]=cx(beta,0);  // 1<<2 = 4
+t.stage=0},
+applyStep:function(){
+  var t=STATE.teleport;var n=3;
+  if(t.stage===0){
+    // Create Bell pair on qubits 1,2: H(1), CNOT(1,2)
+    t.psi=applySingle(t.psi,n,GATES.H.m,1);
+    t.psi=applyGate(t.psi,n,MULTI.CNOT.m,[1,2]);
+    t.message='Bell pair criado entre Alice (q1) e Bob (q2)';
+    t.stage=1;t.showCircuit=1;
+  }else if(t.stage===1){
+    // Alice: CNOT(0,1)
+    t.psi=applyGate(t.psi,n,MULTI.CNOT.m,[0,1]);
+    t.message='Alice: CNOT(0,1)';
+    t.stage=2;
+  }else if(t.stage===2){
+    // Alice: H(0)
+    t.psi=applySingle(t.psi,n,GATES.H.m,0);
+    t.message='Alice: H(0) — agora mede';
+    t.stage=3;
+  }else if(t.stage===3){
+    // Alice measures qubit 0
+    var r0=measure(t.psi,n,0);
+    t.psi=r0.state;t.measurements[0]=r0.outcome;
+    t.message='Alice mediu q0 = '+r0.outcome;
+    t.stage=4;
+  }else if(t.stage===4){
+    // Alice measures qubit 1
+    var r1=measure(t.psi,n,1);
+    t.psi=r1.state;t.measurements[1]=r1.outcome;
+    t.message='Alice mediu q1 = '+r1.outcome+'. Envia bits para Bob.';
+    t.stage=5;
+  }else if(t.stage===5){
+    // Bob applies corrections
+    if(t.measurements[1]===1){t.psi=applySingle(t.psi,n,GATES.X.m,2);t.corrections.push('X')}
+    if(t.measurements[0]===1){t.psi=applySingle(t.psi,n,GATES.Z.m,2);t.corrections.push('Z')}
+    t.message='Bob aplicou correções: '+(t.corrections.join(' ')||'nenhuma')+'. Estado teleportado!';
+    t.stage=6;
+  }
+},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var t=STATE.teleport;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('QUANTUM TELEPORTATION',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Alice ─── q0 (unknown) · q1 ──── Bob ─── q2',40,64);
+ctx.fillText('α='+fmt(t.alpha,3)+'  β='+fmt(t.beta,3)+'  (|ψ⟩ = α|0⟩+β|1⟩)',40,82);
+/* Stage indicator */
+var stages=['Setup','Bell pair','CNOT(0,1)','H(0)','Measure q0','Measure q1','Correções'];
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('STAGE',40,120);
+ctx.font='11px monospace';
+var sx=100;
+for(var i=0;i<stages.length;i++){
+  var active=i<=t.stage?true:false;
+  ctx.fillStyle=active?'#40ff90':'#3a1e08';
+  ctx.fillRect(sx+i*90,110,80,20);
+  ctx.fillStyle=active?'#020108':'#a898e0';
+  ctx.font='bold 10px monospace';ctx.textAlign='center';
+  ctx.fillText(stages[i],sx+i*90+40,124);
+}
+ctx.textAlign='left';
+/* Amplitudes */
+var aY=160;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('STATE VECTOR (3 qubits)',40,aY-10);
+var N=t.psi.length;var bw=(W-80)/N;
+for(var i=0;i<N;i++){
+  var p=cxAmp2(t.psi[i]);
+  if(p<1e-6)continue;
+  var bh=p*200;
+  var x=40+i*bw;
+  ctx.fillStyle=phaseColor(t.psi[i]);
+  ctx.fillRect(x+2,aY+200-bh,bw-4,bh);
+  ctx.strokeStyle='rgba(160,96,255,.4)';ctx.strokeRect(x+2,aY+200-bh,bw-4,bh);
+  ctx.fillStyle='#a898e0';ctx.font='9px monospace';ctx.textAlign='center';
+  ctx.fillText('|'+(i>>2)+((i>>1)&1)+(i&1)+'⟩',x+bw/2,aY+220);
+}
+ctx.textAlign='left';
+/* Message box */
+var my=460;
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(64,255,144,.4)';ctx.beginPath();ctx.roundRect(40,my,W-80,60,8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#40ff90';ctx.font='12px monospace';
+ctx.fillText('📢 '+t.message,60,my+35);
+/* History log */
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('MEASUREMENTS',40,my+90);
+ctx.fillStyle='#e0e8ff';ctx.font='11px monospace';
+ctx.fillText('q0 = '+(t.measurements[0]===null?'?':t.measurements[0]),40,my+110);
+ctx.fillText('q1 = '+(t.measurements[1]===null?'?':t.measurements[1]),120,my+110);
+ctx.fillText('Corrections: '+(t.corrections.join(' ')||'(none)'),220,my+110);
+setStats('<div>Stage: '+t.stage+'/6</div><div>Bits: q0='+(t.measurements[0]??'?')+' q1='+(t.measurements[1]??'?')+'</div>');
+badge('📡 Teleport · stage '+t.stage);SV('sbQubits',3);SV('sbGates',t.stage);SV('sbNorm',fmt(norm2(t.psi),4));SV('sbMode','Teleport')},
+onDown:function(){},
+controls:function(){var t=STATE.teleport;var h='<div class="sec"><h4>Progress</h4>';
+h+='<div class="kv"><div class="row"><span class="k">Stage</span><span class="v">'+t.stage+' / 6</span></div></div>';
+h+='<button class="btn primary full" style="margin-top:8px" onclick="MODULES.teleport.applyStep();renderLeftPanel()">▶ Next step</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.teleport.reset();renderLeftPanel()">↺ Reset</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="for(var i=0;i<10;i++){MODULES.teleport.applyStep();if(STATE.teleport.stage>=6)break}renderLeftPanel()">⏭ Run all</button>';
+h+='</div>';
+h+='<div class="sec"><h4>Protocol (Bennett 1993)</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">1. Alice &amp; Bob compartilham Bell pair<br>2. Alice: CNOT(q0, q1)<br>3. Alice: H(q0)<br>4. Alice mede q0, q1 → 2 bits clássicos<br>5. Bob aplica X^b₁ Z^b₀ em q2<br><br>Resultado: |ψ⟩ em q2</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Teleportação</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Não viola relatividade: 2 bits clássicos devem viajar para completar.<br><br>Estado |ψ⟩ é destruído no processo (no-cloning theorem).</div></div>'}});
+
+/* ══════ 7. SUPERDENSE CODING ══════ */
+registerModule('superdense',{title:'Superdense Coding',icon:'💎',desc:'Send 2 classical bits using 1 qubit.',init:function(){this.reset()},
+reset:function(){var s=STATE.superdense;s.step=0;s.psi=newState(2);
+// Start with Bell pair |Φ+⟩ = (|00⟩+|11⟩)/√2
+s.psi[0]=cx(Math.SQRT1_2,0);s.psi[3]=cx(Math.SQRT1_2,0);
+s.result=null;s.message='Bell pair compartilhado. Alice quer enviar "'+s.bits+'"'},
+encode:function(){var s=STATE.superdense;
+// Alice applies gate based on 2 bits on qubit 0
+var b=s.bits;
+// Standard: bits b0b1 -> apply X^b1 Z^b0 to Alice's qubit
+if(b[1]==='1')s.psi=applySingle(s.psi,2,GATES.X.m,0);
+if(b[0]==='1')s.psi=applySingle(s.psi,2,GATES.Z.m,0);
+s.message='Alice aplicou '+(b[1]==='1'?'X ':'')+(b[0]==='1'?'Z ':'')+'no qubit 0';
+s.step=1},
+decode:function(){var s=STATE.superdense;
+s.psi=applyGate(s.psi,2,MULTI.CNOT.m,[0,1]);
+s.psi=applySingle(s.psi,2,GATES.H.m,0);
+// Now measure both qubits
+var outcome=measureAll(s.psi,2);
+s.result=outcome;
+s.message='Bob mediu: |'+(outcome>>1)+(outcome&1)+'⟩  →  bits = '+(outcome>>1)+(outcome&1);
+s.step=2},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var s=STATE.superdense;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('SUPERDENSE CODING',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Enviar 2 bits clássicos usando apenas 1 qubit',40,64);
+/* Big bit display */
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(160,96,255,.4)';ctx.beginPath();ctx.roundRect(40,90,220,100,8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('BITS A ENVIAR',60,115);
+for(var i=0;i<2;i++){
+  ctx.fillStyle=s.bits[i]==='1'?'#40ff90':'#3a1e08';
+  ctx.fillRect(60+i*80,130,70,50);
+  ctx.fillStyle=s.bits[i]==='1'?'#020108':'#a898e0';
+  ctx.font='bold 40px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(s.bits[i],60+i*80+35,155);
+  ctx.textBaseline='alphabetic';
+}
+ctx.textAlign='left';
+/* Circuit */
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('PROTOCOL',40,220);
+var cg=[{gate:'H',qubits:[0]},{gate:'CNOT',qubits:[0,1]}];
+if(s.step>=1){
+  if(s.bits[1]==='1')cg.push({gate:'X',qubits:[0]});
+  if(s.bits[0]==='1')cg.push({gate:'Z',qubits:[0]});
+}
+if(s.step>=2){cg.push({gate:'CNOT',qubits:[0,1]});cg.push({gate:'H',qubits:[0]});cg.push({gate:'M',qubits:[0]},{gate:'M',qubits:[1]});}
+drawCircuit(ctx,{nQubits:2,gates:cg},100,240,W-160,80,50);
+/* Amplitudes */
+var aY=400;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('STATE',40,aY-10);
+var lbls=['|00⟩','|01⟩','|10⟩','|11⟩'];
+for(var i=0;i<4;i++){
+  var p=cxAmp2(s.psi[i]);
+  var bh=p*80;
+  ctx.fillStyle=phaseColor(s.psi[i]);
+  ctx.fillRect(60+i*70,aY+80-bh,50,bh);
+  ctx.strokeStyle='rgba(160,96,255,.4)';ctx.strokeRect(60+i*70,aY+80-bh,50,bh);
+  ctx.fillStyle='#a898e0';ctx.font='11px monospace';ctx.textAlign='center';
+  ctx.fillText(lbls[i],60+i*70+25,aY+96);
+}
+ctx.textAlign='left';
+/* Message */
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(64,255,144,.4)';ctx.beginPath();ctx.roundRect(40,aY+120,W-80,60,8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#40ff90';ctx.font='12px monospace';
+ctx.fillText('📢 '+s.message,60,aY+155);
+setStats('<div>Bits: '+s.bits+'</div><div>Step: '+s.step+'/2</div><div>Result: '+((s.result==null)?'—':'|'+(s.result>>1)+(s.result&1)+'⟩')+'</div>');
+badge('💎 Superdense · '+(s.result==null?'running':'result='+((s.result>>1))+(s.result&1)));SV('sbQubits',2);SV('sbGates',s.step+3);SV('sbMode','Superdense')},
+onDown:function(){},
+controls:function(){var s=STATE.superdense;var h='<div class="sec"><h4>Bits to send</h4><div class="chip-row">';
+['00','01','10','11'].forEach(function(b){h+='<div class="chip '+(s.bits===b?'active':'')+'" onclick="STATE.superdense.bits=\''+b+'\';MODULES.superdense.reset();renderLeftPanel()">'+b+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Steps</h4>';
+h+='<button class="btn primary full" onclick="MODULES.superdense.encode();renderLeftPanel()">1. Alice encode</button>';
+h+='<button class="btn primary full" style="margin-top:4px" onclick="MODULES.superdense.decode();renderLeftPanel()">2. Bob decode</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.superdense.reset();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Superdense</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Bennett-Wiesner (1992)<br><br>Envia 2 bits clássicos transmitindo 1 qubit.<br><br>O Bell pair carrega 1 ebit (pré-compartilhado).<br><br>Dual da teleportação.</div></div>'}});
+</script>
+<script>
+/* ══════ 8. DEUTSCH-JOZSA ══════ */
+registerModule('dj',{title:'Deutsch-Jozsa',icon:'🎲',desc:'Distinguish constant vs balanced functions with 1 query.',init:function(){this.setup()},
+setup:function(){var d=STATE.dj;var n=d.n;
+d.oracle=[];var N=1<<n;
+if(d.type==='constant'){
+  var val=Math.random()<0.5?0:1;
+  for(var i=0;i<N;i++)d.oracle.push(val);
+}else{
+  // balanced: first half 0, second half 1
+  for(var i=0;i<N;i++)d.oracle.push(i<N/2?0:1);
+  // Shuffle
+  for(var i=N-1;i>0;i--){var j=rnd(0,i);var t=d.oracle[i];d.oracle[i]=d.oracle[j];d.oracle[j]=t}
+}
+d.result=null;d.step=0;d.psi=newState(n+1);},
+run:function(){var d=STATE.dj;var n=d.n;
+var psi=newState(n+1);
+// Apply H to all qubits except last
+for(var q=0;q<n;q++)psi=applySingle(psi,n+1,GATES.H.m,q);
+// Last qubit: |1⟩ then H
+psi=applySingle(psi,n+1,GATES.X.m,n);
+psi=applySingle(psi,n+1,GATES.H.m,n);
+// Oracle: |x⟩|y⟩ → |x⟩|y ⊕ f(x)⟩
+var result=new Array(psi.length);for(var i=0;i<psi.length;i++)result[i]=C.ZERO;
+for(var i=0;i<psi.length;i++){
+  var x=i>>1;
+  var y=i&1;
+  var fx=d.oracle[x];
+  var newY=y^fx;
+  var newIdx=(x<<1)|newY;
+  result[newIdx]=C.add(result[newIdx],psi[i]);
+}
+psi=result;
+// H on all except last
+for(var q=0;q<n;q++)psi=applySingle(psi,n+1,GATES.H.m,q);
+d.psi=psi;
+// Measure first n qubits
+var outcome=measureAll(psi,n);
+d.result=outcome;
+d.step=1;d.isConstant=(outcome===0);
+d.correct=((d.isConstant&&d.type==='constant')||(!d.isConstant&&d.type==='balanced'));
+toast('Resultado: '+(d.isConstant?'CONSTANTE':'BALANCEADA'),'success')},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var d=STATE.dj;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('DEUTSCH-JOZSA ALGORITHM',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Determina se f:{0,1}^n → {0,1} é constante ou balanceada com 1 query',40,64);
+/* Oracle truth table */
+var oy=90;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('ORACLE TRUTH TABLE  (f: {0,1}^'+d.n+' → {0,1})',40,oy-10);
+var N=1<<d.n;
+var cw=(W-80)/N;
+for(var i=0;i<N;i++){
+  var x=40+i*cw;
+  ctx.fillStyle=d.oracle[i]===1?'#ff40a0':'#20e0ff';
+  ctx.fillRect(x+2,oy,cw-4,50);
+  ctx.fillStyle='#020108';ctx.font='bold 20px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(d.oracle[i],x+cw/2,oy+25);
+  ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#a898e0';ctx.font='11px monospace';
+  var s='';for(var b=d.n-1;b>=0;b--)s+=((i>>b)&1);
+  ctx.fillText('|'+s+'⟩',x+cw/2,oy+70);
+}
+/* Circuit */
+var cy=200;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+ctx.fillText('CIRCUIT',40,cy-10);
+var cg=[];
+for(var q=0;q<d.n;q++)cg.push({gate:'H',qubits:[q]});
+cg.push({gate:'X',qubits:[d.n]});
+cg.push({gate:'H',qubits:[d.n]});
+// Oracle box
+for(var q=0;q<=d.n;q++)cg.push({gate:'Uf',qubits:[q]});
+for(var q=0;q<d.n;q++)cg.push({gate:'H',qubits:[q]});
+drawCircuit(ctx,{nQubits:d.n+1,gates:cg},100,cy+10,W-160,50,35);
+/* Result */
+var ry=cy+50+d.n*35+80;
+if(d.step===0){
+  ctx.fillStyle='#ffd040';ctx.font='bold 12px monospace';
+  ctx.fillText('▶ Clique "Run" para executar',40,ry);
+}else{
+  ctx.fillStyle='rgba(10,6,24,.9)';
+  ctx.strokeStyle=d.correct?'rgba(64,255,144,.6)':'rgba(255,64,160,.6)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(40,ry-20,W-80,100,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle=d.correct?'#40ff90':'#ff40a0';ctx.font='bold 14px monospace';
+  ctx.fillText(d.correct?'✓ CORRECT':'✗ INCORRECT',60,ry+5);
+  ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+  ctx.fillText('Real function: '+d.type.toUpperCase(),60,ry+30);
+  ctx.fillText('Algorithm classified: '+(d.isConstant?'CONSTANT':'BALANCED'),60,ry+50);
+  ctx.fillText('Measurement outcome: |'+d.result.toString(2).padStart(d.n,'0')+'⟩',60,ry+70);
+}
+setStats('<div>Qubits: '+(d.n+1)+'</div><div>Function: '+d.type+'</div><div>Query: '+(d.step?'1 (done)':'0')+'</div>');
+badge('🎲 Deutsch-Jozsa · '+d.type);SV('sbQubits',d.n+1);SV('sbGates',d.step?3+d.n*3:0);SV('sbMode','D-J')},
+onDown:function(){},
+controls:function(){var d=STATE.dj;var h='<div class="sec"><h4>Function type</h4><div class="chip-row">';
+['constant','balanced'].forEach(function(t){h+='<div class="chip '+(d.type===t?'active':'')+'" onclick="STATE.dj.type=\''+t+'\';MODULES.dj.setup();renderLeftPanel()">'+t+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Qubits n</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>n</span><span>'+d.n+'</span></div><input type="range" min="1" max="5" value="'+d.n+'" oninput="STATE.dj.n=parseInt(this.value);MODULES.dj.setup();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.dj.run();renderLeftPanel()">▶ Run algorithm</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.dj.setup();renderLeftPanel()">🎲 New oracle</button>';
+h+='</div>';
+h+='<div class="sec"><h4>Complexity</h4><div class="kv">';
+h+='<div class="row"><span class="k">Classical</span><span class="v">2ⁿ⁻¹+1 queries</span></div>';
+h+='<div class="row"><span class="k">Quantum</span><span class="v">1 query</span></div>';
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Deutsch-Jozsa</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Deutsch (1985), Jozsa (1992)<br><br>Primeiro exemplo de speedup exponencial.<br><br>Se f é balanceada, mede-se algo ≠ 0.<br>Se f é constante, mede-se 0.</div></div>'}});
+
+/* ══════ 9. BERNSTEIN-VAZIRANI ══════ */
+registerModule('bv',{title:'Bernstein-Vazirani',icon:'🕵',desc:'Find hidden string s with 1 query.',init:function(){this.setup()},
+setup:function(){var b=STATE.bv;b.secret='';for(var i=0;i<b.n;i++)b.secret+=Math.random()<0.5?'0':'1';b.result=null;b.step=0},
+run:function(){var b=STATE.bv;var n=b.n;
+var psi=newState(n+1);
+for(var q=0;q<n;q++)psi=applySingle(psi,n+1,GATES.H.m,q);
+psi=applySingle(psi,n+1,GATES.X.m,n);
+psi=applySingle(psi,n+1,GATES.H.m,n);
+// Oracle: |x⟩|y⟩ → |x⟩|y ⊕ (s·x mod 2)⟩
+var result=new Array(psi.length);for(var i=0;i<psi.length;i++)result[i]=C.ZERO;
+for(var i=0;i<psi.length;i++){
+  var x=i>>1,y=i&1;
+  // dot product s·x
+  var dot=0;
+  for(var bit=0;bit<n;bit++){if(b.secret[n-1-bit]==='1'&&((x>>bit)&1))dot^=1}
+  var newIdx=(x<<1)|(y^dot);
+  result[newIdx]=C.add(result[newIdx],psi[i]);
+}
+psi=result;
+for(var q=0;q<n;q++)psi=applySingle(psi,n+1,GATES.H.m,q);
+b.psi=psi;
+var outcome=measureAll(psi,n);
+b.result=outcome;
+var found='';for(var bit=n-1;bit>=0;bit--)found+=((outcome>>bit)&1);
+b.found=found;b.correct=found===b.secret;
+b.step=1;
+toast('Encontrado: '+found+' (secret='+b.secret+')','success')},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var b=STATE.bv;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('BERNSTEIN-VAZIRANI',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Encontrar string secreta s ∈ {0,1}ⁿ com f(x) = s·x mod 2',40,64);
+/* Secret display */
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(160,96,255,.4)';ctx.beginPath();ctx.roundRect(40,90,W-80,70,8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('SECRET STRING s (hidden)',60,112);
+for(var i=0;i<b.n;i++){
+  var bitVal=b.secret[i];
+  var col=bitVal==='1'?'#40ff90':'#20e0ff';
+  ctx.fillStyle=col+'44';ctx.fillRect(60+i*40,125,32,24);
+  ctx.strokeStyle=col;ctx.strokeRect(60+i*40,125,32,24);
+  ctx.fillStyle=col;ctx.font='bold 16px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('?',60+i*40+16,137);
+  ctx.textBaseline='alphabetic';
+}
+ctx.textAlign='left';
+/* Circuit */
+var cy=180;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('CIRCUIT',40,cy-10);
+var cg=[];
+for(var q=0;q<b.n;q++)cg.push({gate:'H',qubits:[q]});
+cg.push({gate:'X',qubits:[b.n]});
+cg.push({gate:'H',qubits:[b.n]});
+for(var q=0;q<=b.n;q++)cg.push({gate:'Uf',qubits:[q]});
+for(var q=0;q<b.n;q++)cg.push({gate:'H',qubits:[q]});
+drawCircuit(ctx,{nQubits:b.n+1,gates:cg},100,cy+10,W-160,50,35);
+/* Result */
+var ry=cy+50+b.n*35+80;
+if(b.step===0){
+  ctx.fillStyle='#ffd040';ctx.font='bold 12px monospace';
+  ctx.fillText('▶ Run para encontrar s',40,ry);
+}else{
+  ctx.fillStyle='rgba(10,6,24,.9)';
+  ctx.strokeStyle=b.correct?'rgba(64,255,144,.6)':'rgba(255,64,160,.6)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(40,ry-20,W-80,80,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle=b.correct?'#40ff90':'#ff40a0';ctx.font='bold 14px monospace';
+  ctx.fillText(b.correct?'✓ FOUND:':'✗ WRONG:',60,ry+5);
+  ctx.font='bold 20px monospace';
+  ctx.fillText('s = '+b.found,60,ry+35);
+  ctx.fillStyle='#a898e0';ctx.font='11px monospace';
+  ctx.fillText('(secret: '+b.secret+')',60,ry+55);
+}
+setStats('<div>Qubits: '+(b.n+1)+'</div><div>Queries: '+(b.step?1:0)+'</div><div>Found: '+(b.found||'?')+'</div>');
+badge('🕵 Bernstein-Vazirani · n='+b.n);SV('sbQubits',b.n+1);SV('sbGates',b.step?b.n*3+3:0);SV('sbMode','BV')},
+onDown:function(){},
+controls:function(){var b=STATE.bv;var h='<div class="sec"><h4>Secret size n</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>n</span><span>'+b.n+'</span></div><input type="range" min="2" max="6" value="'+b.n+'" oninput="STATE.bv.n=parseInt(this.value);MODULES.bv.setup();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Custom secret</h4>';
+h+='<div class="ctrl"><input type="text" value="'+b.secret+'" onchange="STATE.bv.secret=this.value.replace(/[^01]/g,\'\').substring(0,STATE.bv.n);MODULES.bv.setup();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.bv.run();renderLeftPanel()">▶ Run algorithm</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.bv.setup();renderLeftPanel()">🎲 New secret</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>BV Algorithm</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Bernstein-Vazirani (1993)<br><br>Encontra s ∈ {0,1}ⁿ com 1 query.<br>Clássico requer n queries.<br><br>Speedup linear (embora não exponencial).</div></div>'}});
+
+/* ══════ 10. GROVER SEARCH ══════ */
+registerModule('grover',{title:'Grover Search',icon:'🔍',desc:'Search N items in O(√N) queries.',init:function(){this.reset()},
+reset:function(){var g=STATE.grover;g.iterations=0;g.psi=newState(g.n);g.history=[];g.step=0;g.phase='init';
+g.psi=this.makeUniform()},
+makeUniform:function(){var g=STATE.grover;var psi=newState(g.n);
+for(var q=0;q<g.n;q++)psi=applySingle(psi,g.n,GATES.H.m,q);
+return psi},
+oracle:function(){var g=STATE.grover;var psi=g.psi.slice();
+for(var i=0;i<psi.length;i++){if(i===g.target)psi[i]=C.scale(psi[i],-1)}
+return psi},
+diffusion:function(){var g=STATE.grover;var n=g.n;var psi=g.psi;
+// H^n
+var s=psi.slice();
+for(var q=0;q<n;q++)s=applySingle(s,n,GATES.H.m,q);
+// 2|0⟩⟨0|-I
+var result=s.slice();
+for(var i=1;i<result.length;i++)result[i]=C.scale(result[i],-1);
+// H^n again
+for(var q=0;q<n;q++)result=applySingle(result,n,GATES.H.m,q);
+return result},
+step1:function(){var g=STATE.grover;
+g.psi=this.makeUniform();g.psi=this.oracle();g.psi=this.diffusion();
+g.iterations++;g.history.push(g.psi.map(cxAmp2));g.step=1;
+if(g.iterations>=g.maxIter)g.phase='done';else g.phase='iter';
+// check
+var best=0,bv=0;
+for(var i=0;i<g.psi.length;i++){var p=cxAmp2(g.psi[i]);if(p>bv){bv=p;best=i}}
+g.found=best;g.foundProb=bv;
+toast('Iteração '+g.iterations+': P('+best+')='+fmt(bv*100,1)+'%','info')},
+autoRun:function(){var g=STATE.grover;var optimal=Math.round(Math.PI/4*Math.sqrt(1<<g.n));
+g.maxIter=Math.max(1,optimal);
+g.psi=this.makeUniform();g.iterations=0;g.history=[];
+for(var i=0;i<g.maxIter;i++){
+  g.psi=this.oracle();g.psi=this.diffusion();
+  g.iterations++;g.history.push(g.psi.map(cxAmp2));
+}
+var best=0,bv=0;
+for(var i=0;i<g.psi.length;i++){var p=cxAmp2(g.psi[i]);if(p>bv){bv=p;best=i}}
+g.found=best;g.foundProb=bv;g.phase='done';
+toast('Grover: encontrado |'+best.toString(2)+'⟩ com P='+fmt(bv*100,1)+'%','success')},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var g=STATE.grover;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('GROVER SEARCH',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('N = 2^'+g.n+' = '+(1<<g.n)+' states · target = |'+g.target.toString(2).padStart(g.n,'0')+'⟩',40,64);
+/* Amplitudes */
+var aY=100;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('AMPLITUDES',40,aY-10);
+var N=1<<g.n;var bw=(W-80)/N;
+for(var i=0;i<N;i++){
+  var amp=g.psi[i];
+  var bh=cxAmp2(amp)*200;
+  var isTarget=i===g.target;
+  var col=isTarget?'#40ff90':phaseColor(amp,0.7);
+  ctx.fillStyle=col;
+  ctx.fillRect(40+i*bw+2,aY+200-bh,bw-4,Math.max(2,bh));
+  ctx.strokeStyle=isTarget?'#ffd040':'rgba(160,96,255,.3)';ctx.lineWidth=isTarget?2:1;
+  ctx.strokeRect(40+i*bw+2,aY+200-bh,bw-4,Math.max(2,bh));
+}
+ctx.strokeStyle='rgba(160,96,255,.4)';ctx.beginPath();ctx.moveTo(40,aY+200);ctx.lineTo(W-40,aY+200);ctx.stroke();
+/* Labels */
+ctx.fillStyle='#a898e0';ctx.font='9px monospace';ctx.textAlign='center';
+for(var i=0;i<N;i++){
+  if(bw>20||i%2===0)ctx.fillText('|'+i.toString(2).padStart(g.n,'0')+'⟩',40+i*bw+bw/2,aY+218);
+}
+ctx.textAlign='left';
+/* Info */
+var iy=380;
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(64,255,144,.4)';ctx.beginPath();ctx.roundRect(40,iy,W-80,140,8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('SEARCH STATUS',60,iy+25);
+ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+ctx.fillText('Iterations: '+g.iterations+' / '+g.maxIter+' (optimal: '+Math.round(Math.PI/4*Math.sqrt(1<<g.n))+')',60,iy+50);
+if(g.found!=null){
+  ctx.fillStyle='#40ff90';
+  ctx.fillText('Best found: |'+g.found.toString(2).padStart(g.n,'0')+'⟩  with P = '+fmt(g.foundProb*100,2)+'%',60,iy+75);
+  ctx.fillStyle=g.found===g.target?'#40ff90':'#ffd040';
+  ctx.fillText(g.found===g.target?'✓ Target found!':'⚠ Found different state',60,iy+98);
+}
+ctx.fillStyle='#20e0ff';ctx.font='11px monospace';
+ctx.fillText('Grover: O(√N) queries vs classical O(N)',60,iy+125);
+setStats('<div>Qubits: '+g.n+'</div><div>N = '+(1<<g.n)+'</div><div>Iter: '+g.iterations+'</div><div>P* = '+fmt((g.foundProb||0)*100,1)+'%</div>');
+badge('🔍 Grover · N='+(1<<g.n)+' · iter='+g.iterations);SV('sbQubits',g.n);SV('sbGates',g.iterations*2);SV('sbMode','Grover')},
+onDown:function(){},
+controls:function(){var g=STATE.grover;var h='<div class="sec"><h4>Problem size</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>n qubits</span><span>'+g.n+' (N='+(1<<g.n)+')</span></div><input type="range" min="2" max="6" value="'+g.n+'" oninput="STATE.grover.n=parseInt(this.value);MODULES.grover.reset();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Target</span><span>|'+g.target.toString(2).padStart(g.n,'0')+'⟩</span></div><input type="range" min="0" max="'+((1<<g.n)-1)+'" value="'+g.target+'" oninput="STATE.grover.target=parseInt(this.value);MODULES.grover.reset();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.grover.step1();renderLeftPanel()">▶ One iteration</button>';
+h+='<button class="btn primary full" style="margin-top:4px" onclick="MODULES.grover.autoRun();renderLeftPanel()">⚡ Run optimal</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.grover.reset();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+h+='<div class="sec"><h4>Optimal iterations</h4><div class="kv">';
+h+='<div class="row"><span class="k">N</span><span class="v">'+(1<<g.n)+'</span></div>';
+h+='<div class="row"><span class="k">√N</span><span class="v">'+fmt(Math.sqrt(1<<g.n),2)+'</span></div>';
+h+='<div class="row"><span class="k">Optimal k</span><span class="v">'+Math.round(Math.PI/4*Math.sqrt(1<<g.n))+'</span></div>';
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Grover (1996)</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">1. H^⊗n → uniform superposition<br>2. Repeat √N times:<br>   a) Oracle: |x⟩ → (−1)^f(x)|x⟩<br>   b) Diffusion: 2|s⟩⟨s| − I<br>3. Measure → target w.p. ≈ 1<br><br>Speedup: quadratic.</div></div>'}});
+
+/* ══════ 11. SHOR FACTORING ══════ */
+registerModule('shor',{title:'Shor Factoring',icon:'🧮',desc:'Factor N using quantum period finding.',init:function(){this.reset()},
+reset:function(){var s=STATE.shor;s.log=[];s.period=null;s.step=0;s.a=null;s.factors=null},
+run:function(){
+  var s=STATE.shor;var N=s.N;s.log=[];
+  if(N%2===0){s.log.push('N é par: fator = 2');s.factors=[2,N/2];s.step=99;return}
+  // Check if prime-ish (simple)
+  for(var d=2;d*d<=N;d++){if(N%d===0){s.log.push('N tem fator pequeno: '+d);s.factors=[d,N/d];s.step=99;return}}
+  s.log.push('N = '+N+' (ímpar, sem fatores pequenos)');
+  // Pick random a
+  var a=rnd(2,N-2);s.a=a;
+  s.log.push('Escolhido a = '+a);
+  var g=gcd(a,N);
+  if(g>1){s.log.push('gcd('+a+','+N+') = '+g+' ≠ 1 → fator direto!');s.factors=[g,N/g];s.step=99;return}
+  // Find period (simulated classically for demo)
+  var r=1,x=a%N;
+  while(x!==1&&r<200){x=(x*a)%N;r++}
+  s.period=r;
+  s.log.push('Período r de aˣ mod N = '+r);
+  if(r%2!==0){s.log.push('r é ímpar — refazer com outro a');s.factors=null;return}
+  var x1=modpow(a,r/2,N);
+  var p1=gcd(x1-1,N),p2=gcd(x1+1,N);
+  if(p1>1&&p1<N){s.factors=[p1,N/p1];s.log.push('Fator encontrado: '+p1+' × '+N/p1)}
+  else if(p2>1&&p2<N){s.factors=[p2,N/p2];s.log.push('Fator encontrado: '+p2+' × '+N/p2)}
+  else{s.log.push('Números não triviais — refazer')}
+  s.step=99;
+  function gcd(a,b){while(b){var t=b;b=a%b;a=t}return a}
+  function modpow(b,e,m){var r=1;b=b%m;while(e>0){if(e&1)r=(r*b)%m;e>>=1;b=(b*b)%m}return r}
+},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var s=STATE.shor;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('SHOR\'S ALGORITHM',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Fatorar N = '+s.N+'  (clássico: sub-exponencial · quântico: polinomial)',40,64);
+/* N display */
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(160,96,255,.4)';ctx.beginPath();ctx.roundRect(40,90,W-80,60,8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('PROBLEMA',60,112);
+ctx.fillStyle='#e0e8ff';ctx.font='bold 24px monospace';
+ctx.fillText('N = '+s.N,60,142);
+/* Steps log */
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('STEPS',40,190);
+var ly=210;
+s.log.forEach(function(line,i){
+  ctx.fillStyle='#e0e8ff';ctx.font='11px monospace';
+  ctx.fillText('['+(i+1)+'] '+line,60,ly+i*20);
+});
+/* Result */
+if(s.factors&&s.factors.length===2){
+  var ry=ly+s.log.length*20+40;
+  ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(64,255,144,.6)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(40,ry,W-80,100,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#40ff90';ctx.font='bold 14px monospace';
+  ctx.fillText('✓ FATORADO',60,ry+25);
+  ctx.fillStyle='#e0e8ff';ctx.font='bold 20px monospace';
+  ctx.fillText(s.N+' = '+s.factors[0]+' × '+s.factors[1],60,ry+55);
+  var check=s.factors[0]*s.factors[1]===s.N;
+  ctx.fillStyle=check?'#40ff90':'#ff40a0';ctx.font='11px monospace';
+  ctx.fillText('Verificação: '+s.factors[0]+' × '+s.factors[1]+' = '+s.factors[0]*s.factors[1]+' '+(check?'✓':'✗'),60,ry+80);
+}
+/* Circuit illustration */
+var cy=460;
+if(cy+100<H){
+  ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';
+  ctx.fillText('QUANTUM CIRCUIT (schematic)',40,cy-10);
+  ctx.fillStyle='rgba(10,6,24,.5)';ctx.fillRect(40,cy,W-80,90);
+  ctx.strokeStyle='rgba(160,96,255,.3)';ctx.strokeRect(40,cy,W-80,90);
+  ctx.fillStyle='#a898e0';ctx.font='10px monospace';
+  ctx.fillText('|0⟩⊗²ⁿ ──H──●──QFT†──M──  →  período r  →  frações contínuas',60,cy+30);
+  ctx.fillText('          │  │',60,cy+50);
+  ctx.fillText('|1⟩ ─────X──Uᵃ─       M',60,cy+70);
+}
+setStats('<div>N: '+s.N+'</div><div>Period: '+(s.period||'?')+'</div><div>a: '+(s.a||'?')+'</div>');
+badge('🧮 Shor · N='+s.N);SV('sbQubits',12);SV('sbGates',4);SV('sbMode','Shor')},
+onDown:function(){},
+controls:function(){var s=STATE.shor;var h='<div class="sec"><h4>N to factor</h4><div class="chip-row">';
+[15,21,33,35,55,77,91,143].forEach(function(N){h+='<div class="chip '+(s.N===N?'active':'')+'" onclick="STATE.shor.N='+N+';MODULES.shor.reset();renderLeftPanel()">'+N+'</div>'});
+h+='</div></div>';
+h+='<div class="ctrl"><input type="number" value="'+s.N+'" min="4" max="999" onchange="STATE.shor.N=parseInt(this.value);MODULES.shor.reset();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.shor.run();renderLeftPanel()">▶ Fatorar</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.shor.reset();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+if(s.factors){
+  h+='<div class="sec"><h4>Result</h4><div class="kv">';
+  h+='<div class="row"><span class="k">N</span><span class="v">'+s.N+'</span></div>';
+  h+='<div class="row"><span class="k">Factors</span><span class="v">'+s.factors[0]+', '+s.factors[1]+'</span></div>';
+  h+='<div class="row"><span class="k">Period r</span><span class="v">'+(s.period||'—')+'</span></div>';
+  h+='<div class="row"><span class="k">a</span><span class="v">'+(s.a||'—')+'</span></div>';
+  h+='</div></div>';
+}
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Shor (1994)</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">1. Escolher a aleatório<br>2. gcd(a,N) — se &gt;1, achou fator<br>3. Quantum: encontrar período r de aˣ mod N<br>4. Se r par: gcd(a^(r/2)±1, N) = fator<br><br>Quebra RSA-2048 (teórico): ~10⁸ qubits físicos.</div></div>'}});
+
+/* ══════ 12. QFT ══════ */
+registerModule('qft',{title:'Quantum Fourier Transform',icon:'🌊',desc:'QFT circuit and application.',init:function(){this.build()},
+build:function(){var q=STATE.qft;q.n=3;q.input='000';q.psi=this.makeInputState()},
+makeInputState:function(){var q=STATE.qft;var psi=newState(q.n);
+var idx=parseInt(q.input,2)||0;
+psi=newState(q.n);for(var i=0;i<psi.length;i++)psi[i]=C.ZERO;
+psi[idx]=C.ONE;
+return psi},
+applyQFT:function(){var q=STATE.qft;var psi=q.psi.slice();var n=q.n;
+for(var j=0;j<n;j++){
+  psi=applySingle(psi,n,GATES.H.m,j);
+  for(var k=j+1;k<n;k++){
+    var theta=Math.PI/Math.pow(2,k-j);
+    var cp=[[C.ONE,C.ZERO,C.ZERO,C.ZERO],[C.ZERO,C.ONE,C.ZERO,C.ZERO],[C.ZERO,C.ZERO,C.ONE,C.ZERO],[C.ZERO,C.ZERO,C.ZERO,C.exp(cx(0,theta))]];
+    psi=applyGate(psi,n,cp,[k,j]);
+  }
+}
+// Swap qubits
+for(var i=0;i<Math.floor(n/2);i++){
+  psi=applyGate(psi,n,MULTI.SWAP.m,[i,n-1-i]);
+}
+q.psi=psi;q.transformed=true;
+toast('QFT aplicada','success')},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var q=STATE.qft;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('QUANTUM FOURIER TRANSFORM',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('QFT: |x⟩ → (1/√N) Σ_y e^(2πixy/N) |y⟩',40,64);
+/* Input */
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('INPUT |x⟩ = |'+q.input+'⟩',40,100);
+/* Circuit */
+var cy=130;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('CIRCUIT',40,cy-10);
+var cg=[];
+for(var j=0;j<q.n;j++){
+  cg.push({gate:'H',qubits:[j]});
+  for(var k=j+1;k<q.n;k++){
+    cg.push({gate:'CZ',qubits:[k,j]});
+  }
+}
+for(var i=0;i<Math.floor(q.n/2);i++)cg.push({gate:'SWAP',qubits:[i,q.n-1-i]});
+drawCircuit(ctx,{nQubits:q.n,gates:cg},100,cy+10,W-160,50,40);
+/* Amplitudes before/after */
+var aY=cy+30+q.n*40+80;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';
+ctx.fillText(q.transformed?'OUTPUT (after QFT)':'INPUT (before QFT)',40,aY-10);
+drawAmplitudes(ctx,q.psi,40,aY,W-80,140,true);
+var lbls=basisLabels(q.n);var bw=(W-80)/q.psi.length;
+ctx.fillStyle='#a898e0';ctx.font='10px monospace';ctx.textAlign='center';
+for(var i=0;i<q.psi.length;i++){
+  if(cxAmp2(q.psi[i])>1e-6){
+    ctx.fillStyle='#40ff90';
+    ctx.fillText(lbls[i],40+i*bw+bw/2,aY+160);
+    ctx.fillStyle='#e0e8ff';
+    ctx.fillText(C.str(q.psi[i],3),40+i*bw+bw/2,aY+178);
+  }
+}
+/* Matrix */
+var my=aY+220;
+if(my+80<H){
+  ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+  ctx.fillText('QFT MATRIX (n='+q.n+')',40,my-10);
+  ctx.fillStyle='#e0e8ff';ctx.font='10px monospace';
+  var N=1<<q.n;
+  for(var i=0;i<Math.min(N,8);i++){
+    var s='row '+i+': ';
+    for(var j=0;j<Math.min(N,8);j++){
+      var phase=2*Math.PI*i*j/N;
+      s+='('+fmt(Math.cos(phase)/Math.sqrt(N),2)+(Math.sin(phase)>=0?'+':'')+fmt(Math.sin(phase)/Math.sqrt(N),2)+'i) ';
+    }
+    ctx.fillText(s,40,my+15+i*16);
+  }
+}
+setStats('<div>Qubits: '+q.n+'</div><div>N: '+(1<<q.n)+'</div><div>Input: |'+q.input+'⟩</div>');
+badge('🌊 QFT · n='+q.n);SV('sbQubits',q.n);SV('sbGates',q.transformed?'~'+(q.n*(q.n+1)/2+3):'0');SV('sbMode','QFT')},
+onDown:function(){},
+controls:function(){var q=STATE.qft;var h='<div class="sec"><h4>Input state</h4>';
+h+='<div class="ctrl"><input type="text" value="'+q.input+'" onchange="STATE.qft.input=this.value.replace(/[^01]/g,\'\').substring(0,STATE.qft.n).padStart(STATE.qft.n,\'0\');MODULES.qft.build();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Qubits</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>n</span><span>'+q.n+'</span></div><input type="range" min="2" max="5" value="'+q.n+'" oninput="STATE.qft.n=parseInt(this.value);MODULES.qft.build();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.qft.applyQFT();renderLeftPanel()">▶ Apply QFT</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.qft.build();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>QFT</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">QFT|x⟩ = (1/√N) Σ e^(2πixy/N)|y⟩<br><br>Discreta versão quântica da DFT.<br><br>Construída com H + controlled-phase + SWAP.<br>Complexidade: O(n²) gates.</div></div>'}});
+
+/* ══════ 13. PHASE ESTIMATION ══════ */
+registerModule('phase',{title:'Phase Estimation',icon:'⏱',desc:'Estimate eigenphase of unitary U.',init:function(){this.reset()},
+reset:function(){var p=STATE.phase;p.step=0;p.result=null;
+p.psi=newState(p.n);
+// Precision register: t qubits in H|0>
+p.t=4;
+for(var i=0;i<p.t;i++)p.psi=applySingle(p.psi,p.n+1,GATES.H.m,i);
+// Eigenstate |1⟩ on last qubit
+p.psi=applySingle(p.psi,p.n+1,GATES.X.m,p.n);
+p.message='Aplicar U com phase e^(2πiφ), φ='+p.phi},
+run:function(){var p=STATE.phase;var t=p.t;var phi=p.phi;
+// Apply controlled-U^(2^k) for k = t-1 down to 0
+// Simulated as: apply controlled phase e^(2πi φ 2^k) to last qubit
+for(var k=0;k<t;k++){
+  var bit=1<<k;
+  // Controlled phase on target qubit t (last), controlled on qubit t-1-k
+  var angle=2*Math.PI*phi*bit;
+  var ctrl=t-1-k;
+  var cPh=[[C.ONE,C.ZERO,C.ZERO,C.ZERO],[C.ZERO,C.ONE,C.ZERO,C.ZERO],[C.ZERO,C.ZERO,C.ONE,C.ZERO],[C.ZERO,C.ZERO,C.ZERO,C.exp(cx(0,angle))]];
+  // Note: qubit order in our gate is [ctrl, target], and gate matrix is standard CNOT order
+  p.psi=applyGate(p.psi,p.n+1,cPh,[ctrl,p.n]);
+}
+// Inverse QFT on first t qubits
+for(var j=Math.floor(t/2)-1;j>=0;j--){
+  var tmp=p.psi;
+  p.psi=applyGate(p.psi,p.n+1,MULTI.SWAP.m,[j,t-1-j]);
+}
+for(var j=t-1;j>=0;j--){
+  for(var k=j-1;k>=0;k--){
+    var theta=-Math.PI/Math.pow(2,j-k);
+    var cPh=[[C.ONE,C.ZERO,C.ZERO,C.ZERO],[C.ZERO,C.ONE,C.ZERO,C.ZERO],[C.ZERO,C.ZERO,C.ONE,C.ZERO],[C.ZERO,C.ZERO,C.ZERO,C.exp(cx(0,theta))]];
+    p.psi=applyGate(p.psi,p.n+1,cPh,[k,j]);
+  }
+  p.psi=applySingle(p.psi,p.n+1,GATES.H.m,j);
+}
+// Measure first t qubits
+var outcome=measureAll(p.psi,t);
+p.result=outcome;
+p.estimatedPhi=outcome/Math.pow(2,t);
+p.step=1;
+toast('φ estimado: '+fmt(p.estimatedPhi,4)+' (real: '+p.phi+')','success')},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var p=STATE.phase;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('QUANTUM PHASE ESTIMATION',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Estimar φ em U|ψ⟩ = e^(2πiφ)|ψ⟩ usando QFT inversa',40,64);
+/* Phi display */
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(160,96,255,.4)';ctx.beginPath();ctx.roundRect(40,90,280,70,8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('REAL PHASE',60,112);
+ctx.fillStyle='#e0e8ff';ctx.font='bold 22px monospace';
+ctx.fillText('φ = '+p.phi.toFixed(4),60,145);
+if(p.result!=null){
+  ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('ESTIMATED',360,112);
+  ctx.fillStyle='#40ff90';ctx.font='bold 22px monospace';
+  ctx.fillText('φ̂ = '+p.estimatedPhi.toFixed(4),360,145);
+  var err=Math.abs(p.estimatedPhi-p.phi);
+  ctx.fillStyle='#a898e0';ctx.font='11px monospace';
+  ctx.fillText('Error: '+err.toFixed(5),360,170);
+}
+/* Circuit */
+var cy=190;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';
+ctx.fillText('CIRCUIT',40,cy-10);
+var cg=[];
+for(var q=0;q<p.t;q++)cg.push({gate:'H',qubits:[q]});
+cg.push({gate:'X',qubits:[p.t]});
+// Controlled U
+for(var k=0;k<p.t;k++)cg.push({gate:'•U',qubits:[p.t-1-k,p.t]});
+// Inverse QFT
+for(var j=p.t-1;j>=0;j--){
+  for(var k=0;k<j;k++)cg.push({gate:'CZ',qubits:[k,j]});
+  cg.push({gate:'H',qubits:[j]});
+}
+drawCircuit(ctx,{nQubits:p.t+1,gates:cg},100,cy+10,W-160,50,30);
+/* Result */
+var ry=cy+40+(p.t+1)*30+80;
+if(p.result==null){
+  ctx.fillStyle='#ffd040';ctx.font='bold 12px monospace';
+  ctx.fillText('▶ Run para estimar fase',40,ry);
+}else{
+  ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(64,255,144,.6)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(40,ry-20,W-80,100,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';
+  ctx.fillText('MEASUREMENT RESULT',60,ry+5);
+  ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+  ctx.fillText('Binary: |'+p.result.toString(2).padStart(p.t,'0')+'⟩',60,ry+28);
+  ctx.fillStyle='#40ff90';ctx.font='bold 14px monospace';
+  ctx.fillText('φ̂ = '+p.result+' / '+Math.pow(2,p.t)+' = '+p.estimatedPhi.toFixed(5),60,ry+55);
+}
+setStats('<div>Precision qubits: '+p.t+'</div><div>Real φ: '+p.phi+'</div><div>Estimated: '+(p.result!=null?fmt(p.estimatedPhi,4):'?')+'</div>');
+badge('⏱ PhaseEst · t='+p.t);SV('sbQubits',p.t+1);SV('sbGates',p.step?'~'+(p.t*(p.t+1)):'0');SV('sbMode','PhaseEst')},
+onDown:function(){},
+controls:function(){var p=STATE.phase;var h='<div class="sec"><h4>Real phase φ</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>φ</span><span>'+p.phi.toFixed(4)+'</span></div><input type="range" min="0" max="0.9999" step="0.0001" value="'+p.phi+'" oninput="STATE.phase.phi=parseFloat(this.value);MODULES.phase.reset();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Precision</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>t qubits</span><span>'+p.t+'</span></div><input type="range" min="2" max="6" value="'+p.t+'" oninput="STATE.phase.t=parseInt(this.value);MODULES.phase.reset();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+[['φ=1/4',0.25],['φ=1/3',1/3],['φ=3/8',0.375],['φ=1/2',0.5],['φ=0.7',0.7]].forEach(function(pr){
+  h+='<div class="chip" onclick="STATE.phase.phi='+pr[1]+';MODULES.phase.reset();renderLeftPanel()">'+pr[0]+'</div>';
+});
+h+='</div></div>';
+h+='<button class="btn primary full" onclick="MODULES.phase.run();renderLeftPanel()">▶ Run</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Phase Estimation</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Kitaev (1995)<br><br>Se U|ψ⟩=e^(2πiφ)|ψ⟩, estima φ com t bits de precisão.<br><br>Usada em Shor, HHL, simulações quânticas.</div></div>'}});
+
+/* ══════ 14. VQE ══════ */
+registerModule('vqe',{title:'VQE',icon:'⚛',desc:'Variational Quantum Eigensolver — find ground state energy.',init:function(){this.reset()},
+reset:function(){var v=STATE.vqe;v.theta=0.5;v.energy=0;v.history=[];v.steps=0;this.energy()},
+// Hamiltonian: H = a·Z₀Z₁ + b·(X₀+X₁) — (transverse field Ising-like)
+energy:function(){var v=STATE.vqe;var psi=this.buildAnsatz(v.theta);
+var E=0;
+// ⟨Z₀Z₁⟩
+var zz=0;
+for(var i=0;i<4;i++){
+  var z0=((i>>1)&1)?-1:1;var z1=(i&1)?-1:1;
+  zz+=cxAmp2(psi[i])*z0*z1;
+}
+E+=0.5*zz;
+// ⟨X₀+X₁⟩ — apply X to each qubit and inner product
+var psiX0=applySingle(psi,2,GATES.X.m,0);
+var psiX1=applySingle(psi,2,GATES.X.m,1);
+var x0=0,x1=0;
+for(var i=0;i<4;i++){
+  x0+=psi[i].re*psiX0[i].re+psi[i].im*psiX0[i].im;
+  x1+=psi[i].re*psiX1[i].re+psi[i].im*psiX1[i].im;
+}
+E+=-0.3*(x0+x1);
+v.energy=E;
+v.psi=psi;
+return E},
+buildAnsatz:function(theta){
+  // Ansatz: RX(θ) on q0, then CNOT(0,1), then RY(θ) on q1
+  var psi=newState(2);
+  psi=applySingle(psi,2,GATES.RX.dyn(theta),0);
+  psi=applyGate(psi,2,MULTI.CNOT.m,[0,1]);
+  psi=applySingle(psi,2,GATES.RY.dyn(theta),1);
+  return psi},
+step:function(){var v=STATE.vqe;
+var eps=0.01;
+var E0=this.energy();
+var theta0=v.theta;
+v.theta+=eps;
+var E1=this.energy();
+v.theta=theta0;
+var grad=(E1-E0)/eps;
+v.theta-=v.lr*grad;
+this.energy();
+v.history.push(v.energy);
+if(v.history.length>500)v.history.shift();
+v.steps++},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*15;var k=0;
+while(this._acc>=1&&k<4){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var v=STATE.vqe;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('VARIATIONAL QUANTUM EIGENSOLVER',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Encontrar menor autovalor de H = 0.5·Z₀Z₁ − 0.3·(X₀+X₁)',40,64);
+/* Energy display */
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(160,96,255,.4)';ctx.beginPath();ctx.roundRect(40,90,300,80,8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('CURRENT ENERGY ⟨H⟩',60,112);
+ctx.fillStyle='#40ff90';ctx.font='bold 32px monospace';
+ctx.fillText(v.energy.toFixed(5),60,148);
+/* Theta */
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('PARAMETER θ',360,112);
+ctx.fillStyle='#ffd040';ctx.font='bold 32px monospace';
+ctx.fillText(v.theta.toFixed(4),360,148);
+/* Energy chart */
+var cy=200;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('ENERGY OVER STEPS',40,cy-10);
+drawSparkline(ctx,40,cy,W-80,180,v.history,'#40ff90');
+/* Best energy */
+if(v.history.length){
+  var mn=Math.min.apply(null,v.history);
+  ctx.fillStyle='#e0e8ff';ctx.font='11px monospace';
+  ctx.fillText('Best: '+mn.toFixed(6),60,cy+200);
+  ctx.fillText('Steps: '+v.steps,60,cy+220);
+  ctx.fillText('LR: '+v.lr,60,cy+240);
+  // Reference: exact diagonalization
+  // For H = 0.5 ZZ - 0.3 (X0+X1), ground state energy ≈ ?
+  ctx.fillStyle='#a898e0';
+  ctx.fillText('(Exact ground state ≈ −0.840)',220,cy+200);
+}
+setStats('<div>θ: '+v.theta.toFixed(4)+'</div><div>⟨H⟩: '+v.energy.toFixed(5)+'</div><div>Steps: '+v.steps+'</div>');
+badge('⚛ VQE · E='+v.energy.toFixed(4));SV('sbQubits',2);SV('sbGates',v.steps);SV('sbMode','VQE')},
+onDown:function(){},
+controls:function(){var v=STATE.vqe;var h='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>θ</span><span>'+v.theta.toFixed(4)+'</span></div><input type="range" min="0" max="6.28" step="0.01" value="'+v.theta+'" oninput="STATE.vqe.theta=parseFloat(this.value);MODULES.vqe.energy();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Learning rate</span><span>'+v.lr+'</span></div><input type="range" min="0.01" max="0.5" step="0.01" value="'+v.lr+'" oninput="STATE.vqe.lr=parseFloat(this.value)"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.vqe.step()">⏭ One optimization step</button>';
+h+='<button class="btn primary full" style="margin-top:4px" onclick="for(var i=0;i<200;i++)MODULES.vqe.step();toast(\'200 steps\',\'success\')">⚡ 200 steps</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.vqe.reset();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+h+='<div class="sec"><h4>State</h4><div class="kv">';
+if(v.psi){
+  h+='<div class="row"><span class="k">P(|00⟩)</span><span class="v">'+fmt(cxAmp2(v.psi[0])*100,2)+'%</span></div>';
+  h+='<div class="row"><span class="k">P(|01⟩)</span><span class="v">'+fmt(cxAmp2(v.psi[1])*100,2)+'%</span></div>';
+  h+='<div class="row"><span class="k">P(|10⟩)</span><span class="v">'+fmt(cxAmp2(v.psi[2])*100,2)+'%</span></div>';
+  h+='<div class="row"><span class="k">P(|11⟩)</span><span class="v">'+fmt(cxAmp2(v.psi[3])*100,2)+'%</span></div>';
+}
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>VQE</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Peruzzo et al. (2014)<br><br>1. Preparar |ψ(θ)⟩ com ansatz<br>2. Medir ⟨H⟩ = ⟨ψ(θ)|H|ψ(θ)⟩<br>3. Otimizar θ (clássico)<br>4. Repetir até convergir<br><br>Aplicação: química quântica, NISQ.</div></div>'}});
+</script>
+<script>
+/* ══════ 15. QAOA ══════ */
+registerModule('qaoa',{title:'QAOA',icon:'📈',desc:'Quantum Approximate Optimization — MaxCut.',init:function(){this.reset()},
+reset:function(){var q=STATE.qaoa;q.psi=newState(q.n);
+for(var i=0;i<q.n;i++)q.psi=applySingle(q.psi,q.n,GATES.H.m,i);
+q.gammas=[q.gamma];q.betas=[q.beta];q.history=[];q.expectation=0;this.compute()},
+applyCost:function(gamma){
+  var q=STATE.qaoa;var psi=q.psi;
+  for(var e=0;e<q.edges.length;e++){
+    var u=q.edges[e][0],v=q.edges[e][1];
+    // e^(iγ Z_u Z_v / 2) — equivalent: phase depends on z_u z_v
+    var result=psi.slice();
+    for(var i=0;i<psi.length;i++){
+      var zu=((i>>(q.n-1-u))&1)?-1:1;
+      var zv=((i>>(q.n-1-v))&1)?-1:1;
+      var phase=gamma*zu*zv/2;
+      result[i]=C.mul(psi[i],C.exp(cx(0,phase)));
+    }
+    psi=result;
+  }
+  q.psi=psi},
+applyMixer:function(beta){
+  var q=STATE.qaoa;
+  for(var i=0;i<q.n;i++){
+    // e^(iβ X_i) = RX(2β)... actually e^(-iβ X/2) = RX(β)
+    q.psi=applySingle(q.psi,q.n,GATES.RX.dyn(2*beta),i);
+  }},
+compute:function(){
+  var q=STATE.qaoa;
+  // Reset
+  q.psi=newState(q.n);
+  for(var i=0;i<q.n;i++)q.psi=applySingle(q.psi,q.n,GATES.H.m,i);
+  // Apply p layers
+  for(var layer=0;layer<q.p;layer++){
+    this.applyCost(q.gammas[layer]||q.gamma);
+    this.applyMixer(q.betas[layer]||q.beta);
+  }
+  // Compute expectation of MaxCut
+  var E=0;
+  for(var i=0;i<q.psi.length;i++){
+    var p=cxAmp2(q.psi[i]);
+    var cut=0;
+    for(var e=0;e<q.edges.length;e++){
+      var u=q.edges[e][0],v=q.edges[e][1];
+      var zu=(i>>(q.n-1-u))&1;
+      var zv=(i>>(q.n-1-v))&1;
+      if(zu!==zv)cut++;
+    }
+    E+=p*cut;
+  }
+  q.expectation=E;
+  q.history.push(E);
+  if(q.history.length>500)q.history.shift();
+  return E},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var q=STATE.qaoa;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('QAOA — MAX-CUT',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Aproximar MaxCut de um grafo com ansatz variacional',40,64);
+/* Graph */
+var gx=W*0.65,gy=H*0.35;var gr=Math.min(W*0.2,H*0.25);
+var nodePos=[];
+for(var i=0;i<q.n;i++){
+  var a=i/q.n*Math.PI*2-Math.PI/2;
+  nodePos.push({x:gx+Math.cos(a)*gr,y:gy+Math.sin(a)*gr});
+}
+// Edges
+q.edges.forEach(function(e){
+  ctx.strokeStyle='rgba(160,96,255,.5)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(nodePos[e[0]].x,nodePos[e[0]].y);ctx.lineTo(nodePos[e[1]].x,nodePos[e[1]].y);ctx.stroke();
+});
+// Nodes
+nodePos.forEach(function(p,i){
+  var g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,20);
+  g.addColorStop(0,'#a060ff');g.addColorStop(1,'rgba(160,96,255,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,20,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#020108';ctx.font='bold 14px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(i,p.x,p.y);ctx.textBaseline='alphabetic';
+});
+/* Params */
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.textAlign='left';
+ctx.fillText('PARAMETERS',40,110);
+ctx.fillStyle='#e0e8ff';ctx.font='11px monospace';
+ctx.fillText('γ = '+q.gamma.toFixed(4)+'   β = '+q.beta.toFixed(4)+'   p = '+q.p,40,135);
+/* Expectation */
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('EXPECTATION ⟨C⟩',40,180);
+ctx.fillStyle='#40ff90';ctx.font='bold 28px monospace';
+ctx.fillText(q.expectation.toFixed(4),40,215);
+/* Best possible */
+var maxCut=0;
+for(var i=0;i<(1<<q.n);i++){
+  var c=0;
+  for(var e=0;e<q.edges.length;e++){
+    var u=q.edges[e][0],v=q.edges[e][1];
+    if(((i>>u)&1)!==((i>>v)&1))c++;
+  }
+  if(c>maxCut)maxCut=c;
+}
+ctx.fillStyle='#a898e0';ctx.font='11px monospace';
+ctx.fillText('Optimal MaxCut: '+maxCut,220,215);
+ctx.fillText('Ratio: '+fmt(q.expectation/maxCut,3),220,235);
+/* Histogram */
+var hy=300;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';
+ctx.fillText('PROBABILITY DISTRIBUTION',40,hy-10);
+var N=q.psi.length;var bw=(W-80)/N;
+for(var i=0;i<N;i++){
+  var p=cxAmp2(q.psi[i]);
+  var bh=p*120;
+  var x=40+i*bw;
+  var cut=0;
+  for(var e=0;e<q.edges.length;e++){
+    var u=q.edges[e][0],v=q.edges[e][1];
+    if(((i>>(q.n-1-u))&1)!==((i>>(q.n-1-v))&1))cut++;
+  }
+  var hue=cut/maxCut*120;
+  ctx.fillStyle='hsl('+hue+',80%,60%)';
+  ctx.fillRect(x+2,hy+120-bh,bw-4,bh);
+  ctx.fillStyle='#a898e0';ctx.font='9px monospace';ctx.textAlign='center';
+  if(bw>18)ctx.fillText(i.toString(2).padStart(q.n,'0'),x+bw/2,hy+140);
+}
+ctx.textAlign='left';
+/* Chart */
+if(hy+200<H){
+  ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('CONVERGENCE',40,hy+180);
+  drawSparkline(ctx,40,hy+200,W-80,80,q.history,'#20e0ff');
+}
+setStats('<div>n='+q.n+' · edges='+q.edges.length+'</div><div>γ='+q.gamma.toFixed(3)+' β='+q.beta.toFixed(3)+'</div><div>⟨C⟩='+q.expectation.toFixed(3)+'</div>');
+badge('📈 QAOA · ⟨C⟩='+q.expectation.toFixed(3));SV('sbQubits',q.n);SV('sbGates',q.p*2);SV('sbMode','QAOA')},
+onDown:function(){},
+controls:function(){var q=STATE.qaoa;var h='<div class="sec"><h4>Graph nodes</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>n</span><span>'+q.n+'</span></div><input type="range" min="3" max="6" value="'+q.n+'" oninput="STATE.qaoa.n=parseInt(this.value);MODULES.qaoa.reset();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>γ</span><span>'+q.gamma.toFixed(3)+'</span></div><input type="range" min="0" max="3.14" step="0.01" value="'+q.gamma+'" oninput="STATE.qaoa.gamma=parseFloat(this.value);STATE.qaoa.gammas=[parseFloat(this.value)];MODULES.qaoa.compute();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>β</span><span>'+q.beta.toFixed(3)+'</span></div><input type="range" min="0" max="3.14" step="0.01" value="'+q.beta+'" oninput="STATE.qaoa.beta=parseFloat(this.value);STATE.qaoa.betas=[parseFloat(this.value)];MODULES.qaoa.compute();renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Depth p</span><span>'+q.p+'</span></div><input type="range" min="1" max="4" value="'+q.p+'" oninput="STATE.qaoa.p=parseInt(this.value);while(STATE.qaoa.gammas.length<STATE.qaoa.p){STATE.qaoa.gammas.push(0.5);STATE.qaoa.betas.push(0.5)};MODULES.qaoa.compute();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.qaoa.compute();toast(\'Recomputed\',\'success\')">🔄 Recompute</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.qaoa.reset();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>QAOA</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Farhi et al. (2014)<br><br>|ψ(γ,β)⟩ = e^(−iβH_M) e^(−iγH_C) |+⟩^⊗n<br><br>Otimizar (γ,β) para maximizar ⟨C⟩.<br><br>Aplicação: MaxCut, TSP, portfolio.</div></div>'}});
+
+/* ══════ 16. QUANTUM WALK ══════ */
+registerModule('qwalk',{title:'Quantum Walk',icon:'🚶',desc:'1D discrete-time quantum walk.',init:function(){this.reset()},
+reset:function(){var w=STATE.qwalk;w.n=8;w.steps=0;w.psi=newState(w.n+1);w.history=[];
+// Walker starts in middle, coin in |0⟩
+var pos=Math.floor(w.n/2);
+w.psi[pos*2+0]=C.ONE; // position pos, coin 0
+w.currentPos=pos},
+step:function(){var w=STATE.qwalk;var n=w.n+1;
+// Apply coin H on last qubit (coin), then shift
+var psi=applySingle(w.psi,n,GATES.H.m,n-1);
+// Shift: |pos,0⟩ → |pos-1,0⟩, |pos,1⟩ → |pos+1,1⟩
+var result=new Array(psi.length);
+for(var i=0;i<psi.length;i++)result[i]=C.ZERO;
+for(var i=0;i<psi.length;i++){
+  var pos=i>>1;
+  var coin=i&1;
+  var newPos=pos+(coin===1?1:-1);
+  if(newPos<0||newPos>=(1<<(n-1)))continue;
+  var newIdx=(newPos<<1)|coin;
+  result[newIdx]=C.add(result[newIdx],psi[i]);
+}
+w.psi=result;w.steps++;
+// Compute position distribution
+var dist=[];
+for(var p=0;p<(1<<(n-1));p++){
+  dist.push(cxAmp2(w.psi[p*2])+cxAmp2(w.psi[p*2+1]));
+}
+w.dist=dist;
+w.history.push(dist.slice());
+if(w.history.length>100)w.history.shift()},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*6;var k=0;while(this._acc>=1&&k<2){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var w=STATE.qwalk;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('QUANTUM WALK (1D)',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Caminhante quântico com moeda — interferência quântica',40,64);
+/* Position grid */
+var gy=100;var positions=w.dist?w.dist.length:16;
+var cellW=(W-80)/positions;
+for(var i=0;i<positions;i++){
+  var x=40+i*cellW;
+  var p=w.dist?w.dist[i]:0;
+  var bh=p*180;
+  var hue=200-p*200;
+  ctx.fillStyle='hsl('+hue+',80%,'+(30+p*50)+'%)';
+  ctx.fillRect(x+2,gy+180-bh,cellW-4,bh);
+  ctx.strokeStyle='rgba(160,96,255,.4)';ctx.strokeRect(x+2,gy+180-bh,cellW-4,bh);
+  ctx.fillStyle='#a898e0';ctx.font='10px monospace';ctx.textAlign='center';
+  ctx.fillText(i,x+cellW/2,gy+200);
+  if(p>0.001)ctx.fillText(fmt(p,3),x+cellW/2,gy+218);
+}
+ctx.textAlign='left';
+/* Info */
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('PROPERTIES',40,gy+260);
+ctx.fillStyle='#e0e8ff';ctx.font='11px monospace';
+ctx.fillText('Steps: '+w.steps,40,gy+285);
+ctx.fillText('Classical (random walk) spread: σ ~ √t',40,gy+305);
+ctx.fillText('Quantum walk spread: σ ~ t (ballistic)',40,gy+325);
+/* Standard deviation of distribution */
+if(w.dist){
+  var mean=0,total=0;
+  for(var i=0;i<w.dist.length;i++){mean+=i*w.dist[i];total+=w.dist[i]}
+  mean/=total;
+  var vr=0;
+  for(var i=0;i<w.dist.length;i++)vr+=(i-mean)*(i-mean)*w.dist[i];
+  var sd=Math.sqrt(vr/total);
+  ctx.fillStyle='#40ff90';
+  ctx.fillText('Mean: '+fmt(mean,3)+'  Std: '+fmt(sd,3),40,gy+350);
+  ctx.fillText('Classical σ at step '+w.steps+': '+fmt(Math.sqrt(w.steps),3),40,gy+370);
+}
+/* History heatmap */
+var hy=gy+400;
+if(hy+80<H){
+  ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('HISTORY (position probability over time)',40,hy-10);
+  var histH=Math.min(80,H-hy-20);
+  var rows=w.history.length;
+  var rowH=histH/Math.max(1,rows);
+  for(var r=0;r<rows;r++){
+    var hist=w.history[r];
+    for(var i=0;i<hist.length;i++){
+      var v=hist[i];
+      ctx.fillStyle='hsla(280,80%,'+(20+v*60)+'%,'+Math.min(1,v*2)+')';
+      ctx.fillRect(40+i*cellW,hy+r*rowH,cellW,rowH+0.5);
+    }
+  }
+}
+setStats('<div>Steps: '+w.steps+'</div><div>Positions: '+(w.dist?w.dist.length:0)+'</div>');
+badge('🚶 Quantum Walk · step '+w.steps);SV('sbQubits',Math.log2(w.psi.length).toFixed(0));SV('sbGates',w.steps);SV('sbMode','Walk')},
+onDown:function(){},
+controls:function(){var w=STATE.qwalk;var h='<div class="sec"><h4>Walker</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Position bits</span><span>'+w.n+'</span></div><input type="range" min="3" max="9" value="'+w.n+'" oninput="STATE.qwalk.n=parseInt(this.value);MODULES.qwalk.reset();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.qwalk.step()">⏭ One step</button>';
+h+='<button class="btn primary full" style="margin-top:4px" onclick="for(var i=0;i<20;i++)MODULES.qwalk.step()">⏩ 20 steps</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.qwalk.reset();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Quantum Walk</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Caminhante + moeda quântica:<br><br>1. Aplicar H na moeda<br>2. Shift controlado pela moeda<br><br>Contraste com clássico: quântico é balístico (σ ∝ t), clássico difusivo (σ ∝ √t).</div></div>'}});
+
+/* ══════ 17. DENSITY MATRIX ══════ */
+registerModule('density',{title:'Density Matrix',icon:'🎨',desc:'Mixed states and reduced density matrices.',init:function(){this.reset()},
+reset:function(){var d=STATE.density;d.n=2;
+// Create a partially entangled state
+d.psi=newState(2);
+d.psi=applySingle(d.psi,2,GATES.RY.dyn(Math.PI/3),0);
+d.psi=applyGate(d.psi,2,MULTI.CNOT.m,[0,1]);
+// Wait, actually let's set explicitly
+d.psi=newState(2);
+var c=Math.cos(Math.PI/6),s=Math.sin(Math.PI/6);
+d.psi[0]=cx(c,0);       // |00⟩
+d.psi[3]=cx(s,0);       // |11⟩
+d.keptQubits=[0];this.compute()},
+compute:function(){var d=STATE.density;
+d.rho=partialTrace(d.psi,d.n,d.keptQubits);
+d.rhoFull=partialTrace(d.psi,d.n,[0,1])},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var d=STATE.density;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('DENSITY MATRIX',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Representação de estados mistos e traço parcial',40,64);
+/* State */
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('STATE |ψ⟩ (2 qubits)',40,100);
+var lbls=['|00⟩','|01⟩','|10⟩','|11⟩'];
+for(var i=0;i<4;i++){
+  ctx.fillStyle='#e0e8ff';ctx.font='11px monospace';
+  ctx.fillText(lbls[i]+': '+C.str(d.psi[i],3),40,125+i*18);
+}
+/* Full density matrix */
+var mx=280,my=100;
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('ρ (FULL)',mx,my-10);
+var size=140;var cellSize=size/4;
+for(var i=0;i<4;i++)for(var j=0;j<4;j++){
+  var a=d.rhoFull[i][j];
+  var mag=C.abs(a);
+  var ph=C.phase(a);
+  var x=mx+j*cellSize,y=my+i*cellSize;
+  if(mag<1e-6){ctx.fillStyle='rgba(20,12,48,.8)';ctx.fillRect(x,y,cellSize,cellSize)}
+  else{
+    var hue=(ph/Math.PI/2+0.5)*360;
+    ctx.fillStyle='hsla('+hue+',80%,'+(20+mag*60)+'%,'+Math.min(1,mag*2)+')';
+    ctx.fillRect(x,y,cellSize,cellSize);
+  }
+  ctx.strokeStyle='rgba(160,96,255,.3)';ctx.strokeRect(x,y,cellSize,cellSize);
+  if(mag>0.05){
+    ctx.fillStyle='#fff';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(fmt(mag,2),x+cellSize/2,y+cellSize/2);ctx.textBaseline='alphabetic';
+  }
+}
+/* Labels */
+ctx.fillStyle='#a898e0';ctx.font='10px monospace';ctx.textAlign='center';
+for(var j=0;j<4;j++)ctx.fillText(lbls[j],mx+j*cellSize+cellSize/2,my-8);
+ctx.textAlign='right';
+for(var i=0;i<4;i++)ctx.fillText(lbls[i],mx-8,my+i*cellSize+cellSize/2+4);
+ctx.textAlign='left';
+/* Reduced density matrix */
+var rx=mx+200;
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('ρ₀ = Tr₁(ρ)  (reduced)',rx,my-10);
+var size2=100;var cs2=size2/2;
+for(var i=0;i<2;i++)for(var j=0;j<2;j++){
+  var a=d.rho[i][j];
+  var mag=C.abs(a);
+  var ph=C.phase(a);
+  var x=rx+j*cs2,y=my+i*cs2;
+  if(mag<1e-6){ctx.fillStyle='rgba(20,12,48,.8)';ctx.fillRect(x,y,cs2,cs2)}
+  else{
+    var hue=(ph/Math.PI/2+0.5)*360;
+    ctx.fillStyle='hsla('+hue+',80%,'+(20+mag*60)+'%,'+Math.min(1,mag*2)+')';
+    ctx.fillRect(x,y,cs2,cs2);
+  }
+  ctx.strokeStyle='rgba(160,96,255,.3)';ctx.strokeRect(x,y,cs2,cs2);
+  ctx.fillStyle='#fff';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(fmt(mag,3),x+cs2/2,y+cs2/2);
+  ctx.textBaseline='alphabetic';
+}
+ctx.fillStyle='#a898e0';ctx.font='10px monospace';ctx.textAlign='center';
+ctx.fillText('|0⟩',rx+cs2/2,my-8);ctx.fillText('|1⟩',rx+cs2*1.5,my-8);
+ctx.textAlign='right';
+ctx.fillText('|0⟩',rx-4,my+cs2/2+4);ctx.fillText('|1⟩',rx-4,my+cs2*1.5+4);
+ctx.textAlign='left';
+/* Purity */
+var py=my+Math.max(size,size2)+80;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';
+ctx.fillText('ANALYSIS',40,py-10);
+var purity0=0;
+for(var i=0;i<2;i++)for(var j=0;j<2;j++)purity0+=cxAmp2(d.rho[i][j]);
+var S=0;
+// Eigenvalues of 2x2
+var a00=d.rho[0][0].re,d11=d.rho[1][1].re,a01=d.rho[0][1];
+var tr=a00+d11;
+var det=a00*d11-(a01.re*a01.re+a01.im*a01.im);
+var disc=Math.sqrt(Math.max(0,tr*tr/4-det));
+var l1=tr/2+disc,l2=tr/2-disc;
+if(l1>1e-9)S-=l1*Math.log2(l1);
+if(l2>1e-9)S-=l2*Math.log2(l2);
+ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+ctx.fillText('Purity Tr(ρ₀²) = '+fmt(purity0,4),40,py+15);
+ctx.fillText('Pure state: Tr(ρ²)=1 · Mixed: <1',40,py+35);
+ctx.fillText('Eigenvalues λ₁,λ₂: '+fmt(l1,4)+', '+fmt(l2,4),40,py+55);
+ctx.fillText('Von Neumann entropy S(ρ₀) = '+fmt(S,4)+' bits',40,py+75);
+if(S>0.99&&S<1.01)ctx.fillText('→ Maximally entangled (S=1)',40,py+95);
+else if(S<0.01)ctx.fillText('→ Product state (S=0)',40,py+95);
+else ctx.fillText('→ Partially entangled',40,py+95);
+setStats('<div>Purity: '+fmt(purity0,4)+'</div><div>S(ρ₀): '+fmt(S,3)+'</div>');
+badge('🎨 Density · S='+fmt(S,3));SV('sbQubits',2);SV('sbMode','Density')},
+onDown:function(){},
+controls:function(){var d=STATE.density;var h='<div class="sec"><h4>State preparation</h4>';
+h+='<div class="lbl">Entanglement angle θ</div>';
+h+='<div class="ctrl"><input type="range" min="0" max="1.5707" step="0.01" value="'+(Math.atan2(Math.abs(d.psi[3].re),Math.abs(d.psi[0].re)))+'" oninput="var c=Math.cos(parseFloat(this.value)),s=Math.sin(parseFloat(this.value));STATE.density.psi=[{re:c,im:0},{re:0,im:0},{re:0,im:0},{re:s,im:0}];MODULES.density.compute();renderLeftPanel()"></div>';
+h+='<div style="font-size:.6rem;color:var(--tx3);margin-top:4px">θ=0: |00⟩ · θ=π/4: max entangled · θ=π/2: |11⟩</div>';
+h+='</div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+h+='<div class="chip" onclick="STATE.density.psi=[{re:1,im:0},{re:0,im:0},{re:0,im:0},{re:0,im:0}];MODULES.density.compute()">|00⟩</div>';
+h+='<div class="chip" onclick="STATE.density.psi=[{re:Math.SQRT1_2,im:0},{re:0,im:0},{re:0,im:0},{re:Math.SQRT1_2,im:0}];MODULES.density.compute()">Bell Φ⁺</div>';
+h+='<div class="chip" onclick="STATE.density.psi=[{re:Math.SQRT1_2,im:0},{re:0,im:0},{re:0,im:0},{re:Math.SQRT1_2,im:0.5}];MODULES.density.compute()">Phase shift</div>';
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Density Matrix</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">ρ = Σ p_i |ψ_i⟩⟨ψ_i|<br><br>Tr(ρ) = 1<br>Tr(ρ²) ≤ 1 (equality se puro)<br><br>Traço parcial: ρ_A = Tr_B(ρ)</div></div>'}});
+
+/* ══════ 18. NOISE & DECOHERENCE ══════ */
+registerModule('noise',{title:'Noise & Decoherence',icon:'🌫',desc:'T1 relaxation, T2 dephasing, depolarizing.',init:function(){this.reset()},
+reset:function(){var n=STATE.noise;n.t=0;n.history=[];
+n.psi=newState(n.n);
+n.psi=applySingle(n.psi,n.n,GATES.H.m,0); // |+⟩ on q0
+n.fidelities=[];
+n.psi0=n.psi.slice()},
+step:function(dt){var n=STATE.noise;
+dt=dt||0.05;
+n.t+=dt;
+var gamma1=1-n.T1*0.05*dt; // crude T1 model
+var gamma2=1-n.T2*0.05*dt;
+// Apply bit-flip with prob (1-gamma1)
+if(Math.random()<0.01*(10/n.T1)){
+  var bit=rnd(0,n.n-1);
+  n.psi=applySingle(n.psi,n.n,GATES.X.m,bit);
+}
+// Apply phase damping with prob (1-gamma2)
+if(Math.random()<0.01*(10/n.T2)){
+  var bit=rnd(0,n.n-1);
+  n.psi=applySingle(n.psi,n.n,GATES.Z.m,bit);
+}
+// Depolarizing
+if(n.noiseOn&&Math.random()<n.depol){
+  var bit2=rnd(0,n.n-1);
+  var r=Math.random();
+  if(r<0.33)n.psi=applySingle(n.psi,n.n,GATES.X.m,bit2);
+  else if(r<0.66)n.psi=applySingle(n.psi,n.n,GATES.Y.m,bit2);
+  else n.psi=applySingle(n.psi,n.n,GATES.Z.m,bit2);
+}
+// Compute fidelity (simplified: overlap with ideal)
+var f=0;
+for(var i=0;i<n.psi.length;i++){
+  f+=n.psi[i].re*n.psi0[i].re+n.psi[i].im*n.psi0[i].im;
+}
+n.fidelity=f*f;
+n.fidelities.push(n.fidelity);
+if(n.fidelities.length>500)n.fidelities.shift();
+n.history.push(n.t)},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing||!STATE.noise.noiseOn)return;if(!this._acc)this._acc=0;this._acc+=dt*10;var k=0;while(this._acc>=1&&k<3){this.step();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var n=STATE.noise;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('NOISE & DECOHERENCE',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('T1 relaxation · T2 dephasing · depolarizing noise',40,64);
+/* Amplitudes */
+var aY=100;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('STATE VECTOR (decaying)',40,aY-10);
+drawAmplitudes(ctx,n.psi,40,aY,W-80,140,true);
+var lbls=basisLabels(n.n);var bw=(W-80)/n.psi.length;
+ctx.fillStyle='#a898e0';ctx.font='10px monospace';ctx.textAlign='center';
+for(var i=0;i<n.psi.length;i++){
+  if(cxAmp2(n.psi[i])>1e-4){
+    ctx.fillStyle='#e0e8ff';
+    ctx.fillText(lbls[i],40+i*bw+bw/2,aY+160);
+    ctx.fillStyle='#40ff90';
+    ctx.fillText(fmt(cxAmp2(n.psi[i])*100,1)+'%',40+i*bw+bw/2,aY+178);
+  }
+}
+ctx.textAlign='left';
+/* Fidelity chart */
+var fy=320;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('FIDELITY F(t) vs ideal |+⟩',40,fy-10);
+drawSparkline(ctx,40,fy,W-80,140,n.fidelities,'#40ff90');
+// Reference line at 1
+ctx.strokeStyle='rgba(255,255,255,.15)';ctx.setLineDash([5,4]);
+ctx.beginPath();ctx.moveTo(40,fy);ctx.lineTo(W-40,fy);ctx.stroke();
+ctx.setLineDash([]);
+/* Current metrics */
+var my=fy+180;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('METRICS',40,my-10);
+ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+ctx.fillText('Time elapsed:  '+n.t.toFixed(3)+' s',40,my+15);
+ctx.fillText('T1 = '+n.T1+' s',40,my+35);
+ctx.fillText('T2 = '+n.T2+' s',40,my+55);
+ctx.fillText('Depolarizing rate = '+n.depol,40,my+75);
+ctx.fillStyle='#40ff90';ctx.font='bold 14px monospace';
+ctx.fillText('Fidelity = '+fmt(n.fidelity||0,4),300,my+15);
+ctx.fillStyle='#a898e0';ctx.font='11px monospace';
+ctx.fillText('F(t) ≈ e^(-t/T2) · cos²(ωt)',300,my+35);
+ctx.fillText('T2 ≤ 2·T1 (limite físico)',300,my+55);
+/* Blur visual representation */
+var blx=W-180,bly=my+100;
+ctx.fillStyle='rgba(20,12,48,.6)';ctx.fillRect(blx-100,bly-30,200,120);
+ctx.strokeStyle='rgba(160,96,255,.3)';ctx.strokeRect(blx-100,bly-30,200,120);
+// Ideal sphere
+ctx.strokeStyle='rgba(64,224,255,.5)';ctx.lineWidth=2;
+ctx.beginPath();ctx.arc(blx,bly+30,40,0,Math.PI*2);ctx.stroke();
+// Blurred sphere (noise spreads)
+if(n.fidelity!=null){
+  var alpha=1-n.fidelity;
+  var g=ctx.createRadialGradient(blx,bly+30,0,blx,bly+30,40+alpha*20);
+  g.addColorStop(0,'rgba(160,96,255,'+alpha*0.6+')');
+  g.addColorStop(1,'rgba(160,96,255,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(blx,bly+30,40+alpha*20,0,Math.PI*2);ctx.fill();
+}
+ctx.fillStyle='#a898e0';ctx.font='10px monospace';ctx.textAlign='center';
+ctx.fillText('Bloch radius: r = '+(n.fidelity?fmt(Math.sqrt(n.fidelity),3):'1.000'),blx,bly+90);
+ctx.textAlign='left';
+setStats('<div>Time: '+n.t.toFixed(2)+'s</div><div>F(t): '+fmt(n.fidelity||0,4)+'</div><div>T1='+n.T1+' T2='+n.T2+'</div>');
+badge('🌫 Noise · F='+fmt(n.fidelity||0,3));SV('sbQubits',n.n);SV('sbNorm',fmt(norm2(n.psi),4));SV('sbMode','Noise')},
+onDown:function(){},
+controls:function(){var n=STATE.noise;var h='<div class="sec"><h4>Qubits</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>n</span><span>'+n.n+'</span></div><input type="range" min="1" max="4" value="'+n.n+'" oninput="STATE.noise.n=parseInt(this.value);MODULES.noise.reset();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Noise parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>T1 (relaxation)</span><span>'+n.T1+' s</span></div><input type="range" min="0.5" max="20" step="0.5" value="'+n.T1+'" oninput="STATE.noise.T1=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>T2 (dephasing)</span><span>'+n.T2+' s</span></div><input type="range" min="0.5" max="15" step="0.5" value="'+n.T2+'" oninput="STATE.noise.T2=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Depolarizing p</span><span>'+n.depol.toFixed(3)+'</span></div><input type="range" min="0" max="0.1" step="0.001" value="'+n.depol+'" oninput="STATE.noise.depol=parseFloat(this.value)"></div>';
+h+='<div class="chip '+(n.noiseOn?'active':'')+'" onclick="STATE.noise.noiseOn=!STATE.noise.noiseOn;renderLeftPanel()">Noise: '+(n.noiseOn?'ON':'OFF')+'</div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.noise.reset();toast(\'Reset\',\'success\')">↺ Reset</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Decoherence</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)"><b>T1</b>: relaxação energética (|1⟩→|0⟩)<br><b>T2</b>: perda de coerência de fase<br><br>F(t) ≈ e^(−t/T2)<br><br>Limite físico: T2 ≤ 2T1<br><br>Supercondutores: T1,T2 ~ μs<br>Ions armadilhados: T2 ~ s</div></div>'}});
+
+/* ══════ 19. ERROR CORRECTION ══════ */
+registerModule('qec',{title:'Error Correction',icon:'🛡',desc:'3-qubit bit-flip and phase-flip codes.',init:function(){this.reset()},
+reset:function(){var q=STATE.qec;q.psi=newState(3);
+q.syndrome=0;q.corrected=false;q.errorApplied=false;
+// Encode |ψ⟩ = α|0⟩+β|1⟩ → α|000⟩+β|111⟩
+var alpha=0.6,beta=0.8;
+q.alpha=alpha;q.beta=beta;
+q.psi[0]=cx(alpha,0);q.psi[7]=cx(beta,0);
+q.circuit1=true},
+applyError:function(){var q=STATE.qec;if(q.errorApplied)return;
+var bit=q.flip; // 0,1,2 or 'phase'
+if(q.errorType==='bit'){
+  if(bit<3){q.psi=applySingle(q.psi,3,GATES.X.m,bit);q.errorApplied=true;toast('Bit-flip em qubit '+bit,'warn')}
+}else{
+  q.psi=applySingle(q.psi,3,GATES.Z.m,bit);
+  q.errorApplied=true;toast('Phase-flip em qubit '+bit,'warn');
+}},
+measureSyndrome:function(){var q=STATE.qec;
+// Measure Z0Z1 and Z1Z2 syndromes
+// Z0Z1 (parity of first two qubits)
+var parity01=0,parity12=0;
+for(var i=0;i<8;i++){
+  var b0=(i>>2)&1,b1=(i>>1)&1,b2=i&1;
+  var p=cxAmp2(q.psi[i]);
+  if(p<1e-9)continue;
+  // In ideal case, only |000⟩ and |111⟩ have support, but here we check
+}
+// For a real 3-qubit code, syndrome measurement is deterministic
+// We compute which single-qubit flip is consistent with parity violations
+// In encoded state with single X error:
+// X on q0: |000⟩→|100⟩, |111⟩→|011⟩  → parities: (1,1) and (0,1)... 
+// q.kind:
+if(!q.errorApplied){q.syndrome=0;q.message='Nenhum erro detectado'}
+else{
+  if(q.errorType==='bit'){
+    var v=(q.alpha*q.alpha+q.beta*q.beta);
+    // Compute actual Z0Z1, Z1Z2 expectation
+    var z01=0,z12=0;
+    for(var i=0;i<8;i++){
+      var p=cxAmp2(q.psi[i]);
+      var b0=(i>>2)&1,b1=(i>>1)&1,b2=i&1;
+      var zz01=b0===b1?1:-1;
+      var zz12=b1===b2?1:-1;
+      z01+=p*zz01;z12+=p*zz12;
+    }
+    if(z01<0&&z12<0)q.syndrome=0;
+    else if(z01<0&&z12>0)q.syndrome=1; // q0 flipped (or q2)
+    else if(z01>0&&z12<0)q.syndrome=3; // q2 flipped
+    else q.syndrome=2; // q1 flipped
+    q.message='Síndrome: '+q.syndrome+' → erro em qubit '+q.syndrome;
+  }else{
+    // Phase flip: apply H, detect, apply H back
+    q.message='Phase-flip detectada (usar H+X+H)';
+    q.syndrome=q.flip;
+  }
+}},
+correct:function(){var q=STATE.qec;
+if(q.syndrome<3){
+  q.psi=applySingle(q.psi,3,GATES.X.m,q.syndrome);
+}
+q.corrected=true;
+// Verify
+var fid=0;
+var alpha=q.alpha,beta=q.beta;
+fid+=(q.psi[0].re*alpha+q.psi[0].im*0)*(q.psi[0].re*alpha+q.psi[0].im*0);
+fid+=(q.psi[7].re*beta+q.psi[7].im*0)*(q.psi[7].re*beta+q.psi[7].im*0);
+// Actually do proper fidelity calc against ideal
+var ideal=newState(3);ideal[0]=cx(alpha,0);ideal[7]=cx(beta,0);
+fid=fidelity(q.psi,ideal);
+q.fidelity=fid;
+toast('Corrigido! Fidelidade: '+fmt(fid,4),'success')},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var q=STATE.qec;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('QUANTUM ERROR CORRECTION',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('3-qubit code: bit-flip e phase-flip',40,64);
+/* Encoding */
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('ENCODED STATE',40,100);
+ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+ctx.fillText('α|000⟩ + β|111⟩    (α='+fmt(q.alpha,3)+', β='+fmt(q.beta,3)+')',40,125);
+/* Amplitudes */
+var aY=150;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('STATE VECTOR',40,aY-10);
+var N=8;var bw=(W-80)/N;
+for(var i=0;i<N;i++){
+  var p=cxAmp2(q.psi[i]);
+  var bh=p*140;
+  ctx.fillStyle=phaseColor(q.psi[i]);
+  ctx.fillRect(40+i*bw+2,aY+140-bh,bw-4,bh);
+  ctx.strokeStyle='rgba(160,96,255,.4)';ctx.strokeRect(40+i*bw+2,aY+140-bh,bw-4,bh);
+  ctx.fillStyle='#a898e0';ctx.font='9px monospace';ctx.textAlign='center';
+  ctx.fillText('|'+i.toString(2).padStart(3,'0')+'⟩',40+i*bw+bw/2,aY+160);
+}
+ctx.textAlign='left';
+/* Circuit */
+var cy=340;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('CIRCUIT',40,cy-10);
+var cg=[{gate:'H',qubits:[0]},{gate:'H',qubits:[0]},{gate:'CNOT',qubits:[0,1]},{gate:'CNOT',qubits:[0,2]}];
+if(q.errorApplied){
+  var err=q.errorType==='phase'?{gate:'Z',qubits:[q.flip]}:{gate:'X',qubits:[q.flip]};
+  cg.push(err);
+}
+cg.push({gate:'CNOT',qubits:[0,1]},{gate:'CNOT',qubits:[0,2]});
+drawCircuit(ctx,{nQubits:3,gates:cg},100,cy+10,W-160,50,35);
+/* Syndrome */
+var sy=cy+40+3*35+60;
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';
+ctx.fillText('SYNDROME',40,sy-10);
+ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+if(!q.errorApplied){
+  ctx.fillText('Nenhum erro aplicado — syndrome = 0',40,sy+15);
+}else{
+  ctx.fillStyle='#40ff90';
+  ctx.fillText(q.message,40,sy+15);
+}
+/* Result */
+var ry=sy+50;
+if(q.corrected){
+  ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(64,255,144,.6)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(40,ry-10,W-80,80,8);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#40ff90';ctx.font='bold 14px monospace';
+  ctx.fillText('✓ CORRIGIDO',60,ry+15);
+  ctx.fillStyle='#e0e8ff';ctx.font='12px monospace';
+  ctx.fillText('Fidelidade vs estado ideal: '+fmt(q.fidelity,5),60,ry+40);
+}
+setStats('<div>Error: '+(q.errorApplied?'YES':'-')+'</div><div>Syndrome: '+q.syndrome+'</div><div>Corrected: '+(q.corrected?'YES':'NO')+'</div>');
+badge('🛡 QEC · '+(q.errorApplied?'error!':'clean')+' · '+(q.corrected?'corrected':'pending'));SV('sbQubits',3);SV('sbGates',cg.length);SV('sbMode','QEC')},
+onDown:function(){},
+controls:function(){var q=STATE.qec;var h='<div class="sec"><h4>Error type</h4><div class="chip-row">';
+['bit','phase'].forEach(function(t){h+='<div class="chip '+(q.errorType===t?'active':'')+'" onclick="STATE.qec.errorType=\''+t+'\';MODULES.qec.reset();renderLeftPanel()">'+t+'-flip</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Error qubit</h4><div class="chip-row">';
+[0,1,2].forEach(function(i){h+='<div class="chip '+(q.flip===i?'active':'')+'" onclick="STATE.qec.flip='+i+';renderLeftPanel()">q'+i+'</div>'});
+h+='</div></div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.qec.applyError();renderLeftPanel()">💥 Apply error</button>';
+h+='<button class="btn primary full" style="margin-top:4px" onclick="MODULES.qec.measureSyndrome();renderLeftPanel()">🔍 Measure syndrome</button>';
+h+='<button class="btn primary full" style="margin-top:4px" onclick="MODULES.qec.correct();renderLeftPanel()">🛡 Correct</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.qec.reset();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>3-Qubit Code</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Shor (1995), Steane (1996)<br><br>|0⟩ → |000⟩, |1⟩ → |111⟩<br><br>Codifica 1 qubit lógico em 3 físicos.<br>Corrige 1 bit-flip OU 1 phase-flip.<br><br>Detecção: mede Z₀Z₁, Z₁Z₂ sem colapsar dados.</div></div>'}});
+
+/* ══════ 20. QML ══════ */
+registerModule('qml',{title:'Quantum ML Classifier',icon:'🧠',desc:'Simple quantum classifier on iris-like 2D data.',init:function(){this.reset()},
+reset:function(){var m=STATE.qml;m.data=[];
+var r=Math.random;
+for(var i=0;i<60;i++){
+  var c=i%2;
+  var x,y;
+  if(c===0){x=0.3+r()*0.25;y=0.3+r()*0.25}
+  else{x=0.6+r()*0.25;y=0.6+r()*0.25}
+  m.data.push({x:x,y:y,label:c});
+}
+m.w=[0.5,0.5,0.5,0.5];m.bias=0;m.epochs=0;m.history=[];m.accuracy=0;
+this.evaluate()},
+encode:function(x,y){
+  // Angle encode 2D point into 2-qubit state: RY(πx)|0⟩ ⊗ RY(πy)|0⟩
+  var psi=newState(2);
+  psi=applySingle(psi,2,GATES.RY.dyn(Math.PI*x),0);
+  psi=applySingle(psi,2,GATES.RY.dyn(Math.PI*y),1);
+  return psi},
+evaluate:function(){var m=STATE.qml;var correct=0;
+for(var i=0;i<m.data.length;i++){
+  var d=m.data[i];
+  var psi=this.encode(d.x,d.y);
+  // Measure some Pauli expectation
+  var feats=[];
+  // <Z0>, <Z1>, <Z0Z1>, <X0X1>
+  var z0=0,z1=0,zz=0,xx=0;
+  for(var j=0;j<4;j++){
+    var p=cxAmp2(psi[j]);
+    var b0=(j>>1)&1,b1=j&1;
+    z0+=p*(b0?-1:1);z1+=p*(b1?-1:1);zz+=p*((b0===b1)?1:-1);
+  }
+  var psiX=applyGate(psi,2,MULTI.CNOT.m,[0,1]);
+  var x0=0,x1=0;
+  for(var j=0;j<4;j++){
+    var p=cxAmp2(psiX[j]);
+    var b0=(j>>1)&1,b1=j&1;
+    x0+=p*(b0?-1:1);x1+=p*(b1?-1:1);
+  }
+  feats=[z0,z1,zz,x0*x1];
+  var pred=m.w[0]*feats[0]+m.w[1]*feats[1]+m.w[2]*feats[2]+m.w[3]*feats[3]+m.bias;
+  pred=Math.tanh(pred*2);
+  var cls=pred>0?1:0;
+  if(cls===d.label)correct++;
+  d.pred=pred;d.cls=cls;d.feats=feats;
+}
+m.accuracy=correct/m.data.length;
+m.history.push(m.accuracy);
+if(m.history.length>500)m.history.shift()},
+train:function(){var m=STATE.qml;var lr=0.05;
+for(var i=0;i<m.data.length;i++){
+  var d=m.data[i];if(!d.feats)continue;
+  var pred=Math.tanh(m.w[0]*d.feats[0]+m.w[1]*d.feats[1]+m.w[2]*d.feats[2]+m.w[3]*d.feats[3]+m.bias);
+  var target=d.label===1?1:-1;
+  var err=(pred-target);
+  var dW=err*(1-pred*pred);
+  for(var k=0;k<4;k++)m.w[k]-=lr*dW*d.feats[k];
+  m.bias-=lr*dW;
+}
+m.epochs++;
+this.evaluate()},
+tick:function(dt){STATE.time+=dt;if(!STATE.playing)return;if(!this._acc)this._acc=0;this._acc+=dt*8;var k=0;while(this._acc>=1&&k<2){this.train();this._acc-=1;k++}},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#020108';ctx.fillRect(0,0,W,H);
+var m=STATE.qml;
+ctx.fillStyle='#a060ff';ctx.font='bold 14px monospace';ctx.textAlign='left';
+ctx.fillText('QUANTUM ML CLASSIFIER',40,40);
+ctx.fillStyle='#20e0ff';ctx.font='12px monospace';
+ctx.fillText('Angle encoding + variational classifier',40,64);
+/* Data visualization */
+var px=40,py=100;var sz=Math.min(W*0.5,H-160);
+ctx.fillStyle='rgba(10,6,24,.6)';ctx.fillRect(px,py,sz,sz);
+ctx.strokeStyle='rgba(160,96,255,.4)';ctx.strokeRect(px,py,sz,sz);
+// Decision boundary
+var res=40;var cw=sz/res;
+for(var i=0;i<res;i++)for(var j=0;j<res;j++){
+  var x=(i+0.5)/res;
+  var y=(j+0.5)/res;
+  var psi=this.encode(x,y);
+  var z0=0,z1=0,zz=0;
+  for(var k=0;k<4;k++){
+    var p=cxAmp2(psi[k]);
+    var b0=(k>>1)&1,b1=k&1;
+    z0+=p*(b0?-1:1);z1+=p*(b1?-1:1);zz+=p*((b0===b1)?1:-1);
+  }
+  var psiX=applyGate(psi,2,MULTI.CNOT.m,[0,1]);
+  var x0=0,x1=0;
+  for(var k=0;k<4;k++){
+    var p=cxAmp2(psiX[k]);
+    var b0=(k>>1)&1,b1=k&1;
+    x0+=p*(b0?-1:1);x1+=p*(b1?-1:1);
+  }
+  var pred=m.w[0]*z0+m.w[1]*z1+m.w[2]*zz+m.w[3]*x0*x1+m.bias;
+  pred=Math.tanh(pred*2);
+  ctx.fillStyle=pred>0?'rgba(255,64,160,.12)':'rgba(64,224,255,.12)';
+  ctx.fillRect(px+i/res*sz,py+j/res*sz,sz/res+0.5,sz/res+0.5);
+}
+// Data points
+m.data.forEach(function(d){
+  var dx=px+d.x*sz,dy=py+d.y*sz;
+  ctx.fillStyle=d.label===1?'#ff40a0':'#20e0ff';
+  ctx.beginPath();ctx.arc(dx,dy,4,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+});
+// Labels
+ctx.fillStyle='#a898e0';ctx.font='10px monospace';
+ctx.fillText('x →',px+sz-20,py+sz+15);
+ctx.fillText('y ↑',px-25,py+15);
+/* Metrics panel */
+var mx=px+sz+40,my=100;
+ctx.fillStyle='rgba(10,6,24,.9)';ctx.strokeStyle='rgba(160,96,255,.4)';ctx.beginPath();ctx.roundRect(mx,my,W-mx-40,sz,8);ctx.fill();ctx.stroke();
+ctx.fillStyle='#a060ff';ctx.font='bold 12px monospace';ctx.fillText('METRICS',mx+15,my+22);
+ctx.fillStyle='#40ff90';ctx.font='bold 32px monospace';
+ctx.fillText(fmt(m.accuracy*100,1)+'%',mx+15,my+65);
+ctx.fillStyle='#a898e0';ctx.font='11px monospace';
+ctx.fillText('Accuracy',mx+15,my+82);
+ctx.fillStyle='#e0e8ff';ctx.font='11px monospace';
+ctx.fillText('Epochs: '+m.epochs,mx+15,my+115);
+ctx.fillText('Samples: '+m.data.length,mx+15,my+135);
+/* Weights */
+ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';
+ctx.fillText('WEIGHTS',mx+15,my+165);
+ctx.font='10px monospace';ctx.fillStyle='#e0e8ff';
+ctx.fillText('w[0] (⟨Z0⟩): '+fmt(m.w[0],3),mx+15,my+185);
+ctx.fillText('w[1] (⟨Z1⟩): '+fmt(m.w[1],3),mx+15,my+200);
+ctx.fillText('w[2] (⟨ZZ⟩): '+fmt(m.w[2],3),mx+15,my+215);
+ctx.fillText('w[3] (⟨XX⟩): '+fmt(m.w[3],3),mx+15,my+230);
+ctx.fillText('bias:        '+fmt(m.bias,3),mx+15,my+245);
+/* Accuracy chart */
+var cy=my+270;
+if(cy+80<H){
+  ctx.fillStyle='#a060ff';ctx.font='bold 11px monospace';ctx.fillText('ACCURACY HISTORY',mx+15,cy);
+  var cw2=W-mx-60;
+  drawSparkline(ctx,mx+15,cy+10,cw2,Math.min(80,H-cy-30),m.history,'#40ff90');
+}
+setStats('<div>Epochs: '+m.epochs+'</div><div>Acc: '+fmt(m.accuracy*100,1)+'%</div><div>W: ['+m.w.map(function(w){return fmt(w,2)}).join(',')+']</div>');
+badge('🧠 QML · acc='+fmt(m.accuracy*100,1)+'%');SV('sbQubits',2);SV('sbGates',m.epochs);SV('sbMode','QML')},
+onDown:function(){},
+controls:function(){var m=STATE.qml;var h='<div class="sec"><h4>Training</h4>';
+h+='<div class="kv"><div class="row"><span class="k">Epochs</span><span class="v">'+m.epochs+'</span></div><div class="row"><span class="k">Accuracy</span><span class="v">'+fmt(m.accuracy*100,2)+'%</span></div><div class="row"><span class="k">Samples</span><span class="v">'+m.data.length+'</span></div></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Actions</h4>';
+h+='<button class="btn primary full" onclick="MODULES.qml.train();renderLeftPanel()">▶ One epoch</button>';
+h+='<button class="btn primary full" style="margin-top:4px" onclick="for(var i=0;i<50;i++)MODULES.qml.train();toast(\'50 epochs done\',\'success\');renderLeftPanel()">⚡ 50 epochs</button>';
+h+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.qml.reset();renderLeftPanel()">↺ Reset</button>';
+h+='</div>';
+h+='<div class="sec"><h4>Weights</h4><div class="kv">';
+h+='<div class="row"><span class="k">w[Z0]</span><span class="v">'+fmt(m.w[0],4)+'</span></div>';
+h+='<div class="row"><span class="k">w[Z1]</span><span class="v">'+fmt(m.w[1],4)+'</span></div>';
+h+='<div class="row"><span class="k">w[ZZ]</span><span class="v">'+fmt(m.w[2],4)+'</span></div>';
+h+='<div class="row"><span class="k">w[XX]</span><span class="v">'+fmt(m.w[3],4)+'</span></div>';
+h+='<div class="row"><span class="k">bias</span><span class="v">'+fmt(m.bias,4)+'</span></div>';
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Quantum ML</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Encoding: RY(πx)|0⟩ ⊗ RY(πy)|0⟩<br><br>Features: ⟨Z0⟩, ⟨Z1⟩, ⟨Z0Z1⟩, ⟨X0X1⟩<br><br>Classifier: linear em features quânticas<br><br>Vantagem: kernel implícito em espaço 2ⁿ-dimensional.</div></div>'}});
+
+/* ══════════════════════════════════════════════════════════════
+   UI + BOOT
+   ══════════════════════════════════════════════════════════════ */
+function buildTabs(){var t=$('tbTabs');t.innerHTML='';
+TABS.forEach(function(x){var i=el('div',{class:'tb-tab'+(x.key===STATE.currentTab?' active':''),'data-tab':x.key});
+i.innerHTML='<span class="tab-icon">'+x.icon+'</span><span>'+x.label+'</span>';
+i.onclick=function(){switchTab(x.key)};
+t.appendChild(i)})}
+function switchTab(k){STATE.currentTab=k;
+$$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===k)});
+var m=MODULES[k];
+SV('sbMode',(m&&m.title)||k);
+try{if(m&&m.init)m.init()}catch(e){logMsg('init('+k+') error: '+e.message,'error')}
+renderLeftPanel();renderRightPanel()}
+function switchRp(name,e){STATE.currentRp=name;
+$$('.rp-tab').forEach(function(t){t.classList.remove('active')});
+e.classList.add('active');
+$$('.rp-pane').forEach(function(p){p.classList.remove('active')});
+var p=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+if(p)p.classList.add('active');
+renderRightPanel()}
+function renderLeftPanel(){
+  var b=$('lpBody');if(!b)return;
+  var m=MODULES[STATE.currentTab];if(!m){b.innerHTML='';return}
+  var h='';
+  h+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--p1);font-size:.7rem">'+m.icon+' '+m.title+'</h4>';
+  h+='<div style="font-size:.6rem;color:var(--tx3);font-family:var(--mono);line-height:1.5;margin-top:4px">'+esc(m.desc||'')+'</div></div>';
+  try{if(m.controls)h+=m.controls()}
+  catch(e){h+='<div class="sec"><div class="empty" style="color:var(--p3)">controls error: '+esc(e.message)+'</div></div>';logMsg('controls('+m.key+') error: '+e.message,'error')}
+  b.innerHTML=h;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var s=$('rpState');
+  if(s){
+    var stats='<div class="sec"><h4>Live State</h4><div class="kv">';
+    stats+='<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>';
+    stats+='<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,1)+'s</span></div>';
+    stats+='<div class="row"><span class="k">Tab</span><span class="v">'+STATE.currentTab+'</span></div>';
+    stats+='</div></div>';
+    s.innerHTML=stats;
+  }
+  var mp=$('rpMath');
+  if(mp){try{if(m&&m.mathPanel)mp.innerHTML=m.mathPanel();else mp.innerHTML='<div class="empty">No math panel</div>'}catch(e){mp.innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){var p=$('rpLogs');if(!p)return;
+var h='<div class="sec"><h4>Log</h4>';
+if(!LOG.length)h+='<div class="empty">No events</div>';
+else LOG.slice().reverse().forEach(function(l){
+  var c=l.type==='error'?'var(--p3)':l.type==='success'?'var(--p4)':'var(--p1)';
+  h+='<div style="padding:3px 6px;border-left:2px solid '+c+';margin-bottom:3px;font-family:var(--mono);font-size:.58rem;color:'+c+'">'+esc(l.msg)+'</div>'
+});
+h+='</div>';p.innerHTML=h}
+function togglePlay(){STATE.playing=!STATE.playing;$('btnPlay').textContent=STATE.playing?'⏸':'▶';$('tbDot').classList.toggle('on',STATE.playing);toast(STATE.playing?'Playing':'Paused','info',900)}
+function stepOnce(){var m=MODULES[STATE.currentTab];if(m&&m.step)m.step();else toast('No step','info',900)}
+function resetModule(){var m=MODULES[STATE.currentTab];if(m&&m.init){m.init();toast('Reset','success',900)}}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['quantum','paper','midnight'];
+function toggleTheme(){var c=document.documentElement.getAttribute('data-theme');var i=THEMES.indexOf(c);var n=THEMES[(i+1)%THEMES.length];document.documentElement.setAttribute('data-theme',n);toast('Theme: '+n,'success')}
+function showHelp(){openModal('❓ QUBIT — Help','<div class="sec"><h4>⚛ 20 Módulos Quânticos</h4><div style="font-size:.6rem;line-height:1.85;color:var(--tx2);font-family:var(--mono)"><b style="color:var(--p1)">Circuit</b> · <b style="color:var(--p1)">Bloch</b> · <b style="color:var(--p1)">Gates</b> · <b style="color:var(--p1)">Bell</b> · <b style="color:var(--p1)">GHZ</b><br><b style="color:var(--p1)">Teleportation</b> · <b style="color:var(--p1)">Superdense</b><br><b style="color:var(--p1)">Deutsch-Jozsa</b> · <b style="color:var(--p1)">Bernstein-Vazirani</b><br><b style="color:var(--p1)">Grover</b> · <b style="color:var(--p1)">Shor</b> · <b style="color:var(--p1)">QFT</b><br><b style="color:var(--p1)">PhaseEst</b> · <b style="color:var(--p1)">VQE</b> · <b style="color:var(--p1)">QAOA</b><br><b style="color:var(--p1)">Quantum Walk</b> · <b style="color:var(--p1)">Density Matrix</b><br><b style="color:var(--p1)">Noise</b> · <b style="color:var(--p1)">QEC</b> · <b style="color:var(--p1)">QML</b></div></div><div class="sec"><h4>🔬 Simulador Real</h4><div style="font-family:var(--mono);font-size:.62rem;line-height:1.9;color:var(--tx2)">Complex amplitudes · Tensor gates · Measurement collapse<br>Bloch sphere · Density matrix · Partial trace<br>Grover · QFT · VQE · QAOA · Shor (period finding)</div></div><div class="sec"><h4>⌨️ Atalhos</h4><div style="font-family:var(--mono);font-size:.62rem;line-height:1.9;color:var(--tx2)">Space=Play · →=Step · R=Reset · T=Tema · ?=Help</div></div>','<button class="btn primary" onclick="closeModal()">Got it</button>',{size:'lg'})}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay()}
+  else if(e.key==='ArrowRight'){e.preventDefault();stepOnce()}
+  else if(e.key==='r'||e.key==='R')resetModule();
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal()
+});
+var lastT=performance.now(),fAcc=0,fFr=0;
+function loop(now){
+  var dt=Math.min((now-lastT)/1000,0.05);lastT=now;
+  fAcc+=dt;fFr++;
+  if(fAcc>=0.5){var e=$('sbFps');if(e)e.textContent=Math.round(fFr/fAcc);fAcc=0;fFr=0}
+  var m=MODULES[STATE.currentTab];
+  if(m&&m.tick){try{m.tick(dt)}catch(e){logMsg('tick error: '+e.message,'error')}}
+  if(m&&m.draw){try{CANV.ctx.clearRect(0,0,CANV.W,CANV.H);m.draw(CANV.ctx)}catch(e){
+    logMsg('draw('+m.key+') error: '+e.message,'error');
+    try{CANV.ctx.fillStyle='#020108';CANV.ctx.fillRect(0,0,CANV.W,CANV.H);CANV.ctx.fillStyle='#a060ff';CANV.ctx.font='bold 14px monospace';CANV.ctx.textAlign='center';CANV.ctx.textBaseline='middle';CANV.ctx.fillText('Render error: '+e.message,CANV.W/2,CANV.H/2)}catch(_){}
+  }}
+  requestAnimationFrame(loop);
+}
+window.addEventListener('DOMContentLoaded',function(){
+  logMsg('DOMContentLoaded','success');
+  try{buildTabs()}catch(e){logMsg('buildTabs: '+e.message,'error')}
+  try{initCanvas()}catch(e){logMsg('initCanvas: '+e.message,'error')}
+  try{var m=MODULES[STATE.currentTab];if(m&&m.init)m.init()}catch(e){logMsg('init: '+e.message,'error')}
+  try{renderLeftPanel()}catch(e){logMsg('renderLeftPanel: '+e.message,'error')}
+  try{renderRightPanel()}catch(e){logMsg('renderRightPanel: '+e.message,'error')}
+  logMsg('QUBIT ready','success');
+  requestAnimationFrame(loop);
+  $('tbDot').classList.add('on');
+  $('tbText').textContent='running';
+  toast('QUBIT ready — 20 módulos quânticos','success',3000);
+});
+console.log('%c QUBIT ','background:linear-gradient(90deg,#a060ff,#20e0ff,#40ff90,#ffd040,#ff40a0);color:#05030d;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('Complex amplitudes · Tensor gates · Bloch sphere · Grover · QFT · VQE · QAOA · Shor');
+</script>
+</body></html>

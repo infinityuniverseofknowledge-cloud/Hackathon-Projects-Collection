@@ -1,0 +1,2786 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="clinical">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>MEDIX — Clinical Analytics Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px}
+:root{
+  --bg:#0a0410;--panel:#140818;--panel2:#1c0c20;--panel3:#28142e;--panel4:#381c40;
+  --bd:#2a1430;--bd2:#502858;--tx:#f0e0f8;--tx2:#b090c0;--tx3:#785888;
+  --p1:#ff4080;--p2:#40e0ff;--p3:#40ff90;--p4:#ffd040;--p5:#a060ff;--p6:#ff8040;
+  --g1:linear-gradient(135deg,#ff4080,#a060ff);
+  --gHolo:linear-gradient(120deg,#ff4080,#a060ff,#40e0ff,#40ff90,#ffd040,#ff4080);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .13s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="paper"]{--bg:#fdf8fc;--panel:#fff;--panel2:#fdf8fc;--panel3:#f8eef8;--panel4:#f0dff0;--bd:#e8d0e8;--bd2:#c8a0c8;--tx:#1a0818;--tx2:#583058;--tx3:#885888;--p1:#c00060;--p2:#0060a0;--g1:linear-gradient(135deg,#c00060,#6020c0)}
+[data-theme="scrubs"]{--bg:#f0f8f8;--panel:#fff;--panel2:#f0f8f8;--panel3:#e0f0f0;--panel4:#d0e8e8;--bd:#c0dcdc;--bd2:#80b0b0;--tx:#0a2020;--tx2:#406060;--tx3:#708080;--p1:#0080a0;--p2:#0060c0;--g1:linear-gradient(135deg,#0080a0,#0060c0)}
+[data-theme="dark"]{--bg:#000;--panel:#0a0a0f;--panel2:#14141c;--panel3:#1e1e28;--panel4:#282834;--bd:#202030;--bd2:#383848;--tx:#e0e0f0;--tx2:#9090a8;--tx3:#606078;--p1:#40a0ff;--p2:#40d0a0;--g1:linear-gradient(135deg,#40a0ff,#40d0a0)}
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+#topbar{height:48px;background:var(--panel);border-bottom:2px solid var(--p1);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:5px;font-size:.92rem;background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:4px;padding:5px 9px;border-radius:4px;cursor:pointer;transition:var(--t1);font-size:.62rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:30px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#0a0410}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.tb-btn{width:30px;height:30px;border-radius:4px;background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--p1);color:var(--p1)}
+.tb-status{font-family:var(--mono);font-size:.6rem;padding:4px 9px;background:var(--panel2);border:1px solid var(--bd);border-radius:4px;color:var(--p1);font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tb-status .dot{width:7px;height:7px;border-radius:50%;background:var(--panel3)}
+.tb-status .dot.on{background:var(--p3);box-shadow:0 0 10px var(--p3);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:290px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:9px 11px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.panel-title{font-size:.58rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#050210;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasWrap::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,64,128,.012) 0,rgba(255,64,128,.012) 1px,transparent 1px,transparent 3px)}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.co-badge{background:rgba(20,8,24,.92);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:4px;padding:5px 9px;font-family:var(--mono);font-size:.6rem;color:var(--p1);max-width:340px}
+.co-badge.stats{color:var(--p2);display:flex;flex-direction:column;gap:2px;align-items:flex-end;text-align:right;line-height:1.5}
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:30px}
+.rp-tab{flex:1;padding:5px;font-size:.54rem;font-weight:700;text-transform:uppercase;color:var(--tx3);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab.active{color:var(--p1);border-bottom-color:var(--p1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+#statusbar{height:26px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:12px;font-family:var(--mono);font-size:.6rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:4px;white-space:nowrap}
+#statusbar .sb-val{color:var(--p1)}
+.sb-val.c2{color:var(--p2)}.sb-val.c3{color:var(--p3)}.sb-val.c4{color:var(--p4)}.sb-val.c5{color:var(--p5)}
+.sec{margin-bottom:12px}
+.sec h4{font-size:.58rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--tx3);margin-bottom:7px;font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.58rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:3px;text-transform:uppercase;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--p1);text-transform:none}
+.ctrl{margin-bottom:9px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--p1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--p1)}
+.ctrl input,.ctrl select,.ctrl textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:4px;padding:5px 8px;color:var(--tx);font-size:.66rem;font-family:var(--mono)}
+.ctrl textarea{resize:vertical;min-height:60px;line-height:1.5}
+.ctrl input:focus,.ctrl textarea:focus,.ctrl select:focus{border-color:var(--p1);box-shadow:0 0 0 3px rgba(255,64,128,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:4px;background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.66rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--p1);color:var(--p1)}
+.btn.primary{background:var(--g1);color:#0a0410;border-color:transparent}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:3px 7px;font-size:.58rem}
+.btn.danger{background:rgba(255,64,128,.2);border-color:var(--p1);color:var(--p1)}
+.chip-row{display:flex;gap:3px;flex-wrap:wrap}
+.chip{padding:3px 8px;background:var(--panel3);border:1px solid var(--bd);border-radius:999px;cursor:pointer;font-size:.58rem;font-family:var(--mono);color:var(--tx2)}
+.chip:hover{border-color:var(--p1);color:var(--p1)}
+.chip.active{background:var(--g1);color:#0a0410;border-color:transparent;font-weight:700}
+.kv{font-family:var(--mono);font-size:.6rem;line-height:1.7}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3)}.kv .v{color:var(--p1);text-align:right;font-size:.58rem;word-break:break-all;max-width:180px}
+.empty{text-align:center;padding:28px 18px;color:var(--tx3);font-size:.68rem;font-family:var(--mono)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:9px;max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{font-size:.88rem;color:var(--p1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:18px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:13px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end}
+.modal-x{width:24px;height:24px;color:var(--tx3);cursor:pointer;font-size:.95rem}
+#toasts{position:fixed;bottom:40px;right:18px;z-index:9000;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.toast{padding:9px 14px;border-radius:6px;background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--p1);font-size:.68rem;max-width:320px;min-width:170px;animation:tin .3s;display:flex;align-items:center;gap:9px;font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--p3)}.toast.warn{border-left-color:var(--p4)}.toast.error{border-left-color:var(--p1)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+.risk-low{color:#40ff90}.risk-mid{color:#ffd040}.risk-high{color:#ff8040}.risk-crit{color:#ff4080;font-weight:900}
+.badge-risk{padding:3px 8px;border-radius:4px;font-family:var(--mono);font-size:.6rem;font-weight:700;display:inline-block}
+@media(max-width:1000px){#leftPanel{width:250px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel,#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('ecg')">MEDIX</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus"><span class="dot" id="tbDot"></span><span id="tbText">booting…</span></div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="togglePlay()">⏸</button>
+      <button class="tb-btn" onclick="stepOnce()">⏭</button>
+      <button class="tb-btn" onclick="resetModule()">↺</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()">🎨</button>
+      <button class="tb-btn" onclick="showHelp()">❓</button>
+    </div>
+  </div>
+  <div id="main">
+    <div id="leftPanel"><div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div><div class="panel-body" id="lpBody"></div></div>
+    <div id="workspace"><div id="canvasWrap"><canvas id="mainCanvas"></canvas>
+      <div id="canvasOverlay"><div class="co-badge" id="coBadge">Ready</div><div class="co-badge stats" id="coStats"></div></div>
+    </div></div>
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+      </div>
+      <div class="rp-body"><div class="rp-pane active" id="rpState"></div><div class="rp-pane" id="rpMath"></div><div class="rp-pane" id="rpLogs"></div></div>
+    </div>
+  </div>
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">HR</span><span class="sb-val c2" id="sbHR">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">SpO₂</span><span class="sb-val c3" id="sbSpo2">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">BP</span><span class="sb-val c4" id="sbBP">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">T°</span><span class="sb-val c5" id="sbTemp">--</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">ECG</span></div>
+  </div>
+</div>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"><div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+<div id="toasts"></div>
+<script>
+"use strict";
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function attr(s){return esc(s).replace(/`/g,'&#96;')}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function randn(){var u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function lerp(a,b,t){return a+(b-a)*t}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2200;var ic={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span>'+(ic[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,o){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(o&&o.size?' '+o.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){var w=CANV.canvas.parentElement;CANV.dpr=window.devicePixelRatio||1;CANV.W=w.clientWidth;CANV.H=w.clientHeight;CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);CANV.canvas.style.width=CANV.W+'px';CANV.canvas.style.height=CANV.H+'px';CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0)}
+var INPUT={down:false,x:0,y:0,dx:0,dy:0};
+function cp(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=cp(e);INPUT.down=true;INPUT.x=p.x;INPUT.y=p.y;try{var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p)}catch(err){logMsg('onDown: '+err.message,'error')}}
+function onMove(e){var p=cp(e);INPUT.dx=p.x-INPUT.x;INPUT.dy=p.y-INPUT.y;INPUT.x=p.x;INPUT.y=p.y;try{var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,INPUT.dx,INPUT.dy)}catch(err){}}
+function onUp(){INPUT.down=false;try{var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp()}catch(err){}}
+function onTouchStart(e){if(e.touches.length===1)onDown({clientX:e.touches[0].clientX,clientY:e.touches[0].clientY});e.preventDefault()}
+function onTouchMove(e){if(e.touches.length===1)onMove({clientX:e.touches[0].clientX,clientY:e.touches[0].clientY});e.preventDefault()}
+function onTouchEnd(e){onUp();e.preventDefault()}
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){this.beginPath();this.moveTo(x+r,y);this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this}}
+
+var MODULES={};
+function registerModule(k,d){d.key=k;MODULES[k]=d}
+function setStats(h){var e=$('coStats');if(e)e.innerHTML=h}
+function badge(t){var e=$('coBadge');if(e)e.textContent=t}
+function SV(id,v){var e=$(id);if(e)e.textContent=v}
+
+var LOG=[];
+function logMsg(msg,type){type=type||'info';LOG.push({t:Date.now(),msg:msg,type:type});if(LOG.length>200)LOG.shift();if(STATE.currentRp==='logs')renderLogs()}
+window.addEventListener('error',function(e){try{logMsg('ERROR: '+e.message,'error')}catch(_){}});
+
+/* ══════════════════════════════════════════════════════════
+   MEDICAL CALCULATIONS LIBRARY
+   ══════════════════════════════════════════════════════════ */
+
+/* Glasgow Coma Scale total (3-15) */
+function gcsTotal(eye,verbal,motor){return eye+verbal+motor}
+function gcsSeverity(total){
+  if(total>=13)return {level:'Mild',color:'#40ff90'};
+  if(total>=9)return {level:'Moderate',color:'#ffd040'};
+  return {level:'Severe',color:'#ff4080'};
+}
+
+/* APACHE II score */
+function apacheII(p){
+  // p: {temp, map, hr, rr, paO2, pH, na, k, cr, hct, wbc, age, chronic, gcs}
+  var score=0;
+  // Temperature (°C)
+  if(p.temp>=41||p.temp<=29.9)score+=4;
+  else if(p.temp>=39||p.temp<=31.9)score+=3;
+  else if(p.temp>=38.5||p.temp<=33.9)score+=1;
+  else if(p.temp<=35.9)score+=2;
+  // MAP
+  if(p.map>=160||p.map<=49)score+=4;
+  else if(p.map>=130)score+=3;
+  else if(p.map>=110||p.map<=69)score+=2;
+  else if(p.map<=79)score+=1;
+  // HR
+  if(p.hr>=180||p.hr<=39)score+=4;
+  else if(p.hr>=140||p.hr<=54)score+=3;
+  else if(p.hr>=110||p.hr<=69)score+=2;
+  else if(p.hr>=70&&p.hr<=109)score+=0;
+  // RR
+  if(p.rr>=50||p.rr<=5)score+=4;
+  else if(p.rr>=35)score+=3;
+  else if(p.rr>=25||p.rr<=9)score+=1;
+  else if(p.rr>=10&&p.rr<=11)score+=1;
+  // Oxygenation
+  if(p.paO2<55)score+=4;
+  else if(p.paO2<61)score+=3;
+  else if(p.paO2<71)score+=1;
+  // pH
+  if(p.pH>=7.7||p.pH<7.15)score+=4;
+  else if(p.pH>=7.6||p.pH<7.25)score+=3;
+  else if(p.pH>=7.5||p.pH<7.33)score+=1;
+  else if(p.pH<7.33)score+=2;
+  // Na
+  if(p.na>=180||p.na<=110)score+=4;
+  else if(p.na>=160||p.na<=119)score+=3;
+  else if(p.na>=155||p.na<=129)score+=2;
+  else if(p.na>=150||p.na<=134)score+=1;
+  // K
+  if(p.k>=7||p.k<2.5)score+=4;
+  else if(p.k>=6)score+=3;
+  else if(p.k>=5.5||p.k<3)score+=1;
+  else if(p.k>=3&&p.k<3.5)score+=1;
+  // Creatinine
+  if(p.cr>=3.5)score+=4;
+  else if(p.cr>=2)score+=3;
+  else if(p.cr>=1.5||p.cr<0.6)score+=2;
+  // Hct
+  if(p.hct>=60||p.hct<20)score+=4;
+  else if(p.hct>=50||p.hct<30)score+=2;
+  else if(p.hct>=46)score+=1;
+  // WBC
+  if(p.wbc>=40||p.wbc<1)score+=4;
+  else if(p.wbc>=20||p.wbc<3)score+=2;
+  else if(p.wbc>=15)score+=1;
+  // GCS
+  score+=15-p.gcs;
+  // Age
+  if(p.age>=75)score+=6;
+  else if(p.age>=65)score+=5;
+  else if(p.age>=55)score+=3;
+  else if(p.age>=45)score+=2;
+  // Chronic health
+  score+=p.chronic;
+  return score;
+}
+function apacheIIMortality(score){
+  // Approximate from Knaus et al. 1985
+  var mort={
+    0:4,5:8,10:15,15:25,20:40,25:55,30:73,35:88,40:95
+  };
+  var keys=Object.keys(mort).map(Number).sort(function(a,b){return a-b});
+  for(var i=0;i<keys.length-1;i++){
+    if(score>=keys[i]&&score<keys[i+1]){
+      var t=(score-keys[i])/(keys[i+1]-keys[i]);
+      return lerp(mort[keys[i]],mort[keys[i+1]],t);
+    }
+  }
+  return mort[keys[keys.length-1]];
+}
+
+/* SOFA score */
+function sofaScore(p){
+  var s=0;
+  // Respiration PaO2/FiO2
+  if(p.pf<100)s+=4;
+  else if(p.pf<200)s+=3;
+  else if(p.pf<300)s+=2;
+  else if(p.pf<400)s+=1;
+  // Coagulation Platelets (×10³/μL)
+  if(p.plt<20)s+=4;
+  else if(p.plt<50)s+=3;
+  else if(p.plt<100)s+=2;
+  else if(p.plt<150)s+=1;
+  // Liver Bilirubin (mg/dL)
+  if(p.bili>=12)s+=4;
+  else if(p.bili>=6)s+=3;
+  else if(p.bili>=2)s+=2;
+  else if(p.bili>=1.2)s+=1;
+  // Cardiovascular
+  if(p.map<70&&!p.vaso)s+=1;
+  else if(p.dopa<=5||p.dobut)s+=2;
+  else if(p.dopa>5||p.epi<=0.1)s+=3;
+  else if(p.dopa>15||p.epi>0.1)s+=4;
+  // CNS GCS
+  if(p.gcs<6)s+=4;
+  else if(p.gcs<10)s+=3;
+  else if(p.gcs<13)s+=2;
+  else if(p.gcs<15)s+=1;
+  // Renal Creatinine
+  if(p.cr>=5)s+=4;
+  else if(p.cr>=3.5)s+=3;
+  else if(p.cr>=2)s+=2;
+  else if(p.cr>=1.2)s+=1;
+  return s;
+}
+function sofaMortality(score){
+  // from Ferreira et al. 2001
+  if(score<=6)return {rate:score*3.2,label:'Low'};
+  if(score<=9)return {rate:20+score*4,label:'Moderate'};
+  if(score<=12)return {rate:50+score*2,label:'High'};
+  return {rate:80+score,label:'Very High'};
+}
+
+/* Wells Score for DVT/PE */
+function wellsDVT(items){
+  var score=0;
+  if(items.cancer)score+=1;
+  if(items.paralysis)score+=1;
+  if(items.bedridden)score+=1;
+  if(items.tenderness)score+=1;
+  if(items.swelling)score+=1;
+  if(items.pitting)score+=1;
+  if(items.collateral)score+=1;
+  if(items.prevDVT)score+=1;
+  if(items.altDx)score-=2;
+  return score;
+}
+function wellsDVTProb(score){
+  if(score>=3)return {level:'High',prob:75,color:'#ff4080'};
+  if(score>=1)return {level:'Moderate',prob:17,color:'#ffd040'};
+  return {level:'Low',prob:3,color:'#40ff90'};
+}
+
+/* CHA2DS2-VASc */
+function cha2ds2vasc(p){
+  var score=0;
+  if(p.chf)score+=1;
+  if(p.htn)score+=1;
+  if(p.age>=75)score+=2;
+  else if(p.age>=65)score+=1;
+  if(p.dm)score+=1;
+  if(p.stroke)score+=2;
+  if(p.vasc)score+=1;
+  if(p.female)score+=1;
+  return score;
+}
+function chadsvascRisk(score){
+  var risk=[0,1.3,2.2,3.2,4.0,6.7,9.8,9.6,6.7,15.2];
+  return risk[Math.min(score,9)]||0;
+}
+
+/* eGFR CKD-EPI 2021 */
+function egfr(scr,age,sex){
+  var k=sex==='F'?0.7:0.9;
+  var a=sex==='F'?-0.241:-0.302;
+  var min=Math.min(scr/k,1);
+  var max=Math.max(scr/k,1);
+  var e=142*Math.pow(min,a)*Math.pow(max,-1.2)*Math.pow(0.9938,age);
+  if(sex==='F')e*=1.012;
+  return e;
+}
+function ckdStage(e){
+  if(e>=90)return {stage:'G1',label:'Normal',color:'#40ff90'};
+  if(e>=60)return {stage:'G2',label:'Mild ↓',color:'#40ff90'};
+  if(e>=45)return {stage:'G3a',label:'Mild-mod ↓',color:'#ffd040'};
+  if(e>=30)return {stage:'G3b',label:'Mod-severe ↓',color:'#ff8040'};
+  if(e>=15)return {stage:'G4',label:'Severe ↓',color:'#ff4080'};
+  return {stage:'G5',label:'Kidney failure',color:'#ff4080'};
+}
+
+/* Blood gas analysis (Winter's formula for metabolic acidosis) */
+function winterFormula(hco3){
+  var expCO2=1.5*hco3+8;
+  return {low:expCO2-2,high:expCO2+2,expected:expCO2};
+}
+function anionGap(na,cl,hco3,k){
+  var ag=na-(cl+hco3);
+  if(k)ag=na+k-cl-hco3;
+  return ag;
+}
+function deltaRatio(ag,hco3){
+  var agNormal=12;
+  var hco3Normal=24;
+  return (ag-agNormal)/(hco3Normal-hco3);
+}
+
+/* Bergman minimal model (glucose-insulin dynamics) */
+function bergmanStep(state,p,dt){
+  // state: [G, X, I] (glucose mg/dL, remote insulin, insulin μU/mL)
+  // p: {G0, p1, p2, p3, n, k, V}
+  var G=state[0],X=state[1],I=state[2];
+  var dG=-(p.p1+X)*G+p.p1*p.Gb+p.meal;
+  var dX=-p.p2*X+p.p3*(I-p.Ib);
+  var dI=-p.n*(I-p.Ib)+p.insulinInput;
+  return [G+dG*dt, X+dX*dt, I+dI*dt];
+}
+
+/* Pharmacokinetics - 1 and 2 compartment */
+function pkOneComp(dose,bioavail,ka,ke,Vd,t){
+  // One-compartment with first-order absorption
+  if(ka===0)return (dose*bioavail/Vd)*Math.exp(-ke*t);
+  return (dose*bioavail*ka/(Vd*(ka-ke)))*(Math.exp(-ke*t)-Math.exp(-ka*t));
+}
+function pkTwoComp(dose,A,B,alpha,beta,t){
+  return dose*(A*Math.exp(-alpha*t)+B*Math.exp(-beta*t));
+}
+function halfLife(ke){return Math.log(2)/ke}
+
+/* ECG waveform synthesis (real P-QRS-T morphology) */
+function ecgWave(t,hr){
+  // t: time in seconds, hr: heart rate
+  var period=60/hr;
+  var phase=(t%period)/period;
+  var p=0;
+  // P wave (0.0-0.1)
+  if(phase<0.1)p=0.15*Math.sin(phase/0.1*Math.PI);
+  // PR segment (0.1-0.16)
+  // QRS complex (0.16-0.24)
+  if(phase>=0.16&&phase<0.18)p-=0.1*Math.sin((phase-0.16)/0.02*Math.PI); // Q
+  if(phase>=0.18&&phase<0.21)p+=1.0*Math.sin((phase-0.18)/0.03*Math.PI); // R
+  if(phase>=0.21&&phase<0.24)p-=0.2*Math.sin((phase-0.21)/0.03*Math.PI); // S
+  // ST segment (0.24-0.35)
+  // T wave (0.35-0.5)
+  if(phase>=0.35&&phase<0.5)p+=0.3*Math.sin((phase-0.35)/0.15*Math.PI);
+  // Baseline noise
+  p+=randn()*0.01;
+  return p;
+}
+
+/* Kaplan-Meier survival estimate */
+function kaplanMeier(times,events){
+  var allTimes=[];
+  for(var i=0;i<times.length;i++)allTimes.push({t:times[i],e:events[i]});
+  allTimes.sort(function(a,b){return a.t-b.t});
+  var n=allTimes.length;
+  var survival=1;
+  var out=[{t:0,s:1}];
+  var atRisk=n;
+  for(var i=0;i<allTimes.length;i++){
+    if(allTimes[i].e===1){
+      survival*=((atRisk-1)/atRisk);
+      out.push({t:allTimes[i].t,s:survival});
+    }
+    atRisk--;
+  }
+  return out;
+}
+
+/* Gompertz tumor growth */
+function gompertz(V0,a,b,t){
+  return V0*Math.exp((a/b)*(1-Math.exp(-b*t)));
+}
+
+/* Henderson-Hasselbalch */
+function hhEq(pKa,ratio){return pKa+Math.log10(ratio)}
+
+/* Cardiac output (Fick) */
+function fickCO(VO2,CaO2,CvO2){
+  // VO2 mL/min, CaO2/CvO2 mL/dL
+  return VO2/(CaO2-CvO2)*10/1000; // L/min
+}
+
+/* Framingham 10-year CVD risk (simplified) */
+function framinghamRisk(p){
+  // p: {age, sex, tc, hdl, sbp, smoker, dm, bpTx}
+  var lnAge=Math.log(p.age);
+  var lnTC=Math.log(p.tc);
+  var lnHDL=Math.log(p.hdl);
+  var lnSBP=Math.log(p.sbp);
+  var s;
+  if(p.sex==='M'){
+    s=3.112+0.719*lnAge+0.117*lnTC-0.151*lnHDL+0.283*lnSBP-(p.smoker?0.523:0)-(p.dm?0.24:0);
+    var mean=23.98,sd=0.887;
+  }else{
+    s=31.764-0.030*lnAge+0.118*lnTC-0.280*lnHDL+0.222*lnSBP-(p.smoker?0.214:0)-(p.dm?0.24:0);
+    var mean=26.193,sd=0.876;
+  }
+  var z=(s-mean)/sd;
+  return 1-Math.pow(0.95,Math.exp(z));
+}
+
+/* ══════════════════════════════════════════════════════════
+   DRAWING UTILITIES
+   ══════════════════════════════════════════════════════════ */
+function drawSparkline(ctx,x,y,w,h,values,color,fill){
+  if(values.length<2)return;
+  var mx=Math.max.apply(null,values),mn=Math.min.apply(null,values);
+  if(mx===mn){mx=mn+1}
+  ctx.beginPath();
+  for(var i=0;i<values.length;i++){
+    var px=x+i/(values.length-1)*w;
+    var py=y+h-(values[i]-mn)/(mx-mn)*h;
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  }
+  if(fill){
+    ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.closePath();
+    var g=ctx.createLinearGradient(0,y,0,y+h);
+    g.addColorStop(0,color+'88');g.addColorStop(1,color+'00');
+    ctx.fillStyle=g;ctx.fill();
+  }
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+}
+function drawBars(ctx,x,y,w,h,values,colors,labels){
+  var n=values.length;
+  var bw=(w-(n-1)*4)/n;
+  var mx=Math.max.apply(null,values)||1;
+  for(var i=0;i<n;i++){
+    var bh=values[i]/mx*h;
+    ctx.fillStyle=colors[i%colors.length];
+    ctx.fillRect(x+i*(bw+4),y+h-bh,bw,bh);
+    ctx.strokeStyle='rgba(0,0,0,.3)';ctx.strokeRect(x+i*(bw+4),y+h-bh,bw,bh);
+    if(labels){
+      ctx.fillStyle='#b090c0';ctx.font='9px monospace';ctx.textAlign='center';
+      ctx.fillText(labels[i],x+i*(bw+4)+bw/2,y+h+12);
+    }
+  }
+}
+function riskColor(score,max){
+  var t=score/max;
+  if(t<0.3)return '#40ff90';
+  if(t<0.6)return '#ffd040';
+  if(t<0.85)return '#ff8040';
+  return '#ff4080';
+}
+function drawGauge(ctx,cx,cy,r,value,max,label,unit){
+  var startAngle=Math.PI*0.75;
+  var endAngle=Math.PI*2.25;
+  var range=endAngle-startAngle;
+  // Arc background
+  ctx.strokeStyle='rgba(80,40,88,.4)';ctx.lineWidth=12;
+  ctx.beginPath();ctx.arc(cx,cy,r,startAngle,endAngle);ctx.stroke();
+  // Value arc
+  var t=clamp(value/max,0,1);
+  var vAngle=startAngle+range*t;
+  ctx.strokeStyle=riskColor(value,max);ctx.lineWidth=12;
+  ctx.beginPath();ctx.arc(cx,cy,r,startAngle,vAngle);ctx.stroke();
+  // Center text
+  ctx.fillStyle='#f0e0f8';ctx.font='bold '+Math.floor(r*0.5)+'px monospace';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(String(value),cx,cy-5);
+  ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+  ctx.fillText(label,cx,cy+r*0.5);
+  if(unit){ctx.fillText(unit,cx,cy+r*0.7)}
+  ctx.textBaseline='alphabetic';
+}
+</script>
+<script>
+var STATE={currentTab:'ecg',currentRp:'state',playing:true,time:0,
+ecg:{hr:75,rhythm:'NSR',stElev:0,t:0,scale:1,paperSpeed:25,noise:0.02,lead:'II',history:[]},
+vitals:{hr:78,spo2:98,bpSys:120,bpDia:80,temp:36.8,rr:16,etco2:38,t:0,history:[],deteriorating:false,trend:0},
+pk:{drug:'Vancomycin',dose:1000,bioavail:1,ka:1.5,ke:0.15,Vd:0.7,weight:70,t:0,history:[],drugList:null,infusion:false,infRate:0},
+bloodgas:{pH:7.40,pCO2:40,pO2:95,hco3:24,na:140,k:4.0,cl:104,lactate:1.0,interpretation:null},
+apache:{temp:37,map:90,hr:80,rr:16,paO2:90,pH:7.40,na:140,k:4.0,cr:1.0,hct:40,wbc:8,age:60,gcs:15,chronic:0,score:0,mortality:0,history:[]},
+sofa:{pf:400,plt:200,bili:1.0,map:80,vaso:0,gcs:15,cr:1.0,score:0,mortality:0,dopamine:0,componentScores:{}},
+gcs:{eye:4,verbal:5,motor:6,total:15,history:[]},
+wells:{cancer:false,paralysis:false,bedridden:false,tenderness:false,swelling:false,pitting:false,collateral:false,prevDVT:false,altDx:false,score:0,prob:null},
+chads:{chf:false,htn:false,age:60,dm:false,stroke:false,vasc:false,female:false,score:0,risk:0},
+egfr:{scr:1.0,age:60,sex:'M',value:0,stage:null,scrHistory:[]},
+diabetes:{G:100,X:0,I:10,Gb:100,Ib:10,meal:0,insulinInput:0,dt:0.5,t:0,history:[],mealSchedule:[],carbInput:0},
+tumor:{V0:1,a:0.5,b:0.05,t:0,history:[],treatment:0,response:0,cycles:[]},
+kaplan:{n:100,times:[],events:[],curve:[],treatmentA:true,hr:1.0},
+drugInt:{selected:[],list:null,interactions:[],severity:'none'},
+framingham:{age:55,sex:'M',tc:200,hdl:50,sbp:130,smoker:false,dm:false,bpTx:false,risk:0,percentile:0},
+qsofa:{rr:16,altered:false,sbp:120,score:0,risk:'low'},
+shock:{map:70,hr:80,co:5,svr:1200,cvp:8,paop:12,index:null,type:'normal'},
+acidbase:{pH:7.40,pCO2:40,hco3:24,na:140,cl:104,ag:12,deltaRatio:1.0,winter:null,primary:null,compensation:null},
+resp:{Vt:500,rr:16,peep:5,fio2:0.21,compliance:50,resistance:10,paw:0,flow:0,volume:0,history:[],mode:'CMV'},
+renal:{gfr:90,creatinine:1.0,urine:1500,na:140,k:4.0,fena:1.0,feUrea:35,prerenal:false},
+vent:{mode:'AC',vt:500,rr:14,peep:5,fio2:0.4,pInsp:20,pPlateau:18,flowPattern:'square',history:[]},
+ecmo:{mode:'VV',flow:4.0,sweep:3.0,fdo2:1.0,hb:10,satPre:65,satPost:95,co2Removal:200,history:[]},
+brain:{channels:['Fp1','Fp2','F3','F4','C3','C4','P3','P4'],t:0,state:'awake',history:[],fft:[]},
+ca:{cycle:0,compressions:0,rate:100,depth:5.5,co2:25,shocks:0,rosc:false,t:0,history:[]}
+};
+
+var TABS=[
+  {key:'ecg',icon:'💓',label:'ECG Monitor'},
+  {key:'vitals',icon:'📊',label:'Vital Signs'},
+  {key:'pk',icon:'💊',label:'Pharmacokinetics'},
+  {key:'bloodgas',icon:'🩸',label:'Blood Gas'},
+  {key:'apache',icon:'⚠',label:'APACHE II'},
+  {key:'sofa',icon:'🫁',label:'SOFA Score'},
+  {key:'gcs',icon:'🧠',label:'Glasgow Coma'},
+  {key:'wells',icon:'🦵',label:'Wells DVT'},
+  {key:'chads',icon:'❤️',label:'CHA₂DS₂-VASc'},
+  {key:'egfr',icon:'🫘',label:'Kidney Function'},
+  {key:'diabetes',icon:'🍰',label:'Diabetes Model'},
+  {key:'tumor',icon:'🔬',label:'Tumor Growth'},
+  {key:'kaplan',icon:'📉',label:'Kaplan-Meier'},
+  {key:'drugInt',icon:'⚗',label:'Drug Interactions'},
+  {key:'framingham',icon:'🎯',label:'Cardio Risk'},
+  {key:'qsofa',icon:'🚨',label:'Sepsis Screening'},
+  {key:'shock',icon:'💉',label:'Hemodynamics'},
+  {key:'acidbase',icon:'⚖',label:'Acid-Base'},
+  {key:'resp',icon:'🌬',label:'Respiratory'},
+  {key:'vent',icon:'⛑',label:'Ventilator'},
+  {key:'renal',icon:'💧',label:'Renal Function'},
+  {key:'ecmo',icon:'🫀',label:'ECMO'},
+  {key:'brain',icon:'📡',label:'EEG Monitor'},
+  {key:'ca',icon:'🆘',label:'Cardiac Arrest'},
+];
+
+/* ══════ 1. ECG MONITOR ══════ */
+registerModule('ecg',{title:'ECG Monitor',icon:'💓',desc:'Continuous ECG with rhythm library and analysis.',init:function(){var e=STATE.ecg;e.t=0;e.history=[]},
+tick:function(dt){STATE.time+=dt;var e=STATE.ecg;if(!STATE.playing)return;
+e.t+=dt*1.0;
+var v=ecgWave(e.t,e.hr);
+// Apply rhythm modifications
+if(e.rhythm==='AFib'){
+  v=ecgWave(e.t*1.0,e.hr);
+  // Irregular RR
+  if(Math.random()<0.01)e.hr=70+Math.random()*30;
+}
+e.history.push(v);
+if(e.history.length>1200)e.history.shift()},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var e=STATE.ecg;
+/* ECG grid */
+ctx.strokeStyle='rgba(255,64,128,.08)';ctx.lineWidth=1;
+for(var x=0;x<W;x+=15){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+for(var y=0;y<H;y+=15){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+/* Bold grid lines */
+ctx.strokeStyle='rgba(255,64,128,.15)';
+for(var x=0;x<W;x+=75){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+for(var y=0;y<H;y+=75){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+/* ECG trace */
+var cy=H/2;
+var scale=e.scale*80;
+ctx.strokeStyle='#40ff90';ctx.lineWidth=2;
+ctx.shadowColor='#40ff90';ctx.shadowBlur=6;
+ctx.beginPath();
+for(var i=0;i<e.history.length;i++){
+  var x=i/e.history.length*W;
+  var y=cy-e.history[i]*scale;
+  if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+}
+ctx.stroke();ctx.shadowBlur=0;
+/* Lead label */
+ctx.fillStyle='rgba(5,2,16,.85)';
+ctx.fillRect(20,20,260,110);
+ctx.strokeStyle='#ff4080';ctx.lineWidth=1;ctx.strokeRect(20,20,260,110);
+ctx.fillStyle='#ff4080';ctx.font='bold 14px monospace';
+ctx.fillText('LEAD '+e.lead,30,40);
+ctx.fillStyle='#40ff90';ctx.font='bold 32px monospace';
+ctx.fillText(e.hr,30,80);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('bpm',110,80);
+ctx.fillStyle='#40e0ff';ctx.font='bold 13px monospace';
+ctx.fillText(e.rhythm,30,105);
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+ctx.fillText('Speed: '+e.paperSpeed+' mm/s',30,122);
+/* Rhythm info */
+ctx.fillStyle='rgba(5,2,16,.85)';
+ctx.fillRect(W-260,20,240,140);
+ctx.strokeStyle='#40e0ff';ctx.lineWidth=1;ctx.strokeRect(W-260,20,240,140);
+ctx.fillStyle='#40e0ff';ctx.font='bold 12px monospace';
+ctx.fillText('INTERPRETATION',W-250,40);
+var interp=ecgInterpretation(e);
+ctx.fillStyle=interp.color;ctx.font='bold 13px monospace';
+ctx.fillText(interp.title,W-250,62);
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+interp.lines.forEach(function(l,i){ctx.fillText(l,W-250,80+i*14)});
+setStats('<div>HR: '+e.hr+' bpm</div><div>Rhythm: '+e.rhythm+'</div><div>Lead: '+e.lead+'</div>');
+badge('💓 ECG · '+e.hr+' bpm · '+e.rhythm);SV('sbHR',e.hr+' bpm')},
+onDown:function(){},
+controls:function(){var e=STATE.ecg;var h='<div class="sec"><h4>Heart rate</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>HR</span><span>'+e.hr+' bpm</span></div><input type="range" min="30" max="200" value="'+e.hr+'" oninput="STATE.ecg.hr=parseInt(this.value);renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Rhythm</h4><div class="chip-row">';
+['NSR','Sinus Brady','Sinus Tach','AFib','VTach','VFib','Asystole','SVT','Heart Block'].forEach(function(r){
+  h+='<div class="chip '+(e.rhythm===r?'active':'')+'" onclick="STATE.ecg.rhythm=\''+r+'\';MODULES.ecg.applyRhythm();renderLeftPanel()">'+r+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Lead</h4><div class="chip-row">';
+['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'].forEach(function(l){
+  h+='<div class="chip '+(e.lead===l?'active':'')+'" onclick="STATE.ecg.lead=\''+l+'\';renderLeftPanel()">'+l+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Scale</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Gain</span><span>'+fmt(e.scale,2)+'×</span></div><input type="range" min="0.3" max="3" step="0.1" value="'+e.scale+'" oninput="STATE.ecg.scale=parseFloat(this.value)"></div>';
+h+='</div>';
+return h},
+applyRhythm:function(){var e=STATE.ecg;
+var r=e.rhythm;
+if(r==='Sinus Brady')e.hr=45;
+else if(r==='Sinus Tach')e.hr=140;
+else if(r==='VTach')e.hr=180;
+else if(r==='VFib')e.hr=300;
+else if(r==='Asystole')e.hr=0;
+else if(r==='SVT')e.hr=180;
+else if(r==='NSR')e.hr=75;
+else if(r==='AFib')e.hr=110;
+else if(r==='Heart Block')e.hr=40;
+toast('Rhythm: '+r,'info')},
+mathPanel:function(){return '<div class="sec"><h4>ECG Physics</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Einthoven triangle: I, II, III<br>Goldberger: aVR, aVL, aVF<br>Wilson: V1-V6<br><br>Papel: 25 mm/s, 10 mm/mV<br>1 quadrado pequeno = 40 ms<br>1 quadrado grande = 200 ms<br><br>HR = 300 / (nº grandes entre R-R)</div></div>'}});
+
+function ecgInterpretation(e){
+  var hr=e.hr;
+  var r=e.rhythm;
+  var info={
+    'NSR':{title:'Normal Sinus Rhythm',color:'#40ff90',lines:['✓ Rate '+hr+' bpm (60-100)','✓ Regular RR intervals','✓ P before each QRS','✓ Normal PR, QRS, QT']},
+    'Sinus Brady':{title:'Sinus Bradycardia',color:'#40e0ff',lines:['Rate '+hr+' bpm (< 60)','May be physiologic (athletes)','Consider if symptomatic','DDx: hypothyroid, drugs, ↑ICP']},
+    'Sinus Tach':{title:'Sinus Tachycardia',color:'#ffd040',lines:['Rate '+hr+' bpm (> 100)','Physiologic response','DDx: fever, pain, anemia','Treat underlying cause']},
+    'AFib':{title:'Atrial Fibrillation',color:'#ff8040',lines:['Irregularly irregular','No discernible P waves','Rate '+hr+' bpm','↑ Stroke risk (CHA₂DS₂-VASc)']},
+    'VTach':{title:'Ventricular Tachycardia',color:'#ff4080',lines:['Wide complex tachycardia','Rate '+hr+' bpm','EMERGENCY if unstable','Prepare for cardioversion']},
+    'VFib':{title:'Ventricular Fibrillation',color:'#ff4080',lines:['CHAOTIC — no cardiac output','CARDIAC ARREST','DEFIBRILLATE immediately','Start CPR + ACLS']},
+    'Asystole':{title:'Asystole',color:'#ff4080',lines:['No electrical activity','Confirm in 2 leads','CPR + epinephrine','Consider reversible causes']},
+    'SVT':{title:'Supraventricular Tachycardia',color:'#ffd040',lines:['Narrow complex, regular','Rate '+hr+' bpm','Vagal maneuvers first','Adenosine if persists']},
+    'Heart Block':{title:'AV Block',color:'#ff8040',lines:['Conduction delay/block','Grade I/II/III','III = pacemaker likely','Assess hemodynamics']}
+  };
+  return info[r]||{title:r,color:'#40ff90',lines:['Normal morphology']};
+}
+
+/* ══════ 2. VITAL SIGNS ══════ */
+registerModule('vitals',{title:'Vital Signs Monitor',icon:'📊',desc:'ICU-style multi-parameter monitor.',init:function(){var v=STATE.vitals;v.history=[];v.t=0},
+tick:function(dt){STATE.time+=dt;var v=STATE.vitals;if(!STATE.playing)return;
+v.t+=dt;
+// Deterioration if enabled
+if(v.deteriorating){
+  v.hr=clamp(v.hr+randn()*0.5+v.trend*0.1,20,220);
+  v.spo2=clamp(v.spo2-randn()*0.2-v.trend*0.05,50,100);
+  v.bpSys=clamp(v.bpSys+randn()*1-v.trend*0.3,50,250);
+  v.temp=clamp(v.temp+randn()*0.05+v.trend*0.01,33,43);
+  v.rr=clamp(v.rr+randn()*0.3+v.trend*0.05,5,60);
+}else{
+  // Natural variation
+  v.hr=clamp(v.hr+randn()*0.3,20,220);
+  v.spo2=clamp(v.spo2+randn()*0.1,50,100);
+  v.bpSys=clamp(v.bpSys+randn()*0.5,50,250);
+  v.temp=clamp(v.temp+randn()*0.02,33,43);
+  v.rr=clamp(v.rr+randn()*0.2,5,60);
+}
+// MAP
+v.map=v.bpDia+(v.bpSys-v.bpDia)/3;
+// Shock index
+v.shockIndex=v.hr/v.bpSys;
+// NEWS2-like score
+v.news=computeNEWS(v);
+v.history.push({t:v.t,hr:v.hr,spo2:v.spo2,bp:v.bpSys,temp:v.temp,rr:v.rr});
+if(v.history.length>500)v.history.shift()},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var v=STATE.vitals;
+/* Monitor layout - 4 tiles */
+var tileW=W/2-20,tileH=H/2-20;
+drawVitalTile(ctx,15,15,tileW,tileH,'#40ff90',v.hr,'HR','bpm',30,200,[60,100]);
+drawVitalTile(ctx,W/2+5,15,tileW,tileH,'#40e0ff',v.spo2,'SpO₂','%',80,100,[94,100]);
+drawVitalTile(ctx,15,H/2+5,tileW,tileH,'#ffd040',v.bpSys+'/'+Math.round(v.bpDia),'BP','mmHg',0,0,[90,140]);
+drawVitalTile(ctx,W/2+5,H/2+5,tileW,tileH,'#a060ff',v.temp.toFixed(1),'Temp','°C',34,42,[36,38]);
+/* Trend sparkline */
+var trendY=H-70;
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(15,trendY,W-30,60);
+ctx.strokeStyle='#ff4080';ctx.lineWidth=1;ctx.strokeRect(15,trendY,W-30,60);
+ctx.fillStyle='#ff4080';ctx.font='bold 10px monospace';
+ctx.fillText('TRENDS (HR orange, SpO₂ cyan)',25,trendY+14);
+if(v.history.length>2){
+  var hrSeries=v.history.map(function(x){return x.hr});
+  var spSeries=v.history.map(function(x){return x.spo2});
+  drawSparkline(ctx,25,trendY+18,W-50,40,hrSeries,'#ff8040');
+  drawSparkline(ctx,25,trendY+18,W-50,40,spSeries,'#40e0ff');
+}
+setStats('<div>HR: '+Math.round(v.hr)+'</div><div>SpO₂: '+Math.round(v.spo2)+'%</div><div>BP: '+Math.round(v.bpSys)+'/'+Math.round(v.bpDia)+'</div><div>NEWS: '+v.news.score+'</div>');
+badge('📊 Vitals · NEWS '+v.news.score+' ('+v.news.level+')');
+SV('sbHR',Math.round(v.hr));SV('sbSpo2',Math.round(v.spo2)+'%');SV('sbBP',Math.round(v.bpSys)+'/'+Math.round(v.bpDia));SV('sbTemp',v.temp.toFixed(1)+'°C')},
+onDown:function(){},
+controls:function(){var v=STATE.vitals;var h='<div class="sec"><h4>Parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>HR</span><span>'+Math.round(v.hr)+' bpm</span></div><input type="range" min="20" max="220" value="'+Math.round(v.hr)+'" oninput="STATE.vitals.hr=parseInt(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>SpO₂</span><span>'+Math.round(v.spo2)+'%</span></div><input type="range" min="50" max="100" value="'+Math.round(v.spo2)+'" oninput="STATE.vitals.spo2=parseInt(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>BP systolic</span><span>'+Math.round(v.bpSys)+'</span></div><input type="range" min="50" max="250" value="'+Math.round(v.bpSys)+'" oninput="STATE.vitals.bpSys=parseInt(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>BP diastolic</span><span>'+Math.round(v.bpDia)+'</span></div><input type="range" min="30" max="150" value="'+Math.round(v.bpDia)+'" oninput="STATE.vitals.bpDia=parseInt(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Temp</span><span>'+v.temp.toFixed(1)+'°C</span></div><input type="range" min="34" max="42" step="0.1" value="'+v.temp+'" oninput="STATE.vitals.temp=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>RR</span><span>'+Math.round(v.rr)+'/min</span></div><input type="range" min="4" max="60" value="'+Math.round(v.rr)+'" oninput="STATE.vitals.rr=parseInt(this.value)"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+[['Normal',78,98,120,80,36.8,16],['Sepsis',120,94,90,55,38.9,24],['Shock',130,88,75,45,35.5,28],['Athlete',48,99,110,70,36.5,12]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.vitals.hr='+p[1]+';STATE.vitals.spo2='+p[2]+';STATE.vitals.bpSys='+p[3]+';STATE.vitals.bpDia='+p[4]+';STATE.vitals.temp='+p[5]+';STATE.vitals.rr='+p[6];renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Simulation</h4>';
+h+='<div class="chip '+(v.deteriorating?'active':'')+'" onclick="STATE.vitals.deteriorating=!STATE.vitals.deteriorating;renderLeftPanel()">Deteriorating: '+(v.deteriorating?'ON':'OFF')+'</div>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>NEWS2 Score</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">National Early Warning Score 2 (RCP):<br><br>RR: ≤8 (3), 9-11 (1), 12-20 (0), 21-24 (2), ≥25 (3)<br>SpO₂: ≤91 (3), 92-93 (2), 94-95 (1), ≥96 (0)<br>Temp: ≤35 (3), 35.1-36 (1), 36.1-38 (0), 38.1-39 (1), ≥39.1 (2)<br>BP sys: ≤90 (3), 91-100 (2), 101-110 (1), ≥111 (0)<br>HR: ≤40 (3), 41-50 (1), 51-90 (0), 91-110 (1), 111-130 (2), ≥131 (3)</div></div>'}});
+
+function drawVitalTile(ctx,x,y,w,h,color,value,label,unit,min,max,normalRange){
+  ctx.fillStyle='rgba(20,8,24,.6)';
+  ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.strokeRect(x,y,w,h);
+  ctx.fillStyle=color;ctx.font='bold 11px monospace';
+  ctx.fillText(label,x+12,y+22);
+  ctx.fillStyle='#f0e0f8';ctx.font='bold 48px monospace';
+  ctx.fillText(String(value),x+12,y+h*0.7);
+  ctx.fillStyle='#b090c0';ctx.font='12px monospace';
+  ctx.fillText(unit,x+12,y+h*0.88);
+}
+function computeNEWS(v){
+  var score=0;
+  // RR
+  if(v.rr<=8||v.rr>=25)score+=3;
+  else if(v.rr>=21)score+=2;
+  else if(v.rr<=11)score+=1;
+  // SpO2
+  if(v.spo2<=91)score+=3;
+  else if(v.spo2<=93)score+=2;
+  else if(v.spo2<=95)score+=1;
+  // Temp
+  if(v.temp<=35||v.temp>=39.1)score+=2;
+  else if(v.temp<=36||v.temp>=38.1)score+=1;
+  // BP sys
+  if(v.bpSys<=90)score+=3;
+  else if(v.bpSys<=100)score+=2;
+  else if(v.bpSys<=110)score+=1;
+  // HR
+  if(v.hr<=40||v.hr>=131)score+=3;
+  else if(v.hr>=111)score+=2;
+  else if(v.hr<=50||v.hr>=91)score+=1;
+  var level=score>=7?'High':score>=5?'Medium':score>=1?'Low':'None';
+  return {score:score,level:level};
+}
+
+/* ══════ 3. PHARMACOKINETICS ══════ */
+var DRUGS=[
+  {name:'Vancomycin',ke:0.15,Vd:0.7,ka:1.5,bioavail:1,route:'IV',tHalf:'6 h',note:'Nefrotóxico, monitorar níveis'},
+  {name:'Gentamicin',ke:0.35,Vd:0.25,ka:2,bioavail:1,route:'IV',tHalf:'2 h',note:'Nefro + ototóxico'},
+  {name:'Amoxicillin',ke:0.7,Vd:0.3,ka:2.5,bioavail:0.8,route:'PO',tHalf:'1 h',note:'β-lactâmico'},
+  {name:'Warfarin',ke:0.015,Vd:0.15,ka:1,bioavail:0.99,route:'PO',tHalf:'40 h',note:'Anticoagulante'},
+  {name:'Digoxin',ke:0.008,Vd:6,ka:0.8,bioavail:0.7,route:'PO',tHalf:'36 h',note:'↑T½ em renal'},
+  {name:'Morphine',ke:0.35,Vd:3.5,ka:1,bioavail:0.3,route:'IV',tHalf:'2 h',note:'First-pass 70%'},
+  {name:'Midazolam',ke:0.5,Vd:1,ka:2,bioavail:0.4,route:'IV',tHalf:'1.4 h',note:'Sedativo'},
+  {name:'Propofol',ke:0.5,Vd:2,ka:3,bioavail:1,route:'IV',tHalf:'1.5 h',note:'Anestésico'},
+  {name:'Caffeine',ke:0.1,Vd:0.6,ka:1.5,bioavail:1,route:'PO',tHalf:'5 h',note:'Estimulante'},
+  {name:'Ethanol',ke:0.3,Vd:0.6,ka:2,bioavail:1,route:'PO',tHalf:'20 mg/dL/h',note:'Zero-order high dose'},
+];
+registerModule('pk',{title:'Pharmacokinetics',icon:'💊',desc:'1-compartment PK model with absorption.',init:function(){this.loadDrug(0)},
+loadDrug:function(i){var p=STATE.pk;var d=DRUGS[i];p.drug=d.name;p.ke=d.ke;p.Vd=d.Vd;p.ka=d.ka;p.bioavail=d.bioavail;p.route=d.route;p.note=d.note;p.t=0;p.history=[];p.tHalf=d.tHalf},
+tick:function(dt){STATE.time+=dt;var p=STATE.pk;if(!STATE.playing)return;
+p.t+=dt*0.1;
+// Compute concentration
+var C=pkOneComp(p.dose*1000,p.bioavail,p.ka,p.ke,p.Vd*70,p.t);
+if(p.infusion){
+  // Constant infusion
+  var steadyState=p.infRate/(p.ke*p.Vd*70);
+  C+=steadyState*(1-Math.exp(-p.ke*p.t));
+}
+p.C=C;
+p.history.push(C);
+if(p.history.length>3000)p.history.shift()},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var p=STATE.pk;
+/* Conc-time curve */
+var cx=60,cy=60,cw=W-120,ch=H*0.5;
+ctx.fillStyle='rgba(20,8,24,.6)';
+ctx.fillRect(cx,cy,cw,ch);
+ctx.strokeStyle='rgba(255,64,128,.3)';ctx.lineWidth=1;ctx.strokeRect(cx,cy,cw,ch);
+/* Axes */
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+ctx.fillText('C (μg/mL)',10,cy+10);
+ctx.fillText('t (h)',cx+cw-30,cy+ch+15);
+/* Draw */
+if(p.history.length>1){
+  var maxC=Math.max.apply(null,p.history)||1;
+  ctx.strokeStyle='#40ff90';ctx.lineWidth=2;
+  ctx.beginPath();
+  p.history.forEach(function(C,i){
+    var x=cx+i/p.history.length*cw;
+    var y=cy+ch-(C/maxC)*ch*0.9;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  /* MEC line */
+  var mec=maxC*0.2;
+  ctx.strokeStyle='#ff4080';ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(cx,cy+ch-mec/maxC*ch*0.9);ctx.lineTo(cx+cw,cy+ch-mec/maxC*ch*0.9);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#ff4080';ctx.font='10px monospace';
+  ctx.fillText('MEC',cx+cw-30,cy+ch-mec/maxC*ch*0.9-4);
+  /* Toxic line */
+  var tox=maxC*0.85;
+  ctx.strokeStyle='#ff8040';ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(cx,cy+ch-tox/maxC*ch*0.9);ctx.lineTo(cx+cw,cy+ch-tox/maxC*ch*0.9);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#ff8040';
+  ctx.fillText('TOXIC',cx+cw-40,cy+ch-tox/maxC*ch*0.9-4);
+}
+/* Info */
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(cx,cy+ch+30,cw,150);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(cx,cy+ch+30,cw,150);
+ctx.fillStyle='#ff4080';ctx.font='bold 13px monospace';
+ctx.fillText('DRUG: '+p.drug,cx+12,cy+ch+52);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('Route: '+p.route+' · Dose: '+p.dose+' mg · Vd: '+p.Vd+' L/kg',cx+12,cy+ch+72);
+ctx.fillText('ke: '+fmt(p.ke,3)+' /h · t½: '+p.tHalf+' · ka: '+p.ka+' /h',cx+12,cy+ch+90);
+ctx.fillText('Current: '+fmt(p.C,3)+' μg/mL · Time: '+fmt(p.t,2)+' h',cx+12,cy+ch+108);
+ctx.fillStyle='#40e0ff';ctx.font='bold 11px monospace';
+ctx.fillText('💡 '+p.note,cx+12,cy+ch+135);
+setStats('<div>Drug: '+p.drug+'</div><div>C: '+fmt(p.C,3)+' μg/mL</div><div>t½: '+p.tHalf+'</div>');
+badge('💊 PK · '+p.drug+' · C='+fmt(p.C,2));SV('sbMode','PK')},
+onDown:function(){},
+controls:function(){var p=STATE.pk;var h='<div class="sec"><h4>Drug</h4><div class="chip-row">';
+DRUGS.forEach(function(d,i){
+  h+='<div class="chip '+(p.drug===d.name?'active':'')+'" onclick="MODULES.pk.loadDrug('+i+');renderLeftPanel()">'+d.name+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Dose</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Dose</span><span>'+p.dose+' mg</span></div><input type="range" min="10" max="3000" step="10" value="'+p.dose+'" oninput="STATE.pk.dose=parseInt(this.value);MODULES.pk.reset()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Weight</span><span>'+p.weight+' kg</span></div><input type="range" min="30" max="150" value="'+p.weight+'" oninput="STATE.pk.weight=parseInt(this.value);MODULES.pk.reset()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Vd</span><span>'+p.Vd+' L/kg</span></div><input type="range" min="0.1" max="10" step="0.1" value="'+p.Vd+'" oninput="STATE.pk.Vd=parseFloat(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>ke</span><span>'+fmt(p.ke,3)+' /h</span></div><input type="range" min="0.005" max="1" step="0.005" value="'+p.ke+'" oninput="STATE.pk.ke=parseFloat(this.value)"></div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.pk.reset();toast(\'Reset\',\'success\')">↺ Reset simulation</button>';
+return h},
+reset:function(){STATE.pk.t=0;STATE.pk.history=[];STATE.pk.C=0},
+mathPanel:function(){return '<div class="sec"><h4>PK 1-Compartment</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Com absorção (extravascular):<br>C(t) = (F·D·ka)/(Vd·(ka−ke))<br>      ·(e^(−ke·t) − e^(−ka·t))<br><br>IV bolus (ka→∞):<br>C(t) = (D/Vd)·e^(−ke·t)<br><br>t½ = ln(2)/ke<br>Css = R₀/(ke·Vd) (infusão)</div></div>'}});
+
+/* ══════ 4. BLOOD GAS ══════ */
+registerModule('bloodgas',{title:'Blood Gas Analysis',icon:'🩸',desc:'ABG interpretation with Winter\'s formula.',init:function(){this.analyze()},
+analyze:function(){var b=STATE.bloodgas;
+b.ag=anionGap(b.na,b.cl,b.hco3);
+b.winter=winterFormula(b.hco3);
+b.deltaRatio=deltaRatio(b.ag,b.hco3);
+// Determine primary disorder
+var disorder='Normal';
+var comp='Appropriate';
+if(b.pH<7.35){
+  if(b.pCO2>45){
+    // Respiratory acidosis
+    var acuteExp=b.hco3+((b.pCO2-40)*0.1);
+    var chronicExp=b.hco3+((b.pCO2-40)*0.35);
+    if(Math.abs(b.hco3-acuteExp)<2)comp='Acute (no compensation)';
+    else if(Math.abs(b.hco3-chronicExp)<2)comp='Chronic (renal compensation)';
+    disorder='Respiratory Acidosis';
+  }else if(b.hco3<22){
+    disorder='Metabolic Acidosis';
+    var expected=b.winter.expected;
+    if(b.pCO2<expected-2)comp='Additional respiratory alkalosis';
+    else if(b.pCO2>expected+2)comp='Additional respiratory acidosis';
+    else comp='Appropriate respiratory compensation';
+  }
+}else if(b.pH>7.45){
+  if(b.pCO2<35){
+    disorder='Respiratory Alkalosis';
+    var acuteExp2=b.hco3-((40-b.pCO2)*0.2);
+    var chronicExp2=b.hco3-((40-b.pCO2)*0.5);
+    if(Math.abs(b.hco3-chronicExp2)<2)comp='Chronic';
+    else comp='Acute';
+  }else if(b.hco3>26){
+    disorder='Metabolic Alkalosis';
+    comp='Variable compensation';
+  }
+}
+b.primary=disorder;b.compensation=comp;
+b.interpretation={disorder:disorder,comp:comp,ag:b.ag,winter:b.winter,deltaRatio:b.deltaRatio}},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var b=STATE.bloodgas;
+/* Title */
+ctx.fillStyle='#ff4080';ctx.font='bold 16px monospace';
+ctx.fillText('ARTERIAL BLOOD GAS ANALYSIS',30,35);
+/* Values */
+var vals=[
+  {name:'pH',value:b.pH,ref:[7.35,7.45],unit:''},
+  {name:'pCO₂',value:b.pCO2,ref:[35,45],unit:'mmHg'},
+  {name:'pO₂',value:b.pO2,ref:[80,100],unit:'mmHg'},
+  {name:'HCO₃⁻',value:b.hco3,ref:[22,26],unit:'mEq/L'},
+  {name:'Na⁺',value:b.na,ref:[135,145],unit:'mEq/L'},
+  {name:'K⁺',value:b.k,ref:[3.5,5.0],unit:'mEq/L'},
+  {name:'Cl⁻',value:b.cl,ref:[98,107],unit:'mEq/L'},
+  {name:'Lactate',value:b.lactate,ref:[0.5,2.0],unit:'mmol/L'}
+];
+vals.forEach(function(v,i){
+  var col=i%4;
+  var row=Math.floor(i/4);
+  var x=30+col*(W-60)/4;
+  var y=80+row*95;
+  var isAbn=v.value<v.ref[0]||v.value>v.ref[1];
+  ctx.fillStyle=isAbn?'rgba(255,64,128,.15)':'rgba(20,8,24,.6)';
+  ctx.fillRect(x,y,(W-60)/4-10,80);
+  ctx.strokeStyle=isAbn?'#ff4080':'#40ff90';
+  ctx.lineWidth=2;ctx.strokeRect(x,y,(W-60)/4-10,80);
+  ctx.fillStyle=isAbn?'#ff4080':'#40ff90';ctx.font='bold 11px monospace';
+  ctx.fillText(v.name,x+8,y+18);
+  ctx.fillStyle='#f0e0f8';ctx.font='bold 26px monospace';
+  ctx.fillText(v.value,x+8,y+48);
+  ctx.fillStyle='#b090c0';ctx.font='9px monospace';
+  ctx.fillText(v.unit,x+8,y+62);
+  ctx.fillText('ref: '+v.ref[0]+'-'+v.ref[1],x+8,y+75);
+});
+/* Interpretation */
+var iy=290;
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(30,iy,W-60,190);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,iy,W-60,190);
+ctx.fillStyle='#ff4080';ctx.font='bold 13px monospace';
+ctx.fillText('INTERPRETATION',45,iy+22);
+var col=ctx.fillStyle;
+ctx.fillStyle=colorForDisorder(b.primary);
+ctx.font='bold 20px monospace';
+ctx.fillText(b.primary,45,iy+50);
+ctx.fillStyle='#40e0ff';ctx.font='bold 12px monospace';
+ctx.fillText('Compensation: '+b.compensation,45,iy+75);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('Anion gap: '+fmt(b.ag,1)+' mEq/L (normal 8-12)',45,iy+100);
+ctx.fillText('Winter\'s expected pCO₂: '+fmt(b.winter.low,1)+'-'+fmt(b.winter.high,1)+' mmHg',45,iy+118);
+ctx.fillText('Delta ratio: '+fmt(b.deltaRatio,2),45,iy+136);
+/* Diagnosis */
+ctx.fillStyle='#ffd040';ctx.font='bold 12px monospace';
+ctx.fillText('CLINICAL PEARLS:',45,iy+160);
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+if(b.ag>12){
+  ctx.fillText('↑AG: MUDPILES (Methanol, Uremia, DKA, Propylene, INH, Lactate, Ethylene, Salicylates)',45,iy+178);
+}else{
+  ctx.fillText('Normal AG: HARDUP (Hyperalimentation, Acetazolamide, RTA, Diarrhea, Ureteral)',45,iy+178);
+}
+setStats('<div>pH: '+b.pH+'</div><div>pCO₂: '+b.pCO2+'</div><div>HCO₃: '+b.hco3+'</div><div>AG: '+fmt(b.ag,1)+'</div>');
+badge('🩸 ABG · '+b.primary);SV('sbMode','ABG')},
+onDown:function(){},
+controls:function(){var b=STATE.bloodgas;var h='<div class="sec"><h4>Values</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>pH</span><span>'+b.pH+'</span></div><input type="range" min="6.8" max="7.8" step="0.01" value="'+b.pH+'" oninput="STATE.bloodgas.pH=parseFloat(this.value);MODULES.bloodgas.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>pCO₂</span><span>'+b.pCO2+' mmHg</span></div><input type="range" min="10" max="100" value="'+b.pCO2+'" oninput="STATE.bloodgas.pCO2=parseInt(this.value);MODULES.bloodgas.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>pO₂</span><span>'+b.pO2+' mmHg</span></div><input type="range" min="30" max="500" value="'+b.pO2+'" oninput="STATE.bloodgas.pO2=parseInt(this.value);MODULES.bloodgas.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>HCO₃⁻</span><span>'+b.hco3+' mEq/L</span></div><input type="range" min="5" max="45" value="'+b.hco3+'" oninput="STATE.bloodgas.hco3=parseInt(this.value);MODULES.bloodgas.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Na⁺</span><span>'+b.na+'</span></div><input type="range" min="110" max="170" value="'+b.na+'" oninput="STATE.bloodgas.na=parseInt(this.value);MODULES.bloodgas.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Cl⁻</span><span>'+b.cl+'</span></div><input type="range" min="70" max="140" value="'+b.cl+'" oninput="STATE.bloodgas.cl=parseInt(this.value);MODULES.bloodgas.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Lactate</span><span>'+b.lactate.toFixed(1)+'</span></div><input type="range" min="0.3" max="20" step="0.1" value="'+b.lactate+'" oninput="STATE.bloodgas.lactate=parseFloat(this.value)"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Classic patterns</h4><div class="chip-row">';
+[['Normal',7.40,40,24,140,104],['DKA',7.15,25,10,138,100],['COPD acute',7.25,65,28,140,102],['Salicylate',7.50,20,18,140,102],['Vomiting',7.52,48,32,140,90],['Diarrhea',7.25,30,15,140,115]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.bloodgas.pH='+p[1]+';STATE.bloodgas.pCO2='+p[2]+';STATE.bloodgas.hco3='+p[3]+';STATE.bloodgas.na='+p[4]+';STATE.bloodgas.cl='+p[5]+';MODULES.bloodgas.analyze();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Blood Gas Equations</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Henderson-Hasselbalch:<br>pH = 6.1 + log([HCO₃⁻]/(0.03·pCO₂))<br><br>Anion gap: Na⁺ − (Cl⁻ + HCO₃⁻)<br>Normal: 8-12 mEq/L<br><br>Winter\'s formula:<br>pCO₂ esp = 1.5·HCO₃⁻ + 8 ± 2<br><br>Delta ratio: (AG−12)/(24−HCO₃⁻)</div></div>'}});
+
+function colorForDisorder(d){
+  if(d==='Normal')return '#40ff90';
+  if(d.indexOf('Acidosis')>=0)return '#ff4080';
+  if(d.indexOf('Alkalosis')>=0)return '#40e0ff';
+  return '#ffd040';
+}
+
+/* ══════ 5. APACHE II ══════ */
+registerModule('apache',{title:'APACHE II Score',icon:'⚠',desc:'ICU mortality prediction.',init:function(){this.compute()},
+compute:function(){var a=STATE.apache;a.score=apacheII(a);a.mortality=apacheIIMortality(a.score);a.history.push({score:a.score,mort:a.mortality});if(a.history.length>50)a.history.shift()},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var a=STATE.apache;
+/* Score gauge */
+drawGauge(ctx,W/2,H*0.35,Math.min(W,H)*0.18,a.score,71,'APACHE II','');
+/* Mortality */
+var col=a.mortality>50?'#ff4080':a.mortality>25?'#ff8040':a.mortality>10?'#ffd040':'#40ff90';
+ctx.fillStyle=col;
+ctx.font='bold 24px monospace';ctx.textAlign='center';
+ctx.fillText('Predicted mortality: '+a.mortality.toFixed(1)+'%',W/2,H*0.62);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('Knaus et al. 1985 · 71 = max score',W/2,H*0.62+25);
+ctx.textAlign='left';
+/* Parameters */
+var py=H*0.68;
+ctx.fillStyle='rgba(20,8,24,.6)';
+ctx.fillRect(30,py,W-60,H-py-20);
+ctx.strokeStyle='#ff4080';ctx.lineWidth=1;ctx.strokeRect(30,py,W-60,H-py-20);
+ctx.fillStyle='#ff4080';ctx.font='bold 12px monospace';
+ctx.fillText('PARAMETERS',45,py+20);
+var params=[
+  ['Temp',a.temp+'°C'],['MAP',a.map+' mmHg'],['HR',a.hr+' bpm'],['RR',a.rr+'/min'],
+  ['PaO₂',a.paO2+' mmHg'],['pH',a.pH],['Na⁺',a.na+' mEq/L'],['K⁺',a.k+' mEq/L'],
+  ['Cr',a.cr+' mg/dL'],['Hct',a.hct+'%'],['WBC',a.wbc+' K/µL'],['GCS',a.gcs+'/15'],
+  ['Age',a.age+' yr'],['Chronic',a.chronic===0?'None':a.chronic===2?'Elective postop':a.chronic===5?'Non-op/emerg':'Severe']
+];
+params.forEach(function(p,i){
+  var x=45+(i%4)*((W-90)/4);
+  var y=py+45+Math.floor(i/4)*30;
+  ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+  ctx.fillText(p[0],x,y);
+  ctx.fillStyle='#f0e0f8';ctx.font='bold 12px monospace';
+  ctx.fillText(p[1],x,y+15);
+});
+setStats('<div>Score: '+a.score+'/71</div><div>Mortality: '+a.mortality.toFixed(1)+'%</div>');
+badge('⚠ APACHE II · '+a.score+' → '+a.mortality.toFixed(1)+'%');SV('sbMode','APACHE')},
+onDown:function(){},
+controls:function(){var a=STATE.apache;var h='<div class="sec"><h4>Acute physiology</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Temp</span><span>'+a.temp+'°C</span></div><input type="range" min="30" max="43" step="0.5" value="'+a.temp+'" oninput="STATE.apache.temp=parseFloat(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>MAP</span><span>'+a.map+' mmHg</span></div><input type="range" min="30" max="180" value="'+a.map+'" oninput="STATE.apache.map=parseInt(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>HR</span><span>'+a.hr+' bpm</span></div><input type="range" min="30" max="200" value="'+a.hr+'" oninput="STATE.apache.hr=parseInt(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>RR</span><span>'+a.rr+'/min</span></div><input type="range" min="4" max="60" value="'+a.rr+'" oninput="STATE.apache.rr=parseInt(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>PaO₂</span><span>'+a.paO2+' mmHg</span></div><input type="range" min="30" max="200" value="'+a.paO2+'" oninput="STATE.apache.paO2=parseInt(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>pH</span><span>'+a.pH+'</span></div><input type="range" min="6.8" max="7.8" step="0.01" value="'+a.pH+'" oninput="STATE.apache.pH=parseFloat(this.value);MODULES.apache.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Labs</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Na⁺</span><span>'+a.na+'</span></div><input type="range" min="100" max="190" value="'+a.na+'" oninput="STATE.apache.na=parseInt(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>K⁺</span><span>'+a.k+'</span></div><input type="range" min="2" max="8" step="0.1" value="'+a.k+'" oninput="STATE.apache.k=parseFloat(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Creatinine</span><span>'+a.cr+' mg/dL</span></div><input type="range" min="0.3" max="8" step="0.1" value="'+a.cr+'" oninput="STATE.apache.cr=parseFloat(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Hematocrit</span><span>'+a.hct+'%</span></div><input type="range" min="15" max="70" value="'+a.hct+'" oninput="STATE.apache.hct=parseInt(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>WBC</span><span>'+a.wbc+' K/µL</span></div><input type="range" min="0.5" max="50" step="0.5" value="'+a.wbc+'" oninput="STATE.apache.wbc=parseFloat(this.value);MODULES.apache.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Neuro</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>GCS</span><span>'+a.gcs+'/15</span></div><input type="range" min="3" max="15" value="'+a.gcs+'" oninput="STATE.apache.gcs=parseInt(this.value);MODULES.apache.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Age &amp; Chronic</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Age</span><span>'+a.age+' yr</span></div><input type="range" min="16" max="95" value="'+a.age+'" oninput="STATE.apache.age=parseInt(this.value);MODULES.apache.compute()"></div>';
+h+='<div class="chip-row">';
+[['None',0],['Elective',2],['Non-op',5]].forEach(function(c){
+  h+='<div class="chip '+(a.chronic===c[1]?'active':'')+'" onclick="STATE.apache.chronic='+c[1]+';MODULES.apache.compute();renderLeftPanel()">'+c[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>APACHE II</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Knaus et al. (1985)<br><br>12 variáveis fisiológicas + idade + saúde crônica<br><br>Pontuação: 0-71<br><br>Componentes:<br>• Temp, MAP, HR, RR<br>• Oxygenação (PaO₂ ou A-a)<br>• pH, Na, K, Cr<br>• Hct, WBC, GCS<br>• Idade (0-6), Crônico (0-5)<br><br>Mortalidade predita: ~4% (score 0) → ~95% (score 40+)</div></div>'}});
+
+/* ══════ 6. SOFA SCORE ══════ */
+registerModule('sofa',{title:'SOFA Score',icon:'🫁',desc:'Sequential Organ Failure Assessment (Sepsis).',init:function(){this.compute()},
+compute:function(){var s=STATE.sofa;s.score=sofaScore(s);var m=sofaMortality(s.score);s.mortality=m.rate;s.mortLabel=m.label;
+// Component scores
+s.comp={
+  resp:s.pf<100?4:s.pf<200?3:s.pf<300?2:s.pf<400?1:0,
+  coag:s.plt<20?4:s.plt<50?3:s.plt<100?2:s.plt<150?1:0,
+  liver:s.bili>=12?4:s.bili>=6?3:s.bili>=2?2:s.bili>=1.2?1:0,
+  cardio:s.map<70&&!s.vaso?1:s.dopamine>0?(s.dopamine<=5?2:s.dopamine<=15?3:4):0,
+  cns:s.gcs<6?4:s.gcs<10?3:s.gcs<13?2:s.gcs<15?1:0,
+  renal:s.cr>=5?4:s.cr>=3.5?3:s.cr>=2?2:s.cr>=1.2?1:0
+}},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var s=STATE.sofa;
+/* Total gauge */
+drawGauge(ctx,W/2,H*0.3,Math.min(W,H)*0.15,s.score,24,'SOFA','');
+/* Mortality */
+var col=s.mortality>50?'#ff4080':s.mortality>25?'#ff8040':s.mortality>10?'#ffd040':'#40ff90';
+ctx.fillStyle=col;ctx.textAlign='center';
+ctx.font='bold 22px monospace';
+ctx.fillText('Mortality: '+s.mortality.toFixed(0)+'% ('+s.mortLabel+')',W/2,H*0.55);
+ctx.textAlign='left';
+/* Components */
+var py=H*0.62;
+ctx.fillStyle='rgba(20,8,24,.6)';
+ctx.fillRect(30,py,W-60,H-py-20);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,py,W-60,H-py-20);
+ctx.fillStyle='#ff4080';ctx.font='bold 12px monospace';
+ctx.fillText('COMPONENTS (each 0-4)',45,py+22);
+var comps=[
+  {name:'Respiratory',desc:'PaO₂/FiO₂ '+s.pf,score:s.comp.resp,icon:'🫁'},
+  {name:'Coagulation',desc:'Platelets '+s.plt+'k',score:s.comp.coag,icon:'🩸'},
+  {name:'Liver',desc:'Bilirubin '+s.bili+' mg/dL',score:s.comp.liver,icon:'🫘'},
+  {name:'Cardiovascular',desc:'MAP '+s.map+(s.dopamine>0?' +dopamine':'')+'',score:s.comp.cardio,icon:'❤️'},
+  {name:'CNS',desc:'GCS '+s.gcs+'/15',score:s.comp.cns,icon:'🧠'},
+  {name:'Renal',desc:'Creatinine '+s.cr+' mg/dL',score:s.comp.renal,icon:'💧'}
+];
+comps.forEach(function(c,i){
+  var x=45+(i%3)*((W-90)/3);
+  var y=py+45+Math.floor(i/3)*70;
+  var col=riskColor(c.score,4);
+  ctx.fillStyle=col+'33';
+  ctx.fillRect(x,y,(W-90)/3-15,55);
+  ctx.strokeStyle=col;ctx.lineWidth=2;
+  ctx.strokeRect(x,y,(W-90)/3-15,55);
+  ctx.fillStyle=col;ctx.font='bold 12px monospace';
+  ctx.fillText(c.icon+' '+c.name,x+8,y+18);
+  ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+  ctx.fillText(c.desc,x+8,y+34);
+  ctx.fillStyle=col;ctx.font='bold 20px monospace';
+  ctx.fillText(c.score+'/4',x+8,y+52);
+});
+setStats('<div>SOFA: '+s.score+'/24</div><div>Mortality: '+s.mortality.toFixed(0)+'%</div>');
+badge('🫁 SOFA · '+s.score+'/24 · '+s.mortLabel);SV('sbMode','SOFA')},
+onDown:function(){},
+controls:function(){var s=STATE.sofa;var h='<div class="sec"><h4>Respiratory</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>PaO₂/FiO₂</span><span>'+s.pf+'</span></div><input type="range" min="50" max="500" value="'+s.pf+'" oninput="STATE.sofa.pf=parseInt(this.value);MODULES.sofa.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Coagulation &amp; Liver</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Platelets (×10³)</span><span>'+s.plt+'</span></div><input type="range" min="5" max="400" value="'+s.plt+'" oninput="STATE.sofa.plt=parseInt(this.value);MODULES.sofa.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Bilirubin</span><span>'+s.bili+' mg/dL</span></div><input type="range" min="0.1" max="20" step="0.1" value="'+s.bili+'" oninput="STATE.sofa.bili=parseFloat(this.value);MODULES.sofa.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Cardiovascular</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>MAP</span><span>'+s.map+' mmHg</span></div><input type="range" min="30" max="120" value="'+s.map+'" oninput="STATE.sofa.map=parseInt(this.value);MODULES.sofa.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Dopamine</span><span>'+s.dopamine+' μg/kg/min</span></div><input type="range" min="0" max="20" value="'+s.dopamine+'" oninput="STATE.sofa.dopamine=parseInt(this.value);MODULES.sofa.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>CNS &amp; Renal</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>GCS</span><span>'+s.gcs+'/15</span></div><input type="range" min="3" max="15" value="'+s.gcs+'" oninput="STATE.sofa.gcs=parseInt(this.value);MODULES.sofa.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Creatinine</span><span>'+s.cr+' mg/dL</span></div><input type="range" min="0.3" max="10" step="0.1" value="'+s.cr+'" oninput="STATE.sofa.cr=parseFloat(this.value);MODULES.sofa.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Sepsis presets</h4><div class="chip-row">';
+[['Healthy',400,250,1,80,15,1],['Sepsis',280,120,2,65,13,2],['Septic shock',150,60,5,55,10,4]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.sofa.pf='+p[1]+';STATE.sofa.plt='+p[2]+';STATE.sofa.bili='+p[3]+';STATE.sofa.map='+p[4]+';STATE.sofa.gcs='+p[5]+';STATE.sofa.cr='+p[6]+';MODULES.sofa.compute();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>SOFA</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Vincent et al. (1996)<br>Singer et al. Sepsis-3 (2016)<br><br>6 sistemas, 0-4 cada:<br>• Respiração (P/F)<br>• Coagulação (plaquetas)<br>• Fígado (bilirrubina)<br>• Cardiovascular (MAP/drogas)<br>• SNC (GCS)<br>• Renal (creatinina)<br><br>Sepse = infecção + ΔSOFA ≥2<br>Mortalidade: 10% (score 2) → 90% (score 15+)</div></div>'}});
+
+/* ══════ 7. GLASGOW COMA SCALE ══════ */
+registerModule('gcs',{title:'Glasgow Coma Scale',icon:'🧠',desc:'Neurological assessment — eye, verbal, motor.',init:function(){this.compute()},
+compute:function(){var g=STATE.gcs;g.total=gcsTotal(g.eye,g.verbal,g.motor);g.severity=gcsSeverity(g.total);g.history.push(g.total);if(g.history.length>100)g.history.shift()},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var g=STATE.gcs;
+/* Total big */
+ctx.textAlign='center';
+ctx.fillStyle=g.severity.color;
+ctx.font='bold 120px monospace';
+ctx.fillText(String(g.total),W/2,H*0.32);
+ctx.fillStyle='#b090c0';ctx.font='bold 16px monospace';
+ctx.fillText(g.severity.level,W/2,H*0.38);
+ctx.textAlign='left';
+/* Three domains */
+var domains=[
+  {name:'Eye (E)',value:g.eye,max:4,items:['Não abre','À dor','Ao comando verbal','Espontaneamente']},
+  {name:'Verbal (V)',value:g.verbal,max:5,items:['Nenhum som','Sons incompreensíveis','Palavras inapropriadas','Confuso','Orientado']},
+  {name:'Motor (M)',value:g.motor,max:6,items:['Nenhuma','Extensão (decerebração)','Flexão anormal','Retirada à dor','Localiza a dor','Obedece comandos']}
+];
+domains.forEach(function(d,i){
+  var x=30+i*(W-60)/3;
+  var y=H*0.5;
+  ctx.fillStyle='rgba(20,8,24,.6)';
+  ctx.fillRect(x,y,(W-60)/3-15,170);
+  ctx.strokeStyle=riskColor(d.max-d.value,d.max);
+  ctx.lineWidth=2;ctx.strokeRect(x,y,(W-60)/3-15,170);
+  ctx.fillStyle='#ff4080';ctx.font='bold 13px monospace';
+  ctx.fillText(d.name,x+10,y+22);
+  ctx.fillStyle=riskColor(d.max-d.value,d.max);ctx.font='bold 32px monospace';
+  ctx.fillText(d.value+'/'+d.max,x+10,y+58);
+  ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+  d.items.forEach(function(item,idx){
+    if(idx===d.value-1)ctx.fillStyle='#40ff90';
+    else ctx.fillStyle='#b090c0';
+    ctx.fillText((idx+1)+'. '+item,x+10,y+78+idx*14);
+  });
+});
+/* Interpretation */
+var iy=H-90;
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(30,iy,W-60,70);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,iy,W-60,70);
+ctx.fillStyle='#ff4080';ctx.font='bold 12px monospace';
+ctx.fillText('INTERPRETAÇÃO',45,iy+20);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('13-15: Trauma leve · 9-12: Trauma moderado (considerar IOT) · ≤8: Trauma grave (IOT)',45,iy+40);
+ctx.fillText('Intubado: registre "V = 1T" (tubado) — máximo V quando não intubado é 5',45,iy+58);
+setStats('<div>GCS: '+g.total+'/15</div><div>E: '+g.eye+' V: '+g.verbal+' M: '+g.motor+'</div><div>Level: '+g.severity.level+'</div>');
+badge('🧠 GCS · '+g.total+'/15 · '+g.severity.level);SV('sbMode','GCS')},
+onDown:function(){},
+controls:function(){var g=STATE.gcs;var h='<div class="sec"><h4>Eye opening (1-4)</h4><div class="chip-row">';
+[1,2,3,4].forEach(function(v){
+  h+='<div class="chip '+(g.eye===v?'active':'')+'" onclick="STATE.gcs.eye='+v+';MODULES.gcs.compute();renderLeftPanel()">'+v+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Verbal response (1-5)</h4><div class="chip-row">';
+[1,2,3,4,5].forEach(function(v){
+  h+='<div class="chip '+(g.verbal===v?'active':'')+'" onclick="STATE.gcs.verbal='+v+';MODULES.gcs.compute();renderLeftPanel()">'+v+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Motor response (1-6)</h4><div class="chip-row">';
+[1,2,3,4,5,6].forEach(function(v){
+  h+='<div class="chip '+(g.motor===v?'active':'')+'" onclick="STATE.gcs.motor='+v+';MODULES.gcs.compute();renderLeftPanel()">'+v+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+[['Alerta',4,5,6],['Confuso',3,4,5],['Sonolento',2,3,4],['Coma',1,1,1]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.gcs.eye='+p[1]+';STATE.gcs.verbal='+p[2]+';STATE.gcs.motor='+p[3]+';MODULES.gcs.compute();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>GCS</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Teasdale &amp; Jennett (1974)<br><br>E: 1-4 (eye opening)<br>V: 1-5 (verbal response)<br>M: 1-6 (motor response)<br><br>Total: 3-15<br>Escala usada em trauma, AVC, coma<br><br>Nota: mudança de 2+ pontos é significativa</div></div>'}});
+
+/* ══════ 8. WELLS SCORE ══════ */
+registerModule('wells',{title:'Wells Score DVT',icon:'🦵',desc:'Probability of deep vein thrombosis.',init:function(){this.compute()},
+compute:function(){var w=STATE.wells;w.score=wellsDVT(w);w.prob=wellsDVTProb(w.score)},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var w=STATE.wells;
+/* Score big */
+ctx.textAlign='center';
+ctx.fillStyle=w.prob.color;ctx.font='bold 100px monospace';
+ctx.fillText((w.score>0?'+':'')+w.score,W/2,H*0.25);
+ctx.font='bold 18px monospace';
+ctx.fillText(w.prob.level+' probability',W/2,H*0.31);
+ctx.fillStyle='#40e0ff';ctx.font='bold 24px monospace';
+ctx.fillText(w.prob.prob+'% DVT risk',W/2,H*0.36);
+ctx.textAlign='left';
+/* Criteria */
+var criteria=[
+  ['Active cancer',w.cancer,'+1'],
+  ['Paralysis/paresis/recent cast',w.paralysis,'+1'],
+  ['Bedridden >3d or major surgery <12wk',w.bedridden,'+1'],
+  ['Tenderness along deep veins',w.tenderness,'+1'],
+  ['Entire leg swelling',w.swelling,'+1'],
+  ['Calf swelling >3cm',w.pitting,'+1'],
+  ['Pitting edema (symptomatic leg)',w.pitting,'+1'],
+  ['Collateral superficial veins',w.collateral,'+1'],
+  ['Previous DVT',w.prevDVT,'+1'],
+  ['Alternative dx ≥ as likely',w.altDx,'−2']
+];
+var cy=H*0.42;
+criteria.forEach(function(c,i){
+  var y=cy+i*22;
+  ctx.fillStyle='rgba(20,8,24,.5)';
+  ctx.fillRect(30,y-14,W-60,20);
+  ctx.fillStyle=c[1]?'#40ff90':'#785888';
+  ctx.font='11px monospace';
+  ctx.fillText(c[1]?'✓':'○',40,y);
+  ctx.fillStyle=c[1]?'#f0e0f8':'#785888';
+  ctx.fillText(c[0],60,y);
+  ctx.fillStyle=c[2][0]==='-'?'#40e0ff':'#ff4080';
+  ctx.fillText(c[2],W-70,y);
+});
+setStats('<div>Score: '+w.score+'</div><div>Level: '+w.prob.level+'</div><div>Risk: '+w.prob.prob+'%</div>');
+badge('🦵 Wells DVT · '+w.score+' → '+w.prob.prob+'%');SV('sbMode','Wells')},
+onDown:function(){},
+controls:function(){var w=STATE.wells;var h='<div class="sec"><h4>Criteria</h4>';
+var crit=[
+  ['cancer','Active cancer'],
+  ['paralysis','Paralysis/paresis'],
+  ['bedridden','Bedridden >3d'],
+  ['tenderness','Tenderness along veins'],
+  ['swelling','Entire leg swelling'],
+  ['pitting','Calf swelling >3cm/pitting'],
+  ['collateral','Collateral superficial veins'],
+  ['prevDVT','Previous DVT'],
+  ['altDx','Alternative dx (−2)']
+];
+crit.forEach(function(c){
+  h+='<div class="chip '+(w[c[0]]?'active':'')+'" style="margin-bottom:3px;display:block" onclick="STATE.wells.'+c[0]+'=!STATE.wells.'+c[0]+';MODULES.wells.compute();renderLeftPanel()">'+(w[c[0]]?'✓ ':'○ ')+c[1]+'</div>';
+});
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Wells DVT</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Wells et al. (1997)<br><br>Score 0-9 (mas −2 possível):<br>≥3: Alta probabilidade (~75%)<br>1-2: Moderada (~17%)<br>≤0: Baixa (~3%)<br><br>Uso clínico: combinar com D-dímero<br>Se baixa prob + D-dímero negativo: excluir DVT</div></div>'}});
+
+/* ══════ 9. CHA2DS2-VASc ══════ */
+registerModule('chads',{title:'CHA₂DS₂-VASc',icon:'❤️',desc:'Stroke risk in atrial fibrillation.',init:function(){this.compute()},
+compute:function(){var c=STATE.chads;c.score=cha2ds2vasc(c);c.risk=chadsvascRisk(c.score)},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var c=STATE.chads;
+/* Score */
+ctx.textAlign='center';
+ctx.fillStyle=riskColor(c.score,9);ctx.font='bold 100px monospace';
+ctx.fillText(c.score,W/2,H*0.22);
+ctx.font='bold 18px monospace';
+ctx.fillText('CHADS-VASc Score',W/2,H*0.28);
+ctx.fillStyle='#40e0ff';ctx.font='bold 20px monospace';
+ctx.fillText('Stroke risk: '+c.risk.toFixed(1)+'% per year',W/2,H*0.34);
+ctx.textAlign='left';
+/* Recommendation */
+var rec;
+var recCol;
+if(c.score===0&&!c.female){rec='No anticoagulation needed';recCol='#40ff90'}
+else if(c.score===1){rec='Consider anticoagulation';recCol='#ffd040'}
+else if(c.score>=2){rec='Anticoagulation recommended (DOAC or warfarin)';recCol='#ff4080'}
+else{rec='Low risk';recCol='#40ff90'}
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(30,H*0.4,W-60,60);
+ctx.strokeStyle=recCol;ctx.lineWidth=2;
+ctx.strokeRect(30,H*0.4,W-60,60);
+ctx.fillStyle=recCol;ctx.font='bold 14px monospace';
+ctx.textAlign='center';
+ctx.fillText(rec,W/2,H*0.4+35);
+ctx.textAlign='left';
+/* Components */
+var items=[
+  {name:'C',desc:'CHF',value:c.chf?'+1':'0'},
+  {name:'H',desc:'Hypertension',value:c.htn?'+1':'0'},
+  {name:'A₂',desc:'Age ≥75',value:c.age>=75?'+2':'0'},
+  {name:'D',desc:'Diabetes',value:c.dm?'+1':'0'},
+  {name:'S₂',desc:'Prior stroke/TIA',value:c.stroke?'+2':'0'},
+  {name:'V',desc:'Vascular disease',value:c.vasc?'+1':'0'},
+  {name:'A',desc:'Age 65-74',value:c.age>=65&&c.age<75?'+1':'0'},
+  {name:'Sc',desc:'Female sex',value:c.female?'+1':'0'}
+];
+items.forEach(function(item,i){
+  var x=30+(i%4)*(W-60)/4;
+  var y=H*0.55+Math.floor(i/4)*70;
+  var col=item.value!=='0'?'#40ff90':'#785888';
+  ctx.fillStyle=item.value!=='0'?'rgba(64,255,144,.1)':'rgba(20,8,24,.4)';
+  ctx.fillRect(x,y,(W-60)/4-10,60);
+  ctx.strokeStyle=col;ctx.lineWidth=2;
+  ctx.strokeRect(x,y,(W-60)/4-10,60);
+  ctx.fillStyle=col;ctx.font='bold 16px monospace';
+  ctx.fillText(item.name,x+10,y+25);
+  ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+  ctx.fillText(item.desc,x+10,y+42);
+  ctx.fillStyle=col;ctx.font='bold 14px monospace';
+  ctx.fillText(item.value,x+10,y+56);
+});
+setStats('<div>Score: '+c.score+'</div><div>Risk: '+c.risk.toFixed(1)+'%/yr</div>');
+badge('❤️ CHA₂DS₂-VASc · '+c.score);SV('sbMode','CHADS')},
+onDown:function(){},
+controls:function(){var c=STATE.chads;var h='<div class="sec"><h4>Risk factors</h4>';
+h+='<div class="chip-row">';
+[['chf','CHF'],['htn','Hypertension'],['dm','Diabetes'],['stroke','Stroke/TIA'],['vasc','Vascular'],['female','Female']].forEach(function(f){
+  h+='<div class="chip '+(c[f[0]]?'active':'')+'" onclick="STATE.chads.'+f[0]+'=!STATE.chads.'+f[0]+';MODULES.chads.compute();renderLeftPanel()">'+f[1]+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Age</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Idade</span><span>'+c.age+' anos</span></div><input type="range" min="18" max="95" value="'+c.age+'" oninput="STATE.chads.age=parseInt(this.value);MODULES.chads.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Risk table</h4><div class="kv">';
+[0,1,2,3,4,5,6,7,8,9].forEach(function(i){
+  h+='<div class="row"><span class="k">Score '+i+'</span><span class="v">'+chadsvascRisk(i).toFixed(1)+'%/yr</span></div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>CHA₂DS₂-VASc</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Lip et al. (2010)<br><br>C: Congestive heart failure (1)<br>H: Hypertension (1)<br>A₂: Age ≥75 (2)<br>D: Diabetes (1)<br>S₂: Stroke/TIA (2)<br>V: Vascular disease (1)<br>A: Age 65-74 (1)<br>Sc: Sex category female (1)<br><br>Máx: 9<br>0 (M) ou 1 (F): sem anticoagulação<br>≥2: anticoagular (DOAC preferido)</div></div>'}});
+</script>
+<script>
+/* ══════ 10. KIDNEY FUNCTION (eGFR) ══════ */
+registerModule('egfr',{title:'Kidney Function',icon:'🫘',desc:'CKD-EPI 2021 eGFR + CKD staging.',init:function(){this.compute()},
+compute:function(){var e=STATE.egfr;e.value=egfr(e.scr,e.age,e.sex);e.stage=ckdStage(e.value);e.scrHistory.push(e.scr);if(e.scrHistory.length>500)e.scrHistory.shift()},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var e=STATE.egfr;
+/* Gauge */
+drawGauge(ctx,W/2,H*0.3,Math.min(W,H)*0.16,e.value,150,'eGFR','mL/min/1.73m²');
+/* Stage */
+ctx.textAlign='center';
+ctx.fillStyle=e.stage.color;ctx.font='bold 28px monospace';
+ctx.fillText(e.stage.stage+' — '+e.stage.label,W/2,H*0.58);
+ctx.textAlign='left';
+/* CKD table */
+var py=H*0.65;
+ctx.fillStyle='rgba(20,8,24,.7)';
+ctx.fillRect(30,py,W-60,H-py-20);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,py,W-60,H-py-20);
+ctx.fillStyle='#ff4080';ctx.font='bold 12px monospace';
+ctx.fillText('CKD STAGING (KDIGO)',45,py+22);
+var stages=[
+  {s:'G1',r:'≥90',desc:'Normal/alta',color:'#40ff90'},
+  {s:'G2',r:'60-89',desc:'Leve ↓',color:'#40ff90'},
+  {s:'G3a',r:'45-59',desc:'Leve-mod ↓',color:'#ffd040'},
+  {s:'G3b',r:'30-44',desc:'Mod-severa ↓',color:'#ff8040'},
+  {s:'G4',r:'15-29',desc:'Severa ↓',color:'#ff4080'},
+  {s:'G5',r:'<15',desc:'Falência renal',color:'#ff4080'}
+];
+stages.forEach(function(s,i){
+  var x=45+(i%3)*((W-90)/3);
+  var y=py+45+Math.floor(i/3)*55;
+  var isCurrent=s.s===e.stage.stage;
+  ctx.fillStyle=isCurrent?s.color+'44':'rgba(20,8,24,.4)';
+  ctx.fillRect(x,y,(W-90)/3-15,45);
+  ctx.strokeStyle=s.color;ctx.lineWidth=isCurrent?3:1;
+  ctx.strokeRect(x,y,(W-90)/3-15,45);
+  ctx.fillStyle=s.color;ctx.font='bold 14px monospace';
+  ctx.fillText(s.s+'  '+s.r,x+8,y+20);
+  ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+  ctx.fillText(s.desc,x+8,y+35);
+});
+setStats('<div>eGFR: '+e.value.toFixed(0)+'</div><div>Stage: '+e.stage.stage+'</div><div>Creatinine: '+e.scr+' mg/dL</div>');
+badge('🫘 eGFR · '+e.value.toFixed(0)+' · '+e.stage.stage);SV('sbMode','eGFR')},
+onDown:function(){},
+controls:function(){var e=STATE.egfr;var h='<div class="sec"><h4>Patient</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Creatinine</span><span>'+e.scr+' mg/dL</span></div><input type="range" min="0.3" max="12" step="0.05" value="'+e.scr+'" oninput="STATE.egfr.scr=parseFloat(this.value);MODULES.egfr.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Age</span><span>'+e.age+' anos</span></div><input type="range" min="18" max="100" value="'+e.age+'" oninput="STATE.egfr.age=parseInt(this.value);MODULES.egfr.compute()"></div>';
+h+='<div class="chip-row">';
+[['M','Masculino'],['F','Feminino']].forEach(function(s){
+  h+='<div class="chip '+(e.sex===s[0]?'active':'')+'" onclick="STATE.egfr.sex=\''+s[0]+'\';MODULES.egfr.compute();renderLeftPanel()">'+s[1]+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+[['Saudável',0.9,30,'M'],['Idoso',1.0,75,'M'],['DRC 3a',1.3,65,'M'],['DRC 4',3.0,60,'M'],['DRC 5 (diálise)',8.0,55,'M']].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.egfr.scr='+p[1]+';STATE.egfr.age='+p[2]+';STATE.egfr.sex=\''+p[3]+'\';MODULES.egfr.compute();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>CKD-EPI 2021</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">eGFR = 142 × min(Scr/κ, 1)^α<br>     × max(Scr/κ, 1)^(−1.200)<br>     × 0.9938^Age<br>     × 1.012 [se feminino]<br><br>κ = 0.7 (F) · 0.9 (M)<br>α = −0.241 (F) · −0.302 (M)<br><br>Sem termo de raça (2021 revision)</div></div>'}});
+
+/* ══════ 11. DIABETES MODEL (Bergman) ══════ */
+registerModule('diabetes',{title:'Diabetes Model',icon:'🍰',desc:'Bergman minimal model of glucose-insulin.',init:function(){this.reset()},
+reset:function(){var d=STATE.diabetes;d.t=0;d.history=[];d.mealSchedule=[{t:30,carb:50},{t:180,carb:60},{t:360,carb:40}]},
+tick:function(dt){STATE.time+=dt;var d=STATE.diabetes;if(!STATE.playing)return;
+var sub=Math.floor(dt*20);dt=0.05;
+for(var i=0;i<sub;i++){
+  // Meal effect
+  var meal=0;
+  d.mealSchedule.forEach(function(m){
+    if(Math.abs(d.t-m.t)<15)meal+=m.carb*0.5;
+  });
+  // Insulin input (basal + bolus)
+  var insulinInput=1+d.insulinInput;
+  var p={
+    Gb:d.Gb,
+    Ib:d.Ib,
+    p1:0.03,
+    p2:0.03,
+    p3:5e-5,
+    n:0.1,
+    meal:meal
+  };
+  var state=[d.G,d.X,d.I];
+  state=bergmanStep(state,p,dt);
+  d.G=Math.max(20,Math.min(600,state[0]));
+  d.X=state[1];
+  d.I=Math.max(0,Math.min(200,state[2]));
+  d.t+=dt;
+}
+d.history.push({t:d.t,G:d.G,I:d.I});
+if(d.history.length>3000)d.history.shift()},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var d=STATE.diabetes;
+/* Glucose chart */
+var cx=60,cy=60,cw=W-120,ch=H*0.5;
+ctx.fillStyle='rgba(20,8,24,.6)';
+ctx.fillRect(cx,cy,cw,ch);
+ctx.strokeStyle='rgba(255,64,128,.3)';ctx.lineWidth=1;ctx.strokeRect(cx,cy,cw,ch);
+/* Grid */
+ctx.strokeStyle='rgba(255,64,128,.1)';
+for(var i=0;i<=5;i++){ctx.beginPath();ctx.moveTo(cx,cy+i*ch/5);ctx.lineTo(cx+cw,cy+i*ch/5);ctx.stroke()}
+/* Draw glucose */
+if(d.history.length>1){
+  ctx.strokeStyle='#40ff90';ctx.lineWidth=2;ctx.beginPath();
+  d.history.forEach(function(x,i){
+    var px=cx+i/d.history.length*cw;
+    var py=cy+ch-(x.G/300)*ch;
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  });
+  ctx.stroke();
+  /* Insulin */
+  ctx.strokeStyle='#40e0ff';ctx.lineWidth=1.5;ctx.beginPath();
+  d.history.forEach(function(x,i){
+    var px=cx+i/d.history.length*cw;
+    var py=cy+ch-(x.I/100)*ch;
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  });
+  ctx.stroke();
+}
+/* Target band */
+var targetLow=cy+ch-(70/300)*ch;
+var targetHigh=cy+ch-(140/300)*ch;
+ctx.fillStyle='rgba(64,255,144,.1)';
+ctx.fillRect(cx,targetHigh,cw,targetLow-targetHigh);
+ctx.strokeStyle='rgba(64,255,144,.4)';ctx.setLineDash([3,3]);
+ctx.beginPath();ctx.moveTo(cx,targetHigh);ctx.lineTo(cx+cw,targetHigh);ctx.stroke();
+ctx.beginPath();ctx.moveTo(cx,targetLow);ctx.lineTo(cx+cw,targetLow);ctx.stroke();
+ctx.setLineDash([]);
+ctx.fillStyle='#40ff90';ctx.font='10px monospace';
+ctx.fillText('70',cx-25,targetLow+4);
+ctx.fillText('140',cx-30,targetHigh+4);
+/* Info */
+ctx.fillStyle='rgba(20,8,24,.9)';
+ctx.fillRect(cx,cy+ch+30,cw,150);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(cx,cy+ch+30,cw,150);
+ctx.fillStyle='#ff4080';ctx.font='bold 13px monospace';
+ctx.fillText('BERGMAN MINIMAL MODEL',cx+12,cy+ch+52);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('Tempo: '+fmt(d.t,1)+' min',cx+12,cy+ch+74);
+ctx.fillStyle='#40ff90';ctx.font='bold 16px monospace';
+ctx.fillText('Glicose: '+fmt(d.G,0)+' mg/dL',cx+12,cy+ch+100);
+ctx.fillStyle='#40e0ff';ctx.font='bold 14px monospace';
+ctx.fillText('Insulina: '+fmt(d.I,1)+' μU/mL',cx+12,cy+ch+122);
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+var status=d.G<70?'HIPOGLICEMIA':d.G>180?'HIPERGLICEMIA':'Normal';
+var col=d.G<70?'#ff4080':d.G>180?'#ffd040':'#40ff90';
+ctx.fillStyle=col;ctx.font='bold 11px monospace';
+ctx.fillText('Status: '+status,cx+12,cy+ch+150);
+setStats('<div>G: '+fmt(d.G,0)+' mg/dL</div><div>I: '+fmt(d.I,1)+' μU/mL</div><div>t: '+fmt(d.t,0)+' min</div>');
+badge('🍰 Diabetes · G='+fmt(d.G,0));SV('sbMode','DM')},
+onDown:function(){},
+controls:function(){var d=STATE.diabetes;var h='<div class="sec"><h4>Insulin</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Bolus insulin</span><span>'+fmt(d.insulinInput,2)+'</span></div><input type="range" min="0" max="20" step="0.5" value="'+d.insulinInput+'" oninput="STATE.diabetes.insulinInput=parseFloat(this.value)"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Meal</h4>';
+h+='<div class="chip-row">';
+[['Pequeno',20],['Médio',50],['Grande',100]].forEach(function(m){
+  h+='<div class="chip" onclick="STATE.diabetes.mealSchedule.push({t:STATE.diabetes.t,carb:'+m[1]+'});toast(\''+m[0]+' meal at t='+fmt(STATE.diabetes.t,0)+'\',\'success\')">'+m[0]+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+[['Saudável',100,10,0.03],['Pré-diabetes',110,12,0.02],['DM tipo 2',140,15,0.01],['DM tipo 1',180,5,0.005]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.diabetes.G='+p[1]+';STATE.diabetes.I='+p[2]+';STATE.diabetes.Gb='+p[1]+';STATE.diabetes.Ib='+p[2]+';MODULES.diabetes.reset();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+h+='<button class="btn primary full" onclick="MODULES.diabetes.reset();toast(\'Reset\',\'success\')">↺ Reset</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Bergman Minimal Model</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Bergman (1979)<br><br>dG/dt = −(p₁+X)G + p₁Gb + meal<br>dX/dt = −p₂X + p₃(I−Ib)<br>dI/dt = −n(I−Ib) + insulin<br><br>X = ação da insulina remota<br><br>DM1: sem produção de insulina<br>DM2: resistência periférica (↓p₃)</div></div>'}});
+
+/* ══════ 12. TUMOR GROWTH ══════ */
+registerModule('tumor',{title:'Tumor Growth',icon:'🔬',desc:'Gompertz model with treatment response.',init:function(){this.reset()},
+reset:function(){var t=STATE.tumor;t.t=0;t.history=[];t.V=t.V0;t.cycles=[]},
+tick:function(dt){STATE.time+=dt;var t=STATE.tumor;if(!STATE.playing)return;
+var sub=Math.floor(dt*10);var ddt=0.1;
+for(var i=0;i<sub;i++){
+  var growth=t.a*t.V*Math.log(t.b*Math.log(1/t.V)+1);
+  // Simplified Gompertz: dV/dt = a·V·ln(K/V), K=1
+  var K=1;
+  var dV=t.a*t.V*Math.log(K/Math.max(t.V,1e-6));
+  // Treatment effect
+  if(t.treatment>0)dV-=t.response*t.V*0.5;
+  t.V=Math.max(1e-6,Math.min(1,t.V+dV*ddt));
+  // Record treatment cycles
+  if(t.treatment>0&&t.cycles.length<10&&Math.random()<0.005){
+    t.cycles.push({t:t.t,V:t.V});
+  }
+  t.t+=ddt;
+}
+t.history.push({t:t.t,V:t.V});
+if(t.history.length>3000)t.history.shift()},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var t=STATE.tumor;
+/* Chart */
+var cx=60,cy=60,cw=W-120,ch=H*0.5;
+ctx.fillStyle='rgba(20,8,24,.6)';
+ctx.fillRect(cx,cy,cw,ch);
+ctx.strokeStyle='rgba(255,64,128,.3)';ctx.strokeRect(cx,cy,cw,ch);
+/* Log scale Y */
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+for(var i=0;i<=4;i++){
+  var y=cy+i*ch/4;
+  ctx.fillText('10^'+(-1-i),cx-35,y+4);
+  ctx.strokeStyle='rgba(255,64,128,.1)';ctx.beginPath();ctx.moveTo(cx,y);ctx.lineTo(cx+cw,y);ctx.stroke();
+}
+/* Curve */
+if(t.history.length>1){
+  ctx.strokeStyle='#40ff90';ctx.lineWidth=2;ctx.beginPath();
+  t.history.forEach(function(x,i){
+    var px=cx+i/t.history.length*cw;
+    var logV=Math.log10(Math.max(x.V,1e-6));
+    var py=cy+ch-(-logV-1)/4*ch;
+    py=cy+(logV+5)/4.5*ch;
+    if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  });
+  ctx.stroke();
+}
+/* Treatment cycles */
+t.cycles.forEach(function(c){
+  var idx=Math.floor(c.t/Math.max(t.t,1)*t.history.length);
+  var px=cx+idx/t.history.length*cw;
+  ctx.strokeStyle='#ffd040';ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(px,cy);ctx.lineTo(px,cy+ch);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#ffd040';ctx.font='9px monospace';
+  ctx.fillText('R×',px-6,cy+15);
+});
+/* Info */
+ctx.fillStyle='rgba(20,8,24,.9)';
+ctx.fillRect(cx,cy+ch+30,cw,140);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(cx,cy+ch+30,cw,140);
+ctx.fillStyle='#ff4080';ctx.font='bold 13px monospace';
+ctx.fillText('GOMPERTZ TUMOR MODEL',cx+12,cy+ch+52);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('Tempo: '+fmt(t.t,1)+' u',cx+12,cy+ch+74);
+ctx.fillText('V(t) = '+fmt(t.V*100,4)+'% do máx',cx+12,cy+ch+92);
+ctx.fillStyle='#40ff90';ctx.font='bold 14px monospace';
+var vol=t.V*1e9; // assume 1 unit = 1e9 cells
+ctx.fillText('Células: '+vol.toExponential(2),cx+12,cy+ch+116);
+ctx.fillStyle='#ffd040';
+ctx.fillText('Diâmetro ≈ '+fmt(Math.pow(vol,1/3)*0.01*2,2)+' mm',cx+12,cy+ch+138);
+setStats('<div>V: '+fmt(t.V,5)+'</div><div>t: '+fmt(t.t,1)+'</div>');
+badge('🔬 Tumor · V='+fmt(t.V,4));SV('sbMode','Tumor')},
+onDown:function(){},
+controls:function(){var t=STATE.tumor;var h='<div class="sec"><h4>Growth parameters</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>a (growth)</span><span>'+t.a+'</span></div><input type="range" min="0.05" max="2" step="0.05" value="'+t.a+'" oninput="STATE.tumor.a=parseFloat(this.value);MODULES.tumor.reset()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>V₀ (initial)</span><span>'+t.V0+'</span></div><input type="range" min="0.001" max="0.1" step="0.001" value="'+t.V0+'" oninput="STATE.tumor.V0=parseFloat(this.value);MODULES.tumor.reset()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Treatment</h4>';
+h+='<div class="chip-row">';
+[['None',0,0],['Chemo',1,0.3],['Targeted',1,0.15],['Immuno',1,0.2],['Combo',1,0.5]].forEach(function(tr){
+  h+='<div class="chip '+(t.treatment===tr[1]&&t.response===tr[2]?'active':'')+'" onclick="STATE.tumor.treatment='+tr[1]+';STATE.tumor.response='+tr[2]+';toast(\''+tr[0]+'\',\'info\');renderLeftPanel()">'+tr[0]+'</div>';
+});
+h+='</div></div>';
+h+='<button class="btn primary full" onclick="MODULES.tumor.reset();toast(\'Reset\',\'success\')">↺ Reset</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Gompertz Model</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Gompertz (1825) — para tumores:<br><br>V(t) = V₀ · exp((a/b)(1−e^(−bt)))<br><br>Forma diferencial:<br>dV/dt = −a·V·ln(V/K)<br><br>K = capacidade de carga<br><br>Mais realista que exponencial:<br>• Crescimento inicial rápido<br>• Desacelera em tamanho maior<br>• Detectável em ~10⁹ células (~1cm³)</div></div>'}});
+
+/* ══════ 13. KAPLAN-MEIER ══════ */
+registerModule('kaplan',{title:'Kaplan-Meier Survival',icon:'📉',desc:'Survival curves with log-rank test.',init:function(){this.generate()},
+generate:function(){var k=STATE.kaplan;k.times=[];k.events=[];
+for(var i=0;i<k.n;i++){
+  // Exponential with HR adjustment
+  var rate=0.05;
+  var t=-Math.log(Math.random())/rate;
+  var event=Math.random()<0.7?1:0;
+  k.times.push(t);
+  k.events.push(event);
+}
+k.curve=kaplanMeier(k.times,k.events)},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var k=STATE.kaplan;
+/* Chart */
+var cx=60,cy=60,cw=W-120,ch=H*0.6;
+ctx.fillStyle='rgba(20,8,24,.6)';
+ctx.fillRect(cx,cy,cw,ch);
+ctx.strokeStyle='rgba(255,64,128,.3)';ctx.strokeRect(cx,cy,cw,ch);
+/* Axes */
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+ctx.fillText('100%',cx-40,cy+5);
+ctx.fillText('50%',cx-35,cy+ch/2+5);
+ctx.fillText('0%',cx-30,cy+ch+5);
+ctx.fillText('Time (months)',cx+cw/2-30,cy+ch+30);
+/* Grid */
+ctx.strokeStyle='rgba(255,64,128,.1)';
+for(var i=0;i<=5;i++){ctx.beginPath();ctx.moveTo(cx,cy+i*ch/5);ctx.lineTo(cx+cw,cy+i*ch/5);ctx.stroke()}
+/* KM curve */
+if(k.curve&&k.curve.length>1){
+  var maxT=k.curve[k.curve.length-1].t;
+  ctx.strokeStyle='#40ff90';ctx.lineWidth=2.5;
+  ctx.beginPath();
+  var prevS=1;
+  k.curve.forEach(function(p,i){
+    var px=cx+p.t/maxT*cw;
+    var py=cy+ch-p.s*ch;
+    if(i===0)ctx.moveTo(px,py);
+    else{
+      ctx.lineTo(px,cy+ch-prevS*ch);
+      ctx.lineTo(px,py);
+    }
+    prevS=p.s;
+  });
+  ctx.lineTo(cx+cw,cy+ch-prevS*ch);
+  ctx.stroke();
+}
+/* Info */
+ctx.fillStyle='rgba(20,8,24,.9)';
+ctx.fillRect(cx,cy+ch+50,cw,120);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(cx,cy+ch+50,cw,120);
+ctx.fillStyle='#ff4080';ctx.font='bold 13px monospace';
+ctx.fillText('KAPLAN-MEIER ANALYSIS',cx+12,cy+ch+72);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('N = '+k.n+' pacientes',cx+12,cy+ch+92);
+ctx.fillText('Eventos: '+k.events.filter(function(e){return e}).length,cx+12,cy+ch+110);
+ctx.fillText('Censurados: '+k.events.filter(function(e){return !e}).length,cx+12,cy+ch+128);
+if(k.curve.length>0){
+  var mst=k.curve.find(function(p){return p.s<=0.5});
+  ctx.fillStyle='#40ff90';ctx.font='bold 14px monospace';
+  ctx.fillText('Median survival: '+(mst?fmt(mst.t,1)+' meses':'> ' + fmt(k.curve[k.curve.length-1].t,1)),cx+12,cy+ch+152);
+}
+setStats('<div>N: '+k.n+'</div><div>Events: '+k.events.filter(function(e){return e}).length+'</div>');
+badge('📉 KM · '+k.n+' patients');SV('sbMode','KM')},
+onDown:function(){},
+controls:function(){var k=STATE.kaplan;var h='<div class="sec"><h4>Sample size</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>N</span><span>'+k.n+'</span></div><input type="range" min="20" max="500" step="10" value="'+k.n+'" oninput="STATE.kaplan.n=parseInt(this.value);MODULES.kaplan.generate();renderLeftPanel()"></div>';
+h+='</div>';
+h+='<button class="btn primary full" onclick="MODULES.kaplan.generate();toast(\'New cohort\',\'success\')">🎲 Generate cohort</button>';
+h+='<div class="sec" style="margin-top:10px"><h4>About</h4><div style="font-size:.6rem;color:var(--tx2);font-family:var(--mono);line-height:1.7">Kaplan-Meier (1958) estima a função de sobrevivência S(t) = P(T > t) mesmo com censura.<br><br>Cada queda = um evento.<br>Median survival = tempo em que S(t) = 0.5.</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Kaplan-Meier</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">S(t) = ∏_{tᵢ≤t} (1 − dᵢ/nᵢ)<br><br>dᵢ = eventos no tempo tᵢ<br>nᵢ = em risco em tᵢ<br><br>Log-rank test compara curvas:<br>χ² = Σ (O−E)²/E<br><br>Cox model: h(t|x) = h₀(t)·exp(βx)</div></div>'}});
+
+/* ══════ 14. DRUG INTERACTIONS ══════ */
+var CYP_INTERACTIONS=[
+  {drugs:['Warfarin','Fluconazole'],enzyme:'CYP2C9',severity:'major',effect:'↑ INR, ↑ sangramento'},
+  {drugs:['Simvastatin','Clarithromycin'],enzyme:'CYP3A4',severity:'major',effect:'↑ Rabdomiólise'},
+  {drugs:['Clopidogrel','Omeprazole'],enzyme:'CYP2C19',severity:'moderate',effect:'↓ Eficácia antiplaquetária'},
+  {drugs:['Metoprolol','Paroxetine'],enzyme:'CYP2D6',severity:'moderate',effect:'↑ Bradicardia'},
+  {drugs:['Codeine','Fluoxetine'],enzyme:'CYP2D6',severity:'moderate',effect:'↓ Analgesia'},
+  {drugs:['Warfarin','Amiodarone'],enzyme:'CYP2C9/3A4',severity:'major',effect:'↑ INR'},
+  {drugs:['Digoxin','Verapamil'],enzyme:'P-gp',severity:'major',effect:'↑ Digoxina'},
+  {drugs:['Rifampin','Warfarin'],enzyme:'CYP inducer',severity:'major',effect:'↓ Efeito varfarina'},
+  {drugs:['MAOI','SSRI'],enzyme:'MAO',severity:'major',effect:'Síndrome serotoninérgica'},
+  {drugs:['Methotrexate','NSAIDs'],enzyme:'Renal',severity:'moderate',effect:'↑ Toxicidade MTX'},
+  {drugs:['Lithium','Thiazide'],enzyme:'Renal',severity:'moderate',effect:'↑ Litio tóxico'},
+  {drugs:['Sildenafil','Nitroglycerin'],enzyme:'cGMP',severity:'major',effect:'Hipotensão grave'},
+  {drugs:['ACE inhibitor','Potassium'],enzyme:'RAS',severity:'moderate',effect:'Hipercalemia'},
+  {drugs:['Statin','Gemfibrozil'],enzyme:'CYP',severity:'moderate',effect:'↑ Miopatia'}
+];
+var ALL_DRUGS=['Warfarin','Fluconazole','Simvastatin','Clarithromycin','Clopidogrel','Omeprazole','Metoprolol','Paroxetine','Codeine','Fluoxetine','Amiodarone','Digoxin','Verapamil','Rifampin','MAOI','SSRI','Methotrexate','NSAIDs','Lithium','Thiazide','Sildenafil','Nitroglycerin','ACE inhibitor','Potassium','Statin','Gemfibrozil'];
+registerModule('drugInt',{title:'Drug Interactions',icon:'⚗',desc:'CYP450 drug interaction checker.',init:function(){var d=STATE.drugInt;d.selected=['Warfarin','Fluconazole'];this.check()},
+check:function(){var d=STATE.drugInt;d.interactions=[];
+CYP_INTERACTIONS.forEach(function(int){
+  var has1=d.selected.indexOf(int.drugs[0])>=0;
+  var has2=d.selected.indexOf(int.drugs[1])>=0;
+  if(has1&&has2)d.interactions.push(int);
+});
+d.severity=d.interactions.length===0?'none':d.interactions.some(function(i){return i.severity==='major'})?'major':d.interactions.some(function(i){return i.severity==='moderate'})?'moderate':'minor'},
+toggle:function(drug){var d=STATE.drugInt;var idx=d.selected.indexOf(drug);
+if(idx>=0)d.selected.splice(idx,1);else d.selected.push(drug);this.check()},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var d=STATE.drugInt;
+/* Title */
+ctx.fillStyle='#ff4080';ctx.font='bold 16px monospace';ctx.textAlign='left';
+ctx.fillText('DRUG INTERACTION CHECKER',30,35);
+/* Selected drugs */
+ctx.fillStyle='#b090c0';ctx.font='bold 11px monospace';
+ctx.fillText('SELECTED ('+d.selected.length+')',30,65);
+d.selected.forEach(function(drug,i){
+  var x=30+(i%4)*((W-60)/4);
+  var y=80+Math.floor(i/4)*35;
+  ctx.fillStyle='rgba(64,224,255,.15)';
+  ctx.fillRect(x,y,(W-60)/4-10,28);
+  ctx.strokeStyle='#40e0ff';ctx.lineWidth=1;
+  ctx.strokeRect(x,y,(W-60)/4-10,28);
+  ctx.fillStyle='#40e0ff';ctx.font='bold 11px monospace';
+  ctx.fillText('💊 '+drug,x+8,y+18);
+});
+/* Interaction severity banner */
+var by=80+Math.ceil(d.selected.length/4)*35+20;
+var sevCol=d.severity==='none'?'#40ff90':d.severity==='major'?'#ff4080':d.severity==='moderate'?'#ffd040':'#40e0ff';
+var sevText=d.severity==='none'?'✓ NO INTERACTIONS':d.severity==='major'?'⚠ MAJOR INTERACTIONS':d.severity==='moderate'?'⚠ MODERATE':'MINOR';
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(30,by,W-60,50);
+ctx.strokeStyle=sevCol;ctx.lineWidth=2;
+ctx.strokeRect(30,by,W-60,50);
+ctx.fillStyle=sevCol;ctx.font='bold 18px monospace';ctx.textAlign='center';
+ctx.fillText(sevText,W/2,by+32);
+ctx.textAlign='left';
+/* Interactions list */
+var iy=by+70;
+ctx.fillStyle='#b090c0';ctx.font='bold 12px monospace';
+ctx.fillText('INTERACTIONS ('+d.interactions.length+')',30,iy);
+d.interactions.forEach(function(int,i){
+  var y=iy+25+i*55;
+  var col=int.severity==='major'?'#ff4080':int.severity==='moderate'?'#ffd040':'#40e0ff';
+  ctx.fillStyle='rgba(20,8,24,.7)';
+  ctx.fillRect(30,y,W-60,48);
+  ctx.strokeStyle=col;ctx.lineWidth=2;
+  ctx.strokeRect(30,y,W-60,48);
+  ctx.fillStyle=col;ctx.font='bold 12px monospace';
+  ctx.fillText(int.drugs[0]+' + '+int.drugs[1],42,y+20);
+  ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+  ctx.fillText('Enzyme: '+int.enzyme+'  ·  '+int.severity.toUpperCase(),42,y+38);
+  ctx.fillStyle=col;ctx.font='bold 11px monospace';
+  ctx.textAlign='right';
+  ctx.fillText(int.effect,W-45,y+20);
+  ctx.textAlign='left';
+});
+/* All available */
+ctx.fillStyle='#b090c0';ctx.font='bold 11px monospace';
+ctx.fillText('ALL DRUGS',30,H-60);
+ctx.fillStyle='#785888';ctx.font='10px monospace';
+ctx.fillText(ALL_DRUGS.join(' · ').substring(0,300),30,H-40);
+setStats('<div>Selected: '+d.selected.length+'</div><div>Interactions: '+d.interactions.length+'</div><div>Severity: '+d.severity+'</div>');
+badge('⚗ DDI · '+d.interactions.length+' interactions · '+d.severity);SV('sbMode','DDI')},
+onDown:function(){},
+controls:function(){var d=STATE.drugInt;var h='<div class="sec"><h4>Select drugs</h4><div class="chip-row" style="max-height:300px;overflow-y:auto">';
+ALL_DRUGS.forEach(function(drug){
+  h+='<div class="chip '+(d.selected.indexOf(drug)>=0?'active':'')+'" onclick="MODULES.drugInt.toggle(\''+drug+'\');renderLeftPanel()">'+drug+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Severity</h4><div class="kv">';
+h+='<div class="row"><span class="k">Status</span><span class="v">'+d.severity.toUpperCase()+'</span></div>';
+h+='<div class="row"><span class="k">Interactions</span><span class="v">'+d.interactions.length+'</span></div>';
+h+='</div></div>';
+h+='<div class="sec"><h4>Clear</h4>';
+h+='<button class="btn full sm" onclick="STATE.drugInt.selected=[];MODULES.drugInt.check();renderLeftPanel()">Clear all</button>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>CYP450</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Principais enzimas:<br>• CYP3A4: 50% dos fármacos<br>• CYP2D6: codeína, metoprolol<br>• CYP2C9: varfarina<br>• CYP2C19: clopidogrel<br><br>Inibidores potentes:<br>• Claritromicina, cetoconazol<br>• Fluconazol, fluoxetina<br><br>Indutores:<br>• Rifampicina, carbamazepina<br>• Erva-de-são-joão</div></div>'}});
+
+/* ══════ 15. FRAMINGHAM CARDIO RISK ══════ */
+registerModule('framingham',{title:'Cardiovascular Risk',icon:'🎯',desc:'10-year CVD risk (Framingham / ASCVD).',init:function(){this.compute()},
+compute:function(){var f=STATE.framingham;f.risk=framinghamRisk(f)*100;f.percentile=Math.min(99,Math.max(1,Math.round(f.risk*2)))},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var f=STATE.framingham;
+/* Risk gauge */
+drawGauge(ctx,W/2,H*0.3,Math.min(W,H)*0.15,f.risk,30,'10-yr risk','%');
+ctx.textAlign='center';
+/* Interpretation */
+var col=f.risk<5?'#40ff90':f.risk<10?'#ffd040':f.risk<20?'#ff8040':'#ff4080';
+var label=f.risk<5?'BAIXO RISCO':f.risk<10?'RISCO LIMÍTROFE':f.risk<20?'RISCO INTERMEDIÁRIO':'ALTO RISCO';
+ctx.fillStyle=col;ctx.font='bold 22px monospace';
+ctx.fillText(label,W/2,H*0.58);
+ctx.textAlign='left';
+/* Recommendations */
+var rx;
+var rxCol;
+if(f.risk<5){rx='Continue lifestyle';rxCol='#40ff90'}
+else if(f.risk<10){rx='Lifestyle + consider statin if risk enhancers';rxCol='#ffd040'}
+else if(f.risk<20){rx='Moderate-intensity statin if 10-yr risk ≥7.5-10%';rxCol='#ff8040'}
+else{rx='High-intensity statin + consider aspirin';rxCol='#ff4080'}
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(30,H*0.62,W-60,60);
+ctx.strokeStyle=rxCol;ctx.lineWidth=2;
+ctx.strokeRect(30,H*0.62,W-60,60);
+ctx.fillStyle=rxCol;ctx.font='bold 13px monospace';
+ctx.textAlign='center';
+ctx.fillText('Rx: '+rx,W/2,H*0.62+35);
+ctx.textAlign='left';
+/* Parameters */
+var py=H*0.72;
+ctx.fillStyle='rgba(20,8,24,.6)';
+ctx.fillRect(30,py,W-60,H-py-20);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,py,W-60,H-py-20);
+ctx.fillStyle='#ff4080';ctx.font='bold 12px monospace';
+ctx.fillText('PARAMETERS',45,py+22);
+var params=[
+  ['Age',f.age+' yr'],['Sex',f.sex==='M'?'Male':'Female'],
+  ['Total chol',f.tc+' mg/dL'],['HDL',f.hdl+' mg/dL'],
+  ['Systolic BP',f.sbp+' mmHg'],['BP treated',f.bpTx?'Yes':'No'],
+  ['Smoker',f.smoker?'Yes':'No'],['Diabetes',f.dm?'Yes':'No']
+];
+params.forEach(function(p,i){
+  var x=45+(i%4)*((W-90)/4);
+  var y=py+45+Math.floor(i/4)*30;
+  ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+  ctx.fillText(p[0],x,y);
+  ctx.fillStyle='#f0e0f8';ctx.font='bold 12px monospace';
+  ctx.fillText(p[1],x,y+15);
+});
+setStats('<div>Risk: '+f.risk.toFixed(1)+'%</div><div>Label: '+label+'</div>');
+badge('🎯 CVD · '+f.risk.toFixed(1)+'% 10yr');SV('sbMode','CVD')},
+onDown:function(){},
+controls:function(){var f=STATE.framingham;var h='<div class="sec"><h4>Patient</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Age</span><span>'+f.age+'</span></div><input type="range" min="30" max="85" value="'+f.age+'" oninput="STATE.framingham.age=parseInt(this.value);MODULES.framingham.compute()"></div>';
+h+='<div class="chip-row">';
+[['M','Homem'],['F','Mulher']].forEach(function(s){
+  h+='<div class="chip '+(f.sex===s[0]?'active':'')+'" onclick="STATE.framingham.sex=\''+s[0]+'\';MODULES.framingham.compute();renderLeftPanel()">'+s[1]+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Lipidios</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Colesterol total</span><span>'+f.tc+' mg/dL</span></div><input type="range" min="120" max="400" value="'+f.tc+'" oninput="STATE.framingham.tc=parseInt(this.value);MODULES.framingham.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>HDL</span><span>'+f.hdl+' mg/dL</span></div><input type="range" min="20" max="100" value="'+f.hdl+'" oninput="STATE.framingham.hdl=parseInt(this.value);MODULES.framingham.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Pressão &amp; Hábitos</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Systolic BP</span><span>'+f.sbp+' mmHg</span></div><input type="range" min="90" max="200" value="'+f.sbp+'" oninput="STATE.framingham.sbp=parseInt(this.value);MODULES.framingham.compute()"></div>';
+h+='<div class="chip '+(f.smoker?'active':'')+'" onclick="STATE.framingham.smoker=!STATE.framingham.smoker;MODULES.framingham.compute();renderLeftPanel()">Smoker</div>';
+h+='<div class="chip '+(f.dm?'active':'')+'" onclick="STATE.framingham.dm=!STATE.framingham.dm;MODULES.framingham.compute();renderLeftPanel()">Diabetes</div>';
+h+='</div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Framingham</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">D\'Agostino et al. (2008)<br><br>Regressão logística:<br>Risk = 1 − 0.95^exp(βX − mean)<br><br>Fatores (masc):<br>ln(age)·0.72 + ln(TC)·0.12<br>− ln(HDL)·0.15 + ln(SBP)·0.28<br>− smoker·0.52 − dm·0.24<br><br>ASCVD (Pooled Cohort, 2013):<br>Inclui raça afro-americana<br>Aplica 40-79 yr</div></div>'}});
+
+/* ══════ 16. qSOFA / SEPSIS SCREENING ══════ */
+registerModule('qsofa',{title:'Sepsis Screening',icon:'🚨',desc:'qSOFA + SIRS criteria for sepsis.',init:function(){this.compute()},
+compute:function(){var q=STATE.qsofa;q.score=0;
+if(q.rr>=22)q.score++;
+if(q.altered)q.score++;
+if(q.sbp<=100)q.score++;
+q.risk=q.score>=2?'high':q.score===1?'moderate':'low'},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var q=STATE.qsofa;
+/* Score big */
+ctx.textAlign='center';
+var col=q.risk==='high'?'#ff4080':q.risk==='moderate'?'#ffd040':'#40ff90';
+ctx.fillStyle=col;ctx.font='bold 120px monospace';
+ctx.fillText(q.score,W/2,H*0.25);
+ctx.fillStyle=col;ctx.font='bold 20px monospace';
+ctx.fillText('qSOFA '+q.score+'/3',W/2,H*0.31);
+ctx.font='bold 16px monospace';
+ctx.fillText(q.risk==='high'?'⚠ HIGH RISK — SEPSIS LIKELY':q.risk==='moderate'?'Moderate risk':'Low risk',W/2,H*0.37);
+ctx.textAlign='left';
+/* Criteria */
+var criteria=[
+  {name:'Respiratory rate',value:q.rr+'/min',threshold:'≥ 22',met:q.rr>=22,icon:'🫁'},
+  {name:'Altered mentation',value:q.altered?'Yes':'No',threshold:'GCS < 15',met:q.altered,icon:'🧠'},
+  {name:'Systolic BP',value:q.sbp+' mmHg',threshold:'≤ 100',met:q.sbp<=100,icon:'💓'}
+];
+criteria.forEach(function(c,i){
+  var y=H*0.45+i*90;
+  var x=60;
+  var bg=c.met?'rgba(255,64,128,.15)':'rgba(20,8,24,.5)';
+  ctx.fillStyle=bg;
+  ctx.fillRect(x,y,W-120,75);
+  ctx.strokeStyle=c.met?'#ff4080':'#785888';ctx.lineWidth=2;
+  ctx.strokeRect(x,y,W-120,75);
+  ctx.fillStyle=c.met?'#ff4080':'#785888';ctx.font='bold 14px monospace';
+  ctx.fillText(c.icon+' '+c.name+(c.met?'  ✓':'  ○'),x+15,y+28);
+  ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+  ctx.fillText('Threshold: '+c.threshold,x+15,y+50);
+  ctx.fillStyle=c.met?'#ff4080':'#40ff90';ctx.font='bold 16px monospace';
+  ctx.textAlign='right';
+  ctx.fillText(c.value,W-90,y+40);
+  ctx.textAlign='left';
+});
+/* Recommendation */
+var ry=H*0.45+3*90+20;
+var recCol=q.score>=2?'#ff4080':q.score===1?'#ffd040':'#40ff90';
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(60,ry,W-120,60);
+ctx.strokeStyle=recCol;ctx.lineWidth=2;ctx.strokeRect(60,ry,W-120,60);
+ctx.fillStyle=recCol;ctx.font='bold 14px monospace';ctx.textAlign='center';
+var rec=q.score>=2?'→ Check lactate, blood cultures, start antibiotics within 1h':q.score===1?'→ Reassess in 1h, check lactate':'→ Routine monitoring';
+ctx.fillText(rec,W/2,ry+35);
+ctx.textAlign='left';
+setStats('<div>qSOFA: '+q.score+'/3</div><div>Risk: '+q.risk+'</div>');
+badge('🚨 qSOFA · '+q.score+'/3 · '+q.risk);SV('sbMode','qSOFA')},
+onDown:function(){},
+controls:function(){var q=STATE.qsofa;var h='<div class="sec"><h4>Criteria</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>RR</span><span>'+q.rr+'/min '+(q.rr>=22?'✓':'')+'</span></div><input type="range" min="8" max="50" value="'+q.rr+'" oninput="STATE.qsofa.rr=parseInt(this.value);MODULES.qsofa.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Systolic BP</span><span>'+q.sbp+' mmHg '+(q.sbp<=100?'✓':'')+'</span></div><input type="range" min="60" max="180" value="'+q.sbp+'" oninput="STATE.qsofa.sbp=parseInt(this.value);MODULES.qsofa.compute()"></div>';
+h+='<div class="chip '+(q.altered?'active':'')+'" onclick="STATE.qsofa.altered=!STATE.qsofa.altered;MODULES.qsofa.compute();renderLeftPanel()">Altered mentation (GCS&lt;15)</div>';
+h+='</div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+[['Well',16,120,false],['Early sepsis',24,95,true],['Septic shock',32,78,true],['Normal',14,120,false]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.qsofa.rr='+p[1]+';STATE.qsofa.sbp='+p[2]+';STATE.qsofa.altered='+p[3]+';MODULES.qsofa.compute();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Sepsis-3</h4><div style="font-size:.6rem;color:var(--tx2);font-family:var(--mono);line-height:1.7">Singer et al. JAMA 2016<br><br>Sepse = infecção + ΔSOFA ≥2<br><br>qSOFA = triagem à beira do leito<br>(não substitui SOFA completo)<br><br>Lactato &gt;2 = hipoperfusão</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>qSOFA</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Quick SOFA (Seymour 2016)<br><br>3 critérios, 1 ponto cada:<br>• RR ≥ 22/min<br>• Altered mentation (GCS &lt; 15)<br>• SBP ≤ 100 mmHg<br><br>≥2 = alto risco de mortalidade<br><br>Não requer exames laboratoriais</div></div>'}});
+
+/* ══════ 17. HEMODYNAMICS / SHOCK ══════ */
+registerModule('shock',{title:'Hemodynamics',icon:'💉',desc:'Shock classification by invasive parameters.',init:function(){this.classify()},
+classify:function(){var s=STATE.shock;
+s.map=s.bpDia+(s.bpSys-s.bpDia)/3;
+s.svr=((s.map-s.cvp)/s.co)*80;
+s.ci=s.co/1.7; // per BSA=1.7m²
+// Classify shock type
+if(s.ci<2.2&&s.svr>1600&&s.paop<18)s.type='Hypovolemic';
+else if(s.ci<2.2&&s.svr>1600&&s.paop<18&&s.cvp<5)s.type='Hypovolemic';
+else if(s.ci<2.2&&s.svr<800)s.type='Distributive (septic/neurogenic)';
+else if(s.ci<2.2&&s.paop>18)s.type='Cardiogenic';
+else if(s.svr>1400&&s.ci>2.2)s.type='Obstructive (PE/tamponade)';
+else s.type='Normal';
+// Mixed shock
+if(s.ci<2.2&&s.svr>1600&&s.cvp>15)s.type='Cardiac tamponade / RV failure'},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var s=STATE.shock;
+/* Title */
+ctx.fillStyle='#ff4080';ctx.font='bold 16px monospace';
+ctx.fillText('HEMODYNAMIC PROFILING',30,35);
+/* Four quadrants */
+var quads=[
+  {x:30,y:70,w:W/2-40,h:H/2-60,label:'Preload',value:'CVP '+s.cvp+' · PAOP '+s.paop,color:'#40e0ff'},
+  {x:W/2+10,y:70,w:W/2-40,h:H/2-60,label:'Afterload',value:'SVR '+Math.round(s.svr),color:'#ff4080'},
+  {x:30,y:H/2+10,w:W/2-40,h:H/2-60,label:'Pump',value:'CO '+fmt(s.co,1)+' · CI '+fmt(s.ci,1),color:'#40ff90'},
+  {x:W/2+10,y:H/2+10,w:W/2-40,h:H/2-60,label:'Type',value:s.type,color:'#ffd040'}
+];
+quads.forEach(function(q){
+  ctx.fillStyle='rgba(20,8,24,.6)';
+  ctx.fillRect(q.x,q.y,q.w,q.h);
+  ctx.strokeStyle=q.color;ctx.lineWidth=2;
+  ctx.strokeRect(q.x,q.y,q.w,q.h);
+  ctx.fillStyle=q.color;ctx.font='bold 12px monospace';
+  ctx.fillText(q.label,q.x+15,q.y+25);
+  ctx.fillStyle='#f0e0f8';ctx.font='bold 20px monospace';
+  ctx.fillText(q.value,q.x+15,q.y+60);
+});
+setStats('<div>Type: '+s.type+'</div><div>CO: '+fmt(s.co,1)+' L/min</div><div>SVR: '+Math.round(s.svr)+'</div>');
+badge('💉 Shock · '+s.type);SV('sbMode','Hemodynamics')},
+onDown:function(){},
+controls:function(){var s=STATE.shock;var h='<div class="sec"><h4>Measured</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>BP sys</span><span>'+s.bpSys+'</span></div><input type="range" min="40" max="220" value="'+s.bpSys+'" oninput="STATE.shock.bpSys=parseInt(this.value);MODULES.shock.classify()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>BP dia</span><span>'+s.bpDia+'</span></div><input type="range" min="20" max="120" value="'+s.bpDia+'" oninput="STATE.shock.bpDia=parseInt(this.value);MODULES.shock.classify()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>CVP</span><span>'+s.cvp+' mmHg</span></div><input type="range" min="0" max="30" value="'+s.cvp+'" oninput="STATE.shock.cvp=parseInt(this.value);MODULES.shock.classify()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>PAOP</span><span>'+s.paop+' mmHg</span></div><input type="range" min="0" max="40" value="'+s.paop+'" oninput="STATE.shock.paop=parseInt(this.value);MODULES.shock.classify()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Cardiac Output</span><span>'+fmt(s.co,1)+' L/min</span></div><input type="range" min="1" max="12" step="0.1" value="'+s.co+'" oninput="STATE.shock.co=parseFloat(this.value);MODULES.shock.classify()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+[['Normal',120,80,8,12,5],['Hypovolemic',80,50,3,3,4],['Cardiogenic',80,50,18,25,2.5],['Septic',85,45,5,8,7],['Obstructive',80,50,20,22,3]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.shock.bpSys='+p[1]+';STATE.shock.bpDia='+p[2]+';STATE.shock.cvp='+p[3]+';STATE.shock.paop='+p[4]+';STATE.shock.co='+p[5]+';MODULES.shock.classify();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Hemodynamics</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">MAP = DBP + (SBP−DBP)/3<br><br>SVR = (MAP − CVP) × 80 / CO<br>Normal: 800-1200 dyn·s·cm⁻⁵<br><br>CI = CO / BSA (normal 2.5-4.0)<br><br>Tipos de choque:<br>• Hipovolêmico: ↓preload, ↑SVR, ↓CO<br>• Cardiogênico: ↑PAOP, ↑SVR, ↓CO<br>• Distributivo: ↓SVR, ↑/normal CO<br>• Obstrutivo: ↑CVP, ↑SVR, ↓CO</div></div>'}});
+</script>
+<script>
+/* ══════ 18. ACID-BASE BALANCE ══════ */
+registerModule('acidbase',{title:'Acid-Base Balance',icon:'⚖',desc:'Step-by-step ABG interpretation.',init:function(){this.analyze()},
+analyze:function(){var a=STATE.acidbase;
+a.ag=anionGap(a.na,a.cl,a.hco3);
+a.winter=winterFormula(a.hco3);
+a.deltaRatio=deltaRatio(a.ag,a.hco3);
+// Step-by-step
+a.steps=[];
+a.steps.push({step:1,text:'pH = '+a.pH+' → '+(a.pH<7.35?'Acidemia':a.pH>7.45?'Alkalemia':'Normal')});
+if(a.pH<7.35){
+  if(a.pCO2>45){a.steps.push({step:2,text:'Primary respiratory acidosis (↑pCO₂)'})}
+  else if(a.hco3<22){a.steps.push({step:2,text:'Primary metabolic acidosis (↓HCO₃⁻)'})}
+}else if(a.pH>7.45){
+  if(a.pCO2<35){a.steps.push({step:2,text:'Primary respiratory alkalosis (↓pCO₂)'})}
+  else if(a.hco3>26){a.steps.push({step:2,text:'Primary metabolic alkalosis (↑HCO₃⁻)'})}
+}
+if(a.ag>12)a.steps.push({step:3,text:'Anion gap elevated = '+fmt(a.ag,1)+' → check MUDPILES'});
+else a.steps.push({step:3,text:'Anion gap normal = '+fmt(a.ag,1)});
+a.steps.push({step:4,text:'Winter: expected pCO₂ = '+fmt(a.winter.low,1)+'-'+fmt(a.winter.high,1)});
+a.steps.push({step:5,text:'Delta ratio = '+fmt(a.deltaRatio,2)});
+if(a.deltaRatio<0.4)a.steps.push({step:6,text:'Pure normal-AG metabolic acidosis'});
+else if(a.deltaRatio<1)a.steps.push({step:6,text:'Mixed normal + high AG acidosis'});
+else if(a.deltaRatio<2)a.steps.push({step:6,text:'Pure high AG metabolic acidosis'});
+else a.steps.push({step:6,text:'Mixed high AG acidosis + metabolic alkalosis'});
+},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var a=STATE.acidbase;
+/* Title */
+ctx.fillStyle='#ff4080';ctx.font='bold 16px monospace';
+ctx.fillText('STEP-BY-STEP ABG INTERPRETATION',30,35);
+/* Steps */
+a.steps.forEach(function(s,i){
+  var y=70+i*55;
+  var col=i%2===0?'#40e0ff':'#40ff90';
+  ctx.fillStyle='rgba(20,8,24,.6)';
+  ctx.fillRect(30,y,W-60,48);
+  ctx.strokeStyle=col;ctx.lineWidth=2;
+  ctx.strokeRect(30,y,W-60,48);
+  ctx.fillStyle=col;ctx.font='bold 14px monospace';
+  ctx.fillText('Step '+s.step,W-200,y+30);
+  ctx.fillStyle='#f0e0f8';ctx.font='12px monospace';
+  ctx.fillText(s.text,50,y+30);
+});
+/* Info panel */
+var iy=70+a.steps.length*55+20;
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(30,iy,W-60,H-iy-20);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,iy,W-60,H-iy-20);
+ctx.fillStyle='#ff4080';ctx.font='bold 13px monospace';
+ctx.fillText('CALCULATED VALUES',45,iy+22);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('Anion gap = '+fmt(a.ag,1)+' mEq/L (normal 8-12)',45,iy+45);
+ctx.fillText('Winter\'s expected pCO₂ = 1.5×'+a.hco3+'+8 = '+fmt(a.winter.expected,1)+' ± 2',45,iy+65);
+ctx.fillText('Delta ratio = '+fmt(a.deltaRatio,2),45,iy+85);
+ctx.fillStyle='#40e0ff';ctx.font='bold 11px monospace';
+ctx.fillText('Interpretation rules:',45,iy+110);
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+ctx.fillText('AG normal (8-12) = Cl-related acidosis (diarrhea, RTA)',45,iy+128);
+ctx.fillText('AG elevated = MUDPILES (methanol, uremia, DKA, propylene, INH, lactate, ethylene, salicylates)',45,iy+144);
+ctx.fillText('Δratio <0.4: pure normal AG; 1-2: pure high AG; >2: high AG + met alkalosis',45,iy+160);
+setStats('<div>pH: '+a.pH+'</div><div>pCO₂: '+a.pCO2+'</div><div>HCO₃: '+a.hco3+'</div><div>AG: '+fmt(a.ag,1)+'</div>');
+badge('⚖ Acid-Base · AG='+fmt(a.ag,1));SV('sbMode','AcidBase')},
+onDown:function(){},
+controls:function(){var a=STATE.acidbase;var h='<div class="sec"><h4>ABG Values</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>pH</span><span>'+a.pH+'</span></div><input type="range" min="6.8" max="7.8" step="0.01" value="'+a.pH+'" oninput="STATE.acidbase.pH=parseFloat(this.value);MODULES.acidbase.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>pCO₂</span><span>'+a.pCO2+'</span></div><input type="range" min="10" max="100" value="'+a.pCO2+'" oninput="STATE.acidbase.pCO2=parseInt(this.value);MODULES.acidbase.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>HCO₃⁻</span><span>'+a.hco3+'</span></div><input type="range" min="5" max="45" value="'+a.hco3+'" oninput="STATE.acidbase.hco3=parseInt(this.value);MODULES.acidbase.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Na⁺</span><span>'+a.na+'</span></div><input type="range" min="110" max="170" value="'+a.na+'" oninput="STATE.acidbase.na=parseInt(this.value);MODULES.acidbase.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Cl⁻</span><span>'+a.cl+'</span></div><input type="range" min="70" max="140" value="'+a.cl+'" oninput="STATE.acidbase.cl=parseInt(this.value);MODULES.acidbase.analyze()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Classic patterns</h4><div class="chip-row">';
+[['DKA',7.15,25,10,138,100],['Salicylate',7.50,20,18,140,102],['Diarrhea',7.25,30,15,140,115],['Vomiting',7.52,48,32,140,90],['COPD',7.25,70,30,140,100]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.acidbase.pH='+p[1]+';STATE.acidbase.pCO2='+p[2]+';STATE.acidbase.hco3='+p[3]+';STATE.acidbase.na='+p[4]+';STATE.acidbase.cl='+p[5]+';MODULES.acidbase.analyze();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Acid-Base Analysis</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Henderson-Hasselbalch:<br>pH = 6.1 + log(HCO₃⁻ / (0.03·pCO₂))<br><br>Winter\'s formula:<br>pCO₂ esperado = 1.5·HCO₃⁻ + 8 ± 2<br><br>Anion gap = Na − (Cl + HCO₃)<br><br>Delta ratio = (AG − 12)/(24 − HCO₃)</div></div>'}});
+
+/* ══════ 19. RESPIRATORY MECHANICS ══════ */
+registerModule('resp',{title:'Respiratory Mechanics',icon:'🌬',desc:'Lung compliance, resistance, waveforms.',init:function(){this.reset()},
+reset:function(){var r=STATE.resp;r.t=0;r.history=[];r.volume=0},
+tick:function(dt){STATE.time+=dt;var r=STATE.resp;if(!STATE.playing)return;
+var sub=Math.floor(dt*50);var ddt=0.02;
+for(var i=0;i<sub;i++){
+  var period=60/r.rr;
+  var phase=(r.t%period)/period;
+  // Square or sine flow
+  var flow;
+  if(r.mode==='CMV'||r.mode==='AC'){
+    flow=phase<0.4?30:-30;
+  }else{
+    flow=20*Math.sin(phase*Math.PI*2);
+  }
+  // Compliance effect on pressure
+  r.paw=flow*r.resistance+(r.volume+r.peep*r.compliance)/r.compliance;
+  r.volume+=flow*ddt;
+  if(phase>0.9)r.volume=Math.max(0,r.volume*0.9);
+  r.flow=flow;
+  r.t+=ddt;
+  r.history.push({t:r.t,V:r.volume,P:r.paw,F:r.flow});
+  if(r.history.length>2000)r.history.shift();
+}
+},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var r=STATE.resp;
+/* 3 stacked charts */
+var charts=[
+  {y:30,label:'Pressure (cm H₂O)',color:'#ff4080',key:'P',min:0,max:40},
+  {y:H/3+20,label:'Flow (L/min)',color:'#40e0ff',key:'F',min:-50,max:50},
+  {y:2*H/3+10,label:'Volume (mL)',color:'#40ff90',key:'V',min:0,max:800}
+];
+charts.forEach(function(ch){
+  var cx=60,cy=ch.y,cw=W-120,chh=H/3-40;
+  ctx.fillStyle='rgba(20,8,24,.6)';
+  ctx.fillRect(cx,cy,cw,chh);
+  ctx.strokeStyle='rgba(255,64,128,.3)';
+  ctx.strokeRect(cx,cy,cw,chh);
+  ctx.fillStyle=ch.color;ctx.font='bold 11px monospace';
+  ctx.fillText(ch.label,cx+8,cy-5);
+  // Y axis ref
+  var zeroY=cy+chh*(1-(0-ch.min)/(ch.max-ch.min));
+  ctx.strokeStyle='rgba(255,64,128,.2)';ctx.beginPath();
+  ctx.moveTo(cx,zeroY);ctx.lineTo(cx+cw,zeroY);ctx.stroke();
+  if(r.history.length>1){
+    ctx.strokeStyle=ch.color;ctx.lineWidth=1.5;
+    ctx.beginPath();
+    r.history.forEach(function(h,i){
+      var px=cx+i/r.history.length*cw;
+      var v=h[ch.key];
+      var py=cy+chh-(v-ch.min)/(ch.max-ch.min)*chh;
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    });
+    ctx.stroke();
+  }
+});
+setStats('<div>RR: '+r.rr+'</div><div>Vt: '+r.Vt+'</div><div>Ppeak: '+fmt(r.paw,1)+'</div><div>PEEP: '+r.peep+'</div>');
+badge('🌬 Resp · Ppeak='+fmt(r.paw,1)+' cmH₂O');SV('sbMode','Resp')},
+onDown:function(){},
+controls:function(){var r=STATE.resp;var h='<div class="sec"><h4>Ventilator settings</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>RR</span><span>'+r.rr+'/min</span></div><input type="range" min="6" max="40" value="'+r.rr+'" oninput="STATE.resp.rr=parseInt(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Tidal volume</span><span>'+r.Vt+' mL</span></div><input type="range" min="200" max="800" step="10" value="'+r.Vt+'" oninput="STATE.resp.Vt=parseInt(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>PEEP</span><span>'+r.peep+' cmH₂O</span></div><input type="range" min="0" max="20" value="'+r.peep+'" oninput="STATE.resp.peep=parseInt(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Compliance</span><span>'+r.compliance+' mL/cmH₂O</span></div><input type="range" min="10" max="100" value="'+r.compliance+'" oninput="STATE.resp.compliance=parseInt(this.value)"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Resistance</span><span>'+r.resistance+' cmH₂O/L/s</span></div><input type="range" min="2" max="30" value="'+r.resistance+'" oninput="STATE.resp.resistance=parseInt(this.value)"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Mode</h4><div class="chip-row">';
+['CMV','AC','SIMV','PSV','Spont'].forEach(function(m){
+  h+='<div class="chip '+(r.mode===m?'active':'')+'" onclick="STATE.resp.mode=\''+m+'\';renderLeftPanel()">'+m+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Conditions</h4><div class="chip-row">';
+[['Normal',50,10],['ARDS',20,15],['COPD',40,25],['Asthma',30,28],['Fibrosis',15,8]].forEach(function(c){
+  h+='<div class="chip" onclick="STATE.resp.compliance='+c[1]+';STATE.resp.resistance='+c[2]+';renderLeftPanel()">'+c[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Respiratory Mechanics</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Equation of motion:<br>Paw = V/C + F·R + PEEP<br><br>Compliance normal: 50-70 mL/cmH₂O<br>ARDS: 20-30 (↓)<br>COPD: 60-100 (↑)<br><br>Resistance normal: 5-10 cmH₂O/L/s<br>Asthma: 20-30 (↑)<br><br>Auto-PEEP se tempo expiratório insuficiente</div></div>'}});
+
+/* ══════ 20. VENTILATOR MODES ══════ */
+registerModule('vent',{title:'Ventilator Settings',icon:'⛑',desc:'Ppeak, Pplat, driving pressure analysis.',init:function(){this.compute()},
+compute:function(){var v=STATE.vent;
+v.pPeak=v.pInsp+v.resistance*v.vt/60;
+v.pPlat=v.pInsp;
+v.drivingPressure=v.pPlat-v.peep;
+v.compliance=v.vt/(v.pPlat-v.peep);
+v.staticCompliance=v.compliance;
+// ARDS lung protective: Vt 4-6 mL/kg PBW
+v.pbw=v.pbw||70;
+v.vtPerKg=v.vt/v.pbw;
+v.ventilatorInducedLungInjury=v.drivingPressure>15||v.pPlat>30;
+// P/F ratio
+v.pf=v.pf||300;
+v.ardsClass=v.pf>=300?'Normal':v.pf>=200?'Mild ARDS':v.pf>=100?'Moderate ARDS':'Severe ARDS'},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var v=STATE.vent;
+/* Title */
+ctx.fillStyle='#ff4080';ctx.font='bold 16px monospace';
+ctx.fillText('VENTILATOR SETTINGS & MONITORING',30,35);
+/* Key values */
+var values=[
+  {name:'Ppeak',value:v.pPeak.toFixed(1),unit:'cmH₂O',normal:'<40',color:v.pPeak<40?'#40ff90':'#ff4080'},
+  {name:'Pplat',value:v.pPlat.toFixed(1),unit:'cmH₂O',normal:'<30',color:v.pPlat<30?'#40ff90':'#ff4080'},
+  {name:'Driving P',value:v.drivingPressure.toFixed(1),unit:'cmH₂O',normal:'<15',color:v.drivingPressure<15?'#40ff90':'#ff4080'},
+  {name:'Compliance',value:v.compliance.toFixed(0),unit:'mL/cmH₂O',normal:'>40',color:v.compliance>40?'#40ff90':'#ffd040'},
+  {name:'Vt/PBW',value:v.vtPerKg.toFixed(1),unit:'mL/kg',normal:'4-8',color:v.vtPerKg>=4&&v.vtPerKg<=8?'#40ff90':'#ff4080'},
+  {name:'P/F ratio',value:v.pf.toFixed(0),unit:'mmHg',normal:'>300',color:v.pf>=300?'#40ff90':v.pf>=200?'#ffd040':'#ff4080'}
+];
+values.forEach(function(val,i){
+  var x=30+(i%3)*(W-60)/3;
+  var y=70+Math.floor(i/3)*90;
+  var w=(W-60)/3-15;
+  ctx.fillStyle='rgba(20,8,24,.6)';
+  ctx.fillRect(x,y,w,80);
+  ctx.strokeStyle=val.color;ctx.lineWidth=2;
+  ctx.strokeRect(x,y,w,80);
+  ctx.fillStyle=val.color;ctx.font='bold 11px monospace';
+  ctx.fillText(val.name,x+10,y+18);
+  ctx.fillStyle='#f0e0f8';ctx.font='bold 28px monospace';
+  ctx.fillText(val.value,x+10,y+52);
+  ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+  ctx.fillText(val.unit,x+10,y+68);
+  ctx.fillStyle=val.color;ctx.font='bold 10px monospace';
+  ctx.textAlign='right';
+  ctx.fillText('ref '+val.normal,x+w-10,y+68);
+  ctx.textAlign='left';
+});
+/* Warnings */
+var wy=70+2*90+20;
+if(v.ventilatorInducedLungInjury){
+  ctx.fillStyle='rgba(255,64,128,.15)';
+  ctx.fillRect(30,wy,W-60,50);
+  ctx.strokeStyle='#ff4080';ctx.lineWidth=2;
+  ctx.strokeRect(30,wy,W-60,50);
+  ctx.fillStyle='#ff4080';ctx.font='bold 13px monospace';
+  ctx.fillText('⚠ VILI RISK: Driving pressure >15 ou Pplat >30',45,wy+20);
+  ctx.font='11px monospace';
+  ctx.fillText('→ Reduce tidal volume, consider lung protective strategy',45,wy+40);
+}else{
+  ctx.fillStyle='rgba(64,255,144,.1)';
+  ctx.fillRect(30,wy,W-60,50);
+  ctx.strokeStyle='#40ff90';ctx.lineWidth=2;
+  ctx.strokeRect(30,wy,W-60,50);
+  ctx.fillStyle='#40ff90';ctx.font='bold 13px monospace';
+  ctx.fillText('✓ Lung protective ventilation',45,wy+20);
+  ctx.font='11px monospace';
+  ctx.fillText('Driving pressure <15, Pplat <30, Vt/PBW 4-8',45,wy+40);
+}
+/* ARDS classification */
+var ay=wy+70;
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(30,ay,W-60,H-ay-20);
+ctx.strokeStyle='#40e0ff';ctx.strokeRect(30,ay,W-60,H-ay-20);
+ctx.fillStyle='#40e0ff';ctx.font='bold 12px monospace';
+ctx.fillText('ARDS BERLIN CLASSIFICATION',45,ay+22);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('Current P/F: '+v.pf.toFixed(0)+' → '+v.ardsClass,45,ay+45);
+ctx.fillText('Mild (200-300): Vt 6 mL/kg PBW, PEEP ≥5',45,ay+65);
+ctx.fillText('Moderate (100-200): Vt 6 mL/kg, PEEP 8-10, prone position',45,ay+82);
+ctx.fillText('Severe (<100): Vt 4-6 mL/kg, PEEP >10, consider ECMO',45,ay+99);
+setStats('<div>Ppeak: '+v.pPeak.toFixed(1)+'</div><div>Pplat: '+v.pPlat.toFixed(1)+'</div><div>ΔP: '+v.drivingPressure.toFixed(1)+'</div>');
+badge('⛑ Vent · Pplat '+v.pPlat.toFixed(1)+' ΔP '+v.drivingPressure.toFixed(1));SV('sbMode','Vent')},
+onDown:function(){},
+controls:function(){var v=STATE.vent;var h='<div class="sec"><h4>Ventilator settings</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Vt</span><span>'+v.vt+' mL</span></div><input type="range" min="200" max="900" step="10" value="'+v.vt+'" oninput="STATE.vent.vt=parseInt(this.value);MODULES.vent.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>RR</span><span>'+v.rr+'/min</span></div><input type="range" min="6" max="35" value="'+v.rr+'" oninput="STATE.vent.rr=parseInt(this.value);MODULES.vent.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>PEEP</span><span>'+v.peep+'</span></div><input type="range" min="0" max="20" value="'+v.peep+'" oninput="STATE.vent.peep=parseInt(this.value);MODULES.vent.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Pplat</span><span>'+v.pPlat+'</span></div><input type="range" min="5" max="45" value="'+v.pPlat+'" oninput="STATE.vent.pPlat=parseInt(this.value);STATE.vent.pInsp=parseInt(this.value);MODULES.vent.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Resistance</span><span>'+v.resistance+'</span></div><input type="range" min="2" max="30" value="'+v.resistance+'" oninput="STATE.vent.resistance=parseInt(this.value);MODULES.vent.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>P/F ratio</span><span>'+v.pf+'</span></div><input type="range" min="50" max="500" value="'+v.pf+'" oninput="STATE.vent.pf=parseInt(this.value);MODULES.vent.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>PBW</span><span>'+v.pbw+' kg</span></div><input type="range" min="40" max="100" value="'+v.pbw+'" oninput="STATE.vent.pbw=parseInt(this.value);MODULES.vent.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+[['Normal',500,14,5,10,300,70],['ARDS mild',420,20,8,15,250,70],['ARDS severe',380,22,12,20,120,70],['COPD',500,12,5,20,280,70]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.vent.vt='+p[1]+';STATE.vent.rr='+p[2]+';STATE.vent.peep='+p[3]+';STATE.vent.pPlat='+p[4]+';STATE.vent.pf='+p[5]+';STATE.vent.pbw='+p[6]+';MODULES.vent.compute();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>Lung Protective Ventilation</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">ARDSNet (2000):<br>Vt 6 mL/kg PBW (não 12!)<br>Pplat &lt; 30 cmH₂O<br>Driving pressure &lt; 15<br><br>PBW (predicted body weight):<br>M: 50 + 0.91×(altura cm − 152.4)<br>F: 45.5 + 0.91×(altura cm − 152.4)<br><br>Reduz mortalidade em 22% → 31% (ARDSNet)</div></div>'}});
+
+/* ══════ 21. RENAL FUNCTION ══════ */
+registerModule('renal',{title:'Renal Function',icon:'💧',desc:'Pre-renal vs intrinsic AKI differentiation.',init:function(){this.analyze()},
+analyze:function(){var r=STATE.renal;
+// FENa = (U_Na × P_Cr)/(P_Na × U_Cr) × 100
+r.fena=(r.uNa*r.pCr)/(r.pNa*r.uCr)*100;
+r.feUrea=(r.uUrea*r.pCr)/(r.pCrB*r.uUrea)*100;
+// Prerenal if FENa<1%
+r.prerenal=r.fena<1;
+// AKI staging (KDIGO)
+r.akiStage=r.pCr/r.baselineCr<1.5?0:r.pCr/r.baselineCr<2?1:r.pCr/r.baselineCr<3?2:3;
+},
+tick:function(dt){STATE.time+=dt},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var r=STATE.renal;
+/* Title */
+ctx.fillStyle='#ff4080';ctx.font='bold 16px monospace';
+ctx.fillText('RENAL FUNCTION ANALYSIS',30,35);
+/* FENa big */
+ctx.textAlign='center';
+ctx.fillStyle=r.prerenal?'#40ff90':'#ff4080';
+ctx.font='bold 80px monospace';
+ctx.fillText(r.fena.toFixed(2)+'%',W/2,H*0.22);
+ctx.fillStyle='#b090c0';ctx.font='bold 14px monospace';
+ctx.fillText('FENa',W/2,H*0.27);
+ctx.fillStyle=r.prerenal?'#40ff90':'#ff8040';
+ctx.font='bold 18px monospace';
+ctx.fillText(r.prerenal?'→ PRE-RENAL AKI':'→ INTRINSIC AKI',W/2,H*0.32);
+ctx.textAlign='left';
+/* Values */
+var values=[
+  {name:'Serum Cr',value:r.pCr,unit:'mg/dL'},
+  {name:'Urine Na',value:r.uNa,unit:'mEq/L'},
+  {name:'Serum Na',value:r.pNa,unit:'mEq/L'},
+  {name:'Urine Cr',value:r.uCr,unit:'mg/dL'},
+  {name:'FEUrea',value:r.feUrea.toFixed(1),unit:'%'},
+  {name:'AKI stage',value:r.akiStage,unit:'KDIGO'}
+];
+values.forEach(function(v,i){
+  var x=30+(i%3)*(W-60)/3;
+  var y=H*0.4+Math.floor(i/3)*70;
+  var w=(W-60)/3-15;
+  ctx.fillStyle='rgba(20,8,24,.6)';
+  ctx.fillRect(x,y,w,60);
+  ctx.strokeStyle='#40e0ff';ctx.lineWidth=1.5;
+  ctx.strokeRect(x,y,w,60);
+  ctx.fillStyle='#40e0ff';ctx.font='bold 11px monospace';
+  ctx.fillText(v.name,x+10,y+18);
+  ctx.fillStyle='#f0e0f8';ctx.font='bold 22px monospace';
+  ctx.fillText(String(v.value),x+10,y+44);
+  ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+  ctx.textAlign='right';
+  ctx.fillText(v.unit,x+w-10,y+44);
+  ctx.textAlign='left';
+});
+/* Interpretation */
+var iy=H*0.4+2*70+30;
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(30,iy,W-60,H-iy-20);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,iy,W-60,H-iy-20);
+ctx.fillStyle='#ff4080';ctx.font='bold 12px monospace';
+ctx.fillText('INTERPRETATION',45,iy+22);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('FENa = (U_Na × P_Cr) / (P_Na × U_Cr) × 100',45,iy+45);
+ctx.fillText('FENa < 1% → pre-renal (hipovolemia, ICC, sepse)',45,iy+65);
+ctx.fillText('FENa > 2% → intrinsic (ATN, glomerulonefrite, AINE)',45,iy+85);
+ctx.fillText('FEUrea < 35% → pre-renal (útil se diurético)',45,iy+105);
+ctx.fillStyle='#40e0ff';ctx.font='bold 11px monospace';
+ctx.fillText('KDIGO AKI staging:',45,iy+130);
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+ctx.fillText('Stage 1: 1.5-1.9× baseline OR ≥0.3 mg/dL ↑',45,iy+148);
+ctx.fillText('Stage 2: 2.0-2.9× baseline',45,iy+164);
+ctx.fillText('Stage 3: ≥3.0× baseline OR ≥4.0 mg/dL OR RRT',45,iy+180);
+setStats('<div>FENa: '+r.fena.toFixed(2)+'%</div><div>Type: '+(r.prerenal?'Pre-renal':'Intrinsic')+'</div><div>AKI: Stage '+r.akiStage+'</div>');
+badge('💧 Renal · FENa '+r.fena.toFixed(2)+'% · '+(r.prerenal?'Pre':'Intrinsic'));SV('sbMode','Renal')},
+onDown:function(){},
+controls:function(){var r=STATE.renal;var h='<div class="sec"><h4>Serum</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Serum Cr</span><span>'+r.pCr+' mg/dL</span></div><input type="range" min="0.5" max="8" step="0.1" value="'+r.pCr+'" oninput="STATE.renal.pCr=parseFloat(this.value);MODULES.renal.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Serum Na</span><span>'+r.pNa+' mEq/L</span></div><input type="range" min="120" max="160" value="'+r.pNa+'" oninput="STATE.renal.pNa=parseInt(this.value);MODULES.renal.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Baseline Cr</span><span>'+r.baselineCr+' mg/dL</span></div><input type="range" min="0.5" max="3" step="0.1" value="'+r.baselineCr+'" oninput="STATE.renal.baselineCr=parseFloat(this.value);MODULES.renal.analyze()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Urine</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Urine Na</span><span>'+r.uNa+' mEq/L</span></div><input type="range" min="5" max="120" value="'+r.uNa+'" oninput="STATE.renal.uNa=parseInt(this.value);MODULES.renal.analyze()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Urine Cr</span><span>'+r.uCr+' mg/dL</span></div><input type="range" min="10" max="200" value="'+r.uCr+'" oninput="STATE.renal.uCr=parseInt(this.value);MODULES.renal.analyze()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+[['Pre-renal',1.5,140,20,150],['ATN',3.0,140,60,50],['Normal',1.0,140,40,100],['AINE',2.0,140,15,120]].forEach(function(p){
+  h+='<div class="chip" onclick="STATE.renal.pCr='+p[1]+';STATE.renal.pNa='+p[2]+';STATE.renal.uNa='+p[3]+';STATE.renal.uCr='+p[4]+';MODULES.renal.analyze();renderLeftPanel()">'+p[0]+'</div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>FENa &amp; AKI</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">FENa = (U_Na × P_Cr)/(P_Na × U_Cr) × 100<br><br>&lt;1%: pre-renal (rim ávido por Na)<br>&gt;2%: ATN (tubulo lesado)<br>1-2%: indeterminado<br><br>FEUrea: mesma equação com ureia<br>&lt;35%: pre-renal (mesmo com diurético)<br><br>KDIGO: 3 estágios de AKI<br>Baseado em ΔCr e débito urinário</div></div>'}});
+
+/* ══════ 22. ECMO ══════ */
+registerModule('ecmo',{title:'ECMO Physiology',icon:'🫀',desc:'Extracorporeal membrane oxygenation.',init:function(){this.compute()},
+compute:function(){var e=STATE.ecmo;
+// O2 delivery: DO2 = CO × CaO2 × 10
+e.delivery=(e.flow*e.hb*1.34*e.satPost/100)*10; // mL O2/min
+// CO2 removal (sweep gas dependent)
+e.co2Removal=e.sweep*20;
+// Oxygenation before/after
+e.o2Content=e.hb*1.34*(e.satPost/100)+(0.003*100);
+// Recirculation (VV ECMO): if femoral-return, ↑ recirc
+if(e.mode==='VV')e.recirculation=0.15;
+else if(e.mode==='VA')e.recirculation=0.05;
+else e.recirculation=0.10;
+e.effectiveFlow=e.flow*(1-e.recirculation);
+// Oxygenation contribution
+e.ecmoO2=e.effectiveFlow*e.hb*1.34*(e.satPost-e.satPre)/100*10;
+},
+tick:function(dt){STATE.time+=dt;var e=STATE.ecmo;if(!STATE.playing)return;e.history.push({flow:e.flow,sat:e.satPost,co2:e.co2Removal});if(e.history.length>500)e.history.shift()},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var e=STATE.ecmo;
+/* Circuit diagram */
+var cx=W/2,cy=H*0.35;
+// Body
+ctx.strokeStyle='#40e0ff';ctx.lineWidth=2;
+ctx.beginPath();ctx.arc(cx,cy,60,0,Math.PI*2);ctx.stroke();
+ctx.fillStyle='rgba(64,224,255,.1)';
+ctx.beginPath();ctx.arc(cx,cy,60,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='#40e0ff';ctx.font='bold 11px monospace';ctx.textAlign='center';
+ctx.fillText('PATIENT',cx,cy+4);
+// Pump + oxygenator
+ctx.fillStyle='rgba(255,64,128,.15)';
+ctx.fillRect(cx-90,cy+80,180,60);
+ctx.strokeStyle='#ff4080';ctx.lineWidth=2;
+ctx.strokeRect(cx-90,cy+80,180,60);
+ctx.fillStyle='#ff4080';ctx.font='bold 11px monospace';
+ctx.fillText('PUMP + OXYGENATOR',cx,cy+112);
+// Flow arrows
+ctx.strokeStyle='#40ff90';ctx.lineWidth=3;
+ctx.beginPath();
+ctx.moveTo(cx-60,cy+20);
+ctx.lineTo(cx-60,cy+70);
+ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(cx+60,cy+70);
+ctx.lineTo(cx+60,cy+20);
+ctx.stroke();
+ctx.fillStyle='#40ff90';ctx.font='10px monospace';
+ctx.fillText('→ IN',cx-90,cy+50);
+ctx.fillText('OUT ←',cx+70,cy+50);
+ctx.textAlign='left';
+/* Info panel */
+ctx.fillStyle='rgba(20,8,24,.9)';
+ctx.fillRect(30,cy+160,W-60,H-cy-200);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,cy+160,W-60,H-cy-200);
+ctx.fillStyle='#ff4080';ctx.font='bold 13px monospace';
+ctx.fillText('ECMO '+e.mode+' (extracorporeal membrane oxygenation)',45,cy+185);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+ctx.fillText('Flow: '+e.flow+' L/min    Effective: '+fmt(e.effectiveFlow,2)+' L/min',45,cy+210);
+ctx.fillText('Hb: '+e.hb+' g/dL    Sweep: '+e.sweep+' L/min',45,cy+228);
+ctx.fillText('FdO₂: '+e.fdo2+'    Recirculation: '+fmt(e.recirculation*100,0)+'%',45,cy+246);
+ctx.fillStyle='#40ff90';ctx.font='bold 12px monospace';
+ctx.fillText('O₂ saturation pre: '+e.satPre+'%  →  post: '+e.satPost+'%',45,cy+272);
+ctx.fillText('O₂ delivery: '+fmt(e.delivery,0)+' mL O₂/min',45,cy+292);
+ctx.fillStyle='#ffd040';
+ctx.fillText('CO₂ removal: '+fmt(e.co2Removal,0)+' mL/min',45,cy+312);
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+ctx.fillText('Normal DO₂: 900-1100 mL/min · Critical: <330 mL/min',45,cy+335);
+setStats('<div>Mode: '+e.mode+'</div><div>Flow: '+e.flow+' L/min</div><div>DO₂: '+fmt(e.delivery,0)+'</div>');
+badge('🫀 ECMO '+e.mode+' · '+e.flow+' L/min');SV('sbMode','ECMO')},
+onDown:function(){},
+controls:function(){var e=STATE.ecmo;var h='<div class="sec"><h4>Mode</h4><div class="chip-row">';
+['VV','VA','VAV'].forEach(function(m){
+  h+='<div class="chip '+(e.mode===m?'active':'')+'" onclick="STATE.ecmo.mode=\''+m+'\';MODULES.ecmo.compute();renderLeftPanel()">'+m+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Settings</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Flow</span><span>'+e.flow+' L/min</span></div><input type="range" min="1" max="8" step="0.1" value="'+e.flow+'" oninput="STATE.ecmo.flow=parseFloat(this.value);MODULES.ecmo.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Sweep gas</span><span>'+e.sweep+' L/min</span></div><input type="range" min="0.5" max="10" step="0.1" value="'+e.sweep+'" oninput="STATE.ecmo.sweep=parseFloat(this.value);MODULES.ecmo.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>FdO₂</span><span>'+e.fdo2+'</span></div><input type="range" min="0.21" max="1" step="0.01" value="'+e.fdo2+'" oninput="STATE.ecmo.fdo2=parseFloat(this.value);MODULES.ecmo.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Hb</span><span>'+e.hb+' g/dL</span></div><input type="range" min="6" max="15" step="0.1" value="'+e.hb+'" oninput="STATE.ecmo.hb=parseFloat(this.value);MODULES.ecmo.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Sat pre</span><span>'+e.satPre+'%</span></div><input type="range" min="30" max="90" value="'+e.satPre+'" oninput="STATE.ecmo.satPre=parseInt(this.value);MODULES.ecmo.compute()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Sat post</span><span>'+e.satPost+'%</span></div><input type="range" min="70" max="100" value="'+e.satPost+'" oninput="STATE.ecmo.satPost=parseInt(this.value);MODULES.ecmo.compute()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Indications</h4><div style="font-size:.6rem;color:var(--tx2);font-family:var(--mono);line-height:1.7">VV ECMO: insuficiência respiratória<br>· P/F &lt; 80 por 6h<br>· pH &lt; 7.25 com pCO₂ &gt; 60 por 6h<br><br>VA ECMO: falência cardíaca<br>· Choque cardiogênico refratário<br>· ECPR (parada refratária)</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>ECMO Physics</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">O₂ content = (Hb × 1.34 × SaO₂) + (0.003 × PaO₂)<br><br>DO₂ = CO × CaO₂ × 10<br>(normal 900-1100 mL/min)<br><br>VO₂ normal: 200-250 mL/min<br><br>O₂ER = VO₂/DO₂<br>Normal 25%, crítico &gt;50%<br><br>Recirculação VV: fração do fluxo<br>que volta direto (fémoro-femoral)</div></div>'}});
+
+/* ══════ 23. EEG MONITOR ══════ */
+registerModule('brain',{title:'EEG Monitor',icon:'📡',desc:'Brain waves across sleep/awake states.',init:function(){var b=STATE.brain;b.t=0;b.history=[]},
+tick:function(dt){STATE.time+=dt;var b=STATE.brain;if(!STATE.playing)return;
+b.t+=dt;
+var sub=Math.floor(dt*100);var ddt=0.01;
+for(var i=0;i<sub;i++){
+  var sample=[];
+  b.channels.forEach(function(ch,ci){
+    var val=0;
+    // Frequency bands based on state
+    if(b.state==='awake'){
+      val=10*Math.sin(2*Math.PI*10*b.t)+3*Math.sin(2*Math.PI*20*b.t+ci);
+    }else if(b.state==='drowsy'){
+      val=20*Math.sin(2*Math.PI*7*b.t)+5*Math.sin(2*Math.PI*15*b.t+ci);
+    }else if(b.state==='NREM1'){
+      val=30*Math.sin(2*Math.PI*5*b.t)+8*Math.sin(2*Math.PI*12*b.t+ci);
+    }else if(b.state==='NREM2'){
+      val=15*Math.sin(2*Math.PI*3*b.t)+60*Math.sin(2*Math.PI*14*b.t)*(Math.random()<0.05?1:0);
+    }else if(b.state==='NREM3'){
+      val=50*Math.sin(2*Math.PI*1.5*b.t)+10*Math.sin(2*Math.PI*8*b.t+ci);
+    }else if(b.state==='REM'){
+      val=8*Math.sin(2*Math.PI*15*b.t)+5*Math.sin(2*Math.PI*25*b.t+ci);
+    }else if(b.state==='seizure'){
+      val=80*Math.sin(2*Math.PI*3*b.t)*(1+0.3*Math.sin(2*Math.PI*0.5*b.t))*(Math.random()*0.5+0.75);
+    }
+    val+=randn()*2;
+    sample.push({ch:ch,v:val});
+  });
+  b.history.push({t:b.t,samples:sample});
+  b.t+=ddt;
+}
+if(b.history.length>800)b.history.shift()},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var b=STATE.brain;
+/* Title */
+ctx.fillStyle='#ff4080';ctx.font='bold 14px monospace';
+ctx.fillText('EEG MONITOR — '+b.channels.length+' channels · '+b.state,30,25);
+/* Channels stacked */
+var startY=50;
+var chH=(H-startY-120)/b.channels.length;
+b.channels.forEach(function(ch,ci){
+  var cy=startY+ci*chH+chH/2;
+  ctx.strokeStyle='rgba(255,64,128,.15)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(60,cy);ctx.lineTo(W-20,cy);ctx.stroke();
+  ctx.fillStyle='#ff4080';ctx.font='bold 10px monospace';
+  ctx.fillText(ch,20,cy+4);
+  // Trace
+  ctx.strokeStyle='#40ff90';ctx.lineWidth=1.2;
+  ctx.beginPath();
+  b.history.forEach(function(s,i){
+    var sample=s.samples[ci];
+    if(!sample)return;
+    var x=60+i/b.history.length*(W-80);
+    var y=cy-sample.v*chH/300;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+});
+/* Info panel */
+var iy=H-100;
+ctx.fillStyle='rgba(20,8,24,.9)';
+ctx.fillRect(30,iy,W-60,80);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,iy,W-60,80);
+ctx.fillStyle='#ff4080';ctx.font='bold 12px monospace';
+ctx.fillText('BRAIN STATE: '+b.state.toUpperCase(),45,iy+22);
+ctx.fillStyle='#b090c0';ctx.font='11px monospace';
+var info={
+  'awake':'Alpha (8-13 Hz) + Beta (13-30 Hz) · eyes closed dominant',
+  'drowsy':'Theta (4-8 Hz) predominant · transition',
+  'NREM1':'Theta activity, slow eye movements',
+  'NREM2':'Spindles (12-14 Hz) + K-complexes',
+  'NREM3':'Delta (0.5-4 Hz) · slow-wave sleep · arousal threshold ↑',
+  'REM':'Desynchronized, low-voltage, mixed frequency (like awake)',
+  'seizure':'⚠ RHYTHMIC HIGH-VOLTAGE 3 Hz spike-wave (absence)'
+};
+ctx.fillText(info[b.state]||'',45,iy+45);
+ctx.fillText('Sample: '+fmt(b.t,2)+'s',45,iy+65);
+setStats('<div>State: '+b.state+'</div><div>Channels: '+b.channels.length+'</div>');
+badge('📡 EEG · '+b.state);SV('sbMode','EEG')},
+onDown:function(){},
+controls:function(){var b=STATE.brain;var h='<div class="sec"><h4>Brain state</h4><div class="chip-row">';
+[['awake','Awake'],['drowsy','Drowsy'],['NREM1','N1'],['NREM2','N2'],['NREM3','N3'],['REM','REM'],['seizure','Seizure']].forEach(function(s){
+  h+='<div class="chip '+(b.state===s[0]?'active':'')+'" onclick="STATE.brain.state=\''+s[0]+'\';renderLeftPanel()">'+s[1]+'</div>';
+});
+h+='</div></div>';
+h+='<div class="sec"><h4>Frequency bands</h4><div class="kv">';
+[['Delta','0.5-4 Hz','Deep sleep'],['Theta','4-8 Hz','Drowsiness'],['Alpha','8-13 Hz','Relaxed awake'],['Beta','13-30 Hz','Alert'],['Gamma','30-100 Hz','Cognition']].forEach(function(band){
+  h+='<div class="row"><span class="k">'+band[0]+'</span><span class="v">'+band[1]+' · '+band[2]+'</span></div>';
+});
+h+='</div></div>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>EEG Fundamentals</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">Sinais corticais: 10-100 μV<br>Bandas: δ θ α β γ<br><br>10-20 system:<br>Fp=frontopolar, F=frontal, C=central<br>P=parietal, O=occipital, T=temporal<br>Sufixo: ímpar=esquerdo, par=direito<br><br>Estados: vigília, N1-N3, REM<br>Ciclo sono ~90 min</div></div>'}});
+
+/* ══════ 24. CARDIAC ARREST / ACLS ══════ */
+registerModule('ca',{title:'ACLS Simulator',icon:'🆘',desc:'Cardiac arrest algorithm simulator.',init:function(){this.reset()},
+reset:function(){var c=STATE.ca;c.cycle=0;c.compressions=0;c.t=0;c.shocks=0;c.rosc=false;c.history=[];c.epiGiven=0;c.amioGiven=0},
+tick:function(dt){STATE.time+=dt;var c=STATE.ca;if(!STATE.playing)return;
+c.t+=dt;
+// Compression cycles (2 min per ACLS)
+c.compressions+=dt*c.rate;
+if(c.t>120*(c.cycle+1))c.cycle++;
+// ROSC check
+if(c.shocks>=2&&c.epiGiven>=1&&Math.random()<0.01){c.rosc=true;toast('🎉 ROSC! Return of spontaneous circulation','success')}
+c.history.push({t:c.t,co2:c.rosc?40:c.co2*(1-c.t/600)});
+if(c.history.length>2000)c.history.shift()},
+draw:function(ctx){var W=CANV.W,H=CANV.H;ctx.fillStyle='#050210';ctx.fillRect(0,0,W,H);
+var c=STATE.ca;
+/* Timer */
+ctx.textAlign='center';
+ctx.fillStyle='#ff4080';ctx.font='bold 72px monospace';
+var mins=Math.floor(c.t/60);
+var secs=Math.floor(c.t%60);
+ctx.fillText(mins+':'+String(secs).padStart(2,'0'),W/2,H*0.15);
+ctx.fillStyle='#b090c0';ctx.font='14px monospace';
+ctx.fillText('ELAPSED TIME',W/2,H*0.19);
+ctx.textAlign='left';
+/* Cycle counter */
+ctx.fillStyle='rgba(20,8,24,.85)';
+ctx.fillRect(30,60,200,80);
+ctx.strokeStyle='#ff4080';ctx.strokeRect(30,60,200,80);
+ctx.fillStyle='#ff4080';ctx.font='bold 12px monospace';
+ctx.fillText('2-MIN CYCLE',45,82);
+ctx.fillStyle='#f0e0f8';ctx.font='bold 40px monospace';
+ctx.fillText(String(c.cycle+1),45,125);
+/* Big status */
+var status=c.rosc?'✓ ROSC':'COMPRESSIONS';
+var statusCol=c.rosc?'#40ff90':'#ff4080';
+ctx.fillStyle=statusCol;ctx.font='bold 24px monospace';
+ctx.textAlign='center';
+ctx.fillText(status,W/2,H*0.4);
+ctx.textAlign='left';
+/* Parameters */
+var params=[
+  {name:'Rate',value:c.rate,unit:'/min',ref:'100-120',color:c.rate>=100&&c.rate<=120?'#40ff90':'#ffd040'},
+  {name:'Depth',value:c.depth,unit:'cm',ref:'5-6',color:c.depth>=5&&c.depth<=6?'#40ff90':'#ffd040'},
+  {name:'ETCO₂',value:c.co2,unit:'mmHg',ref:'>10',color:c.co2>10?'#40ff90':'#ff4080'},
+  {name:'Compressions',value:Math.round(c.compressions),unit:'',ref:'',color:'#40e0ff'},
+  {name:'Shocks',value:c.shocks,unit:'',ref:'',color:'#ffd040'},
+  {name:'Epinephrine',value:c.epiGiven,unit:'mg',ref:'1mg/3-5min',color:'#ff4080'},
+  {name:'Amiodarone',value:c.amioGiven,unit:'mg',ref:'300+150',color:'#a060ff'}
+];
+params.forEach(function(p,i){
+  var x=30+(i%4)*(W-60)/4;
+  var y=H*0.5+Math.floor(i/4)*80;
+  var w=(W-60)/4-10;
+  ctx.fillStyle='rgba(20,8,24,.6)';
+  ctx.fillRect(x,y,w,65);
+  ctx.strokeStyle=p.color;ctx.lineWidth=1.5;
+  ctx.strokeRect(x,y,w,65);
+  ctx.fillStyle=p.color;ctx.font='bold 10px monospace';
+  ctx.fillText(p.name,x+8,y+15);
+  ctx.fillStyle='#f0e0f8';ctx.font='bold 20px monospace';
+  ctx.fillText(String(p.value),x+8,y+40);
+  ctx.fillStyle='#b090c0';ctx.font='9px monospace';
+  ctx.fillText(p.unit,x+8,y+54);
+  if(p.ref){ctx.textAlign='right';ctx.fillText(p.ref,x+w-8,y+54);ctx.textAlign='left'}
+});
+/* ACLS Algorithm */
+var ay=H-100;
+ctx.fillStyle='rgba(20,8,24,.9)';
+ctx.fillRect(30,ay,W-60,80);
+ctx.strokeStyle='#40e0ff';ctx.strokeRect(30,ay,W-60,80);
+ctx.fillStyle='#40e0ff';ctx.font='bold 12px monospace';
+ctx.fillText('ACLS SHOCKABLE (VF/pVT) ALGORITHM',45,ay+20);
+ctx.fillStyle='#b090c0';ctx.font='10px monospace';
+ctx.fillText('CPR → Shock → CPR 2min → Shock → CPR + Epi 1mg + Amio 300mg → Shock → CPR + Epi → Shock → Amio 150mg',45,ay+42);
+ctx.fillText('Meta: minimizar interrupções de compressão (<10s); ETCO₂ &gt;10 = compressões adequadas',45,ay+60);
+setStats('<div>Cycle: '+(c.cycle+1)+'</div><div>Shocks: '+c.shocks+'</div><div>Epi: '+c.epiGiven+'</div><div>Status: '+(c.rosc?'ROSC':'CPR')+'</div>');
+badge('🆘 ACLS · Cycle '+(c.cycle+1)+' · '+c.shocks+' shocks');SV('sbHR',c.rate+' cpm');SV('sbSpo2',c.co2+' mmHg')},
+onDown:function(){},
+controls:function(){var c=STATE.ca;var h='<div class="sec"><h4>CPR Quality</h4>';
+h+='<div class="ctrl"><div class="lbl"><span>Rate</span><span>'+c.rate+'/min</span></div><input type="range" min="60" max="160" value="'+c.rate+'" oninput="STATE.ca.rate=parseInt(this.value);renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>Depth</span><span>'+c.depth+' cm</span></div><input type="range" min="2" max="8" step="0.5" value="'+c.depth+'" oninput="STATE.ca.depth=parseFloat(this.value);renderLeftPanel()"></div>';
+h+='<div class="ctrl"><div class="lbl"><span>ETCO₂</span><span>'+c.co2+' mmHg</span></div><input type="range" min="5" max="50" value="'+c.co2+'" oninput="STATE.ca.co2=parseInt(this.value);renderLeftPanel()"></div>';
+h+='</div>';
+h+='<div class="sec"><h4>Interventions</h4>';
+h+='<button class="btn primary full" onclick="STATE.ca.shocks++;toast(\'⚡ SHOCK delivered\',\'warn\')">⚡ Shock</button>';
+h+='<button class="btn primary full" style="margin-top:4px" onclick="STATE.ca.epiGiven++;toast(\'💉 Epinephrine 1mg IV\',\'info\')">💉 Epinephrine 1 mg</button>';
+h+='<button class="btn primary full" style="margin-top:4px" onclick="STATE.ca.amioGiven+=300;toast(\'💊 Amiodarone 300mg\',\'info\')">💊 Amiodarone</button>';
+h+='</div>';
+h+='<button class="btn danger full" onclick="MODULES.ca.reset();toast(\'Reset\',\'info\')">↺ Reset arrest</button>';
+return h},
+mathPanel:function(){return '<div class="sec"><h4>ACLS</h4><div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">AHA Guidelines 2020<br><br>Compressões:<br>• Rate 100-120/min<br>• Depth 5-6 cm<br>• Recoil completo<br>• Minimize interrupções<br>• Mude compressor a cada 2 min<br><br>ETCO₂ &lt; 10 mmHg → qualidade ruim<br>ETCO₂ &gt; 20 mmHg → bom prognóstico<br>SCA → 2 min → check<br><br>Epinefrina: 1mg IV/IO a cada 3-5 min<br>Amiodarona: 300mg depois 150mg</div></div>'}});
+
+/* ══════════════════════════════════════════════════════════════
+   UI + BOOT
+   ══════════════════════════════════════════════════════════════ */
+function buildTabs(){var t=$('tbTabs');t.innerHTML='';
+TABS.forEach(function(x){var i=el('div',{class:'tb-tab'+(x.key===STATE.currentTab?' active':''),'data-tab':x.key});
+i.innerHTML='<span class="tab-icon">'+x.icon+'</span><span>'+x.label+'</span>';
+i.onclick=function(){switchTab(x.key)};
+t.appendChild(i)})}
+function switchTab(k){STATE.currentTab=k;
+$$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===k)});
+var m=MODULES[k];
+SV('sbMode',(m&&m.title)||k);
+try{if(m&&m.init)m.init()}catch(e){logMsg('init('+k+') error: '+e.message,'error')}
+renderLeftPanel();renderRightPanel()}
+function switchRp(name,e){STATE.currentRp=name;
+$$('.rp-tab').forEach(function(t){t.classList.remove('active')});
+e.classList.add('active');
+$$('.rp-pane').forEach(function(p){p.classList.remove('active')});
+var p=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+if(p)p.classList.add('active');
+renderRightPanel()}
+function renderLeftPanel(){
+  var b=$('lpBody');if(!b)return;
+  var m=MODULES[STATE.currentTab];if(!m){b.innerHTML='';return}
+  var h='';
+  h+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--p1);font-size:.7rem">'+m.icon+' '+m.title+'</h4>';
+  h+='<div style="font-size:.6rem;color:var(--tx3);font-family:var(--mono);line-height:1.5;margin-top:4px">'+esc(m.desc||'')+'</div></div>';
+  try{if(m.controls)h+=m.controls()}
+  catch(e){h+='<div class="sec"><div class="empty" style="color:var(--p1)">controls error: '+esc(e.message)+'</div></div>';logMsg('controls('+m.key+') error: '+e.message,'error')}
+  b.innerHTML=h;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var s=$('rpState');
+  if(s){
+    var stats='<div class="sec"><h4>Live State</h4><div class="kv">';
+    stats+='<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>';
+    stats+='<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,1)+'s</span></div>';
+    stats+='<div class="row"><span class="k">Tab</span><span class="v">'+STATE.currentTab+'</span></div>';
+    stats+='</div></div>';
+    s.innerHTML=stats;
+  }
+  var mp=$('rpMath');
+  if(mp){try{if(m&&m.mathPanel)mp.innerHTML=m.mathPanel();else mp.innerHTML='<div class="empty">No math panel</div>'}catch(e){mp.innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){var p=$('rpLogs');if(!p)return;
+var h='<div class="sec"><h4>Log</h4>';
+if(!LOG.length)h+='<div class="empty">No events</div>';
+else LOG.slice().reverse().forEach(function(l){
+  var c=l.type==='error'?'var(--p1)':l.type==='success'?'var(--p3)':'var(--p2)';
+  h+='<div style="padding:3px 6px;border-left:2px solid '+c+';margin-bottom:3px;font-family:var(--mono);font-size:.58rem;color:'+c+'">'+esc(l.msg)+'</div>'
+});
+h+='</div>';p.innerHTML=h}
+function togglePlay(){STATE.playing=!STATE.playing;$('btnPlay').textContent=STATE.playing?'⏸':'▶';$('tbDot').classList.toggle('on',STATE.playing);toast(STATE.playing?'Playing':'Paused','info',900)}
+function stepOnce(){var m=MODULES[STATE.currentTab];if(m&&m.step)m.step();else toast('No step','info',900)}
+function resetModule(){var m=MODULES[STATE.currentTab];if(m&&m.init){m.init();toast('Reset','success',900)}}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['clinical','paper','scrubs','dark'];
+function toggleTheme(){var c=document.documentElement.getAttribute('data-theme');var i=THEMES.indexOf(c);var n=THEMES[(i+1)%THEMES.length];document.documentElement.setAttribute('data-theme',n);toast('Theme: '+n,'success')}
+function showHelp(){openModal('❓ MEDIX — Clinical Analytics Studio','<div class="sec" style="border-left:3px solid #ff4080;padding-left:12px;background:rgba(255,64,128,.1);padding:10px;border-radius:4px"><div style="font-size:.68rem;color:#ff4080;font-weight:700;margin-bottom:6px">⚠ AVISO IMPORTANTE</div><div style="font-family:var(--mono);font-size:.6rem;line-height:1.7;color:var(--tx2)">Este software é <b>exclusivamente educacional e de simulação</b>. Não deve ser usado para decisões clínicas reais. Sempre consulte profissionais de saúde habilitados e diretrizes atualizadas.</div></div><div class="sec"><h4>🏥 24 Módulos</h4><div style="font-size:.6rem;line-height:1.85;color:var(--tx2);font-family:var(--mono)"><b style="color:var(--p1)">MONITORIZAÇÃO</b><br>ECG · Vitals · EEG · Ventilator · ECMO<br><br><b style="color:var(--p1)">LABORATÓRIO</b><br>Blood Gas · Acid-Base · Renal<br><br><b style="color:var(--p1)">ESCORES CLÍNICOS</b><br>APACHE II · SOFA · GCS · Wells · CHA₂DS₂-VASc<br>Framingham · qSOFA · Hemodynamics<br><br><b style="color:var(--p1)">FARMACOLOGIA</b><br>PK · Drug Interactions<br><br><b style="color:var(--p1)">MODELAGEM</b><br>Diabetes (Bergman) · Tumor (Gompertz) · Kaplan-Meier<br><br><b style="color:var(--p1)">EMERGÊNCIA</b><br>ACLS Cardiac Arrest · Sepsis Screening</div></div><div class="sec"><h4>🔬 Algoritmos Reais</h4><div style="font-family:var(--mono);font-size:.62rem;line-height:1.9;color:var(--tx2)">• APACHE II (Knaus 1985) · SOFA (Vincent 1996)<br>• CKD-EPI 2021 · Bergman minimal model<br>• Gompertz tumor · Kaplan-Meier (1958)<br>• CHA₂DS₂-VASc (Lip 2010) · Wells DVT<br>• Framingham (D\'Agostino 2008)<br>• Winter\'s formula · Anion gap · Delta ratio<br>• CYP450 interactions database</div></div><div class="sec"><h4>⌨️ Atalhos</h4><div style="font-family:var(--mono);font-size:.62rem;line-height:1.9;color:var(--tx2)">Space=Play · →=Step · R=Reset · T=Tema · ?=Help</div></div>','<button class="btn primary" onclick="closeModal()">Entendido</button>',{size:'lg'})}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay()}
+  else if(e.key==='ArrowRight'){e.preventDefault();stepOnce()}
+  else if(e.key==='r'||e.key==='R')resetModule();
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal()
+});
+var lastT=performance.now(),fAcc=0,fFr=0;
+function loop(now){
+  var dt=Math.min((now-lastT)/1000,0.05);lastT=now;
+  fAcc+=dt;fFr++;
+  if(fAcc>=0.5){var e=$('sbFps');if(e)e.textContent=Math.round(fFr/fAcc);fAcc=0;fFr=0}
+  var m=MODULES[STATE.currentTab];
+  if(m&&m.tick){try{m.tick(dt)}catch(e){logMsg('tick error: '+e.message,'error')}}
+  if(m&&m.draw){try{CANV.ctx.clearRect(0,0,CANV.W,CANV.H);m.draw(CANV.ctx)}catch(e){
+    logMsg('draw('+m.key+') error: '+e.message,'error');
+    try{CANV.ctx.fillStyle='#050210';CANV.ctx.fillRect(0,0,CANV.W,CANV.H);CANV.ctx.fillStyle='#ff4080';CANV.ctx.font='bold 14px monospace';CANV.ctx.textAlign='center';CANV.ctx.textBaseline='middle';CANV.ctx.fillText('Render error: '+e.message,CANV.W/2,CANV.H/2)}catch(_){}
+  }}
+  requestAnimationFrame(loop);
+}
+window.addEventListener('DOMContentLoaded',function(){
+  logMsg('DOMContentLoaded','success');
+  try{buildTabs()}catch(e){logMsg('buildTabs: '+e.message,'error')}
+  try{initCanvas()}catch(e){logMsg('initCanvas: '+e.message,'error')}
+  try{var m=MODULES[STATE.currentTab];if(m&&m.init)m.init()}catch(e){logMsg('init: '+e.message,'error')}
+  try{renderLeftPanel()}catch(e){logMsg('renderLeftPanel: '+e.message,'error')}
+  try{renderRightPanel()}catch(e){logMsg('renderRightPanel: '+e.message,'error')}
+  logMsg('MEDIX ready','success');
+  requestAnimationFrame(loop);
+  $('tbDot').classList.add('on');
+  $('tbText').textContent='running';
+  toast('MEDIX ready — 24 módulos clínicos (educacional)','success',3000);
+});
+console.log('%c MEDIX ','background:linear-gradient(90deg,#ff4080,#a060ff,#40e0ff,#40ff90,#ffd040);color:#0a0410;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('⚠ EDUCATIONAL ONLY — NOT FOR CLINICAL USE');
+console.log('APACHE II · SOFA · GCS · Wells · CHA₂DS₂-VASc · Framingham · Bergman · Gompertz · Kaplan-Meier');
+</script>
+</body></html>

@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="description" content="ORACLE — Track predictions, calibrate your judgment, discover your biases.">
+<title>ORACLE — The Calibration Engine</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased;overflow-x:hidden;user-select:none}
+:root{
+  --bg:#0a0805;--bg2:#0f0c08;--panel:#14100a;--panel2:#1a1510;--panel3:#221a12;
+  --bd:rgba(212,160,74,.12);--bd2:rgba(212,160,74,.28);--bd3:rgba(212,160,74,.5);
+  --tx:#e8dcc4;--tx2:#a89a7d;--tx3:#6b5d45;
+  --gold:#d4a04a;--gold2:#f0c060;--gold3:#a67c32;
+  --ok:#7cb342;--warn:#e8a840;--er:#c14a3c;--info:#5a8fb8;
+  --serif:'IBM Plex Serif','Lora',Georgia,serif;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --mono:'JetBrains Mono','SF Mono',Menlo,monospace;
+  --t:.18s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"]{--bg:#f4ede0;--bg2:#ede4d2;--panel:#fff9ee;--panel2:#f9f2e2;--panel3:#f0e6d2;--bd:rgba(120,80,30,.14);--bd2:rgba(120,80,30,.3);--bd3:rgba(120,80,30,.55);--tx:#241a0c;--tx2:#5a4a32;--tx3:#8a7a5c;--gold:#a67c32;--gold2:#8a5f1a;--gold3:#c9a658}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--bd3)}
+
+/* ─── App shell ─── */
+#shell{display:flex;flex-direction:column;min-height:100vh;max-width:1240px;margin:0 auto;padding:0 20px 60px}
+.top{display:flex;align-items:center;gap:18px;padding:22px 0 18px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:linear-gradient(to bottom,var(--bg) 70%,rgba(10,8,5,0));backdrop-filter:blur(8px);z-index:50}
+[data-theme="light"] .top{background:linear-gradient(to bottom,var(--bg) 70%,rgba(244,237,224,0))}
+.brand{display:flex;align-items:center;gap:11px;cursor:pointer}
+.brand-icon{width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 30% 30%,var(--gold2),var(--gold3) 60%,transparent 75%);box-shadow:0 0 20px rgba(212,160,74,.35);position:relative;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--serif);font-weight:700;font-size:.82rem;letter-spacing:1px}
+.brand-icon::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1px solid var(--bd2);animation:spin 24s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand-name{font-family:var(--serif);font-weight:700;font-size:1.15rem;letter-spacing:5px;color:var(--tx);background:linear-gradient(135deg,var(--tx) 0%,var(--gold2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand-tag{font-family:var(--mono);font-size:.58rem;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;margin-left:2px}
+.nav{display:flex;gap:2px;margin-left:26px}
+.nav-item{padding:8px 14px;border-radius:8px;font-size:.78rem;color:var(--tx2);cursor:pointer;transition:var(--t);font-weight:500;letter-spacing:.3px}
+.nav-item:hover{color:var(--tx);background:var(--panel2)}
+.nav-item.active{color:var(--gold2);background:var(--panel2);box-shadow:inset 0 -1px 0 var(--gold)}
+.top-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{padding:9px 16px;border-radius:9px;font-size:.78rem;font-weight:600;cursor:pointer;transition:var(--t);display:inline-flex;align-items:center;gap:7px;letter-spacing:.2px}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold3));color:#1a1004;box-shadow:0 4px 18px rgba(212,160,74,.35)}
+.btn-primary:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn-ghost{background:var(--panel2);color:var(--tx2);border:1px solid var(--bd)}
+.btn-ghost:hover{color:var(--tx);border-color:var(--bd2);background:var(--panel3)}
+.btn-icon{width:36px;height:36px;border-radius:9px;background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:var(--t)}
+.btn-icon:hover{color:var(--gold2);border-color:var(--bd2);background:var(--panel3)}
+
+/* ─── Main ─── */
+main{flex:1;padding-top:30px}
+.view{display:none;animation:fadeIn .32s cubic-bezier(.2,0,.2,1)}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ─── Empty state ─── */
+.empty-state{text-align:center;padding:80px 20px 60px;max-width:520px;margin:0 auto}
+.empty-state .glyph{font-size:3.4rem;margin-bottom:18px;font-family:var(--serif);color:var(--gold);opacity:.7;filter:drop-shadow(0 0 20px rgba(212,160,74,.4))}
+.empty-state h2{font-family:var(--serif);font-size:1.7rem;font-weight:400;letter-spacing:-.5px;color:var(--tx);margin-bottom:12px;line-height:1.25}
+.empty-state p{color:var(--tx2);font-size:.9rem;line-height:1.65;margin-bottom:32px;max-width:420px;margin-left:auto;margin-right:auto}
+.empty-state .btn-primary{padding:12px 24px;font-size:.85rem}
+.empty-state .hint{font-family:var(--mono);font-size:.66rem;color:var(--tx3);margin-top:32px;letter-spacing:.5px}
+
+/* ─── Dashboard ─── */
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px}
+.stat{background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:18px 18px 16px;position:relative;overflow:hidden;transition:var(--t)}
+.stat:hover{border-color:var(--bd2);transform:translateY(-2px)}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.5}
+.stat-label{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:1.6px;color:var(--tx3);margin-bottom:8px}
+.stat-value{font-family:var(--mono);font-size:1.7rem;font-weight:700;color:var(--tx);letter-spacing:-1px;line-height:1}
+.stat-value.gold{color:var(--gold2)}
+.stat-value.ok{color:var(--ok)}
+.stat-value.er{color:var(--er)}
+.stat-hint{font-size:.66rem;color:var(--tx3);margin-top:6px;font-family:var(--mono)}
+
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:16px;padding:24px;margin-bottom:22px;position:relative}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.card-title{font-family:var(--serif);font-size:1.1rem;font-weight:500;color:var(--tx);letter-spacing:-.2px}
+.card-subtitle{font-size:.72rem;color:var(--tx3);font-family:var(--mono);letter-spacing:.3px}
+.card-desc{font-size:.8rem;color:var(--tx2);line-height:1.55;margin-bottom:20px;max-width:600px}
+
+/* ─── Calibration canvas ─── */
+.cal-wrap{position:relative;width:100%;aspect-ratio:1.4;max-height:520px;margin-top:10px}
+#calCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:12px}
+
+/* ─── Prediction list ─── */
+.pred-list{display:flex;flex-direction:column;gap:10px}
+.pred{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:14px 18px;transition:var(--t);position:relative;overflow:hidden}
+.pred:hover{border-color:var(--bd2)}
+.pred.resolved{opacity:.72}
+.pred.resolved:hover{opacity:1}
+.pred-row{display:flex;align-items:center;gap:16px}
+.pred-prob{font-family:var(--mono);font-size:1.3rem;font-weight:700;min-width:66px;letter-spacing:-.5px;color:var(--gold2);text-align:right}
+.pred-prob.mid{color:var(--warn)}
+.pred-prob.low{color:var(--er)}
+.pred-body{flex:1;min-width:0}
+.pred-q{font-family:var(--serif);font-size:1rem;line-height:1.4;color:var(--tx);margin-bottom:4px;word-break:break-word}
+.pred-meta{display:flex;gap:12px;align-items:center;font-family:var(--mono);font-size:.66rem;color:var(--tx3);letter-spacing:.3px;flex-wrap:wrap}
+.pred-cat{padding:2px 8px;background:var(--panel3);border-radius:5px;color:var(--tx2);letter-spacing:.5px}
+.pred-outcome{min-width:80px;text-align:right}
+.pred-outcome .tag{padding:4px 12px;border-radius:6px;font-family:var(--mono);font-size:.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.pred-outcome .tag.yes{background:rgba(124,179,66,.18);color:var(--ok);border:1px solid rgba(124,179,66,.35)}
+.pred-outcome .tag.no{background:rgba(193,74,60,.16);color:var(--er);border:1px solid rgba(193,74,60,.32)}
+.pred-outcome .tag.open{background:var(--panel3);color:var(--tx2);border:1px solid var(--bd)}
+.pred-outcome .tag.late{background:rgba(232,168,64,.15);color:var(--warn);border:1px solid rgba(232,168,64,.35)}
+.pred-actions{display:flex;gap:6px;margin-left:6px}
+.icon-btn{width:30px;height:30px;border-radius:7px;background:transparent;border:1px solid var(--bd);color:var(--tx3);cursor:pointer;font-size:.82rem;transition:var(--t);display:flex;align-items:center;justify-content:center}
+.icon-btn:hover{color:var(--gold2);border-color:var(--bd2);background:var(--panel3)}
+.icon-btn.ok:hover{color:var(--ok);border-color:rgba(124,179,66,.4)}
+.icon-btn.no:hover{color:var(--er);border-color:rgba(193,74,60,.4)}
+.icon-btn.del:hover{color:var(--er);border-color:rgba(193,74,60,.4)}
+.pred-bar{position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gold);opacity:.7}
+
+/* ─── Filters ─── */
+.filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.filter{padding:6px 12px;border-radius:20px;background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);font-size:.72rem;cursor:pointer;transition:var(--t);font-weight:500}
+.filter:hover{color:var(--tx);border-color:var(--bd2)}
+.filter.active{background:var(--gold);color:#1a1004;border-color:var(--gold)}
+.filter-sep{flex:1}
+
+/* ─── Insights ─── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:840px){.grid-2{grid-template-columns:1fr}.hero-stats{grid-template-columns:repeat(2,1fr)}}
+.chart-wrap{position:relative;width:100%;aspect-ratio:1.6}
+.chart-wrap canvas{position:absolute;inset:0;width:100%;height:100%}
+
+.cat-list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.cat-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:.78rem}
+.cat-row:last-child{border-bottom:none}
+.cat-row .name{flex:1;color:var(--tx);font-family:var(--mono);letter-spacing:.4px}
+.cat-row .count{font-family:var(--mono);font-size:.7rem;color:var(--tx3);min-width:40px}
+.cat-row .brier{font-family:var(--mono);font-weight:700;min-width:56px;text-align:right}
+.cat-row .brier.ok{color:var(--ok)}
+.cat-row .brier.er{color:var(--er)}
+
+.insight{background:var(--panel2);border-left:3px solid var(--gold);border-radius:6px;padding:12px 16px;margin-bottom:10px;font-size:.82rem;line-height:1.5;color:var(--tx)}
+.insight.info{border-left-color:var(--info);color:var(--tx2)}
+.insight.warn{border-left-color:var(--warn)}
+.insight.ok{border-left-color:var(--ok)}
+.insight b{color:var(--gold2);font-weight:600}
+.insight .tag{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);display:block;margin-bottom:3px}
+
+/* ─── Add / Resolve modal ─── */
+.overlay{position:fixed;inset:0;background:rgba(5,3,0,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:900;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.modal{width:100%;max-width:560px;background:var(--panel);border:1px solid var(--bd2);border-radius:18px;box-shadow:0 40px 120px rgba(0,0,0,.7),0 0 0 1px rgba(212,160,74,.1) inset;overflow:hidden;animation:modalIn .26s cubic-bezier(.2,0,.2,1)}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+.modal-head{padding:22px 26px 4px}
+.modal-title{font-family:var(--serif);font-size:1.35rem;font-weight:500;letter-spacing:-.3px}
+.modal-sub{font-size:.72rem;color:var(--tx3);margin-top:4px;font-family:var(--mono);letter-spacing:.3px}
+.modal-body{padding:22px 26px}
+.modal-foot{padding:16px 26px 22px;display:flex;gap:10px;justify-content:flex-end}
+.field{margin-bottom:18px}
+.field-label{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);margin-bottom:8px;font-weight:600}
+.field input[type=text],.field textarea,.field input[type=date],.field input[type=number]{width:100%;background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:.88rem;transition:var(--t);font-family:var(--sans)}
+.field textarea{min-height:64px;resize:vertical;line-height:1.5;font-family:var(--serif);font-size:.94rem}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,160,74,.12)}
+.prob-display{font-family:var(--mono);font-size:2.8rem;font-weight:700;color:var(--gold2);letter-spacing:-2px;text-align:center;line-height:1;margin-bottom:6px}
+.prob-caption{text-align:center;font-family:var(--mono);font-size:.68rem;color:var(--tx3);letter-spacing:.6px;margin-bottom:16px}
+.prob-slider{-webkit-appearance:none;width:100%;height:6px;background:linear-gradient(90deg,var(--er),var(--warn),var(--ok));border-radius:3px;cursor:pointer;outline:none}
+.prob-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;background:var(--gold2);border-radius:50%;cursor:pointer;box-shadow:0 0 0 5px rgba(212,160,74,.2),0 4px 12px rgba(0,0,0,.5);border:2px solid #1a1004}
+.prob-ticks{display:flex;justify-content:space-between;margin-top:8px;font-family:var(--mono);font-size:.6rem;color:var(--tx3)}
+.cat-chips{display:flex;gap:6px;flex-wrap:wrap}
+.cat-chip{padding:6px 12px;background:var(--panel3);border:1px solid var(--bd);border-radius:20px;font-size:.72rem;cursor:pointer;transition:var(--t);color:var(--tx2);font-family:var(--mono);letter-spacing:.4px}
+.cat-chip:hover{border-color:var(--bd2);color:var(--tx)}
+.cat-chip.active{background:var(--gold);color:#1a1004;border-color:var(--gold);font-weight:600}
+.resolve-modal{max-width:440px;text-align:center}
+.resolve-q{font-family:var(--serif);font-size:1.15rem;line-height:1.5;margin-bottom:14px;color:var(--tx);padding:0 4px}
+.resolve-p{font-family:var(--mono);font-size:.72rem;color:var(--tx3);margin-bottom:24px;letter-spacing:.5px}
+.resolve-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.resolve-btn{padding:18px 10px;border-radius:12px;cursor:pointer;font-family:var(--mono);font-weight:700;letter-spacing:2px;text-transform:uppercase;font-size:.78rem;transition:var(--t);border:2px solid transparent}
+.resolve-btn.yes{background:rgba(124,179,66,.12);color:var(--ok);border-color:rgba(124,179,66,.4)}
+.resolve-btn.yes:hover{background:rgba(124,179,66,.24);border-color:var(--ok)}
+.resolve-btn.no{background:rgba(193,74,60,.1);color:var(--er);border-color:rgba(193,74,60,.4)}
+.resolve-btn.no:hover{background:rgba(193,74,60,.22);border-color:var(--er)}
+
+/* ─── Toasts ─── */
+#toasts{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:12px 18px;border-radius:10px;background:var(--panel);border:1px solid var(--bd2);border-left:3px solid var(--gold);font-size:.78rem;max-width:340px;animation:toastIn .3s cubic-bezier(.2,0,.2,1);box-shadow:0 12px 40px rgba(0,0,0,.5);pointer-events:auto;display:flex;align-items:center;gap:10px;color:var(--tx)}
+.toast.ok{border-left-color:var(--ok)}
+.toast.er{border-left-color:var(--er)}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+/* ─── Footer ─── */
+.foot{margin-top:80px;padding-top:32px;border-top:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:.62rem;color:var(--tx3);letter-spacing:.6px;flex-wrap:wrap;gap:12px}
+.foot a{color:var(--tx3);text-decoration:none;cursor:pointer;transition:var(--t)}
+.foot a:hover{color:var(--gold2)}
+</style>
+</head>
+<body>
+<div id="shell">
+  <header class="top">
+    <div class="brand" onclick="ORACLE.tab('dashboard')">
+      <span class="brand-icon">✦</span>
+      <div>
+        <div class="brand-name">ORACLE</div>
+        <div class="brand-tag">Calibration Engine</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" data-tab="dashboard" onclick="ORACLE.tab('dashboard')">Dashboard</div>
+      <div class="nav-item" data-tab="ledger" onclick="ORACLE.tab('ledger')">Ledger</div>
+      <div class="nav-item" data-tab="insights" onclick="ORACLE.tab('insights')">Insights</div>
+      <div class="nav-item" data-tab="settings" onclick="ORACLE.tab('settings')">Settings</div>
+    </nav>
+    <div class="top-actions">
+      <button class="btn-icon" title="Theme (T)" onclick="ORACLE.toggleTheme()">◐</button>
+      <button class="btn-icon" title="Export (E)" onclick="ORACLE.exportJSON()">↓</button>
+      <button class="btn-icon" title="Share score" onclick="ORACLE.share()">⌘</button>
+      <button class="btn btn-primary" onclick="ORACLE.openAdd()">✦ New Prediction</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div id="dashContent"></div>
+    </section>
+
+    <!-- LEDGER -->
+    <section class="view" id="view-ledger">
+      <div class="filters" id="ledgerFilters"></div>
+      <div class="pred-list" id="ledgerList"></div>
+    </section>
+
+    <!-- INSIGHTS -->
+    <section class="view" id="view-insights">
+      <div id="insightsContent"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings">
+      <div id="settingsContent"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div>ORACLE · Local · Private · No accounts, no cloud, no tracking</div>
+    <div><a onclick="ORACLE.demo()">load demo data</a> · <a onclick="ORACLE.exportJSON()">export</a> · <a onclick="ORACLE.importJSON()">import</a></div>
+  </footer>
+</div>
+
+<div class="overlay" id="addOverlay" onclick="if(event.target===this)ORACLE.closeAdd()">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">New Prediction</div>
+      <div class="modal-sub">Write it clearly. Assign a probability. Let time judge.</div>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <div class="field-label">Question</div>
+        <textarea id="inputQuestion" placeholder="e.g. 'Will the Fed cut rates before June 2026?'" autofocus></textarea>
+      </div>
+      <div class="field">
+        <div class="field-label">Probability</div>
+        <div class="prob-display" id="probDisplay">50%</div>
+        <div class="prob-caption" id="probCaption">Even odds</div>
+        <input type="range" min="1" max="99" value="50" class="prob-slider" id="probSlider">
+        <div class="prob-ticks"><span>1%</span><span>25%</span><span>50%</span><span>75%</span><span>99%</span></div>
+      </div>
+      <div class="field">
+        <div class="field-label">Category</div>
+        <div class="cat-chips" id="catChips"></div>
+      </div>
+      <div class="field" style="display:flex;gap:14px">
+        <div style="flex:1">
+          <div class="field-label">Resolve by (optional)</div>
+          <input type="date" id="inputDate">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="ORACLE.closeAdd()">Cancel</button>
+      <button class="btn btn-primary" onclick="ORACLE.addPrediction()">Add Prediction</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="resolveOverlay" onclick="if(event.target===this)ORACLE.closeResolve()">
+  <div class="modal resolve-modal">
+    <div class="modal-head">
+      <div class="modal-title" style="font-family:var(--serif);font-size:1.1rem">Resolution</div>
+    </div>
+    <div class="modal-body">
+      <div class="resolve-q" id="resolveQ"></div>
+      <div class="resolve-p" id="resolveP"></div>
+      <div class="resolve-actions">
+        <button class="resolve-btn yes" onclick="ORACLE.resolveOutcome(1)">Yes</button>
+        <button class="resolve-btn no" onclick="ORACLE.resolveOutcome(0)">No</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════
+   ORACLE — The Calibration Engine
+   State · Statistics · Persistence
+   ══════════════════════════════════════════════════════════════ */
+
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c!=null){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function uid(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';return Number(n).toFixed(d)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function toast(msg,kind,dur){dur=dur||2400;var t=el('div',{class:'toast'+(kind?' '+kind:'')});t.textContent=msg;$('toasts').appendChild(t);setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(function(){t.remove()},320)},dur)}
+
+/* ══════════ Categories ══════════ */
+var CATEGORIES=['General','Tech','Politics','Economics','Science','Sports','Markets','Personal','Culture','Health'];
+
+/* ══════════ State ══════════ */
+var ST={
+  predictions:[],
+  theme:'dark',
+  currentTab:'dashboard',
+  filterCategory:'All',
+  filterStatus:'All',
+  sortBy:'created',
+  pendingResolveId:null,
+  addCategory:'General'
+};
+
+/* ══════════ Persistence ══════════ */
+function save(){
+  try{
+    localStorage.setItem('oracle_predictions',JSON.stringify(ST.predictions));
+    localStorage.setItem('oracle_theme',ST.theme);
+  }catch(e){toast('Save failed: '+e.message,'er')}
+}
+function load(){
+  try{
+    var p=localStorage.getItem('oracle_predictions');
+    if(p)ST.predictions=JSON.parse(p);
+    var t=localStorage.getItem('oracle_theme');
+    if(t)ST.theme=t;
+  }catch(e){}
+}
+
+/* ══════════ Statistics ══════════ */
+/* Brier score: (1/N) Σ (p - o)² for resolved binary predictions. Lower is better. */
+function brier(preds){
+  var r=preds.filter(function(p){return p.outcome!=null});
+  if(!r.length)return null;
+  var s=0;
+  r.forEach(function(p){var o=p.outcome===1?1:0;s+=(p.probability-o)*(p.probability-o)});
+  return s/r.length
+}
+
+/* Log loss: −(1/N) Σ [o·ln(p) + (1−o)·ln(1−p)] */
+function logLoss(preds){
+  var r=preds.filter(function(p){return p.outcome!=null});
+  if(!r.length)return null;
+  var s=0;
+  r.forEach(function(p){
+    var o=p.outcome===1?1:0;
+    var pp=clamp(p.probability,0.001,0.999);
+    s+=o*Math.log(pp)+(1-o)*Math.log(1-pp);
+  });
+  return -s/r.length
+}
+
+/* Directional accuracy: did you pick the right side? */
+function accuracy(preds){
+  var r=preds.filter(function(p){return p.outcome!=null});
+  if(!r.length)return null;
+  var c=0;
+  r.forEach(function(p){
+    var guess=p.probability>0.5?1:0;
+    if(p.probability===0.5)return;
+    if(guess===p.outcome)c++;
+  });
+  var eligible=r.filter(function(p){return p.probability!==0.5}).length;
+  return eligible?c/eligible:null
+}
+
+/* Calibration bins: group by predicted probability, compare to actual rate */
+function calibration(preds,bins){
+  bins=bins||10;
+  var r=preds.filter(function(p){return p.outcome!=null});
+  var buckets=[];
+  for(var i=0;i<bins;i++){
+    buckets.push({lo:i/bins,hi:(i+1)/bins,count:0,sumP:0,sumO:0,items:[]});
+  }
+  r.forEach(function(p){
+    var b=Math.min(bins-1,Math.floor(p.probability*bins));
+    var k=buckets[b];
+    k.count++;k.sumP+=p.probability;k.sumO+=p.outcome===1?1:0;k.items.push(p);
+  });
+  return buckets.map(function(b){
+    if(!b.count)return {lo:b.lo,hi:b.hi,count:0,predicted:null,actual:null};
+    return {
+      lo:b.lo,hi:b.hi,count:b.count,
+      predicted:b.sumP/b.count,
+      actual:b.sumO/b.count,
+      wilson:wilsonInterval(b.sumO,b.count)
+    };
+  });
+}
+/* Wilson score interval for binomial proportion */
+function wilsonInterval(successes,n,z){
+  z=z||1.96;
+  if(!n)return null;
+  var phat=successes/n;
+  var denom=1+z*z/n;
+  var center=(phat+z*z/(2*n))/denom;
+  var margin=z*Math.sqrt((phat*(1-phat)+z*z/(4*n))/n)/denom;
+  return [Math.max(0,center-margin),Math.min(1,center+margin)]
+}
+
+/* Calibration error: mean absolute difference between predicted and actual per bin (weighted) */
+function calibrationError(preds){
+  var c=calibration(preds);
+  var total=0,wsum=0;
+  c.forEach(function(b){if(b.count){total+=Math.abs(b.predicted-b.actual)*b.count;wsum+=b.count}});
+  return wsum?total/wsum:null
+}
+
+/* Confidence: mean distance from 0.5 (how decisive you are) */
+function decisiveness(preds){
+  var r=preds.filter(function(p){return p.outcome!=null});
+  if(!r.length)return null;
+  var s=0;r.forEach(function(p){s+=Math.abs(p.probability-0.5)});
+  return s/r.length
+}
+
+/* Overconfidence: for high-confidence predictions (>=0.8 or <=0.2), how often are they right? */
+function overconfidence(preds){
+  var r=preds.filter(function(p){return p.outcome!=null&&(p.probability>=0.8||p.probability<=0.2)});
+  if(!r.length)return null;
+  var hits=0;
+  r.forEach(function(p){
+    var expected=p.probability>=0.5?1:0;
+    if(p.outcome===expected)hits++;
+  });
+  return {n:r.length,actual:hits/r.length}
+}
+
+/* Current streak: consecutive resolved predictions where you got the right side */
+function streak(preds){
+  var r=preds.filter(function(p){return p.outcome!=null}).sort(function(a,b){return (b.resolvedAt||0)-(a.resolvedAt||0)});
+  var s=0;
+  for(var i=0;i<r.length;i++){
+    var p=r[i];
+    var guess=p.probability>0.5?1:0;
+    if(p.probability===0.5)break;
+    if(guess===p.outcome)s++;else break;
+  }
+  return s
+}
+
+/* Recent Brier (last N resolved) */
+function recentBrier(preds,n){
+  n=n||10;
+  var r=preds.filter(function(p){return p.outcome!=null}).sort(function(a,b){return (b.resolvedAt||0)-(a.resolvedAt||0)}).slice(0,n);
+  return brier(r)
+}
+
+/* Time series of cumulative Brier score */
+function brierTimeline(preds){
+  var r=preds.filter(function(p){return p.outcome!=null}).sort(function(a,b){return (a.resolvedAt||a.createdAt)-(b.resolvedAt||b.createdAt)});
+  if(!r.length)return [];
+  var pts=[],sum=0;
+  r.forEach(function(p,i){
+    var o=p.outcome===1?1:0;
+    sum+=(p.probability-o)*(p.probability-o);
+    pts.push({n:i+1,value:sum/(i+1),ts:p.resolvedAt||p.createdAt});
+  });
+  return pts
+}
+
+/* ══════════ Add prediction ══════════ */
+function addPrediction(){
+  var q=$('inputQuestion').value.trim();
+  if(!q){toast('Enter a question','er');return}
+  var prob=parseInt($('probSlider').value)/100;
+  var date=$('inputDate').value||null;
+  var p={
+    id:uid(),
+    question:q,
+    probability:prob,
+    category:ST.addCategory,
+    createdAt:Date.now(),
+    resolvesAt:date?new Date(date).getTime():null,
+    resolvedAt:null,
+    outcome:null
+  };
+  ST.predictions.unshift(p);
+  save();
+  closeAdd();
+  toast('Prediction added','ok');
+  render();
+}
+
+/* ══════════ Resolve prediction ══════════ */
+function openResolve(id){
+  var p=ST.predictions.filter(function(x){return x.id===id})[0];
+  if(!p)return;
+  ST.pendingResolveId=id;
+  $('resolveQ').textContent=p.question;
+  $('resolveP').textContent='You said '+(p.probability*100).toFixed(0)+'% likely';
+  $('resolveOverlay').classList.add('show');
+}
+function closeResolve(){
+  $('resolveOverlay').classList.remove('show');
+  ST.pendingResolveId=null;
+}
+function resolveOutcome(outcome){
+  var id=ST.pendingResolveId;
+  var p=ST.predictions.filter(function(x){return x.id===id})[0];
+  if(!p)return;
+  p.outcome=outcome;
+  p.resolvedAt=Date.now();
+  save();
+  closeResolve();
+  toast(outcome===1?'Resolved: Yes':'Resolved: No','ok');
+  render();
+}
+
+/* ══════════ Delete prediction ══════════ */
+function deletePrediction(id){
+  var p=ST.predictions.filter(function(x){return x.id===id})[0];
+  if(!p)return;
+  if(!confirm('Delete this prediction?'))return;
+  ST.predictions=ST.predictions.filter(function(x){return x.id!==id});
+  save();
+  toast('Deleted','');
+  render();
+}
+
+/* ══════════ Demo data ══════════ */
+function loadDemo(){
+  var now=Date.now();
+  var day=86400000;
+  var demo=[
+    {q:'Will OpenAI release GPT-6 before July 2026?',p:0.35,o:null,c:'Tech',days:-60},
+    {q:'Will the S&P 500 close above 7000 by end of 2026?',p:0.55,o:1,c:'Markets',days:-90},
+    {q:'Will SpaceX launch Starship to orbit successfully in 2026?',p:0.85,o:1,c:'Science',days:-45},
+    {q:'Will AI regulation pass in the US Congress in 2026?',p:0.22,o:0,c:'Politics',days:-30},
+    {q:'Will Apple announce a foldable iPhone in 2026?',p:0.15,o:0,c:'Tech',days:-25},
+    {q:'Will there be a recession declared in the US by end of 2026?',p:0.4,o:null,c:'Economics',days:-20},
+    {q:'Will Bitcoin trade above $150k in 2026?',p:0.3,o:1,c:'Markets',days:-50},
+    {q:'Will Nvidia stock be up more than 30% in 2026?',p:0.5,o:1,c:'Markets',days:-40},
+    {q:'Will a major AI safety incident occur in 2026?',p:0.6,o:1,c:'Tech',days:-35},
+    {q:'Will the Fed cut rates at least twice in 2026?',p:0.7,o:1,c:'Economics',days:-28},
+    {q:'Will Taylor Swift announce a new album in 2026?',p:0.65,o:1,c:'Culture',days:-22},
+    {q:'Will Tesla deliver 2M+ vehicles in 2026?',p:0.4,o:0,c:'Markets',days:-18},
+    {q:'Will a new COVID variant cause restrictions in 2026?',p:0.2,o:0,c:'Health',days:-15},
+    {q:'Will Google release Gemini 4 in 2026?',p:0.75,o:1,c:'Tech',days:-12},
+    {q:'Will the Lakers make the NBA playoffs in 2026?',p:0.55,o:1,c:'Sports',days:-8},
+    {q:'Will I finish my side project by end of quarter?',p:0.5,o:0,c:'Personal',days:-6},
+    {q:'Will Anthropic release Claude 5 in 2026?',p:0.6,o:null,c:'Tech',days:-5},
+    {q:'Will Meta release a new VR headset in 2026?',p:0.8,o:1,c:'Tech',days:-4},
+    {q:'Will I exercise 3+ times this week?',p:0.6,o:1,c:'Personal',days:-3},
+    {q:'Will the EU pass new AI regulation this year?',p:0.7,o:1,c:'Politics',days:-2}
+  ];
+  ST.predictions=demo.map(function(d){
+    var created=now+d.days*day;
+    return {
+      id:uid(),
+      question:d.q,
+      probability:d.p,
+      category:d.c,
+      createdAt:created,
+      resolvesAt:null,
+      resolvedAt:d.o!=null?created+day*3:null,
+      outcome:d.o
+    }
+  });
+  save();
+  toast('Demo data loaded (20 predictions)','ok');
+  render();
+}
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   ORACLE — UI · Rendering · Canvas · Boot
+   ══════════════════════════════════════════════════════════════ */
+
+var ORACLE={};
+
+/* ══════════ Tab switching ══════════ */
+ORACLE.tab=function(t){
+  ST.currentTab=t;
+  $$('.nav-item').forEach(function(n){n.classList.toggle('active',n.getAttribute('data-tab')===t)});
+  $$('.view').forEach(function(v){v.classList.remove('active')});
+  $('view-'+t).classList.add('active');
+  render();
+};
+
+/* ══════════ Theme ══════════ */
+ORACLE.toggleTheme=function(){
+  ST.theme=ST.theme==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',ST.theme);
+  save();
+  render();
+};
+
+/* ══════════ Add modal ══════════ */
+ORACLE.openAdd=function(){
+  $('inputQuestion').value='';
+  $('inputDate').value='';
+  $('probSlider').value=50;
+  updateProbDisplay(50);
+  ST.addCategory='General';
+  renderCatChips();
+  $('addOverlay').classList.add('show');
+  setTimeout(function(){$('inputQuestion').focus()},80);
+};
+ORACLE.closeAdd=function(){$('addOverlay').classList.remove('show')};
+ORACLE.addPrediction=addPrediction;
+ORACLE.openResolve=openResolve;
+ORACLE.closeResolve=closeResolve;
+ORACLE.resolveOutcome=resolveOutcome;
+ORACLE.deletePrediction=deletePrediction;
+ORACLE.demo=loadDemo;
+
+function updateProbDisplay(v){
+  v=parseInt(v);
+  $('probDisplay').textContent=v+'%';
+  var cap;
+  if(v<=5)cap='Almost certainly not';
+  else if(v<=15)cap='Very unlikely';
+  else if(v<=30)cap='Unlikely';
+  else if(v<=45)cap='Leaning no';
+  else if(v<=55)cap='Even odds';
+  else if(v<=70)cap='Leaning yes';
+  else if(v<=85)cap='Likely';
+  else if(v<=95)cap='Very likely';
+  else cap='Almost certainly yes';
+  $('probCaption').textContent=cap;
+  var color=v<30?'var(--er)':v>70?'var(--ok)':'var(--warn)';
+  $('probDisplay').style.color=color;
+}
+
+function renderCatChips(){
+  var c=$('catChips');c.innerHTML='';
+  CATEGORIES.forEach(function(cat){
+    var chip=el('div',{class:'cat-chip'+(cat===ST.addCategory?' active':''),text:cat});
+    chip.onclick=function(){ST.addCategory=cat;renderCatChips()};
+    c.appendChild(chip);
+  });
+}
+
+/* ══════════ Filters ══════════ */
+function renderFilters(){
+  var f=$('ledgerFilters');f.innerHTML='';
+  var cats=['All'].concat(CATEGORIES);
+  var stat=['All','Open','Resolved','Overdue'];
+  cats.forEach(function(cat){
+    if(!ST.predictions.some(function(p){return p.category===cat})&&cat!=='All')return;
+    var chip=el('div',{class:'filter'+(ST.filterCategory===cat?' active':''),text:cat});
+    chip.onclick=function(){ST.filterCategory=cat;render()};
+    f.appendChild(chip);
+  });
+  f.appendChild(el('div',{class:'filter-sep'}));
+  stat.forEach(function(s){
+    var chip=el('div',{class:'filter'+(ST.filterStatus===s?' active':''),text:s});
+    chip.onclick=function(){ST.filterStatus=s;render()};
+    f.appendChild(chip);
+  });
+}
+
+function filterPredictions(){
+  var list=ST.predictions.slice();
+  if(ST.filterCategory!=='All')list=list.filter(function(p){return p.category===ST.filterCategory});
+  if(ST.filterStatus==='Open')list=list.filter(function(p){return p.outcome==null});
+  else if(ST.filterStatus==='Resolved')list=list.filter(function(p){return p.outcome!=null});
+  else if(ST.filterStatus==='Overdue')list=list.filter(function(p){return p.outcome==null&&p.resolvesAt&&p.resolvesAt<Date.now()});
+  list.sort(function(a,b){
+    if(ST.sortBy==='probability')return b.probability-a.probability;
+    if(ST.sortBy==='brier'){
+      var ba=a.outcome!=null?Math.abs(a.probability-a.outcome):-1;
+      var bb=b.outcome!=null?Math.abs(b.probability-b.outcome):-1;
+      return bb-ba;
+    }
+    return b.createdAt-a.createdAt;
+  });
+  return list;
+}
+
+/* ══════════ Prediction card ══════════ */
+function renderPredCard(p){
+  var card=el('div',{class:'pred'+(p.outcome!=null?' resolved':'')});
+  var pct=(p.probability*100).toFixed(0);
+  var probClass=p.probability<0.3?'low':p.probability<0.7?'mid':'';
+  var daysAgo=Math.floor((Date.now()-p.createdAt)/86400000);
+  var timeStr=daysAgo===0?'today':daysAgo===1?'yesterday':daysAgo+'d ago';
+  var overdue=p.outcome==null&&p.resolvesAt&&p.resolvesAt<Date.now();
+  var tag;
+  if(p.outcome===1)tag='<span class="tag yes">Yes</span>';
+  else if(p.outcome===0)tag='<span class="tag no">No</span>';
+  else if(overdue)tag='<span class="tag late">Overdue</span>';
+  else tag='<span class="tag open">Open</span>';
+
+  var brierVal=p.outcome!=null?((p.probability-p.outcome)*(p.probability-p.outcome)):null;
+  var brierStr=brierVal!=null?'brier '+brierVal.toFixed(3):'';
+
+  var actions='';
+  if(p.outcome==null){
+    actions='<div class="pred-actions"><button class="icon-btn ok" title="Resolve Yes" onclick="ORACLE.quickResolve(\''+p.id+'\',1)">✓</button><button class="icon-btn no" title="Resolve No" onclick="ORACLE.quickResolve(\''+p.id+'\',0)">✕</button></div>';
+  }else{
+    actions='<div class="pred-actions"><button class="icon-btn del" title="Delete" onclick="ORACLE.deletePrediction(\''+p.id+'\')">🗑</button></div>';
+  }
+
+  card.innerHTML=
+    '<div class="pred-bar" style="background:'+probColor(p.probability)+';opacity:'+(p.outcome==null?0.55:0.25)+'"></div>'+
+    '<div class="pred-row">'+
+      '<div class="pred-prob '+probClass+'">'+pct+'%</div>'+
+      '<div class="pred-body">'+
+        '<div class="pred-q">'+esc(p.question)+'</div>'+
+        '<div class="pred-meta">'+
+          '<span class="pred-cat">'+esc(p.category)+'</span>'+
+          '<span>'+timeStr+'</span>'+
+          (brierStr?'<span>'+brierStr+'</span>':'')+
+        '</div>'+
+      '</div>'+
+      '<div class="pred-outcome">'+tag+'</div>'+
+      actions+
+    '</div>';
+  return card
+}
+function probColor(p){
+  if(p<0.3)return 'var(--er)';
+  if(p>0.7)return 'var(--ok)';
+  return 'var(--warn)';
+}
+ORACLE.quickResolve=function(id,outcome){
+  var p=ST.predictions.filter(function(x){return x.id===id})[0];
+  if(!p)return;
+  p.outcome=outcome;
+  p.resolvedAt=Date.now();
+  save();
+  toast(outcome===1?'✓ Marked Yes':'✕ Marked No',outcome===1?'ok':'er');
+  render();
+};
+
+/* ══════════ Dashboard render ══════════ */
+function renderDashboard(){
+  var c=$('dashContent');
+  var preds=ST.predictions;
+  if(!preds.length){
+    c.innerHTML=
+      '<div class="empty-state">'+
+        '<div class="glyph">✦</div>'+
+        '<h2>Your first forecast awaits</h2>'+
+        '<p>Write a prediction. Assign a probability. When it resolves, ORACLE reveals whether your certainty was earned — or habitual.</p>'+
+        '<button class="btn btn-primary" onclick="ORACLE.openAdd()">✦ Add Your First Prediction</button>'+
+        '<div class="hint">or <a style="color:var(--gold2);cursor:pointer;text-decoration:underline" onclick="ORACLE.demo()">load demo data</a> to explore</div>'+
+      '</div>';
+    return
+  }
+
+  var bs=brier(preds);
+  var ll=logLoss(preds);
+  var acc=accuracy(preds);
+  var streakN=streak(preds);
+  var recentBs=recentBrier(preds,10);
+  var calErr=calibrationError(preds);
+  var resolved=preds.filter(function(p){return p.outcome!=null}).length;
+
+  var html='';
+
+  /* Hero stats */
+  html+='<div class="hero-stats">';
+  html+=statCard('Brier Score',bs!=null?bs.toFixed(3):'—',bsHint(bs),bsColor(bs));
+  html+='<div class="stat"><div class="stat-label">Resolved</div><div class="stat-value">'+resolved+'<span style="font-size:1rem;color:var(--tx3);font-weight:400"> / '+preds.length+'</span></div><div class="stat-hint">'+(resolved?Math.round(resolved/preds.length*100)+'% complete':'no resolutions yet')+'</div></div>';
+  html+=statCard('Directional',acc!=null?(acc*100).toFixed(0)+'%':'—',acc!=null?(acc>0.6?'excellent':acc>0.5?'above chance':'below chance'):'—',acc!=null?(acc>0.6?'ok':acc>0.5?'':'er'):'');
+  html+='<div class="stat"><div class="stat-label">Current Streak</div><div class="stat-value gold">'+streakN+'</div><div class="stat-hint">'+(streakN===0?'no active streak':streakN===1?'1 right in a row':streakN+' right in a row')+'</div></div>';
+  html+='</div>';
+
+  /* Calibration chart */
+  html+='<div class="card">';
+  html+='<div class="card-head"><div><div class="card-title">Calibration Curve</div><div class="card-subtitle">reliability diagram · 10 bins</div></div><div class="card-subtitle">'+(resolved>=1?resolved+' predictions':'no data')+'</div></div>';
+  html+='<div class="card-desc">Where your predictions land vs. what actually happened. The closer to the diagonal, the better calibrated your judgment. Vertical bars show 95% confidence intervals.</div>';
+  html+='<div class="cal-wrap"><canvas id="calCanvas"></canvas></div>';
+  html+='</div>';
+
+  /* Recent predictions */
+  var recent=preds.slice().sort(function(a,b){return b.createdAt-a.createdAt}).slice(0,5);
+  html+='<div class="card">';
+  html+='<div class="card-head"><div><div class="card-title">Recent</div><div class="card-subtitle">last 5 entries</div></div><div class="card-subtitle" style="cursor:pointer" onclick="ORACLE.tab(\'ledger\')">view all →</div></div>';
+  html+='<div class="pred-list" id="dashRecent"></div>';
+  html+='</div>';
+
+  c.innerHTML=html;
+  var rl=$('dashRecent');
+  recent.forEach(function(p){rl.appendChild(renderPredCard(p))});
+
+  /* Draw calibration chart */
+  setTimeout(function(){drawCalibration()},40);
+}
+function statCard(label,value,hint,colorClass){
+  return '<div class="stat"><div class="stat-label">'+label+'</div><div class="stat-value '+(colorClass||'')+'">'+value+'</div><div class="stat-hint">'+hint+'</div></div>'
+}
+function bsHint(bs){
+  if(bs==null)return 'no resolutions yet';
+  if(bs<0.08)return 'exceptional — top decile';
+  if(bs<0.15)return 'excellent — expert level';
+  if(bs<0.20)return 'good — above average';
+  if(bs<0.25)return 'fair — coin-flip territory';
+  return 'poor — recalibrate'
+}
+function bsColor(bs){
+  if(bs==null)return '';
+  if(bs<0.15)return 'ok';
+  if(bs>0.25)return 'er';
+  return ''
+}
+
+/* ══════════ Ledger render ══════════ */
+function renderLedger(){
+  renderFilters();
+  var list=filterPredictions();
+  var l=$('ledgerList');
+  l.innerHTML='';
+  if(!list.length){
+    l.innerHTML='<div class="empty-state" style="padding:60px 20px"><div class="glyph" style="font-size:2rem">○</div><h2 style="font-size:1.2rem">No predictions match these filters</h2></div>';
+    return
+  }
+  list.forEach(function(p){l.appendChild(renderPredCard(p))});
+}
+
+/* ══════════ Insights render ══════════ */
+function renderInsights(){
+  var c=$('insightsContent');
+  var preds=ST.predictions;
+  var resolved=preds.filter(function(p){return p.outcome!=null});
+  if(resolved.length<3){
+    c.innerHTML='<div class="empty-state"><div class="glyph">◔</div><h2>Insights unlock at 3 resolutions</h2><p>ORACLE needs a few data points before it can reveal patterns in your judgment. Add and resolve more predictions.</p><button class="btn btn-primary" onclick="ORACLE.openAdd()">+ Add Prediction</button></div>';
+    return
+  }
+
+  var bs=brier(preds);
+  var ll=logLoss(preds);
+  var acc=accuracy(preds);
+  var calErr=calibrationError(preds);
+  var dec=decisiveness(preds);
+  var over=overconfidence(preds);
+  var timeline=brierTimeline(preds);
+
+  var html='';
+
+  /* Insights list */
+  html+='<div class="card">';
+  html+='<div class="card-head"><div><div class="card-title">What Your Data Says</div><div class="card-subtitle">observed patterns from your ledger</div></div></div>';
+  html+='<div class="card-desc">ORACLE analyzes your predictions and surfaces cognitive biases that are hard to see from the inside.</div>';
+
+  var insights=[];
+
+  /* Overconfidence detection */
+  if(over&&over.n>=3){
+    var expected=0.8;
+    var gap=over.actual-expected;
+    if(gap<-0.15){
+      insights.push({type:'warn',tag:'Overconfidence',text:'Your high-confidence predictions (≥80% or ≤20%) resolved correctly <b>'+(over.actual*100).toFixed(0)+'%</b> of the time. A well-calibrated forecaster would be right closer to 85%. You are overconfident — dial back strong claims.'});
+    }else if(gap>0.05){
+      insights.push({type:'ok',tag:'Underconfident',text:'Your high-confidence predictions resolved correctly <b>'+(over.actual*100).toFixed(0)+'%</b> of the time — higher than expected. You are <b>underconfident</b>. You could push probabilities further from 50%.'});
+    }else{
+      insights.push({type:'ok',tag:'Well-calibrated',text:'Your high-confidence predictions resolve correctly <b>'+(over.actual*100).toFixed(0)+'%</b> of the time. Your extremes are earned.'});
+    }
+  }
+
+  /* Decisiveness */
+  if(dec!=null){
+    if(dec<0.15){
+      insights.push({type:'info',tag:'Hedging',text:'Your average distance from 50% is only <b>'+(dec*100).toFixed(0)+' points</b>. You rarely commit to a strong view. Consider whether you are avoiding the risk of being wrong.'});
+    }else if(dec>0.3){
+      insights.push({type:'info',tag:'Bold',text:'Your average distance from 50% is <b>'+(dec*100).toFixed(0)+' points</b>. You make strong claims. Verify that your extremes are earned.'});
+    }
+  }
+
+  /* Brier quality */
+  if(bs!=null){
+    var label;
+    if(bs<0.1)label='exceptional';
+    else if(bs<0.15)label='excellent';
+    else if(bs<0.2)label='good';
+    else if(bs<0.25)label='fair';
+    else label='poor';
+    insights.push({type:bs<0.2?'ok':'warn',tag:'Overall',text:'Your Brier score is <b>'+bs.toFixed(3)+'</b> — <b>'+label+'</b>. The best public forecasters score around 0.10–0.15. A coin flip is 0.25.'});
+  }
+
+  /* Category breakdown */
+  var cats={};
+  resolved.forEach(function(p){cats[p.category]=(cats[p.category]||[]).concat([p])});
+  var catEntries=Object.keys(cats).map(function(k){
+    return {cat:k,count:cats[k].length,brier:brier(cats[k])}
+  }).sort(function(a,b){return b.count-a.count});
+  if(catEntries.length>=2){
+    var best=catEntries.filter(function(e){return e.count>=3}).sort(function(a,b){return a.brier-b.brier})[0];
+    var worst=catEntries.filter(function(e){return e.count>=3}).sort(function(a,b){return b.brier-a.brier})[0];
+    if(best&&worst&&best.cat!==worst.cat){
+      insights.push({type:'info',tag:'Domains',text:'You are strongest in <b>'+best.cat+'</b> (Brier '+best.brier.toFixed(3)+') and weakest in <b>'+worst.cat+'</b> (Brier '+worst.brier.toFixed(3)+'). Consider leaning harder into your strengths.'});
+    }
+  }
+
+  /* Recent trend */
+  var first=timeline.length?timeline[Math.min(9,timeline.length-1)].value:null;
+  var last=timeline.length?timeline[timeline.length-1].value:null;
+  if(first!=null&&last!=null&&timeline.length>=10){
+    if(last<first-0.02){
+      insights.push({type:'ok',tag:'Trend',text:'Your Brier score improved from <b>'+first.toFixed(3)+'</b> to <b>'+last.toFixed(3)+'</b>. Your judgment is sharpening.'});
+    }else if(last>first+0.02){
+      insights.push({type:'warn',tag:'Trend',text:'Your Brier score worsened from <b>'+first.toFixed(3)+'</b> to <b>'+last.toFixed(3)+'</b>. Are you writing harder questions, or losing calibration?'});
+    }
+  }
+
+  if(!insights.length){
+    insights.push({type:'info',tag:'More data needed',text:'ORACLE needs more resolutions to reveal patterns. Keep adding and resolving predictions.'});
+  }
+
+  insights.forEach(function(ins){
+    html+='<div class="insight '+ins.type+'"><span class="tag">'+ins.tag+'</span>'+ins.text+'</div>';
+  });
+  html+='</div>';
+
+  /* Charts */
+  html+='<div class="grid-2">';
+
+  /* Brier timeline */
+  html+='<div class="card">';
+  html+='<div class="card-head"><div><div class="card-title">Brier Over Time</div><div class="card-subtitle">cumulative · lower is better</div></div></div>';
+  html+='<div class="chart-wrap"><canvas id="trendCanvas"></canvas></div>';
+  html+='</div>';
+
+  /* Distribution */
+  html+='<div class="card">';
+  html+='<div class="card-head"><div><div class="card-title">Probability Distribution</div><div class="card-subtitle">all predictions</div></div></div>';
+  html+='<div class="chart-wrap"><canvas id="histCanvas"></canvas></div>';
+  html+='</div>';
+
+  html+='</div>';
+
+  /* Category table */
+  html+='<div class="card">';
+  html+='<div class="card-head"><div><div class="card-title">By Category</div><div class="card-subtitle">Brier score per domain</div></div></div>';
+  html+='<div class="cat-list">';
+  catEntries.forEach(function(e){
+    var bclass=e.brier<0.2?'ok':'er';
+    html+='<div class="cat-row"><span class="name">'+esc(e.cat)+'</span><span class="count">'+e.count+'</span><span class="brier '+bclass+'">'+e.brier.toFixed(3)+'</span></div>';
+  });
+  html+='</div></div>';
+
+  c.innerHTML=html;
+  setTimeout(function(){
+    drawTrend();
+    drawHistogram();
+  },40);
+}
+
+/* ══════════ Settings render ══════════ */
+function renderSettings(){
+  var c=$('settingsContent');
+  var stats={
+    total:ST.predictions.length,
+    resolved:ST.predictions.filter(function(p){return p.outcome!=null}).length,
+    open:ST.predictions.filter(function(p){return p.outcome==null}).length,
+    categories:new Set(ST.predictions.map(function(p){return p.category})).size
+  };
+  c.innerHTML=
+    '<div class="card">'+
+      '<div class="card-head"><div><div class="card-title">Data</div><div class="card-subtitle">'+stats.total+' predictions · '+stats.resolved+' resolved · '+stats.open+' open · '+stats.categories+' categories</div></div></div>'+
+      '<div class="card-desc">Your data lives only in this browser\'s localStorage. Nothing is transmitted anywhere.</div>'+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+        '<button class="btn btn-ghost" onclick="ORACLE.exportJSON()">↓ Export JSON</button>'+
+        '<button class="btn btn-ghost" onclick="ORACLE.exportCSV()">↓ Export CSV</button>'+
+        '<button class="btn btn-ghost" onclick="ORACLE.importJSON()">↑ Import JSON</button>'+
+        '<button class="btn btn-ghost" onclick="ORACLE.demo()">◈ Load Demo Data</button>'+
+        '<button class="btn btn-ghost" style="color:var(--er)" onclick="if(confirm(\'Delete ALL predictions? This cannot be undone.\')){ST.predictions=[];save();render();toast(\'Cleared\',\'\')}">✕ Clear All</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-head"><div><div class="card-title">About ORACLE</div><div class="card-subtitle">v1.0 · calibration engine for serious forecasters</div></div></div>'+
+      '<div class="card-desc">ORACLE is a private, local-first tool that helps you quantify your judgment over time. You write predictions with explicit probabilities. ORACLE tracks your <b style="color:var(--gold2)">Brier score</b>, plots your <b style="color:var(--gold2)">calibration curve</b>, detects <b style="color:var(--gold2)">overconfidence</b>, and reveals patterns you would not see otherwise.<br><br>No accounts. No cloud. No tracking. Just your predictions and the truth they accumulate.</div>'+
+      '<div class="card-desc" style="font-family:var(--mono);font-size:.68rem;color:var(--tx3);margin-bottom:0">metrics: brier score · log loss · directional accuracy · calibration error · wilson intervals · decisiveness · overconfidence detection</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-head"><div><div class="card-title">Appearance</div></div></div>'+
+      '<div style="display:flex;gap:10px">'+
+        '<button class="btn '+(ST.theme==='dark'?'btn-primary':'btn-ghost')+'" onclick="if(ST.theme!==\'dark\'){ORACLE.toggleTheme()}">◐ Dark</button>'+
+        '<button class="btn '+(ST.theme==='light'?'btn-primary':'btn-ghost')+'" onclick="if(ST.theme!==\'light\'){ORACLE.toggleTheme()}">◑ Light</button>'+
+      '</div>'+
+    '</div>';
+}
+
+/* ══════════ Render dispatcher ══════════ */
+function render(){
+  if(ST.currentTab==='dashboard')renderDashboard();
+  else if(ST.currentTab==='ledger')renderLedger();
+  else if(ST.currentTab==='insights')renderInsights();
+  else if(ST.currentTab==='settings')renderSettings();
+}
+
+/* ══════════ Canvas: Calibration curve ══════════ */
+function drawCalibration(){
+  var cv=$('calCanvas');if(!cv)return;
+  var wrap=cv.parentElement;
+  var w=wrap.clientWidth,h=wrap.clientHeight;
+  var dpr=window.devicePixelRatio||1;
+  cv.width=w*dpr;cv.height=h*dpr;
+  cv.style.width=w+'px';cv.style.height=h+'px';
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  var pad=54;
+  var cw=w-pad*2,ch=h-pad*2;
+  var styles=getComputedStyle(document.documentElement);
+  var gold=getC('--gold'),tx3=getC('--tx3'),tx2=getC('--tx2'),bd=getC('--bd'),er=getC('--er'),ok=getC('--ok'),warn=getC('--warn');
+
+  /* Background panel */
+  ctx.fillStyle=getC('--bg2');
+  roundRect(ctx,pad,pad,cw,ch,10);
+  ctx.fill();
+
+  /* Grid */
+  ctx.strokeStyle=bd;ctx.lineWidth=1;
+  for(var i=1;i<10;i++){
+    var x=pad+cw*i/10,y=pad+ch*i/10;
+    ctx.beginPath();ctx.moveTo(x,pad);ctx.lineTo(x,pad+ch);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(pad+cw,y);ctx.stroke();
+  }
+
+  /* Diagonal (perfect calibration) */
+  ctx.strokeStyle='rgba(212,160,74,.5)';
+  ctx.lineWidth=1.5;
+  ctx.setLineDash([6,5]);
+  ctx.beginPath();ctx.moveTo(pad,pad+ch);ctx.lineTo(pad+cw,pad);ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* Axis labels */
+  ctx.fillStyle=tx3;ctx.font='11px '+getC('--mono');
+  ctx.textAlign='center';
+  ctx.fillText('Predicted probability',pad+cw/2,h-14);
+  ctx.save();
+  ctx.translate(16,pad+ch/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('Actual frequency',0,0);
+  ctx.restore();
+
+  /* Tick labels */
+  ctx.font='10px '+getC('--mono');
+  ctx.textAlign='right';
+  for(var j=0;j<=5;j++){
+    var vy=pad+ch-j/5*ch;
+    ctx.fillStyle=tx3;
+    ctx.fillText((j*20)+'%',pad-8,vy+3);
+  }
+  ctx.textAlign='center';
+  for(var k=0;k<=5;k++){
+    var vx=pad+k/5*cw;
+    ctx.fillStyle=tx3;
+    ctx.fillText((k*20)+'%',vx,pad+ch+18);
+  }
+
+  /* Title */
+  ctx.fillStyle=tx2;ctx.font='bold 12px '+getC('--sans');
+  ctx.textAlign='left';
+  ctx.fillText('Calibration — 20 predictions',pad+2,pad-18);
+
+  /* Points */
+  var preds=ST.predictions;
+  var bins=calibration(preds,10);
+  bins.forEach(function(b){
+    if(!b.count)return;
+    var x=pad+b.predicted*cw;
+    var y=pad+ch-b.actual*ch;
+    var r=Math.max(4,Math.min(22,Math.sqrt(b.count)*5));
+    /* Confidence interval vertical */
+    if(b.wilson&&b.count>=2){
+      var y1=pad+ch-b.wilson[1]*ch;
+      var y2=pad+ch-b.wilson[0]*ch;
+      ctx.strokeStyle='rgba(212,160,74,.4)';
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      ctx.moveTo(x,y1);ctx.lineTo(x,y2);ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x-4,y1);ctx.lineTo(x+4,y1);ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x-4,y2);ctx.lineTo(x+4,y2);ctx.stroke();
+    }
+    /* Point */
+    var dist=Math.abs(b.predicted-b.actual);
+    var col=dist<0.07?ok:dist<0.15?warn:er;
+    ctx.fillStyle=col;
+    ctx.globalAlpha=0.85;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.strokeStyle=getC('--panel');
+    ctx.lineWidth=2;ctx.stroke();
+    /* Count label */
+    if(b.count>=2){
+      ctx.fillStyle='rgba(255,255,255,.9)';
+      ctx.font='bold 10px '+getC('--mono');
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(b.count,x,y+0.5);
+      ctx.textBaseline='alphabetic';
+    }
+  });
+
+  /* Legend */
+  ctx.font='10px '+getC('--mono');
+  ctx.textAlign='left';
+  ctx.fillStyle=ok;ctx.fillText('●',pad+w-200,pad+12);
+  ctx.fillStyle=tx3;ctx.fillText('well calibrated',pad+w-190,pad+12);
+  ctx.fillStyle=er;ctx.fillText('●',pad+w-100,pad+12);
+  ctx.fillStyle=tx3;ctx.fillText('miscalibrated',pad+w-90,pad+12);
+}
+function getC(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()||'#888'}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* ══════════ Canvas: Trend ══════════ */
+function drawTrend(){
+  var cv=$('trendCanvas');if(!cv)return;
+  var wrap=cv.parentElement;
+  var w=wrap.clientWidth,h=wrap.clientHeight;
+  var dpr=window.devicePixelRatio||1;
+  cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+'px';cv.style.height=h+'px';
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  var pts=brierTimeline(ST.predictions);
+  if(pts.length<2)return;
+  var pad=44;
+  var cw=w-pad*2,ch=h-pad*2;
+  var ys=pts.map(function(p){return p.value});
+  var yMin=Math.min.apply(null,ys)*0.85;
+  var yMax=Math.max.apply(null,ys)*1.1;
+  var yRange=yMax-yMin||1;
+
+  /* Axis */
+  ctx.strokeStyle=getC('--bd');ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,pad+ch);ctx.lineTo(pad+cw,pad+ch);ctx.stroke();
+
+  /* Reference lines */
+  [0.1,0.15,0.2,0.25].forEach(function(v){
+    if(v<yMin||v>yMax)return;
+    var y=pad+ch-((v-yMin)/yRange)*ch;
+    ctx.strokeStyle='rgba(212,160,74,.15)';
+    ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(pad+cw,y);ctx.stroke();
+    ctx.fillStyle=getC('--tx3');ctx.font='9px '+getC('--mono');
+    ctx.textAlign='right';ctx.fillText(v.toFixed(2),pad-4,y+3);
+  });
+
+  /* Line */
+  ctx.strokeStyle=getC('--gold');ctx.lineWidth=2;
+  ctx.beginPath();
+  pts.forEach(function(p,i){
+    var x=pad+(i/(pts.length-1))*cw;
+    var y=pad+ch-((p.value-yMin)/yRange)*ch;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  /* Area fill */
+  ctx.fillStyle='rgba(212,160,74,.08)';
+  ctx.beginPath();
+  ctx.moveTo(pad,pad+ch);
+  pts.forEach(function(p,i){
+    var x=pad+(i/(pts.length-1))*cw;
+    var y=pad+ch-((p.value-yMin)/yRange)*ch;
+    ctx.lineTo(x,y);
+  });
+  ctx.lineTo(pad+cw,pad+ch);
+  ctx.closePath();ctx.fill();
+
+  /* X labels */
+  ctx.fillStyle=getC('--tx3');ctx.font='9px '+getC('--mono');
+  ctx.textAlign='center';
+  ctx.fillText('1',pad,pad+ch+16);
+  ctx.fillText(String(pts.length),pad+cw,pad+ch+16);
+}
+
+/* ══════════ Canvas: Histogram ══════════ */
+function drawHistogram(){
+  var cv=$('histCanvas');if(!cv)return;
+  var wrap=cv.parentElement;
+  var w=wrap.clientWidth,h=wrap.clientHeight;
+  var dpr=window.devicePixelRatio||1;
+  cv.width=w*dpr;cv.height=h*dpr;cv.style.width=w+'px';cv.style.height=h+'px';
+  var ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  var pad=44;
+  var cw=w-pad*2,ch=h-pad*2;
+  var counts=new Array(10).fill(0);
+  ST.predictions.forEach(function(p){
+    var b=Math.min(9,Math.floor(p.probability*10));
+    counts[b]++;
+  });
+  var max=Math.max.apply(null,counts)||1;
+
+  /* Axis */
+  ctx.strokeStyle=getC('--bd');ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,pad+ch);ctx.lineTo(pad+cw,pad+ch);ctx.stroke();
+
+  /* Bars */
+  var barW=cw/10-4;
+  counts.forEach(function(c,i){
+    var x=pad+i*(cw/10)+2;
+    var bh=(c/max)*ch;
+    var y=pad+ch-bh;
+    var hue=i/10;
+    var col=i<3?getC('--er'):i>6?getC('--ok'):getC('--warn');
+    ctx.fillStyle=col;
+    ctx.globalAlpha=0.75;
+    roundRect(ctx,x,y,barW,bh,4);
+    ctx.fill();
+    ctx.globalAlpha=1;
+    /* Count */
+    if(c>0){
+      ctx.fillStyle=getC('--tx');
+      ctx.font='bold 10px '+getC('--mono');
+      ctx.textAlign='center';
+      ctx.fillText(c,x+barW/2,y-4);
+    }
+    /* Label */
+    ctx.fillStyle=getC('--tx3');
+    ctx.font='9px '+getC('--mono');
+    ctx.textAlign='center';
+    ctx.fillText((i*10)+'-'+((i+1)*10)+'%',x+barW/2,pad+ch+16);
+  });
+}
+
+/* ══════════ Export / Import ══════════ */
+ORACLE.exportJSON=function(){
+  var data=JSON.stringify({version:1,exportedAt:new Date().toISOString(),predictions:ST.predictions},null,2);
+  var blob=new Blob([data],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='oracle-'+Date.now()+'.json';
+  a.click();
+  toast('Exported JSON','ok');
+};
+ORACLE.exportCSV=function(){
+  var rows=[['question','probability','category','createdAt','resolvesAt','outcome','resolvedAt']];
+  ST.predictions.forEach(function(p){
+    rows.push([p.question,p.probability,p.category,new Date(p.createdAt).toISOString(),p.resolvesAt?new Date(p.resolvesAt).toISOString():'',p.outcome!=null?p.outcome:'',p.resolvedAt?new Date(p.resolvedAt).toISOString():''])
+  });
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"'}).join(',')}).join('\n');
+  var blob=new Blob([csv],{type:'text/csv'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='oracle-'+Date.now()+'.csv';
+  a.click();
+  toast('Exported CSV','ok');
+};
+ORACLE.importJSON=function(){
+  var inp=document.createElement('input');
+  inp.type='file';inp.accept='.json';
+  inp.onchange=function(){
+    var file=inp.files[0];if(!file)return;
+    var r=new FileReader();
+    r.onload=function(){
+      try{
+        var d=JSON.parse(r.result);
+        if(!d.predictions||!Array.isArray(d.predictions))throw new Error('invalid format');
+        ST.predictions=d.predictions;
+        save();render();
+        toast('Imported '+d.predictions.length+' predictions','ok');
+      }catch(e){toast('Import failed: '+e.message,'er')}
+    };
+    r.readAsText(file);
+  };
+  inp.click();
+};
+ORACLE.share=function(){
+  var bs=brier(ST.predictions);
+  var acc=accuracy(ST.predictions);
+  var res=ST.predictions.filter(function(p){return p.outcome!=null}).length;
+  var txt='My ORACLE calibration score:\n'+
+    '• Brier: '+(bs!=null?bs.toFixed(3):'—')+'\n'+
+    '• Directional: '+(acc!=null?(acc*100).toFixed(0)+'%':'—')+'\n'+
+    '• Predictions resolved: '+res;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(function(){toast('Score copied to clipboard','ok')}).catch(function(){prompt('Copy your score:',txt)});
+  }else prompt('Copy your score:',txt);
+};
+
+/* ══════════ Keyboard ══════════ */
+document.addEventListener('keydown',function(e){
+  var editing=e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.isContentEditable;
+  if(e.key==='Escape'){
+    if($('addOverlay').classList.contains('show'))ORACLE.closeAdd();
+    if($('resolveOverlay').classList.contains('show'))ORACLE.closeResolve();
+  }
+  if(editing)return;
+  if(e.key==='n'||e.key==='N'){e.preventDefault();ORACLE.openAdd()}
+  else if(e.key==='t'||e.key==='T'){ORACLE.toggleTheme()}
+  else if(e.key==='e'||e.key==='E'){ORACLE.exportJSON()}
+  else if(e.key==='1'){ORACLE.tab('dashboard')}
+  else if(e.key==='2'){ORACLE.tab('ledger')}
+  else if(e.key==='3'){ORACLE.tab('insights')}
+  else if(e.key==='4'){ORACLE.tab('settings')}
+});
+
+/* ══════════ Boot ══════════ */
+function boot(){
+  load();
+  document.documentElement.setAttribute('data-theme',ST.theme);
+  /* Prob slider */
+  var slider=$('probSlider');
+  slider.addEventListener('input',function(){updateProbDisplay(slider.value)});
+  updateProbDisplay(50);
+  renderCatChips();
+  /* Window resize → redraw canvases */
+  var resizeTimer;
+  window.addEventListener('resize',function(){
+    clearTimeout(resizeTimer);
+    resizeTimer=setTimeout(function(){
+      if(ST.currentTab==='dashboard')drawCalibration();
+      if(ST.currentTab==='insights'){drawTrend();drawHistogram()}
+    },120);
+  });
+  render();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+else boot();
+
+console.log('%c ORACLE ','background:linear-gradient(90deg,#d4a04a,#a67c32);color:#1a1004;padding:10px 22px;border-radius:6px;font-weight:900;font-size:16px;letter-spacing:6px');
+console.log('The Calibration Engine · Local · Private · No tracking');
+console.log('Metrics: Brier · Log loss · Wilson intervals · Calibration error · Overconfidence detection');
+</script>
+</body>
+</html>

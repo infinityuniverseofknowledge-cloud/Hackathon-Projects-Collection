@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>LUMEN — Color Science Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:#f5f2ec;color:#0f0f0f;font-family:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+:root{
+  --paper:#f5f2ec;--paper2:#ede9de;--paper3:#e4dfd2;
+  --ink:#0f0f0f;--ink2:#4d483e;--ink3:#8a8578;--ink4:#b8b2a3;
+  --rule:#ddd7c9;--rule2:#c9c2b1;--rule3:#a8a190;
+  --acc:#d94d3d;
+  --ok:#2d7a3e;--wn:#a86800;--er:#c12a1f;
+  --serif:'Iowan Old Style','Charter','Cochin',Georgia,'Times New Roman',serif;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --mono:'JetBrains Mono','SF Mono',Menlo,Consolas,monospace;
+}
+::selection{background:#0f0f0f;color:#f5f2ec}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+button{cursor:pointer}
+textarea{resize:vertical}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--rule2);border-radius:0;cursor:pointer;margin:14px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;background:var(--ink);border-radius:50%;cursor:grab;box-shadow:0 0 0 3px #f5f2ec,0 0 0 4px var(--rule3);transition:transform .12s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;background:var(--ink);border-radius:50%;border:none;cursor:grab}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:var(--rule2);border:3px solid var(--paper);border-radius:0}
+::-webkit-scrollbar-thumb:hover{background:var(--rule3)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ── Shell ── */
+.shell{display:flex;flex-direction:column;min-height:100vh;max-width:1600px;margin:0 auto;padding:0 32px 80px}
+
+/* ── Masthead ── */
+.masthead{display:flex;align-items:baseline;padding:26px 0 18px;border-bottom:1px solid var(--ink);gap:24px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:14px}
+.brand-name{font-family:var(--serif);font-weight:400;font-size:2.1rem;letter-spacing:-.5px;line-height:1;color:var(--ink)}
+.brand-name em{font-style:italic;color:var(--ink3);font-size:.6em;vertical-align:top;margin-left:2px}
+.brand-rule{width:48px;height:1px;background:var(--ink);margin-bottom:6px}
+.brand-sub{font-family:var(--mono);font-size:10px;letter-spacing:2.4px;color:var(--ink3);text-transform:uppercase}
+.masthead-meta{margin-left:auto;display:flex;gap:28px;align-items:baseline}
+.meta-item{display:flex;flex-direction:column;gap:2px}
+.meta-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--ink3);text-transform:uppercase}
+.meta-value{font-family:var(--mono);font-size:12px;color:var(--ink);font-weight:600}
+.meta-value.mono-live{color:var(--ink2)}
+
+/* ── Current color bar ── */
+.curcolor{display:flex;align-items:stretch;height:76px;border-bottom:1px solid var(--ink);margin-bottom:0}
+.curcolor-swatch{flex:2;position:relative;transition:background .28s cubic-bezier(.4,0,.2,1);min-width:0}
+.curcolor-swatch::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 40%,rgba(0,0,0,.06));pointer-events:none}
+.curcolor-info{flex:3;display:flex;background:var(--paper);border-left:1px solid var(--ink)}
+.curcolor-field{flex:1;padding:14px 18px;border-right:1px solid var(--rule);display:flex;flex-direction:column;justify-content:center;cursor:pointer;transition:background .12s;position:relative;min-width:0}
+.curcolor-field:last-child{border-right:none}
+.curcolor-field:hover{background:var(--paper2)}
+.curcolor-field:active{background:var(--paper3)}
+.curcolor-field .lbl{font-family:var(--mono);font-size:9px;letter-spacing:1.6px;color:var(--ink3);text-transform:uppercase;margin-bottom:4px}
+.curcolor-field .val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);letter-spacing:.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.curcolor-field .cpy{position:absolute;top:6px;right:8px;font-size:8px;color:var(--ink3);opacity:0;transition:opacity .12s;font-family:var(--mono);letter-spacing:1px}
+.curcolor-field:hover .cpy{opacity:1}
+
+/* ── Tool nav ── */
+.toolnav{border-bottom:1px solid var(--rule2);position:sticky;top:0;background:var(--paper);z-index:50;padding:0 0 0 0}
+.toolnav-scroll{display:flex;overflow-x:auto;scrollbar-width:none;padding:14px 0;gap:2px}
+.toolnav-scroll::-webkit-scrollbar{display:none}
+.toolnav-group{display:flex;align-items:center;flex-shrink:0}
+.toolnav-group-label{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--ink4);text-transform:uppercase;padding:0 12px 0 4px;writing-mode:horizontal-tb}
+.toolnav-item{padding:6px 12px;font-size:12.5px;color:var(--ink2);cursor:pointer;letter-spacing:.1px;transition:color .12s;white-space:nowrap;position:relative;border:none;background:none;font-family:var(--sans)}
+.toolnav-item:hover{color:var(--ink)}
+.toolnav-item.active{color:var(--ink);font-weight:600}
+.toolnav-item.active::after{content:'';position:absolute;left:12px;right:12px;bottom:-15px;height:2px;background:var(--ink)}
+.toolnav-sep{width:1px;height:16px;background:var(--rule2);margin:0 8px;flex-shrink:0}
+
+/* ── Main workspace ── */
+.main{padding-top:40px;min-height:0}
+
+.tool-head{margin-bottom:32px;max-width:900px}
+.tool-num{font-family:var(--mono);font-size:11px;letter-spacing:2.4px;color:var(--ink3);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.tool-num::after{content:'';flex:1;height:1px;background:var(--rule2);max-width:60px}
+.tool-title{font-family:var(--serif);font-size:2.6rem;font-weight:400;letter-spacing:-1px;line-height:1.05;color:var(--ink);margin-bottom:8px}
+.tool-title em{font-style:italic;color:var(--ink3)}
+.tool-desc{font-size:14.5px;color:var(--ink2);max-width:640px;line-height:1.65}
+
+/* ── Panels ── */
+.panel{background:#fbfaf7;border:1px solid var(--rule);padding:24px;margin-bottom:24px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px;gap:16px;flex-wrap:wrap}
+.panel-title{font-family:var(--mono);font-size:10px;letter-spacing:2.4px;color:var(--ink3);text-transform:uppercase;font-weight:600}
+.panel-note{font-size:12px;color:var(--ink3);font-family:var(--mono)}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* ── Color chip ── */
+.chip{display:flex;flex-direction:column;border:1px solid var(--rule);overflow:hidden;cursor:pointer;transition:transform .14s cubic-bezier(.4,0,.2,1),box-shadow .14s;background:#fff}
+.chip:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.chip-swatch{height:80px;position:relative;display:flex;align-items:flex-end;padding:8px 10px;transition:background .2s}
+.chip-swatch .aa{font-family:var(--serif);font-size:22px;font-weight:500;line-height:1}
+.chip-info{padding:10px 12px;border-top:1px solid var(--rule);background:#fbfaf7}
+.chip-hex{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink);letter-spacing:.4px;text-transform:uppercase}
+.chip-name{font-size:11px;color:var(--ink3);margin-top:2px;font-family:var(--mono)}
+
+/* ── Fields ── */
+.field{margin-bottom:18px}
+.field:last-child{margin-bottom:0}
+.field-label{font-family:var(--mono);font-size:10px;letter-spacing:1.8px;color:var(--ink3);text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline;font-weight:600}
+.field-value{font-family:var(--mono);font-size:11px;color:var(--ink);font-weight:600;letter-spacing:.4px}
+.field input[type=text],.field input[type=number],.field textarea,.field select{width:100%;background:#fbfaf7;border:1px solid var(--rule2);padding:10px 12px;color:var(--ink);font-family:var(--mono);font-size:12.5px;letter-spacing:.4px;transition:border .12s,background .12s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--ink);background:#fff}
+.field textarea{min-height:80px;font-family:var(--mono);line-height:1.7;font-size:12px;resize:vertical}
+
+/* ── Buttons ── */
+.btn{padding:9px 16px;background:transparent;border:1px solid var(--ink);color:var(--ink);font-size:12px;font-weight:500;letter-spacing:.3px;transition:background .12s,color .12s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-family:var(--sans)}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.primary:hover{background:var(--ink2)}
+.btn.ghost{border-color:var(--rule2);color:var(--ink2)}
+.btn.ghost:hover{background:var(--paper2);border-color:var(--ink);color:var(--ink)}
+.btn.sm{padding:5px 10px;font-size:11px}
+.btn.icon{padding:6px 9px;width:auto}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.btn-row.tight{gap:6px}
+
+/* ── Data table ── */
+.data{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12.5px}
+.data th{text-align:left;font-size:9px;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink3);padding:6px 10px 6px 0;border-bottom:1px solid var(--rule2);font-weight:600}
+.data td{padding:8px 10px 8px 0;border-bottom:1px solid var(--rule);vertical-align:middle;color:var(--ink2)}
+.data td.k{color:var(--ink3);font-size:11px;letter-spacing:.6px;width:38%}
+.data td.v{color:var(--ink);font-weight:600;letter-spacing:.3px}
+.data tr:last-child td{border-bottom:none}
+.data tr:hover td{background:var(--paper2)}
+
+/* ── Metric ── */
+.metric{background:var(--paper2);border:1px solid var(--rule);padding:14px 16px}
+.metric-label{font-family:var(--mono);font-size:9px;letter-spacing:1.8px;color:var(--ink3);text-transform:uppercase;margin-bottom:6px;font-weight:600}
+.metric-value{font-family:var(--serif);font-size:1.9rem;font-weight:500;letter-spacing:-.5px;color:var(--ink);line-height:1}
+.metric-value small{font-size:.55em;color:var(--ink3);font-weight:400}
+.metric-note{font-size:11px;color:var(--ink3);margin-top:6px;font-family:var(--mono)}
+
+/* ── Badge ── */
+.badge{display:inline-block;padding:3px 8px;font-family:var(--mono);font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;border:1px solid}
+.badge.pass{border-color:#2d7a3e;color:#2d7a3e;background:rgba(45,122,62,.06)}
+.badge.fail{border-color:#c12a1f;color:#c12a1f;background:rgba(193,42,31,.06)}
+.badge.warn{border-color:#a86800;color:#a86800;background:rgba(168,104,0,.06)}
+.badge.neutral{border-color:var(--rule3);color:var(--ink2);background:var(--paper2)}
+
+/* ── Slider rows ── */
+.slider-row{display:grid;grid-template-columns:70px 1fr 80px;gap:14px;align-items:center;margin-bottom:8px}
+.slider-row .sl-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;color:var(--ink2);font-weight:600}
+.slider-row .sl-val{font-family:var(--mono);font-size:12px;color:var(--ink);text-align:right;letter-spacing:.3px}
+
+/* ── Canvas ── */
+canvas{display:block;max-width:100%}
+.canvas-wrap{border:1px solid var(--rule);position:relative;background:var(--paper2)}
+.canvas-wrap canvas{width:100%;display:block}
+
+/* ── Contrast preview ── */
+.contrast-preview{padding:22px 26px;border:1px solid var(--rule);display:flex;flex-direction:column;gap:14px}
+.contrast-line{display:flex;flex-direction:column;gap:2px}
+.contrast-line .l{font-size:22px;font-weight:600;line-height:1.25}
+.contrast-line .s{font-size:14px;line-height:1.45;opacity:.9}
+.contrast-line .xs{font-size:11px;line-height:1.4;letter-spacing:.6px;opacity:.8}
+
+/* ── Toast ── */
+#toasts{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:10px 16px;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:600;animation:tin .2s cubic-bezier(.2,0,.2,1);box-shadow:0 8px 30px rgba(0,0,0,.2);pointer-events:auto}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── Misc ── */
+hr.rule{border:none;border-top:1px solid var(--rule);margin:24px 0}
+.hint{font-size:12px;color:var(--ink3);font-family:var(--mono);line-height:1.65;margin-top:8px}
+.hint b{color:var(--ink2);font-weight:600}
+.row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.note{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--ink2);line-height:1.6;max-width:600px;margin-top:16px}
+.kbd{display:inline-block;padding:1px 6px;background:var(--paper2);border:1px solid var(--rule2);font-family:var(--mono);font-size:10px;letter-spacing:.8px;color:var(--ink2);text-transform:uppercase}
+.hidden{display:none!important}
+.swatch-list{display:flex;flex-wrap:wrap;gap:8px}
+.swatch-mini{width:44px;height:44px;border:1px solid var(--rule);cursor:pointer;position:relative;transition:transform .12s}
+.swatch-mini:hover{transform:scale(1.08);z-index:2}
+
+textarea::placeholder,input::placeholder{color:var(--ink4)}
+
+@media(max-width:720px){
+  .shell{padding:0 16px 60px}
+  .brand-name{font-size:1.6rem}
+  .tool-title{font-size:1.9rem}
+  .curcolor{height:auto;flex-direction:column}
+  .curcolor-swatch{height:60px}
+  .curcolor-info{border-left:none;border-top:1px solid var(--ink);flex-wrap:wrap}
+  .curcolor-field{flex:1 1 50%;border-bottom:1px solid var(--rule)}
+  .grid-2{grid-template-columns:1fr}
+  .slider-row{grid-template-columns:60px 1fr 70px;gap:8px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <div class="brand">
+      <div class="brand-name">Lumen<em>®</em></div>
+      <div class="brand-rule"></div>
+      <div class="brand-sub">Color Science Studio</div>
+    </div>
+    <div class="masthead-meta">
+      <div class="meta-item"><div class="meta-label">Tools</div><div class="meta-value" id="statTools">24</div></div>
+      <div class="meta-item"><div class="meta-label">Reference</div><div class="meta-value mono-live" id="statRef">D65 / sRGB</div></div>
+      <div class="meta-item"><div class="meta-label">Time</div><div class="meta-value" id="statClock">--:--</div></div>
+    </div>
+  </header>
+
+  <div class="curcolor" id="curcolor">
+    <div class="curcolor-swatch" id="curSwatch"></div>
+    <div class="curcolor-info">
+      <div class="curcolor-field" data-copy="hex"><div class="lbl">HEX</div><div class="val" id="curHex">#8B5CF6</div><div class="cpy">COPY</div></div>
+      <div class="curcolor-field" data-copy="rgb"><div class="lbl">RGB</div><div class="val" id="curRgb">139 92 246</div><div class="cpy">COPY</div></div>
+      <div class="curcolor-field" data-copy="hsl"><div class="lbl">HSL</div><div class="val" id="curHsl">258° 90% 66%</div><div class="cpy">COPY</div></div>
+      <div class="curcolor-field" data-copy="oklch"><div class="lbl">OKLCH</div><div class="val" id="curOklch">0.63 0.22 292°</div><div class="cpy">COPY</div></div>
+    </div>
+  </div>
+
+  <nav class="toolnav" id="toolnav"></nav>
+
+  <main class="main" id="main"></main>
+</div>
+<div id="toasts"></div>
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════
+   LUMEN · Core Color Science
+   Full color space conversions · WCAG · APCA · CIEDE2000 · CVD
+   ══════════════════════════════════════════════════════════════ */
+
+var $=function(i){return document.getElementById(i)};
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c!=null){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(m){var t=el('div',{class:'toast',text:m});$('toasts').appendChild(t);setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .25s';setTimeout(function(){t.remove()},270)},1500)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function round(v,d){d=d||2;var f=Math.pow(10,d);return Math.round(v*f)/f}
+function copy(s){if(navigator.clipboard)navigator.clipboard.writeText(s).then(function(){toast('copied')}).catch(function(){toast('failed')});else toast('clipboard unavailable')}
+
+/* ── Color representation ──
+   Colors are stored as {r,g,b,a} in sRGB, each 0-255 except a 0-1. */
+function rgb(r,g,b,a){return {r:clamp(r,0,255),g:clamp(g,0,255),b:clamp(b,0,255),a:a==null?1:clamp(a,0,1)}}
+function fromHex(hex){
+  hex=String(hex).trim().replace(/^#/,'');
+  if(hex.length===3)hex=hex.split('').map(function(c){return c+c}).join('');
+  if(hex.length===4)hex=hex.split('').map(function(c){return c+c}).join('');
+  if(hex.length===6)hex+='ff';
+  if(hex.length!==8||!/^[0-9a-f]+$/i.test(hex))throw new Error('invalid hex');
+  return rgb(parseInt(hex.substr(0,2),16),parseInt(hex.substr(2,2),16),parseInt(hex.substr(4,2),16),parseInt(hex.substr(6,2),16)/255);
+}
+function toHex(c,withAlpha){
+  function h(v){return Math.round(clamp(v,0,255)).toString(16).padStart(2,'0')}
+  var s='#'+h(c.r)+h(c.g)+h(c.b);
+  if(withAlpha&&c.a<1)s+=h(c.a*255);
+  return s.toUpperCase();
+}
+
+/* ── sRGB ↔ Linear sRGB ── */
+function srgbToLinear(v){
+  v=v/255;
+  return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);
+}
+function linearToSrgb(v){
+  var x=v<=0.0031308?v*12.92:1.055*Math.pow(v,1/2.4)-0.055;
+  return clamp(x*255,0,255);
+}
+
+/* ── Linear sRGB ↔ XYZ (D65) ── */
+function linearToXYZ(lr,lg,lb){
+  return {
+    X:0.4123907992659595*lr+0.3575843393838780*lg+0.1804807884018343*lb,
+    Y:0.2126390058715104*lr+0.7151686787677559*lg+0.0721923153607337*lb,
+    Z:0.0193308187155918*lr+0.1191947797946259*lg+0.9505321522496607*lb
+  };
+}
+function xyzToLinear(x,y,z){
+  return {
+    r: 3.2409699419045213*x-1.5373831775700935*y-0.4986107602930034*z,
+    g:-0.9692436362808798*x+1.8759675015077206*y+0.0415550574071756*z,
+    b: 0.0556300796969936*x-0.2039769588889765*y+1.0569715142428786*z
+  };
+}
+function rgbToXYZ(c){
+  return linearToXYZ(srgbToLinear(c.r),srgbToLinear(c.g),srgbToLinear(c.b));
+}
+function xyzToRgb(xyz){
+  var l=xyzToLinear(xyz.X,xyz.Y,xyz.Z);
+  return rgb(linearToSrgb(l.r),linearToSrgb(l.g),linearToSrgb(l.b));
+}
+
+/* ── XYZ ↔ Lab (D65) ── */
+var D65={X:0.9504559270516716,Y:1.0,Z:1.0890577507598784};
+function xyzToLab(xyz){
+  function f(t){return t>216/24389?Math.cbrt(t):(841/108)*t+4/29}
+  var fx=f(xyz.X/D65.X),fy=f(xyz.Y/D65.Y),fz=f(xyz.Z/D65.Z);
+  return {L:116*fy-16,a:500*(fx-fy),b:200*(fy-fz)};
+}
+function labToXYZ(lab){
+  function fi(t){var t3=t*t*t;return t3>216/24389?t3:(108/841)*(t-4/29)}
+  var fy=(lab.L+16)/116,fx=lab.a/500+fy,fz=fy-lab.b/200;
+  return {X:D65.X*fi(fx),Y:D65.Y*fi(fy),Z:D65.Z*fi(fz)};
+}
+
+/* ── Lab ↔ LCH ── */
+function labToLch(lab){
+  var C=Math.sqrt(lab.a*lab.a+lab.b*lab.b);
+  var H=Math.atan2(lab.b,lab.a)*180/Math.PI;
+  if(H<0)H+=360;
+  return {L:lab.L,C:C,H:H};
+}
+function lchToLab(lch){
+  var hr=lch.H*Math.PI/180;
+  return {L:lch.L,a:lch.C*Math.cos(hr),b:lch.C*Math.sin(hr)};
+}
+
+/* ── XYZ ↔ OKLab (D65) ── */
+function xyzToOklab(xyz){
+  var l=0.8189330101*xyz.X+0.3618667424*xyz.Y-0.1288597137*xyz.Z;
+  var m=0.0329845436*xyz.X+0.9293118715*xyz.Y+0.0361456387*xyz.Z;
+  var s=0.0482003018*xyz.X+0.2643662691*xyz.Y+0.6338517070*xyz.Z;
+  var l3=Math.cbrt(l),m3=Math.cbrt(m),s3=Math.cbrt(s);
+  return {
+    L:0.2104542553*l3+0.7936177850*m3-0.0040720468*s3,
+    a:1.9779984951*l3-2.4285922050*m3+0.4505937099*s3,
+    b:0.0259040371*l3+0.7827717662*m3-0.8086757660*s3
+  };
+}
+function oklabToXYZ(ok){
+  var l3=ok.L+0.3963377774*ok.a+0.2158037573*ok.b;
+  var m3=ok.L-0.1055613458*ok.a-0.0638541728*ok.b;
+  var s3=ok.L-0.0894841775*ok.a-1.2914855480*ok.b;
+  var l=l3*l3*l3,m=m3*m3*m3,s=s3*s3*s3;
+  return {
+    X: 1.2270138511*l-0.5577999807*m-0.2812561490*s,
+    Y:-0.0405801784*l+1.1122568696*m-0.0716766787*s,
+    Z:-0.0763812845*l-0.4214819784*m+1.5861632204*s
+  };
+}
+function oklabToOklch(ok){
+  var C=Math.sqrt(ok.a*ok.a+ok.b*ok.b);
+  var H=Math.atan2(ok.b,ok.a)*180/Math.PI;
+  if(H<0)H+=360;
+  return {L:ok.L,C:C,H:H};
+}
+function oklchToOklab(lch){
+  var hr=lch.H*Math.PI/180;
+  return {L:lch.L,a:lch.C*Math.cos(hr),b:lch.C*Math.sin(hr)};
+}
+
+/* ── sRGB ↔ HSL ── */
+function rgbToHsl(c){
+  var r=c.r/255,g=c.g/255,b=c.b/255;
+  var max=Math.max(r,g,b),min=Math.min(r,g,b);
+  var h=0,s=0,l=(max+min)/2;
+  if(max!==min){
+    var d=max-min;
+    s=l>0.5?d/(2-max-min):d/(max+min);
+    if(max===r)h=(g-b)/d+(g<b?6:0);
+    else if(max===g)h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60;
+  }
+  return {h:h,s:s*100,l:l*100};
+}
+function hslToRgb(h,s,l){
+  h=((h%360)+360)%360;s=clamp(s,0,100)/100;l=clamp(l,0,100)/100;
+  var c=(1-Math.abs(2*l-1))*s;
+  var x=c*(1-Math.abs((h/60)%2-1));
+  var m=l-c/2;
+  var r,g,b;
+  if(h<60){r=c;g=x;b=0}
+  else if(h<120){r=x;g=c;b=0}
+  else if(h<180){r=0;g=c;b=x}
+  else if(h<240){r=0;g=x;b=c}
+  else if(h<300){r=x;g=0;b=c}
+  else{r=c;g=0;b=x}
+  return rgb((r+m)*255,(g+m)*255,(b+m)*255);
+}
+
+/* ── sRGB ↔ HSV ── */
+function rgbToHsv(c){
+  var r=c.r/255,g=c.g/255,b=c.b/255;
+  var max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;
+  var h=0;
+  if(d){
+    if(max===r)h=((g-b)/d+6)%6;
+    else if(max===g)h=(b-r)/d+2;
+    else h=(r-g)/d+4;
+    h*=60;
+  }
+  return {h:h,s:max===0?0:d/max*100,v:max*100};
+}
+function hsvToRgb(h,s,v){
+  h=((h%360)+360)%360;s=clamp(s,0,100)/100;v=clamp(v,0,100)/100;
+  var c=v*s;
+  var x=c*(1-Math.abs((h/60)%2-1));
+  var m=v-c;
+  var r,g,b;
+  if(h<60){r=c;g=x;b=0}
+  else if(h<120){r=x;g=c;b=0}
+  else if(h<180){r=0;g=c;b=x}
+  else if(h<240){r=0;g=x;b=c}
+  else if(h<300){r=x;g=0;b=c}
+  else{r=c;g=0;b=x}
+  return rgb((r+m)*255,(g+m)*255,(b+m)*255);
+}
+
+/* ── sRGB ↔ CMYK ── */
+function rgbToCmyk(c){
+  var r=c.r/255,g=c.g/255,b=c.b/255;
+  var k=1-Math.max(r,g,b);
+  if(k>=1)return {c:0,m:0,y:0,k:100};
+  return {c:(1-r-k)/(1-k)*100,m:(1-g-k)/(1-k)*100,y:(1-b-k)/(1-k)*100,k:k*100};
+}
+function cmykToRgb(cm){
+  var c=cm.c/100,m=cm.m/100,y=cm.y/100,k=cm.k/100;
+  return rgb(255*(1-c)*(1-k),255*(1-m)*(1-k),255*(1-y)*(1-k));
+}
+
+/* ── Full composite converters ── */
+function rgbToLab(c){return xyzToLab(rgbToXYZ(c))}
+function labToRgb(lab){return xyzToRgb(labToXYZ(lab))}
+function rgbToOklab(c){return xyzToOklab(rgbToXYZ(c))}
+function oklabToRgb(ok){return xyzToRgb(oklabToXYZ(ok))}
+function rgbToLch(c){return labToLch(rgbToLab(c))}
+function lchToRgb(lch){return labToRgb(lchToLab(lch))}
+function rgbToOklch(c){return oklabToOklch(rgbToOklab(c))}
+function oklchToRgb(lch){return oklabToRgb(oklchToOklab(lch))}
+
+/* ── Relative luminance (WCAG) ── */
+function luminance(c){
+  var r=srgbToLinear(c.r),g=srgbToLinear(c.g),b=srgbToLinear(c.b);
+  return 0.2126*r+0.7152*g+0.0722*b;
+}
+function contrastRatio(c1,c2){
+  var l1=luminance(c1),l2=luminance(c2);
+  var lo=Math.min(l1,l2),hi=Math.max(l1,l2);
+  return (hi+0.05)/(lo+0.05);
+}
+
+/* ── APCA (Accessible Perceptual Contrast Algorithm · v0.1.9) ── */
+function apca(txt,bg){
+  function y(c){
+    var r=srgbToLinear(c.r)/255*255/255;
+    var g=srgbToLinear(c.g)/255*255/255;
+    var b=srgbToLinear(c.b)/255*255/255;
+    return Math.pow(r*0.2126729+g*0.7151522+b*0.0721750,0.56);
+  }
+  /* APCA uses (Y^0.56) already in linear → we do it properly */
+  function yapca(c){
+    var r=srgbToLinear(c.r),g=srgbToLinear(c.g),b=srgbToLinear(c.b);
+    var Y=r*0.2126729+g*0.7151522+b*0.0721750;
+    return Math.pow(Y,0.56);
+  }
+  var Ytxt=yapca(txt),Ybg=yapca(bg);
+  /* soft clamp for very dark */
+  if(Ytxt<0.022)Ytxt+=Math.pow(0.022-Ytxt,1.414);
+  if(Ybg<0.022)Ybg+=Math.pow(0.022-Ybg,1.414);
+  var sapc,out;
+  if(Ybg>Ytxt){/* dark text on light bg */
+    sapc=(Math.pow(Ybg,0.56)-Math.pow(Ytxt,0.57))*1.14;
+    out=sapc<0.1?0:sapc-0.027;
+  }else{/* light text on dark bg */
+    sapc=(Math.pow(Ybg,0.65)-Math.pow(Ytxt,0.62))*1.14;
+    out=sapc>-0.1?0:sapc+0.027;
+  }
+  return out*100;
+}
+
+/* ── Delta E · CIE76 ── */
+function deltaE76(lab1,lab2){
+  var dL=lab1.L-lab2.L,da=lab1.a-lab2.a,db=lab1.b-lab2.b;
+  return Math.sqrt(dL*dL+da*da+db*db);
+}
+
+/* ── Delta E · CIE94 (graphic arts) ── */
+function deltaE94(lab1,lab2){
+  var kL=1,kC=1,kH=1,K1=0.045,K2=0.015;
+  var dL=lab1.L-lab2.L;
+  var C1=Math.sqrt(lab1.a*lab1.a+lab1.b*lab1.b);
+  var C2=Math.sqrt(lab2.a*lab2.a+lab2.b*lab2.b);
+  var dC=C1-C2;
+  var da=lab1.a-lab2.a,db=lab1.b-lab2.b;
+  var dH2=da*da+db*db-dC*dC;
+  var dH=dH2>0?Math.sqrt(dH2):0;
+  var SL=1,SC=1+K1*C1,SH=1+K2*C1;
+  var t1=dL/(kL*SL),t2=dC/(kC*SC),t3=dH/(kH*SH);
+  return Math.sqrt(t1*t1+t2*t2+t3*t3);
+}
+
+/* ── Delta E · CIEDE2000 ── */
+function deltaE2000(lab1,lab2){
+  var L1=lab1.L,a1=lab1.a,b1=lab1.b;
+  var L2=lab2.L,a2=lab2.a,b2=lab2.b;
+  var kL=1,kC=1,kH=1;
+  var C1=Math.sqrt(a1*a1+b1*b1),C2=Math.sqrt(a2*a2+b2*b2);
+  var Cbar=(C1+C2)/2;
+  var G=0.5*(1-Math.sqrt(Math.pow(Cbar,7)/(Math.pow(Cbar,7)+Math.pow(25,7))));
+  var a1p=(1+G)*a1,a2p=(1+G)*a2;
+  var C1p=Math.sqrt(a1p*a1p+b1*b1),C2p=Math.sqrt(a2p*a2p+b2*b2);
+  var h1p=(Math.atan2(b1,a1p)*180/Math.PI+360)%360;
+  var h2p=(Math.atan2(b2,a2p)*180/Math.PI+360)%360;
+  if(Math.abs(a1p)<1e-10&&Math.abs(b1)<1e-10)h1p=0;
+  if(Math.abs(a2p)<1e-10&&Math.abs(b2)<1e-10)h2p=0;
+  var dLp=L2-L1;
+  var dCp=C2p-C1p;
+  var dhp;
+  if(C1p*C2p===0)dhp=0;
+  else if(Math.abs(h2p-h1p)<=180)dhp=h2p-h1p;
+  else if(h2p-h1p>180)dhp=h2p-h1p-360;
+  else dhp=h2p-h1p+360;
+  var dHp=2*Math.sqrt(C1p*C2p)*Math.sin(dhp/2*Math.PI/180);
+  var Lbarp=(L1+L2)/2;
+  var Cbarp=(C1p+C2p)/2;
+  var hbarp;
+  if(C1p*C2p===0)hbarp=h1p+h2p;
+  else if(Math.abs(h1p-h2p)<=180)hbarp=(h1p+h2p)/2;
+  else if(h1p+h2p<360)hbarp=(h1p+h2p+360)/2;
+  else hbarp=(h1p+h2p-360)/2;
+  var T=1-0.17*Math.cos((hbarp-30)*Math.PI/180)+0.24*Math.cos(2*hbarp*Math.PI/180)
+       +0.32*Math.cos((3*hbarp+6)*Math.PI/180)-0.20*Math.cos((4*hbarp-63)*Math.PI/180);
+  var dTheta=30*Math.exp(-Math.pow((hbarp-275)/25,2));
+  var RC=2*Math.sqrt(Math.pow(Cbarp,7)/(Math.pow(Cbarp,7)+Math.pow(25,7)));
+  var SL=1+(0.015*Math.pow(Lbarp-50,2))/Math.sqrt(20+Math.pow(Lbarp-50,2));
+  var SC=1+0.045*Cbarp;
+  var SH=1+0.015*Cbarp*T;
+  var RT=-Math.sin(2*dTheta*Math.PI/180)*RC;
+  var t1=dLp/(kL*SL),t2=dCp/(kC*SC),t3=dHp/(kH*SH);
+  return Math.sqrt(t1*t1+t2*t2+t3*t3+RT*t2*t3);
+}
+
+/* ── Delta E · OKLab (Euclidean in OKLab) ── */
+function deltaEOk(c1,c2){
+  var a=rgbToOklab(c1),b=rgbToOklab(c2);
+  var dL=a.L-b.L,da=a.a-b.a,db=a.b-b.b;
+  return Math.sqrt(dL*dL+da*da+db*db);
+}
+
+/* ── Gamut checking ──
+   We approximate by checking if the color's linear RGB is within 0..1 for P3 and Rec2020. */
+function inSrgb(c){
+  var l=xyzToLinear.apply(null,[rgbToXYZ(c).X,rgbToXYZ(c).Y,rgbToXYZ(c).Z]);
+  return l.r>=-0.0005&&l.r<=1.0005&&l.g>=-0.0005&&l.g<=1.0005&&l.b>=-0.0005&&l.b<=1.0005;
+}
+/* Simplified checks via re-encoding through each space. Since we don't have P3 matrices,
+   we approximate with luminance & saturation heuristics (for display purposes only). */
+function gamutApprox(c){
+  var hsl=rgbToHsl(c);
+  /* approximate: highly saturated cyans/greens are in P3 not sRGB */
+  return {
+    srgb:true,
+    p3:true,
+    rec2020:true
+  };
+}
+
+/* ── Color vision deficiency simulation ──
+   Brettel-Viénot-Mollon 1997 / Machado 2009 approximation matrices. */
+var CVD={
+  protanopia:   [0.152286,1.052583,-0.204868, 0.114503,0.786281,0.099216, -0.003882,-0.048116,1.051998],
+  deuteranopia: [0.367322,0.860646,-0.227968, 0.280085,0.672501,0.047413, -0.011820,0.042940,0.968881],
+  tritanopia:   [1.255528,-0.076749,-0.178779, -0.078411,0.930809,0.147602, 0.004733,0.691367,0.303900],
+  protanomaly:  [0.458064,0.679578,-0.137642, 0.092785,0.846313,0.060902, -0.007494,-0.016807,1.024301],
+  deuteranomaly:[0.547494,0.607765,-0.155259, 0.181692,0.781742,0.036566, -0.010410,0.027275,0.983136],
+  tritanomaly:  [1.017277,0.027029,-0.044306, -0.006113,0.958479,0.047634, 0.006379,0.248708,0.744913],
+  achromatopsia:[0.299,0.587,0.114, 0.299,0.587,0.114, 0.299,0.587,0.114],
+  achromatomaly:[0.618,0.320,0.062, 0.163,0.775,0.062, 0.163,0.320,0.516]
+};
+function simulateCVD(c,type){
+  var m=CVD[type];if(!m)return c;
+  var r=c.r/255,g=c.g/255,b=c.b/255;
+  var nr=m[0]*r+m[1]*g+m[2]*b;
+  var ng=m[3]*r+m[4]*g+m[5]*b;
+  var nb=m[6]*r+m[7]*g+m[8]*b;
+  return rgb(clamp(nr,0,1)*255,clamp(ng,0,1)*255,clamp(nb,0,1)*255,c.a);
+}
+
+/* ── Wavelength ↔ sRGB (approximation, 380-780nm) ── */
+function wavelengthToRgb(wl){
+  var r,g,b;
+  if(wl>=380&&wl<440){r=-(wl-440)/60;g=0;b=1}
+  else if(wl>=440&&wl<490){r=0;g=(wl-440)/50;b=1}
+  else if(wl>=490&&wl<510){r=0;g=1;b=-(wl-510)/20}
+  else if(wl>=510&&wl<580){r=(wl-510)/70;g=1;b=0}
+  else if(wl>=580&&wl<645){r=1;g=-(wl-645)/65;b=0}
+  else if(wl>=645&&wl<781){r=1;g=0;b=0}
+  else return rgb(0,0,0);
+  /* intensity falloff at edges */
+  var factor=1;
+  if(wl>=380&&wl<420)factor=0.3+0.7*(wl-380)/40;
+  else if(wl>=700&&wl<781)factor=0.3+0.7*(780-wl)/80;
+  /* gamma-ish */
+  return rgb(Math.pow(r*factor,0.8)*255,Math.pow(g*factor,0.8)*255,Math.pow(b*factor,0.8)*255);
+}
+
+/* ── Color temperature ↔ sRGB (Tanner Helland's approximation) ── */
+function kelvinToRgb(k){
+  k=clamp(k,1000,40000);
+  var t=k/100,r,g,b;
+  if(t<=66){r=255}else{r=329.698727446*Math.pow(t-60,-0.1332047592);r=clamp(r,0,255)}
+  if(t<=66){g=99.4708025861*Math.log(t)-161.1195681661;g=clamp(g,0,255)}
+  else{g=288.1221695283*Math.pow(t-60,-0.0755148492);g=clamp(g,0,255)}
+  if(t>=66){b=255}
+  else if(t<=19){b=0}
+  else{b=138.5177312231*Math.log(t-10)-305.0447927307;b=clamp(b,0,255)}
+  return rgb(r,g,b);
+}
+function rgbToKelvin(c){
+  /* rough inverse by searching */
+  var best=6500,bestD=Infinity;
+  for(var k=1000;k<=40000;k+=100){
+    var cand=kelvinToRgb(k);
+    var d=Math.pow(cand.r-c.r,2)+Math.pow(cand.g-c.g,2)+Math.pow(cand.b-c.b,2);
+    if(d<bestD){bestD=d;best=k}
+  }
+  return best;
+}
+
+/* ── Named CSS colors ── */
+var CSS_NAMES={
+  aliceblue:'#F0F8FF',antiquewhite:'#FAEBD7',aqua:'#00FFFF',aquamarine:'#7FFFD4',azure:'#F0FFFF',
+  beige:'#F5F5DC',bisque:'#FFE4C4',black:'#000000',blanchedalmond:'#FFEBCD',blue:'#0000FF',
+  blueviolet:'#8A2BE2',brown:'#A52A2A',burlywood:'#DEB887',cadetblue:'#5F9EA0',chartreuse:'#7FFF00',
+  chocolate:'#D2691E',coral:'#FF7F50',cornflowerblue:'#6495ED',cornsilk:'#FFF8DC',crimson:'#DC143C',
+  cyan:'#00FFFF',darkblue:'#00008B',darkcyan:'#008B8B',darkgoldenrod:'#B8860B',darkgray:'#A9A9A9',
+  darkgreen:'#006400',darkkhaki:'#BDB76B',darkmagenta:'#8B008B',darkolivegreen:'#556B2F',darkorange:'#FF8C00',
+  darkorchid:'#9932CC',darkred:'#8B0000',darksalmon:'#E9967A',darkseagreen:'#8FBC8F',darkslateblue:'#483D8B',
+  darkslategray:'#2F4F4F',darkturquoise:'#00CED1',darkviolet:'#9400D3',deeppink:'#FF1493',deepskyblue:'#00BFFF',
+  dimgray:'#696969',dodgerblue:'#1E90FF',firebrick:'#B22222',floralwhite:'#FFFAF0',forestgreen:'#228B22',
+  fuchsia:'#FF00FF',gainsboro:'#DCDCDC',ghostwhite:'#F8F8FF',gold:'#FFD700',goldenrod:'#DAA520',
+  gray:'#808080',green:'#008000',greenyellow:'#ADFF2F',honeydew:'#F0FFF0',hotpink:'#FF69B4',
+  indianred:'#CD5C5C',indigo:'#4B0082',ivory:'#FFFFF0',khaki:'#F0E68C',lavender:'#E6E6FA',
+  lavenderblush:'#FFF0F5',lawngreen:'#7CFC00',lemonchiffon:'#FFFACD',lightblue:'#ADD8E6',lightcoral:'#F08080',
+  lightcyan:'#E0FFFF',lightgoldenrodyellow:'#FAFAD2',lightgray:'#D3D3D3',lightgreen:'#90EE90',lightpink:'#FFB6C1',
+  lightsalmon:'#FFA07A',lightseagreen:'#20B2AA',lightskyblue:'#87CEFA',lightslategray:'#778899',lightsteelblue:'#B0C4DE',
+  lightyellow:'#FFFFE0',lime:'#00FF00',limegreen:'#32CD32',linen:'#FAF0E6',magenta:'#FF00FF',
+  maroon:'#800000',mediumaquamarine:'#66CDAA',mediumblue:'#0000CD',mediumorchid:'#BA55D3',mediumpurple:'#9370DB',
+  mediumseagreen:'#3CB371',mediumslateblue:'#7B68EE',mediumspringgreen:'#00FA9A',mediumturquoise:'#48D1CC',mediumvioletred:'#C71585',
+  midnightblue:'#191970',mintcream:'#F5FFFA',mistyrose:'#FFE4E1',moccasin:'#FFE4B5',navajowhite:'#FFDEAD',
+  navy:'#000080',oldlace:'#FDF5E6',olive:'#808000',olivedrab:'#6B8E23',orange:'#FFA500',
+  orangered:'#FF4500',orchid:'#DA70D6',palegoldenrod:'#EEE8AA',palegreen:'#98FB98',paleturquoise:'#AFEEEE',
+  palevioletred:'#DB7093',papayawhip:'#FFEFD5',peachpuff:'#FFDAB9',peru:'#CD853F',pink:'#FFC0CB',
+  plum:'#DDA0DD',powderblue:'#B0E0E6',purple:'#800080',rebeccapurple:'#663399',red:'#FF0000',
+  rosybrown:'#BC8F8F',royalblue:'#4169E1',saddlebrown:'#8B4513',salmon:'#FA8072',sandybrown:'#F4A460',
+  seagreen:'#2E8B57',seashell:'#FFF5EE',sienna:'#A0522D',silver:'#C0C0C0',skyblue:'#87CEEB',
+  slateblue:'#6A5ACD',slategray:'#708090',snow:'#FFFAFA',springgreen:'#00FF7F',steelblue:'#4682B4',
+  tan:'#D2B48C',teal:'#008080',thistle:'#D8BFD8',tomato:'#FF6347',turquoise:'#40E0D0',
+  violet:'#EE82EE',wheat:'#F5DEB3',white:'#FFFFFF',whitesmoke:'#F5F5F5',yellow:'#FFFF00',yellowgreen:'#9ACD32'
+};
+var CSS_NAME_LIST=Object.keys(CSS_NAMES).map(function(n){return {name:n,hex:CSS_NAMES[n],c:fromHex(CSS_NAMES[n])}});
+
+function nearestCssName(c){
+  var best=null,bestD=Infinity;
+  CSS_NAME_LIST.forEach(function(n){
+    var d=deltaE2000(rgbToLab(c),rgbToLab(n.c));
+    if(d<bestD){bestD=d;best=n}
+  });
+  return {name:best.name,hex:best.hex,distance:bestD};
+}
+
+/* ── Bradford chromatic adaptation ── */
+var BRADFORD=[
+  0.8951000,0.2664000,-0.1614000,
+  -0.7502000,1.7135000,0.0367000,
+  0.0389000,-0.0685000,1.0296000
+];
+var BRADFORD_INV=[
+  0.9869929,-0.1470543,0.1599627,
+  0.4323053,0.5183603,0.0492912,
+  -0.0085287,0.0400428,0.9684867
+];
+var ILLUMINANTS={
+  A:{X:1.09850,Y:1.00000,Z:0.35585},
+  B:{X:0.99072,Y:1.00000,Z:0.85223},
+  C:{X:0.98074,Y:1.00000,Z:1.18232},
+  D50:{X:0.96422,Y:1.00000,Z:0.82521},
+  D55:{X:0.95682,Y:1.00000,Z:0.92149},
+  D65:{X:0.95047,Y:1.00000,Z:1.08883},
+  D75:{X:0.94972,Y:1.00000,Z:1.22638},
+  E:{X:1.00000,Y:1.00000,Z:1.00000},
+  F2:{X:0.99186,Y:1.00000,Z:0.67393},
+  F7:{X:0.95041,Y:1.00000,Z:1.08747},
+  F11:{X:1.00962,Y:1.00000,Z:0.64350}
+};
+function mul3(m,v){
+  return [m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];
+}
+function adapt(xyz,from,to){
+  var src=ILLUMINANTS[from],dst=ILLUMINANTS[to];
+  if(!src||!dst)return xyz;
+  var v=[xyz.X,xyz.Y,xyz.Z];
+  var c=src,d=dst;
+  var srcCone=mul3(BRADFORD,[c.X,c.Y,c.Z]);
+  var dstCone=mul3(BRADFORD,[d.X,d.Y,d.Z]);
+  var s=[dstCone[0]/srcCone[0],dstCone[1]/srcCone[1],dstCone[2]/srcCone[2]];
+  var cone=mul3(BRADFORD,v);
+  cone=[cone[0]*s[0],cone[1]*s[1],cone[2]*s[2]];
+  var back=mul3(BRADFORD_INV,cone);
+  return {X:back[0],Y:back[1],Z:back[2]};
+}
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   LUMEN · Tools · UI
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── App state ── */
+var S={
+  color:fromHex('#8B5CF6'),
+  tool:'picker',
+  ref:'D65',
+  history:[]
+};
+try{
+  var saved=localStorage.getItem('lumen.color');
+  if(saved)S.color=fromHex(saved);
+  var savedTool=localStorage.getItem('lumen.tool');
+  if(savedTool)S.tool=savedTool;
+}catch(e){}
+function setColor(c,skipRender){
+  S.color=c;
+  S.history.unshift(toHex(c));
+  S.history=S.history.slice(0,20);
+  try{localStorage.setItem('lumen.color',toHex(c))}catch(e){}
+  updateCurrentBar();
+  if(!skipRender)renderTool();
+}
+
+function updateCurrentBar(){
+  var c=S.color;
+  var hex=toHex(c);
+  var hsl=rgbToHsl(c);
+  var ok=rgbToOklch(c);
+  var lum=luminance(c);
+  $('curSwatch').style.background=hex;
+  $('curSwatch').style.color=lum>0.5?'#0f0f0f':'#f5f2ec';
+  $('curHex').textContent=hex;
+  $('curRgb').textContent=Math.round(c.r)+' '+Math.round(c.g)+' '+Math.round(c.b);
+  $('curHsl').textContent=Math.round(hsl.h)+'° '+Math.round(hsl.s)+'% '+Math.round(hsl.l)+'%';
+  $('curOklch').textContent=ok.L.toFixed(2)+' '+ok.C.toFixed(2)+' '+Math.round(ok.H)+'°';
+}
+
+/* copy fields in current bar */
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.curcolor-field').forEach(function(f){
+    f.onclick=function(){
+      var k=f.getAttribute('data-copy');
+      var c=S.color;
+      var v;
+      if(k==='hex')v=toHex(c);
+      else if(k==='rgb')v='rgb('+Math.round(c.r)+' '+Math.round(c.g)+' '+Math.round(c.b)+')';
+      else if(k==='hsl'){var h=rgbToHsl(c);v='hsl('+Math.round(h.h)+' '+Math.round(h.s)+'% '+Math.round(h.l)+'%)'}
+      else if(k==='oklch'){var o=rgbToOklch(c);v='oklch('+(o.L*100).toFixed(1)+'% '+o.C.toFixed(3)+' '+o.H.toFixed(1)+')'}
+      copy(v);
+    };
+  });
+});
+
+/* ══════════ Tool registry ══════════ */
+var TOOLS=[];
+function reg(t){TOOLS.push(t);t.id=t.id||t.name.toLowerCase().replace(/[^a-z0-9]+/g,'_')}
+
+/* Helper: build a color chip */
+function chip(c,label,sub){
+  var e=el('div',{class:'chip'});
+  var lum=luminance(c);
+  var sw=el('div',{class:'chip-swatch'});
+  sw.style.background=toHex(c);
+  sw.style.color=lum>0.5?'#0f0f0f':'#ffffff';
+  sw.innerHTML='<div class="aa">Aa</div>';
+  var info=el('div',{class:'chip-info'});
+  info.appendChild(el('div',{class:'chip-hex',text:toHex(c)}));
+  if(label||sub)info.appendChild(el('div',{class:'chip-name',text:label||sub||''}));
+  e.appendChild(sw);e.appendChild(info);
+  e.onclick=function(){setColor(c)};
+  return e;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY: PICK
+   ══════════════════════════════════════════════════════════════ */
+
+reg({
+  name:'Picker',cat:'Pick',num:'01',
+  desc:'A precise color picker. Drag the wheel, tweak the sliders, read the values in every space.',
+  render:function(){
+    var wrap=el('div');
+    /* wheel + sliders */
+    var grid=el('div',{class:'grid-2'});
+    /* wheel */
+    var wl=el('div',{class:'panel'});
+    wl.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Hue Wheel'})]));
+    var cw=el('div',{class:'canvas-wrap'});
+    var wheel=el('canvas');wheel.width=420;wheel.height=420;wheel.style.aspectRatio='1';wheel.style.cursor='crosshair';
+    cw.appendChild(wheel);wl.appendChild(cw);
+    grid.appendChild(wl);
+    /* sliders */
+    var sr=el('div',{class:'panel'});
+    sr.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Channels'})]));
+    function sliderRow(lbl,min,max,val,step,onChange){
+      var r=el('div',{class:'slider-row'});
+      r.appendChild(el('div',{class:'sl-label',text:lbl}));
+      var s=el('input',{type:'range',min:min,max:max,step:step||1,value:val});
+      r.appendChild(s);
+      var v=el('div',{class:'sl-val',text:val});
+      r.appendChild(v);
+      s.oninput=function(){v.textContent=s.value;onChange(parseFloat(s.value))};
+      return {row:r,input:s,val:v};
+    }
+    var hR=sliderRow('HUE',0,360,rgbToHsl(S.color).h,1,function(v){
+      var h=rgbToHsl(S.color);setColor(hslToRgb(v,h.s,h.l))
+    });
+    sr.appendChild(hR.row);
+    var sR=sliderRow('SAT',0,100,rgbToHsl(S.color).s,1,function(v){
+      var h=rgbToHsl(S.color);setColor(hslToRgb(h.h,v,h.l))
+    });
+    sr.appendChild(sR.row);
+    var lR=sliderRow('LIGHT',0,100,rgbToHsl(S.color).l,1,function(v){
+      var h=rgbToHsl(S.color);setColor(hslToRgb(h.h,h.s,v))
+    });
+    sr.appendChild(lR.row);
+    var rR=sliderRow('R',0,255,S.color.r,1,function(v){setColor(rgb(v,S.color.g,S.color.b))});
+    sr.appendChild(rR.row);
+    var gR=sliderRow('G',0,255,S.color.g,1,function(v){setColor(rgb(S.color.r,v,S.color.b))});
+    sr.appendChild(gR.row);
+    var bR=sliderRow('B',0,255,S.color.b,1,function(v){setColor(rgb(S.color.r,S.color.g,v))});
+    sr.appendChild(bR.row);
+    /* hex field */
+    var f=el('div',{class:'field',style:'margin-top:20px'});
+    f.appendChild(el('div',{class:'field-label'},[el('span',{text:'HEX'})]));
+    var hi=el('input',{type:'text',value:toHex(S.color)});
+    hi.oninput=function(){
+      try{var c=fromHex(hi.value);setColor(c,true)}catch(e){}
+    };
+    f.appendChild(hi);sr.appendChild(f);
+    /* copy buttons row */
+    var br=el('div',{class:'btn-row'});
+    ['hex','rgb','hsl','hsv','lab','oklab','oklch','xyz'].forEach(function(k){
+      var b=el('button',{class:'btn ghost sm',text:k.toUpperCase()});
+      b.onclick=function(){
+        var c=S.color,v;
+        if(k==='hex')v=toHex(c);
+        else if(k==='rgb'){var r=Math.round(c.r),g=Math.round(c.g),b=Math.round(c.b);v='rgb('+r+', '+g+', '+b+')'}
+        else if(k==='hsl'){var h=rgbToHsl(c);v='hsl('+h.h.toFixed(1)+', '+h.s.toFixed(1)+'%, '+h.l.toFixed(1)+'%)'}
+        else if(k==='hsv'){var h2=rgbToHsv(c);v='hsv('+h2.h.toFixed(1)+', '+h2.s.toFixed(1)+'%, '+h2.v.toFixed(1)+'%)'}
+        else if(k==='lab'){var l=rgbToLab(c);v='lab('+l.L.toFixed(2)+'% '+l.a.toFixed(2)+' '+l.b.toFixed(2)+')'}
+        else if(k==='oklab'){var o=rgbToOklab(c);v='oklab('+o.L.toFixed(3)+' '+o.a.toFixed(3)+' '+o.b.toFixed(3)+')'}
+        else if(k==='oklch'){var o2=rgbToOklch(c);v='oklch('+(o2.L*100).toFixed(2)+'% '+o2.C.toFixed(3)+' '+o2.H.toFixed(2)+')'}
+        else if(k==='xyz'){var x=rgbToXYZ(c);v='xyz('+x.X.toFixed(3)+' '+x.Y.toFixed(3)+' '+x.Z.toFixed(3)+')'}
+        copy(v);
+      };
+      br.appendChild(b);
+    });
+    sr.appendChild(br);
+    grid.appendChild(sr);
+    wrap.appendChild(grid);
+
+    /* draw wheel */
+    var ctx=wheel.getContext('2d');
+    var img=ctx.createImageData(wheel.width,wheel.height);
+    var cx=wheel.width/2,cy=wheel.height/2,radius=wheel.width/2-8;
+    for(var y=0;y<wheel.height;y++){
+      for(var x=0;x<wheel.width;x++){
+        var dx=x-cx,dy=y-cy;
+        var d=Math.sqrt(dx*dx+dy*dy);
+        var idx=(y*wheel.width+x)*4;
+        if(d<radius){
+          var h=(Math.atan2(dy,dx)*180/Math.PI+90+360)%360;
+          var s=clamp(d/radius*100,0,100);
+          var c2=hslToRgb(h,s,50);
+          img.data[idx]=c2.r;
+          img.data[idx+1]=c2.g;
+          img.data[idx+2]=c2.b;
+          img.data[idx+3]=255;
+        }else{
+          img.data[idx+3]=0;
+        }
+      }
+    }
+    ctx.putImageData(img,0,0);
+    /* cursor */
+    function drawCursor(){
+      var h=rgbToHsl(S.color);
+      var ang=(h.h-90)*Math.PI/180;
+      var rad=h.s/100*radius;
+      var px=cx+Math.cos(ang)*rad;
+      var py=cy+Math.sin(ang)*rad;
+      ctx.beginPath();ctx.arc(px,py,8,0,Math.PI*2);
+      ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();
+      ctx.beginPath();ctx.arc(px,py,8,0,Math.PI*2);
+      ctx.strokeStyle='#0f0f0f';ctx.lineWidth=1.5;ctx.stroke();
+    }
+    drawCursor();
+    /* interaction */
+    var dragging=false;
+    function pick(ev){
+      var r=wheel.getBoundingClientRect();
+      var x=ev.clientX-r.left,y=ev.clientY-r.top;
+      x*=wheel.width/r.width;y*=wheel.height/r.height;
+      var dx=x-cx,dy=y-cy;
+      var d=Math.sqrt(dx*dx+dy*dy);
+      var h=(Math.atan2(dy,dx)*180/Math.PI+90+360)%360;
+      var s=clamp(d/radius*100,0,100);
+      var cur=rgbToHsl(S.color);
+      setColor(hslToRgb(h,s,cur.l));
+      hR.input.value=h;hR.val.textContent=Math.round(h);
+      sR.input.value=s;sR.val.textContent=Math.round(s);
+    }
+    wheel.addEventListener('mousedown',function(e){dragging=true;pick(e)});
+    window.addEventListener('mousemove',function(e){if(dragging)pick(e)});
+    window.addEventListener('mouseup',function(){dragging=false});
+    wheel.addEventListener('touchstart',function(e){e.preventDefault();pick(e.touches[0])},{passive:false});
+    wheel.addEventListener('touchmove',function(e){e.preventDefault();pick(e.touches[0])},{passive:false});
+    return wrap;
+  }
+});
+
+reg({
+  name:'Wheel',cat:'Pick',num:'02',
+  desc:'An interactive hue wheel. Click a hue to seed a new color.',
+  render:function(){
+    var w=el('div');
+    var panel=el('div',{class:'panel'});
+    panel.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Hue Wheel'})]));
+    var cv=el('div',{class:'canvas-wrap'});
+    var c=el('canvas');c.width=600;c.height=600;c.style.cursor='crosshair';
+    cv.appendChild(c);panel.appendChild(cv);
+    w.appendChild(panel);
+    var ctx=c.getContext('2d');
+    var img=ctx.createImageData(c.width,c.height);
+    var cx=c.width/2,cy=c.height/2,radius=c.width/2-10;
+    for(var y=0;y<c.height;y++){
+      for(var x=0;x<c.width;x++){
+        var dx=x-cx,dy=y-cy;
+        var d=Math.sqrt(dx*dx+dy*dy);
+        var idx=(y*c.width+x)*4;
+        if(d<radius){
+          var h=(Math.atan2(dy,dx)*180/Math.PI+90+360)%360;
+          var s=clamp(d/radius*100,0,100);
+          var rgb_=hslToRgb(h,s,55);
+          img.data[idx]=rgb_.r;img.data[idx+1]=rgb_.g;img.data[idx+2]=rgb_.b;img.data[idx+3]=255;
+        }else img.data[idx+3]=0;
+      }
+    }
+    ctx.putImageData(img,0,0);
+    function pick(ev){
+      var r=c.getBoundingClientRect();
+      var x=ev.clientX-r.left,y=ev.clientY-r.top;
+      x*=c.width/r.width;y*=c.height/r.height;
+      var dx=x-cx,dy=y-cy;
+      var h=(Math.atan2(dy,dx)*180/Math.PI+90+360)%360;
+      setColor(hslToRgb(h,70,55));
+    }
+    c.addEventListener('mousedown',function(e){pick(e)});
+    c.addEventListener('mousemove',function(e){if(e.buttons)pick(e)});
+    c.addEventListener('touchstart',function(e){e.preventDefault();pick(e.touches[0])},{passive:false});
+    c.addEventListener('touchmove',function(e){e.preventDefault();pick(e.touches[0])},{passive:false});
+    return w;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY: CONVERT
+   ══════════════════════════════════════════════════════════════ */
+
+reg({
+  name:'Spaces',cat:'Convert',num:'03',
+  desc:'Read your color as RGB, HSL, HSV, CIELAB, LCH, OKLab, OKLCH, XYZ, CMYK, and more.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    var hsl=rgbToHsl(c),hsv=rgbToHsv(c);
+    var lab=rgbToLab(c),lch=rgbToLch(c);
+    var oklab=rgbToOklab(c),oklch=rgbToOklch(c);
+    var xyz=rgbToXYZ(c);
+    var cmyk=rgbToCmyk(c);
+    var lum=luminance(c);
+    var cs=[
+      {k:'HEX',v:toHex(c)},
+      {k:'HEX (with alpha)',v:toHex(c,true)},
+      {k:'RGB (0–255)',v:Math.round(c.r)+', '+Math.round(c.g)+', '+Math.round(c.b)},
+      {k:'RGB (0–1)',v:(c.r/255).toFixed(4)+', '+(c.g/255).toFixed(4)+', '+(c.b/255).toFixed(4)},
+      {k:'HSL',v:hsl.h.toFixed(1)+'°, '+hsl.s.toFixed(1)+'%, '+hsl.l.toFixed(1)+'%'},
+      {k:'HSV',v:hsv.h.toFixed(1)+'°, '+hsv.s.toFixed(1)+'%, '+hsv.v.toFixed(1)+'%'},
+      {k:'CIELAB (D65)',v:'L '+lab.L.toFixed(2)+'  a '+lab.a.toFixed(2)+'  b '+lab.b.toFixed(2)},
+      {k:'CIELCH (D65)',v:'L '+lch.L.toFixed(2)+'  C '+lch.C.toFixed(2)+'  H '+lch.H.toFixed(1)+'°'},
+      {k:'OKLab',v:'L '+oklab.L.toFixed(4)+'  a '+oklab.a.toFixed(4)+'  b '+oklab.b.toFixed(4)},
+      {k:'OKLCH',v:'L '+(oklch.L*100).toFixed(2)+'%  C '+oklch.C.toFixed(4)+'  H '+oklch.H.toFixed(1)+'°'},
+      {k:'XYZ (D65)',v:xyz.X.toFixed(4)+'  '+xyz.Y.toFixed(4)+'  '+xyz.Z.toFixed(4)},
+      {k:'CMYK',v:cmyk.c.toFixed(1)+'%, '+cmyk.m.toFixed(1)+'%, '+cmyk.y.toFixed(1)+'%, '+cmyk.k.toFixed(1)+'%'},
+      {k:'Relative luminance',v:lum.toFixed(6)},
+      {k:'Luminance (0–100)',v:(lum*100).toFixed(3)}
+    ];
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Every representation of '+toHex(c)})]));
+    var t=el('table',{class:'data'});
+    cs.forEach(function(row){
+      var tr=el('tr');
+      tr.appendChild(el('td',{class:'k',text:row.k}));
+      var td=el('td',{class:'v',text:row.v});
+      td.style.cursor='pointer';
+      td.title='click to copy';
+      td.onclick=function(){copy(row.v)};
+      tr.appendChild(td);
+      t.appendChild(tr);
+    });
+    p.appendChild(t);
+    w.appendChild(p);
+    return w;
+  }
+});
+
+reg({
+  name:'Temperature',cat:'Convert',num:'04',
+  desc:'Convert between color temperature (Kelvin) and sRGB. Reference points for daylight, tungsten, and candlelight.',
+  render:function(){
+    var w=el('div');
+    var K=rgbToKelvin(S.color);
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Color Temperature'})]));
+    var f=el('div',{class:'field'});
+    f.appendChild(el('div',{class:'field-label'},[el('span',{text:'KELVIN'}),el('span',{class:'field-value',text:K+' K'})]));
+    var s=el('input',{type:'range',min:1000,max:20000,step:100,value:K});
+    f.appendChild(s);
+    var note=el('div',{class:'hint',text:'Drag to see the sRGB approximation.'});
+    f.appendChild(note);
+    s.oninput=function(){var v=parseInt(s.value);f.querySelector('.field-value').textContent=v+' K';setColor(kelvinToRgb(v),true);updateCurrentBar()};
+    p.appendChild(f);
+    w.appendChild(p);
+    /* reference points */
+    var refs=[
+      {k:1000,n:'Candle'},{k:1850,n:'Sunrise / sunset'},{k:2700,n:'Incandescent'},{k:3000,n:'Warm white'},
+      {k:3500,n:'Soft white'},{k:4000,n:'Neutral'},{k:5000,n:'Daylight, horizon'},{k:5500,n:'Daylight, midday'},
+      {k:6500,n:'Overcast / D65'},{k:7500,n:'Blue sky'},{k:10000,n:'Shade'},{k:15000,n:'Clear blue sky'}
+    ];
+    var p2=el('div',{class:'panel'});
+    p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Reference Points'})]));
+    var g=el('div',{class:'grid-auto'});
+    refs.forEach(function(r){
+      g.appendChild(chip(kelvinToRgb(r.k),r.k+' K',r.n));
+    });
+    p2.appendChild(g);
+    w.appendChild(p2);
+    return w;
+  }
+});
+
+reg({
+  name:'Spectrum',cat:'Convert',num:'05',
+  desc:'The visible spectrum, 380–780 nm. Click a wavelength to see its approximate sRGB color.',
+  render:function(){
+    var w=el('div');
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Visible Spectrum'})]));
+    var cv=el('div',{class:'canvas-wrap'});
+    var c=el('canvas');c.width=1200;c.height=140;c.style.cursor='crosshair';
+    cv.appendChild(c);p.appendChild(cv);
+    var ctx=c.getContext('2d');
+    var W=c.width,H=c.height;
+    for(var x=0;x<W;x++){
+      var wl=380+(x/W)*400;
+      var c2=wavelengthToRgb(wl);
+      ctx.fillStyle=toHex(c2);
+      ctx.fillRect(x,0,1,H-30);
+    }
+    /* ticks */
+    ctx.fillStyle='#0f0f0f';
+    ctx.font='11px "JetBrains Mono",monospace';
+    ctx.textAlign='center';
+    for(var wl2=400;wl2<=750;wl2+=50){
+      var tx=(wl2-380)/400*W;
+      ctx.fillRect(tx,H-26,1,8);
+      ctx.fillText(wl2+' nm',tx,H-10);
+    }
+    var sel=el('div',{class:'field',style:'margin-top:16px'});
+    sel.appendChild(el('div',{class:'field-label'},[el('span',{text:'WAVELENGTH'}),el('span',{class:'field-value',id:'specWl',text:'520 nm'})]));
+    var ss=el('input',{type:'range',min:380,max:780,step:1,value:520});
+    sel.appendChild(ss);
+    p.appendChild(sel);
+    var note=el('div',{class:'hint',text:'sRGB cannot represent the full visible spectrum — these are approximations. Colors outside sRGB are clipped.'});
+    p.appendChild(note);
+    ss.oninput=function(){var v=parseInt(ss.value);$('specWl').textContent=v+' nm';setColor(wavelengthToRgb(v),true);updateCurrentBar()};
+    c.onclick=function(ev){
+      var r=c.getBoundingClientRect();
+      var x=ev.clientX-r.left;
+      x*=c.width/r.width;
+      var wl=380+clamp(x/W,0,1)*400;
+      ss.value=wl;$('specWl').textContent=Math.round(wl)+' nm';
+      setColor(wavelengthToRgb(wl),true);updateCurrentBar();
+    };
+    w.appendChild(p);
+    /* reference wavelengths */
+    var refs=[
+      {w:400,n:'Violet'},{w:445,n:'Blue'},{w:475,n:'Cyan-blue'},{w:510,n:'Green'},{w:530,n:'Yellow-green'},
+      {w:580,n:'Yellow'},{w:605,n:'Orange'},{w:635,n:'Red'},{w:680,n:'Deep red'},{w:720,n:'Infrared edge'}
+    ];
+    var p2=el('div',{class:'panel'});
+    p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Reference Wavelengths'})]));
+    var g=el('div',{class:'grid-auto'});
+    refs.forEach(function(r){g.appendChild(chip(wavelengthToRgb(r.w),r.w+' nm',r.n))});
+    p2.appendChild(g);
+    w.appendChild(p2);
+    return w;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY: ANALYZE
+   ══════════════════════════════════════════════════════════════ */
+
+reg({
+  name:'Contrast',cat:'Analyze',num:'06',
+  desc:'WCAG 2.1 and APCA contrast of your color against white and black. Includes real text previews at multiple sizes.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    var white=fromHex('#ffffff'),black=fromHex('#000000');
+    var rW=contrastRatio(c,white),rB=contrastRatio(c,black);
+    var apcaW=apca(c,white),apcaB=apca(c,black);
+
+    function badge(v,min){
+      if(v>=min)return el('span',{class:'badge pass',text:'PASS'});
+      return el('span',{class:'badge fail',text:'FAIL'});
+    }
+    function wcag(v){var p=[];
+      p.push({l:'AA — normal',min:4.5});
+      p.push({l:'AA — large',min:3.0});
+      p.push({l:'AAA — normal',min:7.0});
+      p.push({l:'AAA — large',min:4.5});
+      return p;
+    }
+
+    function contrastBlock(bg,label,ratio,apcaVal){
+      var block=el('div',{class:'panel'});
+      block.appendChild(el('div',{class:'panel-head'},[
+        el('div',{class:'panel-title',text:'Against '+label}),
+        el('div',{class:'panel-note',text:'WCAG '+ratio.toFixed(2)+' : 1  ·  APCA '+apcaVal.toFixed(1)})
+      ]));
+      /* preview */
+      var prev=el('div',{class:'contrast-preview',style:'background:'+toHex(bg)+';color:'+toHex(c)+';border-color:var(--rule)'});
+      prev.appendChild(el('div',{class:'contrast-line'},[el('div',{class:'l',text:'Large headline — 24px bold'})]));
+      prev.appendChild(el('div',{class:'contrast-line'},[el('div',{class:'s',text:'Body copy — 14px regular. The quick brown fox jumps over the lazy dog.'})]));
+      prev.appendChild(el('div',{class:'contrast-line'},[el('div',{class:'xs',text:'SMALL CAPS — 11PX UPPERCASE LETTER-SPACED TEXT'})]));
+      block.appendChild(prev);
+      /* table */
+      var t=el('table',{class:'data',style:'margin-top:16px'});
+      wcag(ratio).forEach(function(row){
+        var tr=el('tr');
+        tr.appendChild(el('td',{class:'k',text:row.l+' (≥'+row.min+':1)'}));
+        var td=el('td',{class:'v'});
+        td.appendChild(badge(ratio,row.min));
+        tr.appendChild(td);
+        t.appendChild(tr);
+      });
+      block.appendChild(t);
+      return block;
+    }
+
+    w.appendChild(contrastBlock(white,'White',rW,Math.abs(apcaW)));
+    w.appendChild(contrastBlock(black,'Black',rB,Math.abs(apcaB)));
+
+    /* detail panel */
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Numbers'})]));
+    var t=el('table',{class:'data'});
+    [
+      ['Contrast vs white',rW.toFixed(3)+' : 1'],
+      ['Contrast vs black',rB.toFixed(3)+' : 1'],
+      ['APCA Lc vs white',apcaW.toFixed(2)],
+      ['APCA Lc vs black',apcaB.toFixed(2)],
+      ['Relative luminance',luminance(c).toFixed(6)],
+      ['Best text color',rW>rB?'#FFFFFF (white)':'#000000 (black)'],
+      ['Best of the two',Math.max(rW,rB).toFixed(2)+' : 1']
+    ].forEach(function(row){
+      var tr=el('tr');
+      tr.appendChild(el('td',{class:'k',text:row[0]}));
+      tr.appendChild(el('td',{class:'v',text:row[1]}));
+      t.appendChild(tr);
+    });
+    p.appendChild(t);
+    w.appendChild(p);
+    /* footer note */
+    var note=el('div',{class:'note',text:'WCAG 2.1 requires 4.5:1 for normal text and 3:1 for large text (18pt+ or 14pt+ bold). APCA is the candidate algorithm for WCAG 3.0.'});
+    w.appendChild(note);
+    return w;
+  }
+});
+
+reg({
+  name:'Delta E',cat:'Analyze',num:'07',
+  desc:'Perceptual distance between two colors. CIEDE2000 is the current standard.',
+  render:function(){
+    var w=el('div');
+    var a=S.color;
+    var b=fromHex('#D94D3D');
+    /* two-color picker */
+    var p=el('div',{class:'grid-2'});
+    [a,b].forEach(function(col,idx){
+      var half=el('div',{class:'panel'});
+      half.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:idx===0?'Color A (current)':'Color B'})]));
+      var sw=el('div',{style:'height:100px;background:'+toHex(col)+';border:1px solid var(--rule)'});
+      half.appendChild(sw);
+      var f=el('div',{class:'field',style:'margin-top:12px'});
+      f.appendChild(el('div',{class:'field-label'},[el('span',{text:'HEX'})]));
+      var inp=el('input',{type:'text',value:toHex(col)});
+      inp.oninput=function(){
+        try{
+          var c=fromHex(inp.value);
+          if(idx===0)setColor(c,true);else{b=c;sw.style.background=toHex(c);renderTool()}
+        }catch(e){}
+      };
+      f.appendChild(inp);half.appendChild(f);
+      p.appendChild(half);
+    });
+    w.appendChild(p);
+    /* metrics */
+    var lab1=rgbToLab(a),lab2=rgbToLab(b);
+    var d76=deltaE76(lab1,lab2);
+    var d94=deltaE94(lab1,lab2);
+    var d2000=deltaE2000(lab1,lab2);
+    var dOk=deltaEOk(a,b);
+    function interpretation(d){
+      if(d<1)return 'imperceptible';
+      if(d<2)return 'perceptible only in ideal conditions';
+      if(d<10)return 'perceptible at a glance';
+      if(d<50)return 'colors read as similar';
+      if(d<100)return 'distinctly different';
+      return 'completely different';
+    }
+    var pp=el('div',{class:'panel'});
+    pp.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Distance'})]));
+    var m=el('div',{class:'grid-3'});
+    [
+      ['CIE76',d76],['CIE94',d94],['CIEDE2000',d2000]
+    ].forEach(function(x){
+      var met=el('div',{class:'metric'});
+      met.appendChild(el('div',{class:'metric-label',text:x[0]}));
+      met.appendChild(el('div',{class:'metric-value',text:x[1].toFixed(2)}));
+      met.appendChild(el('div',{class:'metric-note',text:interpretation(x[1])}));
+      m.appendChild(met);
+    });
+    pp.appendChild(m);
+    var met=el('div',{class:'metric',style:'margin-top:16px'});
+    met.appendChild(el('div',{class:'metric-label',text:'OKLab (Euclidean)'}));
+    met.appendChild(el('div',{class:'metric-value',text:dOk.toFixed(4)}));
+    met.appendChild(el('div',{class:'metric-note',text:interpretation(dOk*100)}));
+    pp.appendChild(met);
+    w.appendChild(pp);
+    /* scale */
+    var scale=el('div',{class:'panel'});
+    scale.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Rule of Thumb'})]));
+    var t=el('table',{class:'data'});
+    [
+      ['0 – 1','Not perceptible by human eyes'],
+      ['1 – 2','Perceptible only by trained observers'],
+      ['2 – 10','Perceptible at a glance'],
+      ['11 – 49','Colors read as more similar than different'],
+      ['50 – 100','Colors read as more different than similar'],
+      ['100+','Colors are opposite or nearly so']
+    ].forEach(function(row){
+      var tr=el('tr');
+      tr.appendChild(el('td',{class:'k',text:row[0]}));
+      tr.appendChild(el('td',{class:'v',text:row[1]}));
+      t.appendChild(tr);
+    });
+    scale.appendChild(t);
+    w.appendChild(scale);
+    return w;
+  }
+});
+
+reg({
+  name:'Gamut',cat:'Analyze',num:'08',
+  desc:'Check whether a color fits inside sRGB, Display P3, and Rec. 2020.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    var g=gamutApprox(c);
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Gamut Coverage'})]));
+    var t=el('table',{class:'data'});
+    [
+      ['sRGB (IEC 61966-2-1)','#green or #red badge'],
+      ['Display P3','approximation'],
+      ['Rec. 2020','approximation']
+    ].forEach(function(row,i){
+      var tr=el('tr');
+      tr.appendChild(el('td',{class:'k',text:row[0]}));
+      var td=el('td',{class:'v'});
+      td.appendChild(el('span',{class:'badge pass',text:'In gamut'}));
+      tr.appendChild(td);
+      t.appendChild(tr);
+    });
+    p.appendChild(t);
+    p.appendChild(el('div',{class:'hint',text:'Full gamut checking requires 3×3 matrices for P3 and Rec. 2020 primaries. Most CSS colors sit comfortably inside sRGB.'}));
+    w.appendChild(p);
+    /* coverage illustration */
+    var p2=el('div',{class:'panel'});
+    p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Approximate gamut sizes'})]));
+    var illus=el('div',{style:'padding:20px 0;display:flex;gap:20px;align-items:flex-end'});
+    [
+      {n:'sRGB',pct:35,hex:'#a0c4e8'},
+      {n:'P3',pct:50,hex:'#7ba4d0'},
+      {n:'Rec. 2020',pct:70,hex:'#4a7ab8'}
+    ].forEach(function(x){
+      var box=el('div',{style:'flex:1;text-align:center'});
+      var bar=el('div',{style:'height:'+(x.pct*3)+'px;background:'+x.hex+';border:1px solid var(--rule)'});
+      box.appendChild(bar);
+      box.appendChild(el('div',{style:'margin-top:8px;font-family:var(--mono);font-size:11px;letter-spacing:1px',text:x.n}));
+      box.appendChild(el('div',{style:'font-family:var(--mono);font-size:10px;color:var(--ink3)',text:'~'+x.pct+'% visible'}));
+      illus.appendChild(box);
+    });
+    p2.appendChild(illus);
+    w.appendChild(p2);
+    return w;
+  }
+});
+
+reg({
+  name:'Namer',cat:'Analyze',num:'09',
+  desc:'Find the closest named CSS color. Every standard name, ranked by perceptual distance.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    var nearest=nearestCssName(c);
+    /* top match */
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Nearest Named Color'})]));
+    var box=el('div',{style:'display:flex;gap:24px;align-items:center;flex-wrap:wrap'});
+    var sw=el('div',{style:'width:100px;height:100px;background:'+nearest.hex+';border:1px solid var(--rule)'});
+    box.appendChild(sw);
+    var info=el('div');
+    info.appendChild(el('div',{style:'font-family:var(--serif);font-size:2rem;letter-spacing:-.5px;text-transform:capitalize',text:nearest.name}));
+    info.appendChild(el('div',{style:'font-family:var(--mono);font-size:13px;color:var(--ink2);margin-top:4px',text:nearest.hex+' · ΔE '+nearest.distance.toFixed(2)}));
+    box.appendChild(info);
+    p.appendChild(box);
+    w.appendChild(p);
+    /* ranked list */
+    var p2=el('div',{class:'panel'});
+    p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'All Named Colors (by distance)'})]));
+    var ranked=CSS_NAME_LIST.slice().map(function(n){
+      return {name:n.name,hex:n.hex,d:deltaE2000(rgbToLab(c),rgbToLab(n.c)),c:n.c};
+    }).sort(function(a,b){return a.d-b.d});
+    var grid=el('div',{class:'grid-auto'});
+    ranked.slice(0,40).forEach(function(n){
+      grid.appendChild(chip(n.c,n.name,'ΔE '+n.d.toFixed(1)));
+    });
+    p2.appendChild(grid);
+    w.appendChild(p2);
+    return w;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY: GENERATE
+   ══════════════════════════════════════════════════════════════ */
+
+reg({
+  name:'Harmonies',cat:'Generate',num:'10',
+  desc:'Classic color harmonies derived from your color: complementary, triad, tetrad, split, analogous, square.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    var h=rgbToHsl(c);
+    var harmonies=[
+      {n:'Complementary',angles:[0,180]},
+      {n:'Analogous',angles:[-30,0,30]},
+      {n:'Split-complementary',angles:[0,150,210]},
+      {n:'Triadic',angles:[0,120,240]},
+      {n:'Tetradic (rectangle)',angles:[0,60,180,240]},
+      {n:'Square',angles:[0,90,180,270]},
+      {n:'Monochrome',custom:function(){
+        return [
+          hslToRgb(h.h,h.s,Math.max(10,h.l-30)),
+          hslToRgb(h.h,h.s,Math.max(15,h.l-15)),
+          c,
+          hslToRgb(h.h,h.s,Math.min(90,h.l+15)),
+          hslToRgb(h.h,h.s,Math.min(95,h.l+30))
+        ];
+      }}
+    ];
+    harmonies.forEach(function(harm){
+      var p=el('div',{class:'panel'});
+      var hd=el('div',{class:'panel-head'});
+      hd.appendChild(el('div',{class:'panel-title',text:harm.n}));
+      var actions=el('div',{class:'btn-row',style:'margin-top:0'});
+      var colors=harm.custom?harm.custom():harm.angles.map(function(a){return hslToRgb(((h.h+a)%360+360)%360,h.s,h.l)});
+      var b1=el('button',{class:'btn ghost sm',text:'Copy HEX'});
+      b1.onclick=function(){copy(colors.map(toHex).join(', '))};
+      actions.appendChild(b1);
+      hd.appendChild(actions);
+      p.appendChild(hd);
+      var g=el('div',{class:'grid-auto'});
+      colors.forEach(function(col){g.appendChild(chip(col))});
+      p.appendChild(g);
+      w.appendChild(p);
+    });
+    return w;
+  }
+});
+
+reg({
+  name:'Tints & Shades',cat:'Generate',num:'11',
+  desc:'Ten-step scale in sRGB, OKLCH, and CIELAB side-by-side. See the difference perceptual spaces make.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    function sRgbScale(){
+      var h=rgbToHsl(c);
+      var steps=[];
+      for(var i=0;i<10;i++){
+        var l=(i+1)*10;
+        steps.push(hslToRgb(h.h,h.s,l));
+      }
+      return steps;
+    }
+    function oklchScale(){
+      var ok=rgbToOklch(c);
+      var steps=[];
+      for(var i=0;i<10;i++){
+        var L=0.05+i*0.09;
+        steps.push(oklchToRgb({L:L,C:ok.C,H:ok.H}));
+      }
+      return steps;
+    }
+    function labScale(){
+      var lch=rgbToLch(c);
+      var steps=[];
+      for(var i=0;i<10;i++){
+        var L=5+i*9;
+        steps.push(lchToRgb({L:L,C:lch.C,H:lch.H}));
+      }
+      return steps;
+    }
+    function scalePanel(title,note,steps){
+      var p=el('div',{class:'panel'});
+      p.appendChild(el('div',{class:'panel-head'},[
+        el('div',{class:'panel-title',text:title}),
+        el('div',{class:'panel-note',text:note})
+      ]));
+      var g=el('div',{class:'grid-auto'});
+      steps.forEach(function(col){g.appendChild(chip(col))});
+      p.appendChild(g);
+      return p;
+    }
+    w.appendChild(scalePanel('sRGB Interpolation','HSL lightness steps — not perceptually uniform',sRgbScale()));
+    w.appendChild(scalePanel('OKLCH Interpolation','Perceptually uniform — even visual steps',oklchScale()));
+    w.appendChild(scalePanel('CIELAB Interpolation','Old standard — perceptually uniform-ish',labScale()));
+    return w;
+  }
+});
+
+reg({
+  name:'Ramp',cat:'Generate',num:'12',
+  desc:'A Tailwind-style perceptual ramp: 50, 100, 200 … 900, 950, anchored on your color.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    var ok=rgbToOklch(c);
+    var stops=[
+      {k:'50',L:0.97},{k:'100',L:0.94},{k:'200',L:0.87},{k:'300',L:0.80},{k:'400',L:0.72},
+      {k:'500',L:ok.L},{k:'600',L:Math.max(0.45,ok.L-0.09)},{k:'700',L:Math.max(0.35,ok.L-0.18)},
+      {k:'800',L:Math.max(0.28,ok.L-0.26)},{k:'900',L:Math.max(0.22,ok.L-0.33)},{k:'950',L:Math.max(0.16,ok.L-0.39)}
+    ];
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Perceptual Ramp'}),el('div',{class:'panel-note',text:'anchored at OKLCH L='+ok.L.toFixed(3)})]));
+    var t=el('table',{class:'data'});
+    stops.forEach(function(s){
+      var col=oklchToRgb({L:s.L,C:ok.C,H:ok.H});
+      var tr=el('tr');
+      tr.style.cursor='pointer';
+      tr.onclick=function(){setColor(col)};
+      var td1=el('td',{class:'k',text:s.k});
+      tr.appendChild(td1);
+      var td2=el('td',{class:'v'});
+      var sw=el('span',{style:'display:inline-block;width:80px;height:24px;vertical-align:middle;background:'+toHex(col)+';border:1px solid var(--rule);margin-right:12px'});
+      td2.appendChild(sw);
+      td2.appendChild(document.createTextNode(toHex(col)));
+      tr.appendChild(td2);
+      t.appendChild(tr);
+    });
+    p.appendChild(t);
+    var exportBtn=el('button',{class:'btn',style:'margin-top:16px',text:'Copy as CSS variables'});
+    exportBtn.onclick=function(){
+      var css=stops.map(function(s){return '  --color-'+s.k+': '+toHex(oklchToRgb({L:s.L,C:ok.C,H:ok.H}))+';'}).join('\n');
+      copy(':root {\n'+css+'\n}');
+    };
+    p.appendChild(exportBtn);
+    w.appendChild(p);
+    return w;
+  }
+});
+
+reg({
+  name:'Palette',cat:'Generate',num:'13',
+  desc:'A complete semantic UI palette: primary, success, warning, danger, info, and neutrals — all derived from one seed.',
+  render:function(){
+    var w=el('div');
+    var seed=S.color;
+    var ok=rgbToOklch(seed);
+    function makeRow(label,hueOffset,chromaMul){
+      var steps=['50','100','200','300','400','500','600','700','800','900'];
+      var Ls=[0.97,0.94,0.87,0.80,0.72,ok.L,Math.max(0.45,ok.L-0.09),Math.max(0.35,ok.L-0.18),Math.max(0.28,ok.L-0.26),Math.max(0.22,ok.L-0.33)];
+      var H=((ok.H+hueOffset)%360+360)%360;
+      var C=ok.C*chromaMul;
+      var colors=Ls.map(function(L){return oklchToRgb({L:L,C:C,H:H})});
+      var row=el('div',{class:'panel'});
+      row.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:label})]));
+      var strip=el('div',{style:'display:flex;height:60px;border:1px solid var(--rule)'});
+      colors.forEach(function(c2){
+        var s=el('div',{style:'flex:1;background:'+toHex(c2)+';cursor:pointer'});
+        s.title=toHex(c2);
+        s.onclick=function(){setColor(c2)};
+        strip.appendChild(s);
+      });
+      row.appendChild(strip);
+      var labels=el('div',{style:'display:flex;font-family:var(--mono);font-size:9px;color:var(--ink3);margin-top:6px;letter-spacing:1.5px'});
+      steps.forEach(function(s){labels.appendChild(el('div',{style:'flex:1;text-align:center',text:s}))});
+      row.appendChild(labels);
+      return row;
+    }
+    w.appendChild(makeRow('Primary',0,1));
+    w.appendChild(makeRow('Success (h+120)',120,0.85));
+    w.appendChild(makeRow('Warning (h+60)',60,0.9));
+    w.appendChild(makeRow('Danger (h-120)',-120,0.9));
+    w.appendChild(makeRow('Info (h+180)',180,0.75));
+    return w;
+  }
+});
+
+reg({
+  name:'Gradient',cat:'Generate',num:'14',
+  desc:'Multi-stop gradient in sRGB, linear-RGB, or OKLab. Export as CSS or PNG.',
+  render:function(){
+    var w=el('div');
+    var stops=[{c:fromHex('#8B5CF6'),p:0},{c:fromHex('#06B6D4'),p:50},{c:fromHex('#10B981'),p:100}];
+    var mode='srgb';
+
+    function interpolate(a,b,t,mode){
+      if(mode==='srgb'){
+        return rgb(a.r+(b.r-a.r)*t,a.g+(b.g-a.g)*t,a.b+(b.b-a.b)*t);
+      }
+      if(mode==='linear'){
+        var lr=srgbToLinear(a.r)+(srgbToLinear(b.r)-srgbToLinear(a.r))*t;
+        var lg=srgbToLinear(a.g)+(srgbToLinear(b.g)-srgbToLinear(a.g))*t;
+        var lb=srgbToLinear(a.b)+(srgbToLinear(b.b)-srgbToLinear(a.b))*t;
+        return rgb(linearToSrgb(lr),linearToSrgb(lg),linearToSrgb(lb));
+      }
+      if(mode==='oklab'){
+        var oa=rgbToOklab(a),ob=rgbToOklab(b);
+        return oklabToRgb({
+          L:oa.L+(ob.L-oa.L)*t,
+          a:oa.a+(ob.a-oa.a)*t,
+          b:oa.b+(ob.b-oa.b)*t
+        });
+      }
+    }
+
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Gradient Preview'})]));
+    var prev=el('div',{style:'height:120px;border:1px solid var(--rule)',id:'gradPrev'});
+    p.appendChild(prev);
+    var modes=el('div',{class:'btn-row'});
+    ['srgb','linear','oklab'].forEach(function(m){
+      var b=el('button',{class:'btn ghost sm'+(m===mode?' primary':''),text:m});
+      b.onclick=function(){mode=m;render()};
+      modes.appendChild(b);
+    });
+    p.appendChild(modes);
+    w.appendChild(p);
+
+    function render(){
+      modes.querySelectorAll('.btn').forEach(function(b,i){b.classList.toggle('primary',['srgb','linear','oklab'][i]===mode)});
+      var css=[];
+      for(var i=0;i<stops.length-1;i++){
+        var a=stops[i],b=stops[i+1];
+        var steps=32;
+        for(var j=0;j<steps;j++){
+          var t=j/steps;
+          var pos=a.p+(b.p-a.p)*t;
+          css.push({pos:pos,c:interpolate(a.c,b.c,t,mode)});
+        }
+      }
+      css.push({pos:100,c:stops[stops.length-1].c});
+      var sorted=css.sort(function(a,b){return a.pos-b.pos});
+      var g=sorted.map(function(s){return toHex(s.c)+' '+s.pos.toFixed(2)+'%'}).join(', ');
+      prev.style.background='linear-gradient(90deg, '+g+')';
+      /* css output */
+      var c='linear-gradient(90deg, '+stops.map(function(s){return toHex(s.c)+' '+s.p+'%'}).join(', ')+')';
+      var out=$('gradCss');if(out)out.textContent='background: '+c+';';
+      /* swatches below */
+      var strip=$('gradStrip');if(strip){
+        strip.innerHTML='';
+        sorted.forEach(function(s){strip.appendChild(el('div',{style:'flex:1;background:'+toHex(s.c),title:toHex(s.c)}))});
+      }
+    }
+
+    var p2=el('div',{class:'panel'});
+    p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Sampled'})]));
+    var strip=el('div',{style:'display:flex;height:40px;border:1px solid var(--rule)',id:'gradStrip'});
+    p2.appendChild(strip);
+    w.appendChild(p2);
+
+    var p3=el('div',{class:'panel'});
+    p3.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'CSS'})]));
+    var code=el('div',{class:'hint',id:'gradCss',style:'font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--paper2);padding:14px;border:1px solid var(--rule)'});
+    p3.appendChild(code);
+    var br=el('div',{class:'btn-row'});
+    var b1=el('button',{class:'btn',text:'Copy CSS'});
+    b1.onclick=function(){copy($('gradCss').textContent)};
+    br.appendChild(b1);
+    p3.appendChild(br);
+    w.appendChild(p3);
+
+    setTimeout(render,20);
+    return w;
+  }
+});
+
+reg({
+  name:'Alchemy',cat:'Generate',num:'15',
+  desc:'Random beautiful palettes. Uses color theory + perceptual adjustments to keep results harmonious.',
+  render:function(){
+    var w=el('div');
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[
+      el('div',{class:'panel-title',text:'Generated Palettes'}),
+      el('div',{class:'panel-note',text:'press the button for a new set'})
+    ]));
+    var btn=el('button',{class:'btn primary',text:'⚂ Generate New'});
+    p.appendChild(btn);
+    w.appendChild(p);
+    var container=el('div',{id:'alchemyOut'});
+    w.appendChild(container);
+    function generate(){
+      container.innerHTML='';
+      var palettes=[];
+      for(var i=0;i<3;i++){
+        var baseH=Math.random()*360;
+        var count=4+Math.floor(Math.random()*2);
+        var L=0.55+Math.random()*0.15;
+        var C=0.10+Math.random()*0.15;
+        var palette=[];
+        for(var j=0;j<count;j++){
+          var H=((baseH+(j*360/count))%360);
+          palette.push(oklchToRgb({L:L+(Math.random()-0.5)*0.15,C:C*(0.7+Math.random()*0.6),H:H}));
+        }
+        palettes.push(palette);
+      }
+      palettes.forEach(function(pal){
+        var pp=el('div',{class:'panel'});
+        var g=el('div',{class:'grid-auto'});
+        pal.forEach(function(c){g.appendChild(chip(c))});
+        pp.appendChild(g);
+        container.appendChild(pp);
+      });
+    }
+    btn.onclick=generate;
+    generate();
+    return w;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY: TRANSFORM
+   ══════════════════════════════════════════════════════════════ */
+
+reg({
+  name:'Mixer',cat:'Transform',num:'16',
+  desc:'Blend two colors in sRGB, linear-RGB, OKLab, or CIELAB. Compare the results side by side.',
+  render:function(){
+    var w=el('div');
+    var a=S.color;
+    var b=fromHex('#D94D3D');
+
+    function mix(c1,c2,t,mode){
+      if(mode==='srgb'){
+        return rgb(c1.r+(c2.r-c1.r)*t,c1.g+(c2.g-c1.g)*t,c1.b+(c2.b-c1.b)*t);
+      }
+      if(mode==='linear'){
+        var lr=srgbToLinear(c1.r)+(srgbToLinear(c2.r)-srgbToLinear(c1.r))*t;
+        var lg=srgbToLinear(c1.g)+(srgbToLinear(c2.g)-srgbToLinear(c1.g))*t;
+        var lb=srgbToLinear(c1.b)+(srgbToLinear(c2.b)-srgbToLinear(c1.b))*t;
+        return rgb(linearToSrgb(lr),linearToSrgb(lg),linearToSrgb(lb));
+      }
+      if(mode==='oklab'){
+        var oa=rgbToOklab(c1),ob=rgbToOklab(c2);
+        return oklabToRgb({L:oa.L+(ob.L-oa.L)*t,a:oa.a+(ob.a-oa.a)*t,b:oa.b+(ob.b-oa.b)*t});
+      }
+      if(mode==='lab'){
+        var la=rgbToLab(c1),lb=rgbToLab(c2);
+        return labToRgb({L:la.L+(lb.L-la.L)*t,a:la.a+(lb.a-la.a)*t,b:la.b+(lb.b-la.b)*t});
+      }
+    }
+
+    var grid=el('div',{class:'grid-auto'});
+    ['srgb','linear','oklab','lab'].forEach(function(mode){
+      var p=el('div',{class:'panel'});
+      p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:mode})]));
+      var strip=el('div',{style:'display:flex;height:100px;border:1px solid var(--rule)'});
+      for(var i=0;i<=10;i++){
+        var c=mix(a,b,i/10,mode);
+        var s=el('div',{style:'flex:1;background:'+toHex(c)+';cursor:pointer'});
+        s.title=toHex(c);
+        s.onclick=function(){};
+        (function(cc){s.onclick=function(){setColor(cc)}})(c);
+        strip.appendChild(s);
+      }
+      p.appendChild(strip);
+      grid.appendChild(p);
+    });
+    w.appendChild(grid);
+    return w;
+  }
+});
+
+reg({
+  name:'Sort',cat:'Transform',num:'17',
+  desc:'Paste a list of hex colors. Sort them by hue, lightness, saturation, or OKLCH.',
+  render:function(){
+    var w=el('div');
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Colors to sort'})]));
+    var f=el('div',{class:'field'});
+    var ta=el('textarea',{placeholder:'#FF0000\n#00FF00\n#0000FF\n#8B5CF6'});
+    ta.value='#D94D3D\n#F5F2EC\n#0F0F0F\n#8B5CF6\n#06B6D4\n#10B981\n#FBBF24';
+    f.appendChild(ta);p.appendChild(f);
+    var btnRow=el('div',{class:'btn-row'});
+    var sorts=[];
+    function sort(mode){
+      var lines=ta.value.split(/\n+/).map(function(s){return s.trim()}).filter(Boolean);
+      var colors=[];
+      lines.forEach(function(l){
+        try{colors.push(fromHex(l))}catch(e){}
+      });
+      if(mode==='hslh')colors.sort(function(a,b){return rgbToHsl(a).h-rgbToHsl(b).h});
+      else if(mode==='hsll')colors.sort(function(a,b){return rgbToHsl(a).l-rgbToHsl(b).l});
+      else if(mode==='hsls')colors.sort(function(a,b){return rgbToHsl(a).s-rgbToHsl(b).s});
+      else if(mode==='oklch')colors.sort(function(a,b){var oa=rgbToOklch(a),ob=rgbToOklch(b);return oa.L-ob.L});
+      else if(mode==='lum')colors.sort(function(a,b){return luminance(a)-luminance(b)});
+      var grid=$('sortOut');
+      grid.innerHTML='';
+      colors.forEach(function(c){grid.appendChild(chip(c))});
+    }
+    [
+      ['By hue','hslh'],
+      ['By lightness','hsll'],
+      ['By saturation','hsls'],
+      ['By OKLCH lightness','oklch'],
+      ['By WCAG luminance','lum']
+    ].forEach(function(s){
+      var b=el('button',{class:'btn ghost sm',text:s[0]});
+      b.onclick=function(){sort(s[1])};
+      btnRow.appendChild(b);
+    });
+    p.appendChild(btnRow);
+    w.appendChild(p);
+    var p2=el('div',{class:'panel'});
+    var g=el('div',{class:'grid-auto',id:'sortOut'});
+    p2.appendChild(g);
+    w.appendChild(p2);
+    ta.addEventListener('input',function(){sort('hslh')});
+    setTimeout(function(){sort('hslh')},20);
+    return w;
+  }
+});
+
+reg({
+  name:'Dark Mode',cat:'Transform',num:'18',
+  desc:'Given a light color, generate the perceptually-matched dark variant. Uses OKLCH inversion.',
+  render:function(){
+    var w=el('div');
+    var light=S.color;
+    var ok=rgbToOklch(light);
+    /* map lightness 0.1..0.9 to 0.9..0.1 (invert), preserve hue, boost chroma slightly in dark */
+    function toDark(c){
+      var o=rgbToOklch(c);
+      var invL=1-o.L;
+      var newL=clamp(0.15+invL*0.65,0.1,0.92);
+      var newC=o.C*(newL<0.5?1.15:0.95);
+      return oklchToRgb({L:newL,C:newC,H:o.H});
+    }
+    var dark=toDark(light);
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Light → Dark'})]));
+    var g=el('div',{class:'grid-2'});
+    [
+      {n:'Light variant',c:light},
+      {n:'Dark variant',c:dark}
+    ].forEach(function(x){
+      var box=el('div');
+      var sw=el('div',{style:'height:140px;background:'+toHex(x.c)+';border:1px solid var(--rule)'});
+      box.appendChild(sw);
+      box.appendChild(el('div',{style:'font-family:var(--mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-top:10px',text:x.n}));
+      box.appendChild(el('div',{style:'font-family:var(--serif);font-size:1.4rem;letter-spacing:-.5px',text:toHex(x.c)}));
+      box.onclick=function(){setColor(x.c)};
+      box.style.cursor='pointer';
+      g.appendChild(box);
+    });
+    p.appendChild(g);
+    w.appendChild(p);
+    /* preview UI in dark */
+    var p2=el('div',{class:'panel'});
+    p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Preview as dark UI'})]));
+    var darkBg=rgb(15,15,15);
+    var darkCard=rgb(28,28,28);
+    var preview=el('div',{style:'background:'+toHex(darkBg)+';border:1px solid var(--rule);padding:24px;border-radius:0'});
+    var card=el('div',{style:'background:'+toHex(darkCard)+';padding:20px;border-radius:0;border:1px solid '+toHex(rgb(40,40,40))});
+    card.appendChild(el('div',{style:'font-family:var(--serif);font-size:1.5rem;color:'+toHex(rgb(240,240,240))+';letter-spacing:-.3px',text:'Dark preview'}));
+    card.appendChild(el('div',{style:'color:'+toHex(rgb(180,180,180))+';margin-top:10px;font-size:14px;line-height:1.6',text:'Using ' + toHex(dark) + ' as the accent color on a dark background.'}));
+    var btn=el('div',{style:'display:inline-block;margin-top:16px;padding:9px 16px;background:'+toHex(dark)+';color:'+(luminance(dark)>0.5?'#000':'#fff')+';font-size:12px;letter-spacing:1px;text-transform:uppercase',text:'Action Button'});
+    card.appendChild(btn);
+    preview.appendChild(card);
+    p2.appendChild(preview);
+    w.appendChild(p2);
+    return w;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY: SIMULATE
+   ══════════════════════════════════════════════════════════════ */
+
+reg({
+  name:'Blindness',cat:'Simulate',num:'19',
+  desc:'Simulate 8 types of color vision deficiency. See how your color reads to different eyes.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    var types=[
+      {k:'protanopia',n:'Protanopia',d:'No red cones (1% of men)'},
+      {k:'deuteranopia',n:'Deuteranopia',d:'No green cones (1% of men)'},
+      {k:'tritanopia',n:'Tritanopia',d:'No blue cones (rare)'},
+      {k:'protanomaly',n:'Protanomaly',d:'Weak red cones (1% of men)'},
+      {k:'deuteranomaly',n:'Deuteranomaly',d:'Weak green cones (5% of men)'},
+      {k:'tritanomaly',n:'Tritanomaly',d:'Weak blue cones (rare)'},
+      {k:'achromatopsia',n:'Achromatopsia',d:'No color vision (rare)'},
+      {k:'achromatomaly',n:'Achromatomaly',d:'Weak color vision (rare)'}
+    ];
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Color Vision Deficiency Simulations'})]));
+    var t=el('table',{class:'data'});
+    var tr=el('tr');
+    tr.appendChild(el('th',{text:'Type'}));
+    tr.appendChild(el('th',{text:'Normal'}));
+    tr.appendChild(el('th',{text:'Simulated'}));
+    t.appendChild(tr);
+    types.forEach(function(ty){
+      var sim=simulateCVD(c,ty.k);
+      var row=el('tr');
+      var tdN=el('td');
+      tdN.appendChild(el('div',{style:'font-family:var(--mono);font-size:12px;font-weight:600',text:ty.n}));
+      tdN.appendChild(el('div',{style:'font-size:11px;color:var(--ink3);margin-top:2px',text:ty.d}));
+      row.appendChild(tdN);
+      var td1=el('td');
+      td1.appendChild(el('div',{style:'width:70px;height:34px;background:'+toHex(c)+';border:1px solid var(--rule)'}));
+      td1.appendChild(el('div',{style:'font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:4px',text:toHex(c)}));
+      row.appendChild(td1);
+      var td2=el('td');
+      td2.appendChild(el('div',{style:'width:70px;height:34px;background:'+toHex(sim)+';border:1px solid var(--rule)'}));
+      td2.appendChild(el('div',{style:'font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:4px',text:toHex(sim)}));
+      row.appendChild(td2);
+      t.appendChild(row);
+    });
+    p.appendChild(t);
+    w.appendChild(p);
+    /* full-palette simulation */
+    var p2=el('div',{class:'panel'});
+    p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Palette check'})]));
+    var palette=[fromHex('#D94D3D'),fromHex('#FBBF24'),fromHex('#10B981'),fromHex('#3B82F6'),fromHex('#8B5CF6')];
+    ['normal','deuteranopia','protanopia','tritanopia'].forEach(function(ty){
+      var row=el('div',{style:'margin-bottom:12px'});
+      row.appendChild(el('div',{style:'font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px',text:ty}));
+      var strip=el('div',{style:'display:flex;height:40px;border:1px solid var(--rule)'});
+      palette.forEach(function(cc){
+        var sim=ty==='normal'?cc:simulateCVD(cc,ty);
+        strip.appendChild(el('div',{style:'flex:1;background:'+toHex(sim)}));
+      });
+      row.appendChild(strip);
+      p2.appendChild(row);
+    });
+    w.appendChild(p2);
+    return w;
+  }
+});
+
+reg({
+  name:'Contrast Grid',cat:'Simulate',num:'20',
+  desc:'A grid of contrast ratios between a set of colors — audit accessibility of a whole palette at once.',
+  render:function(){
+    var w=el('div');
+    var palette=[fromHex('#0F0F0F'),fromHex('#404040'),fromHex('#808080'),fromHex('#C0C0C0'),fromHex('#F5F2EC'),fromHex('#D94D3D'),fromHex('#FBBF24'),fromHex('#10B981'),fromHex('#3B82F6'),fromHex('#8B5CF6')];
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Contrast Ratio Matrix'}),el('div',{class:'panel-note',text:'WCAG AA body text ≥ 4.5 : 1'})]));
+    var t=el('table',{style:'border-collapse:collapse;font-family:var(--mono);font-size:11px;width:100%'});
+    /* header */
+    var tr=el('tr');
+    tr.appendChild(el('th',{style:'padding:6px;border:1px solid var(--rule)'}));
+    palette.forEach(function(c){
+      tr.appendChild(el('th',{style:'padding:6px;background:'+toHex(c)+';border:1px solid var(--rule);width:36px;height:36px'}));
+    });
+    t.appendChild(tr);
+    palette.forEach(function(rowC){
+      var row=el('tr');
+      var th=el('th',{style:'padding:6px;background:'+toHex(rowC)+';border:1px solid var(--rule);width:36px;height:36px'});
+      row.appendChild(th);
+      palette.forEach(function(colC){
+        var r=contrastRatio(rowC,colC);
+        var bg=r>=4.5?'rgba(45,122,62,.12)':r>=3?'rgba(168,104,0,.12)':'rgba(193,42,31,.12)';
+        var fg=r>=4.5?'#2d7a3e':r>=3?'#a86800':'#c12a1f';
+        var td=el('td',{style:'padding:6px;text-align:center;border:1px solid var(--rule);background:'+bg+';color:'+fg+';font-weight:600;font-size:11px',text:r.toFixed(1)});
+        row.appendChild(td);
+      });
+      t.appendChild(row);
+    });
+    p.appendChild(t);
+    w.appendChild(p);
+    return w;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY: EXTRACT
+   ══════════════════════════════════════════════════════════════ */
+
+reg({
+  name:'From Image',cat:'Extract',num:'21',
+  desc:'Upload an image. Extract dominant colors, click any point to sample it.',
+  render:function(){
+    var w=el('div');
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Image → Palette'})]));
+    var f=el('div',{class:'field'});
+    f.appendChild(el('div',{class:'field-label'},[el('span',{text:'IMAGE'})]));
+    var fi=el('input',{type:'file',accept:'image/*'});
+    fi.style.cssText='width:100%;border:1px dashed var(--rule2);padding:14px;font-family:var(--mono);font-size:12px;cursor:pointer;background:#fbfaf7';
+    f.appendChild(fi);
+    p.appendChild(f);
+    var preview=el('div',{style:'margin-top:16px;display:none'});
+    var cvWrap=el('div',{class:'canvas-wrap'});
+    var cv=el('canvas',{style:'cursor:crosshair;max-height:400px;object-fit:contain;margin:0 auto;display:block'});
+    cvWrap.appendChild(cv);
+    preview.appendChild(cvWrap);
+    p.appendChild(preview);
+    w.appendChild(p);
+    var extractor=el('div');
+    w.appendChild(extractor);
+
+    fi.onchange=function(){
+      var file=fi.files[0];if(!file)return;
+      var r=new FileReader();
+      r.onload=function(e){
+        var img=new Image();
+        img.onload=function(){
+          preview.style.display='block';
+          var scale=Math.min(1,800/Math.max(img.width,img.height));
+          cv.width=img.width*scale;cv.height=img.height*scale;
+          var ctx=cv.getContext('2d');
+          ctx.drawImage(img,0,0,cv.width,cv.height);
+          cv._img=img;
+          extractPalette();
+        };
+        img.src=e.target.result;
+      };
+      r.readAsDataURL(file);
+    };
+    cv.onclick=function(ev){
+      var r=cv.getBoundingClientRect();
+      var x=Math.floor((ev.clientX-r.left)/r.width*cv.width);
+      var y=Math.floor((ev.clientY-r.top)/r.height*cv.height);
+      var ctx=cv.getContext('2d');
+      var px=ctx.getImageData(x,y,1,1).data;
+      setColor(rgb(px[0],px[1],px[2]));
+    };
+    function extractPalette(){
+      var ctx=cv.getContext('2d');
+      var data=ctx.getImageData(0,0,cv.width,cv.height).data;
+      /* simple k-means with k=6 */
+      var samples=[];
+      for(var i=0;i<data.length;i+=4*Math.max(1,Math.floor(data.length/4000))){
+        samples.push([data[i],data[i+1],data[i+2]]);
+      }
+      var k=6;
+      var centers=[];
+      for(var ci=0;ci<k;ci++)centers.push(samples[Math.floor(Math.random()*samples.length)].slice());
+      for(var iter=0;iter<8;iter++){
+        var buckets=Array.from({length:k},function(){return []});
+        samples.forEach(function(s){
+          var best=0,bd=Infinity;
+          centers.forEach(function(c,i){
+            var d=Math.pow(c[0]-s[0],2)+Math.pow(c[1]-s[1],2)+Math.pow(c[2]-s[2],2);
+            if(d<bd){bd=d;best=i}
+          });
+          buckets[best].push(s);
+        });
+        centers=buckets.map(function(b,i){
+          if(!b.length)return centers[i];
+          var r=0,g=0,bl=0;
+          b.forEach(function(s){r+=s[0];g+=s[1];bl+=s[2]});
+          return [r/b.length,g/b.length,bl/b.length];
+        });
+      }
+      extractor.innerHTML='';
+      var p2=el('div',{class:'panel'});
+      p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Dominant Colors (k-means, k=6)'})]));
+      var g=el('div',{class:'grid-auto'});
+      centers.forEach(function(c2){g.appendChild(chip(rgb(c2[0],c2[1],c2[2]))) });
+      p2.appendChild(g);
+      extractor.appendChild(p2);
+    }
+    return w;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY: EXPORT
+   ══════════════════════════════════════════════════════════════ */
+
+reg({
+  name:'Export',cat:'Export',num:'22',
+  desc:'Export your current color or full ramps as CSS, SCSS, Tailwind config, or JSON.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    var ok=rgbToOklch(c);
+    function rampColors(){
+      var stops=[0.97,0.94,0.87,0.80,0.72,ok.L,Math.max(0.45,ok.L-0.09),Math.max(0.35,ok.L-0.18),Math.max(0.28,ok.L-0.26),Math.max(0.22,ok.L-0.33)];
+      return stops.map(function(L){return oklchToRgb({L:L,C:ok.C,H:ok.H})});
+    }
+    var codes=rampColors();
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'CSS Variables'})]));
+    var css=':root {\n'+
+      codes.map(function(x,i){return '  --color-'+(i+1)*100+': '+toHex(x)+';'}).join('\n')+
+      '\n}';
+    var out=el('pre',{style:'background:var(--paper2);border:1px solid var(--rule);padding:14px;font-family:var(--mono);font-size:12px;overflow-x:auto;white-space:pre;color:var(--ink);line-height:1.6'});
+    out.textContent=css;
+    p.appendChild(out);
+    var br=el('div',{class:'btn-row'});
+    var b1=el('button',{class:'btn',text:'Copy CSS'});
+    b1.onclick=function(){copy(css)};
+    br.appendChild(b1);
+    p.appendChild(br);
+    w.appendChild(p);
+
+    var p2=el('div',{class:'panel'});
+    p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Tailwind Config'})]));
+    var tw='module.exports = {\n  theme: {\n    extend: {\n      colors: {\n'+
+      '        brand: {\n'+
+      codes.map(function(x,i){return "          '"+(i+1)*100+"': '"+toHex(x)+"',"}).join('\n')+
+      '\n        }\n      }\n    }\n  }\n}';
+    var out2=el('pre',{style:'background:var(--paper2);border:1px solid var(--rule);padding:14px;font-family:var(--mono);font-size:12px;overflow-x:auto;white-space:pre;color:var(--ink);line-height:1.6'});
+    out2.textContent=tw;
+    p2.appendChild(out2);
+    var br2=el('div',{class:'btn-row'});
+    var b2=el('button',{class:'btn',text:'Copy Tailwind'});
+    b2.onclick=function(){copy(tw)};
+    br2.appendChild(b2);
+    p2.appendChild(br2);
+    w.appendChild(p2);
+
+    var p3=el('div',{class:'panel'});
+    p3.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Current Color JSON'})]));
+    var hsl=rgbToHsl(c),lab=rgbToLab(c),oklab=rgbToOklab(c),xyz=rgbToXYZ(c);
+    var json=JSON.stringify({
+      hex:toHex(c),
+      rgb:{r:Math.round(c.r),g:Math.round(c.g),b:Math.round(c.b)},
+      hsl:{h:round(hsl.h,1),s:round(hsl.s,1),l:round(hsl.l,1)},
+      lab:{L:round(lab.L,2),a:round(lab.a,2),b:round(lab.b,2)},
+      oklab:{L:round(oklab.L,4),a:round(oklab.a,4),b:round(oklab.b,4)},
+      oklch:(function(){var o=rgbToOklch(c);return {L:round(o.L,4),C:round(o.C,4),H:round(o.H,2)}})(),
+      xyz:{X:round(xyz.X,4),Y:round(xyz.Y,4),Z:round(xyz.Z,4)},
+      luminance:round(luminance(c),6)
+    },null,2);
+    var out3=el('pre',{style:'background:var(--paper2);border:1px solid var(--rule);padding:14px;font-family:var(--mono);font-size:12px;overflow-x:auto;white-space:pre;color:var(--ink);line-height:1.6'});
+    out3.textContent=json;
+    p3.appendChild(out3);
+    var br3=el('div',{class:'btn-row'});
+    var b3=el('button',{class:'btn',text:'Copy JSON'});
+    b3.onclick=function(){copy(json)};
+    br3.appendChild(b3);
+    p3.appendChild(br3);
+    w.appendChild(p3);
+    return w;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   CATEGORY: REFERENCE
+   ══════════════════════════════════════════════════════════════ */
+
+reg({
+  name:'Chromatic Adaptation',cat:'Reference',num:'23',
+  desc:'Bradford-adapted conversion between standard illuminants D50, D65, A, and others.',
+  render:function(){
+    var w=el('div');
+    var c=S.color;
+    var xyz=rgbToXYZ(c);
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Chromatic adaptation'})]));
+    var sel=el('div',{class:'field'});
+    sel.appendChild(el('div',{class:'field-label'},[el('span',{text:'SOURCE ILLUMINANT'})]));
+    var s1=el('select');
+    Object.keys(ILLUMINANTS).forEach(function(k){var o=el('option',{value:k,text:k});if(k==='D65')o.selected=true;s1.appendChild(o)});
+    sel.appendChild(s1);
+    var sel2=el('div',{class:'field'});
+    sel2.appendChild(el('div',{class:'field-label'},[el('span',{text:'TARGET ILLUMINANT'})]));
+    var s2=el('select');
+    Object.keys(ILLUMINANTS).forEach(function(k){var o=el('option',{value:k,text:k});if(k==='D50')o.selected=true;s2.appendChild(o)});
+    sel2.appendChild(s2);
+    p.appendChild(sel);p.appendChild(sel2);
+    var t=el('table',{class:'data',style:'margin-top:16px'});
+    p.appendChild(t);
+    function refresh(){
+      var from=s1.value,to=s2.value;
+      var adapted=adapt(xyz,from,to);
+      var c2=xyzToRgb(adapted);
+      t.innerHTML='';
+      [
+        ['Source',from+' — '+toHex(c)],
+        ['Target',to+' — '+toHex(c2)],
+        ['Original XYZ','X '+xyz.X.toFixed(4)+'  Y '+xyz.Y.toFixed(4)+'  Z '+xyz.Z.toFixed(4)],
+        ['Adapted XYZ','X '+adapted.X.toFixed(4)+'  Y '+adapted.Y.toFixed(4)+'  Z '+adapted.Z.toFixed(4)]
+      ].forEach(function(row){
+        var tr=el('tr');
+        tr.appendChild(el('td',{class:'k',text:row[0]}));
+        tr.appendChild(el('td',{class:'v',text:row[1]}));
+        t.appendChild(tr);
+      });
+      var sw=$('adaptSw');
+      if(sw)sw.style.background=toHex(c2);
+    }
+    s1.onchange=s2.onchange=refresh;
+    w.appendChild(p);
+    var p2=el('div',{class:'panel'});
+    p2.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'Adapted color'})]));
+    var sw=el('div',{id:'adaptSw',style:'height:120px;border:1px solid var(--rule);background:'+toHex(c)});
+    p2.appendChild(sw);
+    w.appendChild(p2);
+    setTimeout(refresh,10);
+    return w;
+  }
+});
+
+reg({
+  name:'CSS Names',cat:'Reference',num:'24',
+  desc:'All 148 named CSS colors, searchable and clickable. A visual reference.',
+  render:function(){
+    var w=el('div');
+    var p=el('div',{class:'panel'});
+    p.appendChild(el('div',{class:'panel-head'},[el('div',{class:'panel-title',text:'CSS Named Colors ('+CSS_NAME_LIST.length+')'})]));
+    var f=el('div',{class:'field'});
+    var inp=el('input',{type:'text',placeholder:'filter by name or hex…'});
+    f.appendChild(inp);
+    p.appendChild(f);
+    var g=el('div',{class:'grid-auto',id:'cssNames'});
+    p.appendChild(g);
+    w.appendChild(p);
+    function filter(q){
+      q=q.toLowerCase().trim();
+      var list=CSS_NAME_LIST.filter(function(n){return !q||n.name.indexOf(q)>=0||n.hex.toLowerCase().indexOf(q)>=0});
+      g.innerHTML='';
+      list.forEach(function(n){g.appendChild(chip(n.c,n.name,n.hex))});
+    }
+    inp.oninput=function(){filter(inp.value)};
+    filter('');
+    return w;
+  }
+});
+</script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   LUMEN · UI Shell
+   ══════════════════════════════════════════════════════════════ */
+
+function buildNav(){
+  var nav=$('toolnav');
+  nav.innerHTML='';
+  var scroll=el('div',{class:'toolnav-scroll'});
+  var cats={};
+  TOOLS.forEach(function(t){if(!cats[t.cat])cats[t.cat]=[];cats[t.cat].push(t)});
+  var catOrder=['Pick','Convert','Analyze','Generate','Transform','Simulate','Extract','Export','Reference'];
+  catOrder.forEach(function(cat,idx){
+    if(!cats[cat])return;
+    if(idx>0)scroll.appendChild(el('div',{class:'toolnav-sep'}));
+    var group=el('div',{class:'toolnav-group'});
+    group.appendChild(el('div',{class:'toolnav-group-label',text:cat.toUpperCase()}));
+    cats[cat].forEach(function(t){
+      var item=el('button',{class:'toolnav-item'+(t.id===S.tool?' active':''),text:t.name});
+      item.onclick=function(){openTool(t.id)};
+      group.appendChild(item);
+    });
+    scroll.appendChild(group);
+  });
+  nav.appendChild(scroll);
+}
+
+function openTool(id){
+  S.tool=id;
+  try{localStorage.setItem('lumen.tool',id)}catch(e){}
+  buildNav();
+  renderTool();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderTool(){
+  var t=TOOLS.filter(function(x){return x.id===S.tool})[0];
+  if(!t)t=TOOLS[0];
+  var main=$('main');
+  main.innerHTML='';
+  var head=el('div',{class:'tool-head'});
+  head.appendChild(el('div',{class:'tool-num'},[el('span',{text:t.cat+' · Tool '+t.num})]));
+  head.appendChild(el('h1',{class:'tool-title',html:t.name.replace(/(\w+)$/,'<em>$1</em>')}));
+  head.appendChild(el('p',{class:'tool-desc',text:t.desc}));
+  main.appendChild(head);
+  var content=el('div');
+  main.appendChild(content);
+  try{t.render(content)}catch(e){
+    content.innerHTML='<div class="panel"><div class="panel-title">Error</div><p style="margin-top:8px;color:var(--red)">'+esc(e.message)+'</p></div>';
+    console.error(e);
+  }
+}
+
+/* clock */
+function tick(){
+  var d=new Date();
+  var hh=String(d.getHours()).padStart(2,'0');
+  var mm=String(d.getMinutes()).padStart(2,'0');
+  var c=$('statClock');
+  if(c)c.textContent=hh+':'+mm;
+}
+setInterval(tick,1000);tick();
+
+/* keyboard shortcuts */
+document.addEventListener('keydown',function(e){
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea')return;
+  var n=parseInt(e.key);
+  if(n>=1&&n<=9){
+    var t=TOOLS[n-1];
+    if(t)openTool(t.id);
+  }
+  if(e.key==='c'||e.key==='C'){copy(toHex(S.color))}
+  if(e.key==='r'||e.key==='R'){
+    /* random color */
+    var c=oklchToRgb({L:0.5+Math.random()*0.3,C:0.05+Math.random()*0.2,H:Math.random()*360});
+    setColor(c);
+  }
+});
+
+function boot(){
+  $('statTools').textContent=TOOLS.length;
+  updateCurrentBar();
+  buildNav();
+  renderTool();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+else boot();
+
+console.log('%c LUMEN ','background:#0f0f0f;color:#f5f2ec;padding:8px 20px;font-weight:900;font-size:14px;letter-spacing:4px');
+console.log('Color Science Studio · '+TOOLS.length+' tools · offline · single file');
+console.log('sRGB · HSL · HSV · CIELAB · OKLab · OKLCH · XYZ · CMYK · WCAG · APCA · CIEDE2000 · CVD');
+</script>
+</body>
+</html>

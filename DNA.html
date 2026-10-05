@@ -1,0 +1,2328 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="bio">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>DNA — Bioinformatics Lab</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px;border:2px solid transparent;background-clip:content-box}
+
+:root{
+  --bg:#040a08;--bg2:#081410;--bg3:#0e2018;--bg4:#163024;
+  --panel:#081410;--panel2:#0e2018;--panel3:#163024;--panel4:#204838;
+  --bd:#0e2820;--bd2:#1e4838;--bd3:#2e7060;
+  --tx:#d0ffe0;--tx2:#80c0a0;--tx3:#4a8068;--mu:#2a5040;
+  --c1:#40ffa0;--c1h:#80ffc0;--c1l:#20c080;
+  --c2:#40d0ff;--c2h:#80e0ff;--c2l:#2090c0;
+  --c3:#ff60a0;--c3h:#ff90c0;--c3l:#c03080;
+  --c4:#ffd040;--c4h:#ffe880;--c4l:#c0a020;
+  --c5:#c060ff;--c5h:#d090ff;--c5l:#8030c0;
+  --c6:#ff8040;--c6h:#ffa870;--c6l:#c05020;
+  --ok:#40ffa0;--warn:#ffd040;--err:#ff60a0;--info:#40d0ff;
+  --g1:linear-gradient(135deg,#40ffa0,#40d0ff);
+  --g2:linear-gradient(135deg,#ff60a0,#ffd040);
+  --gHolo:linear-gradient(120deg,#40ffa0,#40d0ff,#c060ff,#ff60a0,#ffd040,#40ffa0);
+  --r:9px;--rs:6px;--rxs:4px;--rf:9999px;
+  --sh:0 6px 24px rgba(0,0,0,.8);
+  --sh2:0 14px 42px rgba(0,0,0,1);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .13s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"]{
+  --bg:#f0fff8;--bg2:#e0f8f0;--bg3:#d0f0e0;--panel:#fff;--panel2:#f0fff8;--panel3:#e0f8f0;
+  --bd:#c0e0d0;--bd2:#a0c8b8;--tx:#0a2018;--tx2:#306048;--tx3:#609080;
+  --c1:#00a060;--c2:#0060a0;--c3:#c02060;--c4:#a08000;--c5:#7030c0;--c6:#c05020;
+  --g1:linear-gradient(135deg,#00a060,#0060a0)}
+[data-theme="mono"]{--bg:#08080a;--bg2:#101014;--bg3:#18181e;--panel:#101014;--panel2:#18181e;--panel3:#202028;
+  --bd:#282830;--bd2:#404048;--tx:#e0e0e6;--tx2:#a0a0b0;--c1:#e0e0e6;--c2:#a0a0b0;--c3:#c0c0c8;
+  --g1:linear-gradient(135deg,#e0e0e6,#808088)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+#boot{position:fixed;inset:0;background:#040a08;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px;overflow:hidden}
+#boot.hidden{opacity:0;pointer-events:none}
+#bootHelix{position:absolute;inset:0;pointer-events:none;opacity:.5}
+.boot-logo{font-family:var(--disp);font-size:3.2rem;font-weight:900;letter-spacing:16px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:6px;position:relative;z-index:1}
+.boot-sub{font-size:.66rem;color:#40ffa0;letter-spacing:10px;margin-bottom:26px;opacity:.75;position:relative;z-index:1}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#0e2018;border-radius:2px;overflow:hidden;margin-bottom:10px;position:relative;z-index:1}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #40ffa0}
+.boot-pct{font-size:.66rem;color:#40ffa0;margin-bottom:14px;position:relative;z-index:1}
+.boot-log{font-size:.58rem;color:#4a8068;text-align:left;width:min(460px,90vw);height:130px;overflow:hidden;line-height:1.7;position:relative;z-index:1}
+.boot-log .ok{color:#40ffa0}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+#topbar{height:48px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:8px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:5px;font-size:.96rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:8px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.66rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:30px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#040a08;box-shadow:0 0 12px rgba(64,255,160,.4)}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.tb-btn{width:30px;height:30px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-status{font-family:var(--mono);font-size:.6rem;padding:4px 9px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tb-status .dot{width:7px;height:7px;border-radius:50%;background:#0e2018;transition:var(--t1)}
+.tb-status .dot.on{background:var(--c1);box-shadow:0 0 10px var(--c1);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:290px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:9px 11px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.58rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#020806;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.co-badge{background:rgba(8,20,16,.92);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:5px 9px;font-family:var(--mono);font-size:.6rem;color:var(--c1);pointer-events:auto;max-width:340px}
+.co-badge.stats{color:var(--c4);display:flex;flex-direction:column;gap:2px;align-items:flex-end;text-align:right;line-height:1.5}
+
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:30px}
+.rp-tab{flex:1;padding:5px;font-size:.54rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+#statusbar{height:26px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:12px;font-family:var(--mono);font-size:.6rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:4px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}.sb-val.c5{color:var(--c5)}
+
+.sec{margin-bottom:12px}
+.sec h4{font-size:.58rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--tx3);margin-bottom:7px;font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.58rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:3px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);text-transform:none;letter-spacing:0}
+.ctrl{margin-bottom:9px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=number],.ctrl select,.ctrl textarea,.ctrl input[type=text]{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:5px 8px;color:var(--tx);font-size:.66rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl textarea{resize:vertical;min-height:60px;line-height:1.5}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(64,255,160,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.66rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1h)}
+.btn.primary{background:var(--g1);color:#040a08;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 14px rgba(64,255,160,.5)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.warn{color:var(--c4);border-color:var(--c4)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:3px 7px;font-size:.58rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.chip-row{display:flex;gap:3px;flex-wrap:wrap}
+.chip{padding:3px 8px;background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rf);cursor:pointer;font-size:.58rem;font-family:var(--mono);transition:var(--t1);color:var(--tx2)}
+.chip:hover{border-color:var(--c1);color:var(--c1)}
+.chip.active{background:var(--g1);color:#040a08;border-color:transparent;font-weight:700}
+
+.kv{font-family:var(--mono);font-size:.6rem;line-height:1.7}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3);white-space:nowrap}
+.kv .v{color:var(--c1);text-align:right;word-break:break-all;font-size:.58rem}
+.empty{text-align:center;padding:28px 18px;color:var(--tx3);font-size:.68rem;font-family:var(--mono)}
+
+.data-table{width:100%;font-family:var(--mono);font-size:.6rem;border-collapse:collapse}
+.data-table th{text-align:left;padding:4px 7px;background:var(--panel3);font-size:.53rem;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);font-weight:700;border-bottom:1px solid var(--bd)}
+.data-table td{padding:3px 7px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+.data-table td.c1{color:var(--c1)}.data-table td.c2{color:var(--c2)}.data-table td.c3{color:var(--c3)}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.88rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:18px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:13px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:24px;height:24px;border-radius:var(--rxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+#toasts{position:fixed;bottom:40px;right:18px;z-index:9000;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.toast{padding:9px 14px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.68rem;font-weight:500;max-width:320px;min-width:170px;animation:tin .3s;display:flex;align-items:center;gap:9px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c1)}.toast.warn{border-left-color:var(--c4)}.toast.error{border-left-color:var(--err)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:1000px){#leftPanel{width:250px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel,#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <canvas id="bootHelix" style="position:absolute;inset:0"></canvas>
+  <div class="boot-logo">DNA</div>
+  <div class="boot-sub">BIOINFORMATICS LAB</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('align')">DNA</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus">
+      <span class="dot" id="tbDot"></span>
+      <span id="tbText">ready</span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="togglePlay()" title="Play/Pause (Space)">⏸</button>
+      <button class="tb-btn" onclick="stepOnce()" title="Step (→)">⏭</button>
+      <button class="tb-btn" onclick="resetModule()" title="Reset (R)">↺</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div id="canvasOverlay">
+          <div class="co-badge" id="coBadge">Ready</div>
+          <div class="co-badge stats" id="coStats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+        <div class="rp-tab" data-tab="help" onclick="switchRp('help',this)">ℹ️<span>Info</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpState"></div>
+        <div class="rp-pane" id="rpMath"></div>
+        <div class="rp-pane" id="rpLogs"></div>
+        <div class="rp-pane" id="rpHelp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Len</span><span class="sb-val c2" id="sbLen">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">GC%</span><span class="sb-val c3" id="sbGC">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Score</span><span class="sb-val c4" id="sbScore">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Pairs</span><span class="sb-val c5" id="sbPairs">—</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">Align</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2200;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:.95rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   CANVAS
+   ================================================================ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');
+  CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('contextmenu',function(e){e.preventDefault()});
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){
+  var wrap=CANV.canvas.parentElement;
+  CANV.dpr=window.devicePixelRatio||1;
+  CANV.W=wrap.clientWidth;CANV.H=wrap.clientHeight;
+  CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);
+  CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);
+  CANV.canvas.style.width=CANV.W+'px';
+  CANV.canvas.style.height=CANV.H+'px';
+  CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0);
+}
+var INPUT={down:false,x:0,y:0,lastX:0,lastY:0,dx:0,dy:0};
+function canvasPos(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=canvasPos(e);INPUT.down=true;INPUT.x=p.x;INPUT.y=p.y;INPUT.lastX=p.x;INPUT.lastY=p.y;INPUT.dx=0;INPUT.dy=0;var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p,e);}
+function onMove(e){var p=canvasPos(e);INPUT.dx=p.x-INPUT.lastX;INPUT.dy=p.y-INPUT.lastY;INPUT.lastX=p.x;INPUT.lastY=p.y;INPUT.x=p.x;INPUT.y=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,e);}
+function onUp(e){INPUT.down=false;var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp(e);}
+function onTouchStart(e){if(e.touches.length===1){var t=e.touches[0];onDown({clientX:t.clientX,clientY:t.clientY,button:0});}e.preventDefault();}
+function onTouchMove(e){if(e.touches.length===1){var t=e.touches[0];onMove({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchEnd(e){onUp({});e.preventDefault();}
+
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;
+  };
+}
+
+var MODULES={};
+function registerModule(key,def){def.key=key;MODULES[key]=def;}
+function setStatsHTML(h){var e=$('coStats');if(e)e.innerHTML=h}
+function updateBadge(t){var e=$('coBadge');if(e)e.textContent=t}
+
+var LOG=[];
+function logMsg(msg,type){
+  type=type||'info';
+  LOG.push({t:Date.now(),msg:msg,type:type});
+  if(LOG.length>200)LOG.shift();
+  if(STATE.currentRp==='logs')renderLogs();
+}
+
+/* ================================================================
+   GENETIC CODE
+   ================================================================ */
+/* Standard genetic code (DNA codons → amino acids) */
+var CODON_TABLE={
+  'TTT':'F','TTC':'F','TTA':'L','TTG':'L',
+  'CTT':'L','CTC':'L','CTA':'L','CTG':'L',
+  'ATT':'I','ATC':'I','ATA':'I','ATG':'M',
+  'GTT':'V','GTC':'V','GTA':'V','GTG':'V',
+  'TCT':'S','TCC':'S','TCA':'S','TCG':'S',
+  'CCT':'P','CCC':'P','CCA':'P','CCG':'P',
+  'ACT':'T','ACC':'T','ACA':'T','ACG':'T',
+  'GCT':'A','GCC':'A','GCA':'A','GCG':'A',
+  'TAT':'Y','TAC':'Y','TAA':'*','TAG':'*',
+  'CAT':'H','CAC':'H','CAA':'Q','CAG':'Q',
+  'AAT':'N','AAC':'N','AAA':'K','AAG':'K',
+  'GAT':'D','GAC':'D','GAA':'E','GAG':'E',
+  'TGT':'C','TGC':'C','TGA':'*','TGG':'W',
+  'CGT':'R','CGC':'R','CGA':'R','CGG':'R',
+  'AGT':'S','AGC':'S','AGA':'R','AGG':'R',
+  'GGT':'G','GGC':'G','GGA':'G','GGG':'G'
+};
+/* Full names + colors for amino acids */
+var AA_INFO={
+  'A':{name:'Ala',color:'#40ffa0'},'R':{name:'Arg',color:'#40d0ff'},
+  'N':{name:'Asn',color:'#c060ff'},'D':{name:'Asp',color:'#ff60a0'},
+  'C':{name:'Cys',color:'#ffd040'},'Q':{name:'Gln',color:'#80c0ff'},
+  'E':{name:'Glu',color:'#ff8040'},'G':{name:'Gly',color:'#c0ff80'},
+  'H':{name:'His',color:'#40e0c0'},'I':{name:'Ile',color:'#e0a080'},
+  'L':{name:'Leu',color:'#a0a080'},'K':{name:'Lys',color:'#ffa0c0'},
+  'M':{name:'Met',color:'#80ff80'},'F':{name:'Phe',color:'#ffa060'},
+  'P':{name:'Pro',color:'#d0d080'},'S':{name:'Ser',color:'#80ffe0'},
+  'T':{name:'Thr',color:'#c0d0ff'},'W':{name:'Trp',color:'#ffb0a0'},
+  'Y':{name:'Tyr',color:'#ffc0ff'},'V':{name:'Val',color:'#a0ffa0'},
+  '*':{name:'Stop',color:'#ff2020'}
+};
+/* Convert DNA to RNA */
+function dnaToRna(seq){return seq.replace(/T/g,'U')}
+/* Translate DNA (in frame 0) to protein */
+function translate(dna){
+  var prot='';
+  for(var i=0;i+2<dna.length;i+=3){
+    var codon=dna.substr(i,3);
+    var aa=CODON_TABLE[codon]||'X';
+    prot+=aa;
+  }
+  return prot;
+}
+/* Reverse complement */
+function revComp(dna){
+  var map={'A':'T','T':'A','G':'C','C':'G','N':'N'};
+  var out='';
+  for(var i=dna.length-1;i>=0;i--)out+=map[dna[i]]||'N';
+  return out;
+}
+/* DNA base colors */
+var BASE_COLORS={'A':'#ff60a0','T':'#40d0ff','G':'#40ffa0','C':'#ffd040','U':'#c060ff','N':'#808080','-':'#303030'};
+
+/* ================================================================
+   ALGORITHMS
+   ================================================================ */
+/* Smith-Waterman local alignment */
+function smithWaterman(seq1,seq2,match,mismatch,gap){
+  var m=seq1.length+1,n=seq2.length+1;
+  var H=[],trace=[];
+  for(var i=0;i<=m;i++){H.push(new Int32Array(n));trace.push(new Uint8Array(n))}
+  var maxScore=0,maxI=0,maxJ=0;
+  for(var i=1;i<=m;i++){
+    for(var j=1;j<=n;j++){
+      var diag=H[i-1][j-1]+(seq1[i-1]===seq2[j-1]?match:mismatch);
+      var up=H[i-1][j]+gap;
+      var left=H[i][j-1]+gap;
+      var score=Math.max(0,diag,up,left);
+      H[i][j]=score;
+      /* traceback: 0=stop, 1=diag, 2=up, 3=left */
+      if(score===0)trace[i][j]=0;
+      else if(score===diag)trace[i][j]=1;
+      else if(score===up)trace[i][j]=2;
+      else trace[i][j]=3;
+      if(score>maxScore){maxScore=score;maxI=i;maxJ=j}
+    }
+  }
+  /* Traceback */
+  var ali1='',ali2='';
+  var i=maxI,j=maxJ;
+  var endI=maxI,endJ=maxJ;
+  while(i>0&&j>0&&H[i][j]>0){
+    var t=trace[i][j];
+    if(t===1){ali1=seq1[i-1]+ali1;ali2=seq2[j-1]+ali2;i--;j--}
+    else if(t===2){ali1=seq1[i-1]+ali1;ali2='-'+ali2;i--}
+    else if(t===3){ali1='-'+ali1;ali2=seq2[j-1]+ali2;j--}
+    else break;
+  }
+  return {H:H,trace:trace,score:maxScore,ali1:ali1,ali2:ali2,startI:i,startJ:j,endI:endI,endJ:endJ,type:'local'};
+}
+/* Needleman-Wunsch global alignment */
+function needlemanWunsch(seq1,seq2,match,mismatch,gap){
+  var m=seq1.length+1,n=seq2.length+1;
+  var H=[],trace=[];
+  for(var i=0;i<=m;i++){H.push(new Int32Array(n));trace.push(new Uint8Array(n))}
+  /* Initialize */
+  for(var i=1;i<=m;i++){H[i][0]=gap*i;trace[i][0]=2}
+  for(var j=1;j<=n;j++){H[0][j]=gap*j;trace[0][j]=3}
+  for(var i=1;i<=m;i++){
+    for(var j=1;j<=n;j++){
+      var diag=H[i-1][j-1]+(seq1[i-1]===seq2[j-1]?match:mismatch);
+      var up=H[i-1][j]+gap;
+      var left=H[i][j-1]+gap;
+      var score=Math.max(diag,up,left);
+      H[i][j]=score;
+      if(score===diag)trace[i][j]=1;
+      else if(score===up)trace[i][j]=2;
+      else trace[i][j]=3;
+    }
+  }
+  /* Traceback from bottom-right */
+  var ali1='',ali2='';
+  var i=m,j=n;
+  while(i>0||j>0){
+    var t=trace[i][j];
+    if(t===1){ali1=seq1[i-1]+ali1;ali2=seq2[j-1]+ali2;i--;j--}
+    else if(t===2){ali1=seq1[i-1]+ali1;ali2='-'+ali2;i--}
+    else if(t===3){ali1='-'+ali1;ali2=seq2[j-1]+ali2;j--}
+    else break;
+  }
+  return {H:H,trace:trace,score:H[m][n],ali1:ali1,ali2:ali2,startI:0,startJ:0,endI:m,endJ:n,type:'global'};
+}
+/* UPGMA phylogeny */
+function upgma(names,distMatrix){
+  var clusters=names.map(function(n,i){return {name:n,size:1,leaf:i,height:0,left:null,right:null,parent:null}});
+  var D=[];
+  for(var i=0;i<names.length;i++)D.push(distMatrix[i].slice());
+  var tree=clusters.slice();
+  while(tree.length>1){
+    /* Find minimum distance pair */
+    var minD=Infinity,mi=0,mj=1;
+    for(var i=0;i<tree.length;i++){
+      for(var j=i+1;j<tree.length;j++){
+        if(D[i][j]<minD){minD=D[i][j];mi=i;mj=j}
+      }
+    }
+    /* Merge mi and mj */
+    var newCluster={
+      name:'('+tree[mi].name+', '+tree[mj].name+')',
+      size:tree[mi].size+tree[mj].size,
+      height:minD/2,
+      left:tree[mi],right:tree[mj],parent:null
+    };
+    tree[mi].parent=newCluster;
+    tree[mj].parent=newCluster;
+    /* Compute new distances */
+    var newD=[];
+    var ti=tree[mi],tj=tree[mj];
+    for(var k=0;k<tree.length;k++){
+      if(k===mi||k===mj)continue;
+      var d=(D[Math.min(mi,k)][Math.max(mi,k)]*ti.size + D[Math.min(mj,k)][Math.max(mj,k)]*tj.size)/(ti.size+tj.size);
+      newD.push({idx:k,d:d});
+    }
+    /* Build new matrix */
+    var newTree=[],newD2=[];
+    var newNames=tree.filter(function(_,idx){return idx!==mi&&idx!==mj});
+    newNames.push(newCluster);
+    var newSize=newNames.length;
+    var newMat=[];
+    for(var i=0;i<newSize;i++)newMat.push(new Array(newSize).fill(0));
+    for(var i=0;i<newSize-1;i++){
+      for(var j=i+1;j<newSize-1;j++){
+        /* Both from old tree */
+        var oi=tree.indexOf(newNames[i]);
+        var oj=tree.indexOf(newNames[j]);
+        newMat[i][j]=newMat[j][i]=D[Math.min(oi,oj)][Math.max(oi,oj)];
+      }
+    }
+    /* Distances to new cluster */
+    for(var k=0;k<newSize-1;k++){
+      var ok=tree.indexOf(newNames[k]);
+      var d=(D[Math.min(mi,ok)][Math.max(mi,ok)]*ti.size + D[Math.min(mj,ok)][Math.max(mj,ok)]*tj.size)/(ti.size+tj.size);
+      newMat[k][newSize-1]=newMat[newSize-1][k]=d;
+    }
+    tree=newNames;
+    D=newMat;
+  }
+  return tree[0];
+}
+/* Nussinov RNA folding */
+function nussinov(seq,minLoop){
+  minLoop=minLoop||3;
+  var n=seq.length;
+  var M=[];
+  for(var i=0;i<n;i++){M.push(new Int32Array(n))}
+  var canPair=function(a,b){
+    var pair=a+b;
+    return pair==='AU'||pair==='UA'||pair==='GC'||pair==='CG'||pair==='GU'||pair==='UG';
+  };
+  for(var len=1;len<n;len++){
+    for(var i=0;i+len<n;i++){
+      var j=i+len;
+      var best=M[i+1][j];
+      if(M[i][j-1]>best)best=M[i][j-1];
+      for(var k=i+minLoop;k<=j;k++){
+        if(canPair(seq[i],seq[k])){
+          var score=1;
+          if(k-1>i)score+=M[i+1][k-1];
+          if(j>k)score+=M[k+1][j];
+          if(score>best)best=score;
+        }
+      }
+      M[i][j]=best;
+    }
+  }
+  /* Traceback to get pairs */
+  var pairs=[];
+  var stack=[[0,n-1]];
+  while(stack.length){
+    var pair=stack.pop();
+    var i=pair[0],j=pair[1];
+    if(i>=j)continue;
+    if(M[i][j]===M[i+1][j]){stack.push([i+1,j]);continue}
+    if(M[i][j]===M[i][j-1]){stack.push([i,j-1]);continue}
+    var found=false;
+    for(var k=i+minLoop;k<=j;k++){
+      if(canPair(seq[i],seq[k])){
+        var score=1;
+        if(k-1>i)score+=M[i+1][k-1];
+        if(j>k)score+=M[k+1][j];
+        if(score===M[i][j]){
+          pairs.push([i,k]);
+          stack.push([i+1,k-1]);
+          stack.push([k+1,j]);
+          found=true;break;
+        }
+      }
+    }
+    if(!found)break;
+  }
+  return {M:M,pairs:pairs,score:M[0][n-1]};
+}
+/* Find ORFs in 6 frames */
+function findORFs(seq,minLen){
+  minLen=minLen||30;
+  var orfs=[];
+  var stops=['TAA','TAG','TGA'];
+  /* 3 forward frames */
+  for(var frame=0;frame<3;frame++){
+    var i=frame;
+    while(i+3<=seq.length){
+      var codon=seq.substr(i,3);
+      if(codon==='ATG'){
+        /* Found start, look for stop */
+        var j=i+3;
+        var found=false;
+        while(j+3<=seq.length){
+          var c2=seq.substr(j,3);
+          if(stops.indexOf(c2)>=0){found=true;break}
+          j+=3;
+        }
+        if(found){
+          var len=j-i;
+          if(len>=minLen){
+            orfs.push({
+              start:i,end:j+3,frame:frame+1,strand:'+',
+              seq:seq.substring(i,j+3),
+              protein:translate(seq.substring(i,j+3))
+            });
+          }
+          i=j+3;
+          continue;
+        }
+      }
+      i+=3;
+    }
+  }
+  /* 3 reverse frames */
+  var rc=revComp(seq);
+  for(var frame=0;frame<3;frame++){
+    var i=frame;
+    while(i+3<=rc.length){
+      var codon=rc.substr(i,3);
+      if(codon==='ATG'){
+        var j=i+3;
+        var found=false;
+        while(j+3<=rc.length){
+          var c2=rc.substr(j,3);
+          if(stops.indexOf(c2)>=0){found=true;break}
+          j+=3;
+        }
+        if(found){
+          var len=j-i;
+          if(len>=minLen){
+            orfs.push({
+              start:i,end:j+3,frame:-(frame+1),strand:'-',
+              seq:rc.substring(i,j+3),
+              protein:translate(rc.substring(i,j+3))
+            });
+          }
+          i=j+3;
+          continue;
+        }
+      }
+      i+=3;
+    }
+  }
+  return orfs;
+}
+/* GC content */
+function gcContent(seq){
+  var gc=0,total=0;
+  for(var i=0;i<seq.length;i++){
+    var c=seq[i];
+    if(c==='G'||c==='C'){gc++;total++}
+    else if(c==='A'||c==='T'||c==='U')total++;
+  }
+  return total>0?gc/total:0;
+}
+</script>
+<script>
+var STATE={
+  currentTab:'align',
+  currentRp:'state',
+  theme:'bio',
+  playing:true,
+  time:0,
+  align:{
+    seq1:'GATTACA',
+    seq2:'GCATGCU',
+    match:2,mismatch:-1,gap:-1,
+    mode:'local',
+    result:null,
+    showMatrix:true,
+    showTrace:true,
+    animStep:0,
+    animMax:0,
+    matrixCellSize:0,
+    preset:'dna-short',
+    highlightCell:null
+  },
+  phylo:{
+    species:['Human','Chimp','Gorilla','Orangutan','Gibbon'],
+    matrix:null,
+    tree:null,
+    distance:'p-distance',
+    preset:'primates',
+    showLabels:true,
+    layout:'radial'
+  },
+  rna:{
+    seq:'GCGCUUCGCCUUCGGCGC',
+    minLoop:3,
+    result:null,
+    showMatrix:true,
+    highlight:null,
+    energy:0,
+    preset:'hairpin',
+    tableMode:false
+  },
+  orf:{
+    seq:'ATGGCGAAATTTGGCATTAAAGCGTAATAGCTAGCTAGCATGCATCGATCGATCGATCGATCGATTAAATGCATCGATCG',
+    minLength:30,
+    orfs:[],
+    selectedOrf:null,
+    showTranslation:true,
+    sixFrames:true
+  },
+  codon:{
+    selected:'AUG',
+    aminoAcid:'M',
+    highlighted:false,
+    showRna:true
+  }
+};
+
+/* ================================================================
+   MODULE 1: SEQUENCE ALIGNMENT
+   ================================================================ */
+var ALIGN_PRESETS={
+  'dna-short':{name:'DNA short',s1:'GATTACA',s2:'GCATGCU'},
+  'dna-medium':{name:'DNA medium',s1:'ATGCGTACGTTAGCTAGCTAG',s2:'ATGCGTUCGTTAGCTGGCTAG'},
+  'protein':{name:'Protein-like',s1:'MKTAYIAKQR',s2:'MKTAYIAKQRS'},
+  'similar':{name:'Similar seqs',s1:'ACTGACTGACTG',s2:'ACTGACTGACTA'},
+  'dissimilar':{name:'Dissimilar',s1:'AAAAAAAA',s2:'TTTTTTTT'},
+  'repeats':{name:'Repeats',s1:'ATATATATAT',s2:'ATATATATATATAT'}
+};
+registerModule('align',{
+  title:'Sequence Alignment',
+  icon:'🧬',
+  desc:'Smith-Waterman (local) and Needleman-Wunsch (global) dynamic programming. Real DP matrix, traceback arrows, colored alignment.',
+  init:function(){
+    this.run();
+    logMsg('Alignment: '+STATE.align.mode+' mode, '+STATE.align.seq1.length+'×'+STATE.align.seq2.length,'success');
+  },
+  run:function(){
+    var a=STATE.align;
+    if(a.mode==='local'){
+      a.result=smithWaterman(a.seq1,a.seq2,a.match,a.mismatch,a.gap);
+    } else {
+      a.result=needlemanWunsch(a.seq1,a.seq2,a.match,a.mismatch,a.gap);
+    }
+    a.animMax=0;
+    for(var i=0;i<a.result.H.length;i++)
+      for(var j=0;j<a.result.H[i].length;j++)
+        if(a.result.H[i][j]>a.animMax)a.animMax=a.result.H[i][j];
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var a=STATE.align;
+    /* Animation progress for highlighting cells */
+    if(a.animStep<a.animMax)a.animStep+=dt*Math.max(1,a.animMax*0.5);
+  },
+  step:function(){ this.run(); },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var a=STATE.align;
+    if(!a.result)return;
+    var seq1=a.seq1,seq2=a.seq2;
+    var m=seq1.length+1,n=seq2.length+1;
+    /* Layout: matrix on top, alignment on bottom */
+    var matrixH=H*0.65;
+    var alignH=H-matrixH;
+    /* Cell size to fit */
+    var pad=40;
+    var availW=W-2*pad-60;
+    var availH=matrixH-60;
+    var cs=Math.min(availW/n,availH/m);
+    cs=Math.min(cs,40);
+    a.matrixCellSize=cs;
+    var ox=(W-(n+1)*cs-60)/2+60;
+    var oy=40;
+    /* Title */
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText(a.mode.toUpperCase()+' ALIGNMENT · '+(a.mode==='local'?'Smith-Waterman':'Needleman-Wunsch'),ox,oy-10);
+    /* Draw seq2 header */
+    ctx.font='bold 13px monospace';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    for(var j=0;j<seq2.length;j++){
+      var cx=ox+(j+1)*cs+cs/2;
+      ctx.fillStyle='#303030';
+      ctx.fillRect(ox+(j+1)*cs,oy,cs-1,cs-1);
+      ctx.fillStyle=BASE_COLORS[seq2[j]]||'#fff';
+      ctx.fillText(seq2[j],cx,oy+cs/2);
+    }
+    /* Draw seq1 vertical */
+    for(var i=0;i<seq1.length;i++){
+      var cy=oy+(i+1)*cs+cs/2;
+      ctx.fillStyle='#303030';
+      ctx.fillRect(ox,oy+(i+1)*cs,cs-1,cs-1);
+      ctx.fillStyle=BASE_COLORS[seq1[i]]||'#fff';
+      ctx.fillText(seq1[i],ox+cs/2,cy);
+    }
+    /* Corner */
+    ctx.fillStyle='#101010';
+    ctx.fillRect(ox,oy,cs-1,cs-1);
+    /* Find max cell for scaling */
+    var maxVal=1;
+    for(var i=0;i<=seq1.length;i++)
+      for(var j=0;j<=seq2.length;j++)
+        if(Math.abs(a.result.H[i][j])>maxVal)maxVal=Math.abs(a.result.H[i][j]);
+    /* Draw matrix cells */
+    for(var i=0;i<=seq1.length;i++){
+      for(var j=0;j<=seq2.length;j++){
+        var x=ox+j*cs;
+        var y=oy+i*cs;
+        var v=a.result.H[i][j];
+        /* Color: green for positive, red for negative, dark for zero */
+        var intensity=clamp(Math.abs(v)/maxVal,0,1);
+        if(v>0){
+          ctx.fillStyle='rgba(64,255,160,'+(0.15+intensity*0.65)+')';
+        } else if(v<0){
+          ctx.fillStyle='rgba(255,96,160,'+(0.15+intensity*0.55)+')';
+        } else {
+          ctx.fillStyle='rgba(20,30,25,0.6)';
+        }
+        ctx.fillRect(x,y,cs-1,cs-1);
+        /* Number */
+        if(cs>18){
+          ctx.fillStyle='#d0ffe0';
+          ctx.font='bold '+(cs>26?11:9)+'px monospace';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(String(v),x+cs/2,y+cs/2);
+        }
+        /* Highlight animated cells (fill order) */
+        if(v>0&&v<=a.animStep+0.5){
+          ctx.strokeStyle='rgba(64,255,160,.9)';
+          ctx.lineWidth=1.5;
+          ctx.strokeRect(x+1,y+1,cs-3,cs-3);
+        }
+      }
+    }
+    /* Traceback path overlay */
+    if(a.showTrace&&a.result.trace){
+      var i,j;
+      if(a.mode==='local'){
+        i=a.result.endI;j=a.result.endJ;
+        /* Back to start */
+        while(i>0&&j>0&&a.result.H[i][j]>0){
+          var t=a.result.trace[i][j];
+          var x1=ox+(j+0.5)*cs;
+          var y1=oy+(i+0.5)*cs;
+          var x2=x1,y2=y1;
+          if(t===1){x2=ox+(j-0.5)*cs;y2=oy+(i-0.5)*cs;i--;j--}
+          else if(t===2){x2=ox+(j+0.5)*cs;y2=oy+(i-0.5)*cs;i--}
+          else if(t===3){x2=ox+(j-0.5)*cs;y2=oy+(i+0.5)*cs;j--}
+          else break;
+          ctx.strokeStyle='#ffd040';
+          ctx.lineWidth=2.5;
+          ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+          /* Arrow head */
+          var ang=Math.atan2(y2-y1,x2-x1);
+          ctx.fillStyle='#ffd040';
+          ctx.beginPath();
+          ctx.moveTo(x2,y2);
+          ctx.lineTo(x2-Math.cos(ang-0.5)*5,y2-Math.sin(ang-0.5)*5);
+          ctx.lineTo(x2-Math.cos(ang+0.5)*5,y2-Math.sin(ang+0.5)*5);
+          ctx.closePath();ctx.fill();
+        }
+        /* Start/end markers */
+        ctx.fillStyle='#40ffa0';
+        ctx.beginPath();ctx.arc(ox+(a.result.endJ+0.5)*cs,oy+(a.result.endI+0.5)*cs,cs*0.35,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#ff60a0';
+        ctx.beginPath();ctx.arc(ox+(a.result.startJ+0.5)*cs,oy+(a.result.startI+0.5)*cs,cs*0.35,0,Math.PI*2);ctx.fill();
+      } else {
+        /* Global traceback */
+        var i=seq1.length,j=seq2.length;
+        while(i>0||j>0){
+          var t=a.result.trace[i][j];
+          var x1=ox+(j+0.5)*cs;
+          var y1=oy+(i+0.5)*cs;
+          var x2=x1,y2=y1;
+          if(t===1){x2=ox+(j-0.5)*cs;y2=oy+(i-0.5)*cs;i--;j--}
+          else if(t===2){x2=ox+(j+0.5)*cs;y2=oy+(i-0.5)*cs;i--}
+          else if(t===3){x2=ox+(j-0.5)*cs;y2=oy+(i+0.5)*cs;j--}
+          else break;
+          ctx.strokeStyle='#ffd040';
+          ctx.lineWidth=2.5;
+          ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+        }
+      }
+    }
+    /* Alignment strings at bottom */
+    var alignY=matrixH+10;
+    ctx.fillStyle='rgba(8,20,16,.9)';
+    ctx.strokeStyle='rgba(64,255,160,.4)';
+    ctx.beginPath();ctx.roundRect(20,alignY,W-40,alignH-30,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('ALIGNMENT · score = '+a.result.score+'  ('+a.result.ali1.length+' columns)',32,alignY+22);
+    /* Draw aligned sequences with coloring */
+    var fontSize=Math.min(16,Math.floor((W-120)/a.result.ali1.length));
+    fontSize=Math.max(9,fontSize);
+    ctx.font='bold '+fontSize+'px monospace';
+    var aliW=a.result.ali1.length*fontSize*0.65;
+    var aliStartX=(W-aliW)/2;
+    for(var k=0;k<a.result.ali1.length;k++){
+      var c1=a.result.ali1[k];
+      var c2=a.result.ali2[k];
+      var x=aliStartX+k*fontSize*0.65;
+      /* Match indicator background */
+      var bgColor='rgba(20,30,25,.6)';
+      if(c1===c2&&c1!=='-')bgColor='rgba(64,255,160,.35)';
+      else if(c1==='-'||c2==='-')bgColor='rgba(255,96,160,.25)';
+      else bgColor='rgba(255,208,64,.15)';
+      ctx.fillStyle=bgColor;
+      ctx.fillRect(x-1,alignY+38,fontSize*0.65,fontSize*2+10);
+      /* Chars */
+      ctx.fillStyle=BASE_COLORS[c1]||'#fff';
+      ctx.fillText(c1,x,alignY+38+fontSize);
+      ctx.fillStyle=BASE_COLORS[c2]||'#fff';
+      ctx.fillText(c2,x,alignY+38+fontSize*2+4);
+    }
+    /* Match line */
+    ctx.font='bold '+fontSize+'px monospace';
+    var matchLine='';
+    for(var k=0;k<a.result.ali1.length;k++){
+      if(a.result.ali1[k]===a.result.ali2[k]&&a.result.ali1[k]!=='-')matchLine+='|';
+      else if(a.result.ali1[k]==='-'||a.result.ali2[k]==='-')matchLine+=' ';
+      else matchLine+='.';
+    }
+    ctx.fillStyle='#ffd040';
+    for(var k=0;k<matchLine.length;k++){
+      var x=aliStartX+k*fontSize*0.65;
+      ctx.fillText(matchLine[k],x,alignY+38+fontSize*2+4);
+    }
+    /* Legend */
+    ctx.fillStyle='rgba(8,20,16,.9)';
+    ctx.strokeStyle='rgba(64,255,160,.3)';
+    ctx.beginPath();ctx.roundRect(W-220,20,200,90,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('SCORING',W-208,38);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('Match: +'+a.match,W-208,56);
+    ctx.fillText('Mismatch: '+a.mismatch,W-208,72);
+    ctx.fillText('Gap: '+a.gap,W-208,88);
+    setStatsHTML(
+      '<div>Score: '+a.result.score+'</div>'+
+      '<div>Alignment: '+a.result.ali1.length+' cols</div>'+
+      '<div>Mode: '+a.mode+'</div>'+
+      '<div>Seq1: '+seq1.length+'</div>'+
+      '<div>Seq2: '+seq2.length+'</div>'
+    );
+    updateBadge('🧬 '+a.mode.toUpperCase()+' · score='+a.result.score+' · '+a.result.ali1.length+' cols');
+    $('sbMode').textContent='Align';
+    $('sbScore').textContent=a.result.score;
+    $('sbLen').textContent=seq1.length+'×'+seq2.length;
+    $('sbGC').textContent=fmt(gcContent(seq1)*100,0)+'%';
+  },
+  onDown:function(p){},
+  controls:function(){
+    var a=STATE.align;
+    var html='';
+    html+='<div class="sec"><h4>Algorithm</h4><div class="chip-row">';
+    html+='<div class="chip '+(a.mode==='local'?'active':'')+'" onclick="STATE.align.mode=\'local\';MODULES.align.run();renderLeftPanel()">Smith-Waterman (local)</div>';
+    html+='<div class="chip '+(a.mode==='global'?'active':'')+'" onclick="STATE.align.mode=\'global\';MODULES.align.run();renderLeftPanel()">Needleman-Wunsch (global)</div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Sequences</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Sequence 1</span><span>'+a.seq1.length+' nt</span></div>';
+    html+='<textarea oninput="STATE.align.seq1=this.value.toUpperCase().replace(/[^ATGCUN]/g,\'\');MODULES.align.run()">'+esc(a.seq1)+'</textarea></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Sequence 2</span><span>'+a.seq2.length+' nt</span></div>';
+    html+='<textarea oninput="STATE.align.seq2=this.value.toUpperCase().replace(/[^ATGCUN]/g,\'\');MODULES.align.run()">'+esc(a.seq2)+'</textarea></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Scoring</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Match</span><span>+'+a.match+'</span></div>';
+    html+='<input type="range" min="1" max="5" step="1" value="'+a.match+'" oninput="STATE.align.match=parseInt(this.value);MODULES.align.run();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Mismatch</span><span>'+a.mismatch+'</span></div>';
+    html+='<input type="range" min="-5" max="0" step="1" value="'+a.mismatch+'" oninput="STATE.align.mismatch=parseInt(this.value);MODULES.align.run();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Gap penalty</span><span>'+a.gap+'</span></div>';
+    html+='<input type="range" min="-5" max="0" step="1" value="'+a.gap+'" oninput="STATE.align.gap=parseInt(this.value);MODULES.align.run();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+    Object.keys(ALIGN_PRESETS).forEach(function(k){
+      html+='<div class="chip" onclick="STATE.align.seq1=ALIGN_PRESETS[\''+k+'\'].s1;STATE.align.seq2=ALIGN_PRESETS[\''+k+'\'].s2;MODULES.align.run();renderLeftPanel()">'+ALIGN_PRESETS[k].name+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.align.run()">▶ Run alignment</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.align.showTrace=!STATE.align.showTrace;renderLeftPanel()">'+(a.showTrace?'◯ Hide traceback':'▣ Show traceback')+'</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.align.animStep=0">↺ Replay animation</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Score</h4><div class="kv">';
+    if(a.result){
+      html+='<div class="row"><span class="k">Score</span><span class="v" style="color:var(--c1)">'+a.result.score+'</span></div>';
+      html+='<div class="row"><span class="k">Alignment length</span><span class="v">'+a.result.ali1.length+' cols</span></div>';
+      var matches=0,gaps=0,mismatches=0;
+      for(var i=0;i<a.result.ali1.length;i++){
+        if(a.result.ali1[i]===a.result.ali2[i])matches++;
+        else if(a.result.ali1[i]==='-'||a.result.ali2[i]==='-')gaps++;
+        else mismatches++;
+      }
+      var ident=matches/a.result.ali1.length*100;
+      html+='<div class="row"><span class="k">Identities</span><span class="v">'+matches+' ('+fmt(ident,1)+'%)</span></div>';
+      html+='<div class="row"><span class="k">Mismatches</span><span class="v">'+mismatches+'</span></div>';
+      html+='<div class="row"><span class="k">Gaps</span><span class="v">'+gaps+'</span></div>';
+    }
+    html+='</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var a=STATE.align;
+    return '<div class="sec"><h4>Dynamic programming</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'H[i][j] = score of best alignment of prefixes<br><br>'+
+      '<b style="color:var(--c1)">Local (SW):</b><br>'+
+      'H[i][j] = max(0,<br>'+
+      '&nbsp;&nbsp;H[i−1][j−1] + s(aᵢ,bⱼ),<br>'+
+      '&nbsp;&nbsp;H[i−1][j] + gap,<br>'+
+      '&nbsp;&nbsp;H[i][j−1] + gap)<br><br>'+
+      '<b style="color:var(--c1)">Global (NW):</b> same but no 0 floor.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Complexity</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Time: O(m·n)<br>'+
+      'Space: O(m·n)<br><br>'+
+      'Current: m='+a.seq1.length+', n='+a.seq2.length+' → '+((a.seq1.length)*(a.seq2.length))+' cells'+
+      '</div></div>'+
+      '<div class="sec"><h4>Traceback</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Start at max-score cell, walk back following pointers:<br><br>'+
+      '↖ diagonal = match/mismatch<br>'+
+      '↑ up = deletion in seq2<br>'+
+      '← left = insertion in seq2<br><br>'+
+      'Stop at score 0 (local) or (0,0) (global).'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE 2: PHYLOGENY (UPGMA)
+   ================================================================ */
+var PHYLO_PRESETS={
+  'primates':{
+    species:['Human','Chimp','Gorilla','Orangutan','Gibbon'],
+    matrix:[
+      [0,1.5,3.5,7.5,10.5],
+      [1.5,0,3.7,7.6,10.6],
+      [3.5,3.7,0,7.7,10.7],
+      [7.5,7.6,7.7,0,9.8],
+      [10.5,10.6,10.7,9.8,0]
+    ]
+  },
+  'mammals':{
+    species:['Human','Mouse','Cow','Dog'],
+    matrix:[
+      [0,25,40,35],
+      [25,0,42,38],
+      [40,42,0,20],
+      [35,38,20,0]
+    ]
+  },
+  'bacteria':{
+    species:['E.coli','Salmonella','Vibrio','Bacillus'],
+    matrix:[
+      [0,3,7,15],
+      [3,0,8,16],
+      [7,8,0,15],
+      [15,16,15,0]
+    ]
+  },
+  'simple':{
+    species:['A','B','C','D'],
+    matrix:[
+      [0,2,5,6],
+      [2,0,5,6],
+      [5,5,0,3],
+      [6,6,3,0]
+    ]
+  }
+};
+registerModule('phylo',{
+  title:'Phylogenetic Tree',
+  icon:'🌳',
+  desc:'UPGMA hierarchical clustering on a distance matrix. Builds a dendrogram that groups closest species first — molecular clock assumption.',
+  init:function(){
+    this.loadPreset(STATE.phylo.preset);
+    logMsg('Phylo: UPGMA on '+STATE.phylo.species.length+' taxa','success');
+  },
+  loadPreset:function(name){
+    var p=STATE.phylo;
+    p.preset=name;
+    var preset=PHYLO_PRESETS[name];
+    p.species=preset.species.slice();
+    p.matrix=preset.matrix.map(function(r){return r.slice()});
+    this.buildTree();
+  },
+  buildTree:function(){
+    var p=STATE.phylo;
+    p.tree=upgma(p.species,p.matrix);
+  },
+  tick:function(dt){STATE.time+=dt;},
+  step:function(){ this.buildTree(); },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var p=STATE.phylo;
+    if(!p.tree)return;
+    /* Layout: tree on top, matrix on bottom */
+    var treeH=H*0.6;
+    /* Tree drawing */
+    var pad=40;
+    var treeLeft=pad+80;
+    var treeRight=W-pad-40;
+    /* Collect leaves and compute layout */
+    var leaves=[];
+    function collectLeaves(node){
+      if(!node.left&&!node.right){leaves.push(node);return}
+      if(node.left)collectLeaves(node.left);
+      if(node.right)collectLeaves(node.right);
+    }
+    collectLeaves(p.tree);
+    /* Max height for scale */
+    var maxHeight=0;
+    function findMaxHeight(node){
+      if(node.height>maxHeight)maxHeight=node.height;
+      if(node.left)findMaxHeight(node.left);
+      if(node.right)findMaxHeight(node.right);
+    }
+    findMaxHeight(p.tree);
+    if(maxHeight<0.001)maxHeight=1;
+    /* Y positions: evenly spaced leaves */
+    var yStep=(treeH-80)/(leaves.length);
+    var yStart=60+yStep/2;
+    var leafY={};
+    leaves.forEach(function(leaf,i){
+      leaf.y=yStart+i*yStep;
+      leafY[leaf.name]=leaf.y;
+    });
+    /* X positions: proportional to height */
+    var xScale=(treeRight-treeLeft)/maxHeight;
+    function assignX(node){
+      node.x=treeLeft+node.height*xScale;
+      if(node.left)assignX(node.left);
+      if(node.right)assignX(node.right);
+    }
+    assignX(p.tree);
+    /* Compute cluster y positions bottom-up */
+    function assignY(node){
+      if(!node.left&&!node.right)return node.y;
+      var ly=assignY(node.left);
+      var ry=assignY(node.right);
+      node.y=(ly+ry)/2;
+      return node.y;
+    }
+    assignY(p.tree);
+    /* Draw tree edges */
+    ctx.strokeStyle='#40ffa0';
+    ctx.lineWidth=2;
+    function drawEdges(node){
+      if(node.left){
+        /* Vertical line connecting children */
+        ctx.strokeStyle='#40ffa0';
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(node.left.x,node.left.y);
+        ctx.lineTo(node.left.x,node.right.y);
+        ctx.stroke();
+        /* Horizontal to parent */
+        ctx.beginPath();
+        ctx.moveTo(node.left.x,node.left.y);
+        ctx.lineTo(node.x,node.left.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(node.right.x,node.right.y);
+        ctx.lineTo(node.x,node.right.y);
+        ctx.stroke();
+        drawEdges(node.left);
+        drawEdges(node.right);
+      }
+    }
+    drawEdges(p.tree);
+    /* Draw leaf labels and dots */
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.textBaseline='middle';
+    leaves.forEach(function(leaf){
+      ctx.fillStyle='#40ffa0';
+      ctx.beginPath();ctx.arc(leaf.x,leaf.y,5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#d0ffe0';
+      ctx.fillText(leaf.name,leaf.x+12,leaf.y);
+    });
+    /* Show merge heights */
+    ctx.fillStyle='rgba(8,20,16,.9)';
+    ctx.strokeStyle='rgba(64,255,160,.4)';
+    ctx.beginPath();ctx.roundRect(20,20,220,90,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('UPGMA TREE',32,42);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('Taxa: '+p.species.length,32,62);
+    ctx.fillText('Root height: '+fmt(p.tree.height,3),32,78);
+    ctx.fillText('Method: UPGMA (avg linkage)',32,94);
+    /* X-axis: molecular distance */
+    ctx.strokeStyle='rgba(64,255,160,.3)';
+    ctx.beginPath();ctx.moveTo(treeLeft,treeH-10);ctx.lineTo(treeRight,treeH-10);ctx.stroke();
+    for(var t=0;t<=1;t+=0.25){
+      var x=treeLeft+t*(treeRight-treeLeft);
+      ctx.fillStyle='#4a8068';
+      ctx.font='9px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(fmt(t*maxHeight,2),x,treeH+6);
+      ctx.strokeStyle='rgba(64,255,160,.15)';
+      ctx.beginPath();ctx.moveTo(x,treeH-14);ctx.lineTo(x,treeH-10);ctx.stroke();
+    }
+    /* Distance matrix at bottom */
+    var mxY=treeH+40;
+    var mxH=H-mxY-30;
+    if(mxH>40){
+      var n=p.species.length;
+      var cs=Math.min((W-200)/(n+1),mxH/(n+1),30);
+      var ox=(W-(n+1)*cs)/2;
+      ctx.fillStyle='rgba(8,20,16,.85)';
+      ctx.strokeStyle='rgba(64,255,160,.3)';
+      ctx.beginPath();ctx.roundRect(20,mxY-24,W-40,mxH+20,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#40ffa0';
+      ctx.font='bold 10px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('DISTANCE MATRIX',32,mxY-8);
+      /* Header row */
+      ctx.font='bold 10px monospace';
+      for(var j=0;j<n;j++){
+        ctx.fillStyle='#d0ffe0';
+        ctx.textAlign='center';
+        ctx.fillText(p.species[j].substring(0,3),ox+(j+1.5)*cs,mxY+12);
+      }
+      /* Data rows */
+      ctx.font='10px monospace';
+      for(var i=0;i<n;i++){
+        ctx.fillStyle='#d0ffe0';
+        ctx.textAlign='right';
+        ctx.fillText(p.species[i].substring(0,3),ox+cs*0.9,mxY+30+i*cs);
+        for(var j=0;j<n;j++){
+          var v=p.matrix[i][j];
+          var cx=ox+(j+1)*cs;
+          var cy=mxY+20+i*cs;
+          /* Color by distance */
+          var intensity=clamp(v/15,0,1);
+          ctx.fillStyle='rgba(64,255,160,'+(0.1+intensity*0.5)+')';
+          ctx.fillRect(cx,cy,cs-2,cs-2);
+          ctx.fillStyle='#d0ffe0';
+          ctx.font='9px monospace';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(fmt(v,1),cx+(cs-2)/2,cy+(cs-2)/2);
+          ctx.textBaseline='alphabetic';
+        }
+      }
+    }
+    setStatsHTML(
+      '<div>Taxa: '+p.species.length+'</div>'+
+      '<div>Leaves: '+leaves.length+'</div>'+
+      '<div>Root height: '+fmt(p.tree.height,3)+'</div>'+
+      '<div>Preset: '+p.preset+'</div>'
+    );
+    updateBadge('🌳 UPGMA · '+p.species.length+' taxa · root '+fmt(p.tree.height,2));
+    $('sbMode').textContent='Phylogeny';
+  },
+  onDown:function(){},
+  controls:function(){
+    var p=STATE.phylo;
+    var html='';
+    html+='<div class="sec"><h4>Preset</h4><div class="chip-row">';
+    Object.keys(PHYLO_PRESETS).forEach(function(k){
+      html+='<div class="chip '+(p.preset===k?'active':'')+'" onclick="MODULES.phylo.loadPreset(\''+k+'\');renderLeftPanel()">'+k+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Taxa</h4><div class="kv">';
+    p.species.forEach(function(s,i){
+      html+='<div class="row"><span class="k">'+s+'</span><span class="v">#'+i+'</span></div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.phylo.buildTree()">▶ Rebuild tree</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="addTaxon()">+ Add taxon</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Distance matrix</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.56rem;color:var(--tx3);line-height:1.5">Edite valores na matriz abaixo para reestruturar a árvore.</div>';
+    html+='<div style="max-height:240px;overflow:auto;margin-top:6px">';
+    html+='<table class="data-table" style="font-size:.55rem">';
+    html+='<thead><tr><th></th>';
+    p.species.forEach(function(s){html+='<th>'+s.substring(0,4)+'</th>'});
+    html+='</tr></thead><tbody>';
+    p.species.forEach(function(s1,i){
+      html+='<tr><td class="c1">'+s1.substring(0,6)+'</td>';
+      p.species.forEach(function(s2,j){
+        if(i===j)html+='<td style="color:var(--tx3)">—</td>';
+        else html+='<td><input type="number" value="'+p.matrix[i][j]+'" step="0.1" min="0" style="width:50px;background:transparent;border:none;color:var(--c1);font-family:var(--mono);font-size:.55rem" onchange="setDist('+i+','+j+',this.value)"></td>';
+      });
+      html+='</tr>';
+    });
+    html+='</tbody></table></div></div>';
+    html+='<div class="sec"><h4>How UPGMA works</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.56rem;line-height:1.65;color:var(--tx2)">'+
+      '1. Each taxon starts as its own cluster<br>'+
+      '2. Find pair with minimum distance<br>'+
+      '3. Merge them, new height = d/2<br>'+
+      '4. Update distances (average weighted by size)<br>'+
+      '5. Repeat until one cluster remains<br><br>'+
+      'Assumes <b>molecular clock</b>: all lineages evolve at constant rate.'
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var p=STATE.phylo;
+    return '<div class="sec"><h4>Distance matrix → tree</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Given n×n distance matrix D, UPGMA produces ultrametric tree (all leaves equidistant from root).'+
+      '</div></div>'+
+      '<div class="sec"><h4>Update rule</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'When merging clusters i and j into cluster ij:<br><br>'+
+      'd(ij, k) = (|i|·d(i,k) + |j|·d(j,k)) / (|i| + |j|)<br><br>'+
+      'where |i| is the size (number of leaves) of cluster i. This is weighted average linkage.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Complexity</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Naive UPGMA: O(n³)<br>'+
+      'With priority queue: O(n² log n)<br>'+
+      'Current n='+p.species.length+
+      '</div></div>'+
+      '<div class="sec"><h4>Other methods</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      '<b style="color:var(--c1)">Neighbor-joining:</b> doesn\'t assume clock<br>'+
+      '<b style="color:var(--c1)">Maximum parsimony:</b> fewest mutations<br>'+
+      '<b style="color:var(--c1)">Maximum likelihood:</b> probabilistic model<br>'+
+      '<b style="color:var(--c1)">Bayesian:</b> posterior over trees'+
+      '</div></div>';
+  }
+});
+function setDist(i,j,v){
+  var p=STATE.phylo;
+  var val=parseFloat(v);
+  if(isNaN(val)||val<0)return;
+  p.matrix[i][j]=val;
+  p.matrix[j][i]=val;
+  MODULES.phylo.buildTree();
+}
+function addTaxon(){
+  var p=STATE.phylo;
+  var name='Taxon'+(p.species.length+1);
+  p.species.push(name);
+  var n=p.species.length;
+  for(var i=0;i<p.matrix.length;i++)p.matrix[i].push(rndF(1,10));
+  var newRow=[];
+  for(var j=0;j<n;j++)newRow.push(j===n-1?0:rndF(1,10));
+  p.matrix.push(newRow);
+  /* Ensure symmetry */
+  for(var i=0;i<n;i++){
+    for(var j=0;j<n;j++){
+      if(i===j){p.matrix[i][j]=0;continue}
+      var v=p.matrix[i][j];
+      p.matrix[i][j]=p.matrix[j][i]=Math.max(v,p.matrix[j][i]);
+    }
+  }
+  MODULES.phylo.buildTree();
+  renderLeftPanel();
+}
+</script>
+<script>
+/* ================================================================
+   MODULE 3: RNA SECONDARY STRUCTURE (Nussinov)
+   ================================================================ */
+var RNA_PRESETS={
+  'hairpin':{name:'Hairpin',seq:'GCGCUUCGCCUUCGGCGC'},
+  'trna':{name:'tRNA-like',seq:'GCGGAUUUAGCUCAGUUGGGAGAGCGCCAGACUGAAGAUCUGGAGGUCCUGUGUUCGAUCCACAGAAUUCGCACCA'},
+  'stemloop':{name:'Stem-loop',seq:'GGGGAAAACCCC'},
+  'random':{name:'Random 30nt',seq:null},
+  'short':{name:'Short',seq:'GCGCUUUGCGC'},
+  'hammerhead':{name:'Hammerhead-like',seq:'UUCGGCGAAAGCUCUGAUGAGUC'}
+};
+registerModule('rna',{
+  title:'RNA Folding',
+  icon:'🧬',
+  desc:'Nussinov algorithm O(n³) for RNA secondary structure. Finds maximum number of base pairs (A-U, G-C, G-U) without pseudoknots.',
+  init:function(){
+    if(STATE.rna.seq)this.run();
+    logMsg('RNA: Nussinov folding on '+STATE.rna.seq.length+' nt','success');
+  },
+  loadPreset:function(name){
+    var r=STATE.rna;
+    r.preset=name;
+    var preset=RNA_PRESETS[name];
+    if(preset.seq)r.seq=preset.seq;
+    else {
+      var bases='AUGC';
+      var s='';
+      for(var i=0;i<30;i++)s+=bases[rnd(0,3)];
+      r.seq=s;
+    }
+    this.run();
+  },
+  run:function(){
+    var r=STATE.rna;
+    if(r.seq.length>150){
+      /* Cap to prevent lag */
+      r.seq=r.seq.substring(0,150);
+    }
+    r.result=nussinov(r.seq,r.minLoop);
+    /* Estimate energy (rough): -1.5 kcal/mol per pair */
+    r.energy=-1.5*r.result.pairs.length;
+  },
+  tick:function(dt){STATE.time+=dt;},
+  step:function(){ this.run(); },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var r=STATE.rna;
+    if(!r.result)return;
+    var seq=r.seq;
+    var n=seq.length;
+    /* RNA sequence on a horizontal line */
+    var baseY=H*0.35;
+    var pad=60;
+    var seqW=W-2*pad;
+    var charW=Math.min(18,seqW/Math.max(1,n));
+    /* Title */
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('NUSSINOV RNA FOLDING · '+n+' nt · '+r.result.pairs.length+' base pairs',pad,40);
+    /* Sequence display */
+    var seqStartX=(W-n*charW)/2;
+    ctx.font='bold '+(charW>14?14:11)+'px monospace';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    for(var i=0;i<n;i++){
+      var x=seqStartX+i*charW+charW/2;
+      ctx.fillStyle='rgba(8,20,16,.6)';
+      ctx.fillRect(seqStartX+i*charW,baseY-charW/2,charW-1,charW-1);
+      var c=seq[i];
+      var col=c==='A'?'#40ffa0':c==='U'?'#c060ff':c==='G'?'#40d0ff':c==='C'?'#ffd040':'#ffffff';
+      ctx.fillStyle=col;
+      ctx.fillText(c,x,baseY);
+    }
+    /* Draw arcs for base pairs */
+    ctx.lineWidth=2;
+    r.result.pairs.forEach(function(pair,i){
+      var i=pair[0],j=pair[1];
+      var xi=seqStartX+i*charW+charW/2;
+      var xj=seqStartX+j*charW+charW/2;
+      /* Determine if highlight */
+      var isHl=r.highlight&&r.highlight[0]===i&&r.highlight[1]===j;
+      var col=isHl?'#ff60a0':(i%2===0?'#40d0ff':'#c060ff');
+      ctx.strokeStyle=col;
+      ctx.lineWidth=isHl?3:2;
+      /* Arc above */
+      var radius=(xj-xi)/2;
+      var arcH=clamp(radius*1.1,8,120);
+      ctx.beginPath();
+      ctx.moveTo(xi,baseY-charW/2-2);
+      ctx.quadraticCurveTo((xi+xj)/2,baseY-charW/2-2-arcH,xj,baseY-charW/2-2);
+      ctx.stroke();
+    });
+    /* Highlight pairs for selected */
+    if(r.highlight){
+      var i=r.highlight[0],j=r.highlight[1];
+      var xi=seqStartX+i*charW+charW/2;
+      var xj=seqStartX+j*charW+charW/2;
+      ctx.fillStyle='rgba(255,96,160,.3)';
+      ctx.fillRect(seqStartX+i*charW,baseY-charW/2,charW,charW);
+      ctx.fillRect(seqStartX+j*charW,baseY-charW/2,charW,charW);
+    }
+    /* Draw DP matrix */
+    if(r.showMatrix&&n<=60){
+      var mxTop=H*0.5;
+      var mxH=H-mxTop-40;
+      var cs=Math.min((W-100)/n,mxH/n,14);
+      var ox=(W-n*cs)/2;
+      ctx.fillStyle='rgba(8,20,16,.85)';
+      ctx.strokeStyle='rgba(64,255,160,.3)';
+      ctx.beginPath();ctx.roundRect(20,mxTop-24,W-40,mxH+30,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#40ffa0';
+      ctx.font='bold 10px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('DP MATRIX M[i][j] — max base pairs in substring i..j',32,mxTop-8);
+      /* Draw matrix */
+      var maxV=Math.max(1,r.result.score);
+      for(var i=0;i<n;i++){
+        for(var j=i;j<n;j++){
+          var v=r.result.M[i][j];
+          var x=ox+j*cs;
+          var y=mxTop+i*cs;
+          var intensity=v/maxV;
+          ctx.fillStyle='rgba(64,255,160,'+(0.1+intensity*0.6)+')';
+          ctx.fillRect(x,y,cs-0.5,cs-0.5);
+          if(cs>10){
+            ctx.fillStyle='#d0ffe0';
+            ctx.font='8px monospace';
+            ctx.textAlign='center';
+            ctx.textBaseline='middle';
+            ctx.fillText(String(v),x+cs/2,y+cs/2);
+            ctx.textBaseline='alphabetic';
+          }
+        }
+      }
+    }
+    /* Info panel */
+    ctx.fillStyle='rgba(8,20,16,.9)';
+    ctx.strokeStyle='rgba(64,255,160,.4)';
+    ctx.beginPath();ctx.roundRect(W-280,20,260,140,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('SECONDARY STRUCTURE',W-268,42);
+    ctx.fillStyle='#d0ffe0';
+    ctx.font='10px monospace';
+    ctx.fillText('Length: '+n+' nt',W-268,62);
+    ctx.fillText('Base pairs: '+r.result.pairs.length,W-268,78);
+    ctx.fillText('Min loop: '+r.minLoop+' nt',W-268,94);
+    ctx.fillText('ΔG estimate: '+fmt(r.energy,1)+' kcal/mol',W-268,110);
+    ctx.fillText('DP size: '+(n*n)+' cells',W-268,126);
+    ctx.fillText('Complexity: O(n³)',W-268,142);
+    setStatsHTML(
+      '<div>Length: '+n+' nt</div>'+
+      '<div>Pairs: '+r.result.pairs.length+'</div>'+
+      '<div>Score: '+r.result.score+'</div>'+
+      '<div>ΔG: '+fmt(r.energy,1)+' kcal/mol</div>'
+    );
+    updateBadge('🧬 Nussinov · '+n+' nt · '+r.result.pairs.length+' pairs');
+    $('sbMode').textContent='RNA Fold';
+    $('sbLen').textContent=n+' nt';
+    $('sbPairs').textContent=r.result.pairs.length;
+    $('sbGC').textContent=fmt(gcContent(seq)*100,0)+'%';
+  },
+  onDown:function(p){},
+  controls:function(){
+    var r=STATE.rna;
+    var html='';
+    html+='<div class="sec"><h4>Sequence</h4>';
+    html+='<div class="ctrl"><textarea oninput="STATE.rna.seq=this.value.toUpperCase().replace(/[^AUGC]/g,\'\');MODULES.rna.run()">'+esc(r.seq)+'</textarea></div>';
+    html+='<div style="font-family:var(--mono);font-size:.55rem;color:var(--tx3);line-height:1.5">'+r.seq.length+' nt · use A, U, G, C</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4><div class="chip-row">';
+    Object.keys(RNA_PRESETS).forEach(function(k){
+      html+='<div class="chip '+(r.preset===k?'active':'')+'" onclick="MODULES.rna.loadPreset(\''+k+'\');renderLeftPanel()">'+RNA_PRESETS[k].name+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Min loop size</span><span>'+r.minLoop+'</span></div>';
+    html+='<input type="range" min="0" max="6" step="1" value="'+r.minLoop+'" oninput="STATE.rna.minLoop=parseInt(this.value);MODULES.rna.run();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Pairs</h4><div class="kv">';
+    var pairTypes={'AU':0,'GC':0,'GU':0};
+    r.result.pairs.forEach(function(p){
+      var t=r.seq[p[0]]+r.seq[p[1]];
+      if(t==='AU'||t==='UA')pairTypes.AU++;
+      else if(t==='GC'||t==='CG')pairTypes.GC++;
+      else if(t==='GU'||t==='UG')pairTypes.GU++;
+    });
+    html+='<div class="row"><span class="k">A–U pairs</span><span class="v" style="color:var(--c1)">'+pairTypes.AU+'</span></div>';
+    html+='<div class="row"><span class="k">G–C pairs</span><span class="v" style="color:var(--c2)">'+pairTypes.GC+'</span></div>';
+    html+='<div class="row"><span class="k">G–U wobble</span><span class="v" style="color:var(--c5)">'+pairTypes.GU+'</span></div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.rna.run()">▶ Fold</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.rna.loadPreset(\'random\');renderLeftPanel()">🎲 Random sequence</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Base pairs allowed</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.58rem;line-height:1.65;color:var(--tx2)">'+
+      '<b style="color:var(--c1)">Watson–Crick:</b> A–U, G–C<br>'+
+      '<b style="color:var(--c5)">Wobble:</b> G–U<br><br>'+
+      'Other combinations are energetically unfavorable.'
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var r=STATE.rna;
+    return '<div class="sec"><h4>Nussinov recursion</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'M[i][j] = max base pairs in seq[i..j]<br><br>'+
+      'M[i][j] = max(<br>'+
+      '&nbsp;&nbsp;M[i+1][j],<br>'+
+      '&nbsp;&nbsp;M[i][j−1],<br>'+
+      '&nbsp;&nbsp;max_k { M[i+1][k−1] + M[k+1][j−1] + 1 }<br>'+
+      '&nbsp;&nbsp;&nbsp;&nbsp;if (i,k) can pair<br>'+
+      ')'+
+      '</div></div>'+
+      '<div class="sec"><h4>Pseudoknots</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Nussinov cannot handle pseudoknots (crossing arcs).<br><br>'+
+      'Fixing this makes the problem NP-hard in general. Real RNA does contain pseudoknots — specialized heuristics needed.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Energy</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Nussinov just maximizes pair count. Real folding uses <b>nearest-neighbor thermodynamics</b>:<br><br>'+
+      'ΔG° = Σ stack energies + loop penalties<br><br>'+
+      'Programs like mfold/ViennaRNA use this model.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current</h4><div class="kv">'+
+      '<div class="row"><span class="k">Length</span><span class="v">'+r.seq.length+' nt</span></div>'+
+      '<div class="row"><span class="k">Pairs found</span><span class="v">'+r.result.pairs.length+'</span></div>'+
+      '<div class="row"><span class="k">M[0][n−1]</span><span class="v">'+r.result.M[0][r.seq.length-1]+'</span></div>'+
+      '<div class="row"><span class="k">DP cells</span><span class="v">'+(r.seq.length*r.seq.length)+'</span></div>'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE 4: ORF FINDER
+   ================================================================ */
+registerModule('orf',{
+  title:'ORF Finder',
+  icon:'🔍',
+  desc:'Find Open Reading Frames in all 6 reading frames. Real start (ATG) and stop (TAA/TAG/TGA) codons, DNA → protein translation.',
+  init:function(){
+    this.scan();
+    logMsg('ORF: scanned '+STATE.orf.seq.length+' nt in 6 frames','success');
+  },
+  scan:function(){
+    var o=STATE.orf;
+    o.orfs=findORFs(o.seq,o.minLength);
+    o.selectedOrf=o.orfs.length>0?0:null;
+  },
+  tick:function(dt){STATE.time+=dt;},
+  step:function(){ this.scan(); },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var o=STATE.orf;
+    var seq=o.seq;
+    var n=seq.length;
+    /* Display sequence */
+    var pad=40;
+    var topY=70;
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('DNA SEQUENCE · '+n+' bp',pad,40);
+    /* Sequence display (60 per line) */
+    var perLine=60;
+    var charW=Math.min(12,(W-2*pad-70)/perLine);
+    charW=Math.max(7,charW);
+    var lineH=charW+4;
+    var seqTop=topY;
+    var maxLines=Math.min(Math.ceil(n/perLine),6);
+    var selected=o.selectedOrf!=null?o.orfs[o.selectedOrf]:null;
+    for(var line=0;line<maxLines;line++){
+      var y=seqTop+line*lineH;
+      /* Line number */
+      ctx.fillStyle='#4a8068';
+      ctx.font='9px monospace';
+      ctx.textAlign='right';
+      ctx.fillText(String(line*perLine+1),pad+40,y+charW-2);
+      for(var k=0;k<perLine;k++){
+        var i=line*perLine+k;
+        if(i>=n)break;
+        var x=pad+50+k*charW;
+        var c=seq[i];
+        /* Check if this base is part of selected ORF */
+        var inOrf=false;
+        if(selected&&selected.strand==='+'){
+          inOrf=i>=selected.start&&i<selected.end;
+        }
+        var bg=inOrf?'rgba(64,255,160,.35)':'rgba(8,20,16,.5)';
+        ctx.fillStyle=bg;
+        ctx.fillRect(x,y,charW-0.5,charW-1);
+        ctx.fillStyle=BASE_COLORS[c]||'#fff';
+        ctx.font='bold '+Math.min(charW-1,11)+'px monospace';
+        ctx.textAlign='center';
+        ctx.fillText(c,x+charW/2,y+charW-2);
+      }
+    }
+    /* ORF list */
+    var listY=seqTop+maxLines*lineH+20;
+    var listH=H-listY-40;
+    if(listY<H-100){
+      ctx.fillStyle='rgba(8,20,16,.85)';
+      ctx.strokeStyle='rgba(64,255,160,.4)';
+      ctx.beginPath();ctx.roundRect(20,listY,W-40,listH,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#40ffa0';
+      ctx.font='bold 11px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('OPEN READING FRAMES · '+o.orfs.length+' found (min '+o.minLength+' nt)',32,listY+20);
+      /* ORF rows */
+      var rowH=26;
+      var rowStart=listY+34;
+      o.orfs.forEach(function(orf,i){
+        var ry=rowStart+i*rowH;
+        if(ry+rowH>listY+listH)return;
+        var isSel=i===o.selectedOrf;
+        ctx.fillStyle=isSel?'rgba(64,255,160,.2)':'rgba(8,20,16,.5)';
+        ctx.fillRect(32,ry,W-64,rowH-2);
+        if(isSel){
+          ctx.strokeStyle='#40ffa0';
+          ctx.lineWidth=1.5;
+          ctx.strokeRect(32,ry,W-64,rowH-2);
+        }
+        /* Strand indicator */
+        ctx.fillStyle=orf.strand==='+'?'#40ffa0':'#ff60a0';
+        ctx.font='bold 11px monospace';
+        ctx.textAlign='left';
+        ctx.fillText(orf.strand+' '+Math.abs(orf.frame),40,ry+17);
+        /* Position */
+        ctx.fillStyle='#40d0ff';
+        ctx.font='10px monospace';
+        ctx.fillText(orf.start+'-'+orf.end,100,ry+17);
+        /* Length */
+        ctx.fillStyle='#ffd040';
+        ctx.fillText((orf.end-orf.start)+'nt',200,ry+17);
+        /* Protein preview */
+        ctx.fillStyle='#d0ffe0';
+        var preview=orf.protein.substring(0,30)+(orf.protein.length>30?'…':'');
+        ctx.font='11px monospace';
+        ctx.fillText(preview,290,ry+17);
+      });
+    }
+    /* Selected ORF detail panel */
+    if(selected){
+      var detX=W-320,detY=20,detW=300,detH=200;
+      ctx.fillStyle='rgba(8,20,16,.9)';
+      ctx.strokeStyle='rgba(64,255,160,.5)';
+      ctx.beginPath();ctx.roundRect(detX,detY,detW,detH,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#40ffa0';
+      ctx.font='bold 11px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('SELECTED ORF',detX+14,detY+20);
+      ctx.fillStyle='#d0ffe0';
+      ctx.font='10px monospace';
+      ctx.fillText('Strand: '+selected.strand,detX+14,detY+42);
+      ctx.fillText('Frame: '+Math.abs(selected.frame),detX+14,detY+58);
+      ctx.fillText('Range: '+selected.start+' – '+selected.end,detX+14,detY+74);
+      ctx.fillText('Length: '+(selected.end-selected.start)+' nt',detX+14,detY+90);
+      ctx.fillText('Codons: '+Math.floor((selected.end-selected.start)/3),detX+14,detY+106);
+      ctx.fillStyle='#40d0ff';
+      ctx.fillText('PROTEIN:',detX+14,detY+128);
+      /* Protein with amino acid colors */
+      ctx.font='bold 11px monospace';
+      var prot=selected.protein;
+      var lineLen=24;
+      var pStartY=detY+146;
+      for(var k=0;k<Math.min(prot.length,72);k++){
+        var aa=prot[k];
+        var col=AA_INFO[aa]?AA_INFO[aa].color:'#808080';
+        var line=Math.floor(k/lineLen);
+        var colIdx=k%lineLen;
+        ctx.fillStyle=col;
+        ctx.fillText(aa,detX+14+colIdx*11,pStartY+line*14);
+      }
+      if(prot.length>72){
+        ctx.fillStyle='#4a8068';
+        ctx.font='10px monospace';
+        ctx.fillText('… ('+(prot.length-72)+' more)',detX+14,pStartY+3*14);
+      }
+    }
+    setStatsHTML(
+      '<div>Seq: '+n+' bp</div>'+
+      '<div>ORFs: '+o.orfs.length+'</div>'+
+      '<div>Min len: '+o.minLength+'</div>'+
+      '<div>GC: '+fmt(gcContent(seq)*100,0)+'%</div>'
+    );
+    updateBadge('🔍 ORF Finder · '+o.orfs.length+' ORFs · '+n+' bp');
+    $('sbMode').textContent='ORF Finder';
+    $('sbLen').textContent=n+' bp';
+    $('sbGC').textContent=fmt(gcContent(seq)*100,0)+'%';
+  },
+  onDown:function(p){
+    /* Click on ORF row to select */
+    var o=STATE.orf;
+    var n=o.seq.length;
+    var perLine=60;
+    var charW=Math.min(12,(CANV.W-2*40-70)/perLine);
+    charW=Math.max(7,charW);
+    var lineH=charW+4;
+    var seqTop=70;
+    var maxLines=Math.min(Math.ceil(n/perLine),6);
+    var listY=seqTop+maxLines*lineH+20;
+    if(p.y<listY+34)return;
+    var idx=Math.floor((p.y-listY-34)/26);
+    if(idx>=0&&idx<o.orfs.length)o.selectedOrf=idx;
+  },
+  controls:function(){
+    var o=STATE.orf;
+    var html='';
+    html+='<div class="sec"><h4>DNA sequence</h4>';
+    html+='<div class="ctrl"><textarea oninput="STATE.orf.seq=this.value.toUpperCase().replace(/[^ATGC]/g,\'\');MODULES.orf.scan()">'+esc(o.seq)+'</textarea></div>';
+    html+='<div style="font-family:var(--mono);font-size:.55rem;color:var(--tx3);line-height:1.5">'+o.seq.length+' bp</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Min ORF length</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>nt</span><span>'+o.minLength+'</span></div>';
+    html+='<input type="range" min="9" max="200" step="3" value="'+o.minLength+'" oninput="STATE.orf.minLength=parseInt(this.value);MODULES.orf.scan();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Sample sequences</h4><div class="chip-row">';
+    var samples=[
+      ['Short', 'ATGGCGAAATTTGGCATTAAAGCGTAATAG'],
+      ['Medium', 'ATGGCGAAATTTGGCATTAAAGCGTAATAGCTAGCTAGCATGCATCGATCGATCGATCGATCGATTAAATGCATCGATCG'],
+      ['Multi-ORF', 'ATGAAATAAGCGATGGCGTAATAGCGATGCATGCATTAA'],
+      ['Random 100', null]
+    ];
+    samples.forEach(function(s){
+      if(s[1]){
+        html+='<div class="chip" onclick="STATE.orf.seq=\''+s[1]+'\';MODULES.orf.scan();renderLeftPanel()">'+s[0]+'</div>';
+      } else {
+        html+='<div class="chip" onclick="randomDna(100);renderLeftPanel()">'+s[0]+'</div>';
+      }
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>ORFs found</h4><div class="kv">';
+    if(o.orfs.length===0){
+      html+='<div style="color:var(--tx3);padding:8px;font-size:.6rem">No ORFs meet criteria. Try shorter min length.</div>';
+    } else {
+      html+='<div class="row"><span class="k">Total</span><span class="v">'+o.orfs.length+'</span></div>';
+      html+='<div class="row"><span class="k">+ strand</span><span class="v">'+o.orfs.filter(function(x){return x.strand==='+'}).length+'</span></div>';
+      html+='<div class="row"><span class="k">− strand</span><span class="v">'+o.orfs.filter(function(x){return x.strand==='-'}).length+'</span></div>';
+      var longest=o.orfs.reduce(function(m,x){return x.end-x.start>m.end-m.start?x:m},o.orfs[0]);
+      html+='<div class="row"><span class="k">Longest</span><span class="v">'+(longest.end-longest.start)+' nt</span></div>';
+    }
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.orf.scan()">▶ Scan 6 frames</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="randomDna(120);renderLeftPanel()">🎲 Random 120bp</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="randomDna(300);renderLeftPanel()">🎲 Random 300bp</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>6 frames</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.56rem;line-height:1.65;color:var(--tx2)">'+
+      'DNA has <b style="color:var(--c1)">6 reading frames</b>:<br>'+
+      '• +1, +2, +3 on forward strand<br>'+
+      '• −1, −2, −3 on reverse-complement<br><br>'+
+      'Start: ATG (Methionine)<br>'+
+      'Stops: TAA, TAG, TGA'
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var o=STATE.orf;
+    return '<div class="sec"><h4>Genetic code</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Each codon = 3 nucleotides → 1 amino acid.<br><br>'+
+      '4³ = 64 codons → 20 amino acids + stop<br>'+
+      'This is the <b>degeneracy</b> of the genetic code — multiple codons per amino acid.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Reading frames</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Given DNA: <span style="color:var(--c1)">A T G G C A ...</span><br><br>'+
+      'Frame +1: <b>ATG</b> GCA ...<br>'+
+      'Frame +2: A <b>TGG</b> CA...<br>'+
+      'Frame +3: AT <b>GGC</b> A...<br><br>'+
+      'Reverse strand gives 3 more frames.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current scan</h4><div class="kv">'+
+      '<div class="row"><span class="k">Sequence</span><span class="v">'+o.seq.length+' bp</span></div>'+
+      '<div class="row"><span class="k">Min length</span><span class="v">'+o.minLength+' nt</span></div>'+
+      '<div class="row"><span class="k">ORFs found</span><span class="v">'+o.orfs.length+'</span></div>'+
+      '</div></div>';
+  }
+});
+function randomDna(n){
+  var bases='ATGC';
+  var s='';
+  for(var i=0;i<n;i++)s+=bases[rnd(0,3)];
+  STATE.orf.seq=s;
+  MODULES.orf.scan();
+}
+
+/* ================================================================
+   MODULE 5: CODON TABLE
+   ================================================================ */
+registerModule('codon',{
+  title:'Codon Table',
+  icon:'📋',
+  desc:'The genetic code, visualized. 64 codons map to 20 amino acids + 3 stop signals. Color-coded by amino acid.',
+  init:function(){
+    logMsg('Codon table loaded','success');
+  },
+  tick:function(dt){STATE.time+=dt;},
+  step:function(){},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#020806';
+    ctx.fillRect(0,0,W,H);
+    var c=STATE.codon;
+    /* Layout: 4×4×4 grid organized as U/C/A/G blocks */
+    var bases=['U','C','A','G'];
+    /* DNA equivalent */
+    var dnaBase={'U':'T','C':'C','A':'A','G':'G'};
+    var pad=40;
+    var titleY=40;
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 14px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('GENETIC CODE · RNA CODON TABLE',pad,titleY);
+    /* Cell size */
+    var cols=16; /* 4 blocks of 4 columns */
+    var rows=4;
+    var availW=W-2*pad;
+    var availH=H-100;
+    var cellW=availW/cols;
+    var cellH=availH/rows;
+    var cellSize=Math.min(cellW,cellH);
+    var gridW=cellSize*cols;
+    var gridH=cellSize*rows;
+    var ox=(W-gridW)/2;
+    var oy=titleY+30;
+    /* Draw each codon */
+    for(var b1=0;b1<4;b1++){
+      for(var b2=0;b2<4;b2++){
+        for(var b3=0;b3<4;b3++){
+          var codon=bases[b1]+bases[b2]+bases[b3];
+          var dnaCodon=dnaBase[bases[b1]]+dnaBase[bases[b2]]+dnaBase[bases[b3]];
+          var aa=CODON_TABLE[dnaCodon]||'?';
+          var info=AA_INFO[aa];
+          var col=b1*4+b3;
+          var row=b2;
+          var x=ox+col*cellSize;
+          var y=oy+row*cellSize;
+          /* Highlight selected */
+          var isSel=codon===c.selected;
+          /* Background */
+          var bg=info?info.color:'#808080';
+          ctx.globalAlpha=isSel?1:0.75;
+          ctx.fillStyle=bg;
+          ctx.fillRect(x+2,y+2,cellSize-4,cellSize-4);
+          ctx.globalAlpha=1;
+          /* Border */
+          if(isSel){
+            ctx.strokeStyle='#ffffff';
+            ctx.lineWidth=3;
+            ctx.strokeRect(x+2,y+2,cellSize-4,cellSize-4);
+          } else {
+            ctx.strokeStyle='rgba(0,0,0,.4)';
+            ctx.lineWidth=1;
+            ctx.strokeRect(x+2,y+2,cellSize-4,cellSize-4);
+          }
+          /* Codon label */
+          ctx.fillStyle='#040a08';
+          ctx.font='bold '+(cellSize>60?14:cellSize>40?11:9)+'px monospace';
+          ctx.textAlign='center';
+          ctx.textBaseline='middle';
+          ctx.fillText(codon,x+cellSize/2,y+cellSize*0.35);
+          /* Amino acid single letter */
+          ctx.font='bold '+(cellSize>60?20:cellSize>40?14:11)+'px monospace';
+          if(aa==='*'){
+            ctx.fillText('■',x+cellSize/2,y+cellSize*0.7);
+          } else {
+            ctx.fillText(aa,x+cellSize/2,y+cellSize*0.7);
+          }
+        }
+      }
+    }
+    /* Labels for axes */
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    /* Top: second base */
+    for(var b1=0;b1<4;b1++){
+      for(var b3=0;b3<4;b3++){
+        if(b3!==0)continue;
+        /* Skip - show second base at block level below */
+      }
+    }
+    /* Second base labels centered above each block (b1) */
+    for(var b1=0;b1<4;b1++){
+      var blockX=ox+(b1*4+2)*cellSize;
+      ctx.fillStyle='#40ffa0';
+      ctx.font='bold 14px monospace';
+      ctx.fillText(bases[b1],blockX,oy-14);
+    }
+    /* Third base small labels inside blocks */
+    for(var b1=0;b1<4;b1++){
+      for(var b3=0;b3<4;b3++){
+        var x=ox+(b1*4+b3)*cellSize+cellSize/2;
+        ctx.fillStyle='rgba(64,255,160,.5)';
+        ctx.font='9px monospace';
+        ctx.fillText(bases[b3],x,oy+gridH+12);
+      }
+    }
+    /* First base (rows) - to the right of grid */
+    for(var b2=0;b2<4;b2++){
+      var y=oy+b2*cellSize+cellSize/2;
+      ctx.fillStyle='#40ffa0';
+      ctx.font='bold 14px monospace';
+      ctx.textAlign='left';
+      ctx.fillText(bases[b2],ox+gridW+10,y);
+    }
+    ctx.textAlign='center';
+    /* Info panel */
+    ctx.fillStyle='rgba(8,20,16,.9)';
+    ctx.strokeStyle='rgba(64,255,160,.4)';
+    ctx.beginPath();ctx.roundRect(20,H-70,W-40,55,8);ctx.fill();ctx.stroke();
+    /* Show selected codon detail */
+    var selAA=CODON_TABLE[c.selected.replace(/U/g,'T')];
+    var selInfo=AA_INFO[selAA];
+    ctx.fillStyle='#40ffa0';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('Selected: '+c.selected,32,H-46);
+    ctx.fillStyle=selInfo?selInfo.color:'#fff';
+    ctx.fillText((selAA==='*'?'STOP':'Amino acid '+selInfo.name+' ('+selAA+')'),140,H-46);
+    ctx.fillStyle='#4a8068';
+    ctx.font='10px monospace';
+    ctx.fillText('Click any codon to highlight. The genetic code is degenerate — most amino acids are encoded by multiple codons.',32,H-24);
+    setStatsHTML(
+      '<div>Codons: 64</div>'+
+      '<div>Amino acids: 20</div>'+
+      '<div>Stop codons: 3</div>'+
+      '<div>Selected: '+c.selected+'</div>'
+    );
+    updateBadge('📋 Codon table · selected '+c.selected+(selAA?' → '+selInfo.name:''));
+    $('sbMode').textContent='Codon Table';
+  },
+  onDown:function(p){
+    var c=STATE.codon;
+    var bases=['U','C','A','G'];
+    var pad=40,titleY=40;
+    var cols=16,rows=4;
+    var availW=CANV.W-2*pad;
+    var availH=CANV.H-100;
+    var cellW=availW/cols,cellH=availH/rows;
+    var cellSize=Math.min(cellW,cellH);
+    var gridW=cellSize*cols,gridH=cellSize*rows;
+    var ox=(CANV.W-gridW)/2;
+    var oy=titleY+30;
+    if(p.x<ox||p.x>ox+gridW||p.y<oy||p.y>oy+gridH)return;
+    var col=Math.floor((p.x-ox)/cellSize);
+    var row=Math.floor((p.y-oy)/cellSize);
+    var b1=Math.floor(col/4);
+    var b3=col%4;
+    var b2=row;
+    var codon=bases[b1]+bases[b2]+bases[b3];
+    c.selected=codon;
+    /* Convert to DNA for AA lookup */
+    var dna=CODON_TABLE[codon.replace(/U/g,'T')];
+  },
+  controls:function(){
+    var c=STATE.codon;
+    var html='';
+    html+='<div class="sec"><h4>Selected codon</h4><div class="kv">';
+    var selAA=CODON_TABLE[c.selected.replace(/U/g,'T')];
+    var selInfo=AA_INFO[selAA];
+    html+='<div class="row"><span class="k">Codon (RNA)</span><span class="v" style="color:var(--c1);font-size:.75rem">'+c.selected+'</span></div>';
+    html+='<div class="row"><span class="k">Codon (DNA)</span><span class="v">'+c.selected.replace(/U/g,'T')+'</span></div>';
+    html+='<div class="row"><span class="k">Amino acid</span><span class="v" style="color:'+(selInfo?selInfo.color:'#fff')+'">'+(selAA==='*'?'STOP':selInfo.name+' ('+selAA+')')+'</span></div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Jump to codon</h4>';
+    html+='<div class="chip-row">';
+    ['AUG','UAA','UAG','UGA','UUU','GGG'].forEach(function(cd){
+      html+='<div class="chip" onclick="STATE.codon.selected=\''+cd+'\';renderLeftPanel()">'+cd+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>All stop codons</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--c3)">'+
+      'UAA — ochre<br>'+
+      'UAG — amber<br>'+
+      'UGA — opal<br><br>'+
+      '<span style="color:var(--tx2)">Also known as "nonsense" codons. They terminate translation.</span>'
+    '</div></div>';
+    html+='<div class="sec"><h4>Start codon</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      '<b style="color:var(--c1)">AUG</b> = Methionine<br>'+
+      'In prokaryotes also GUG, UUG (rare).'+
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    return '<div class="sec"><h4>Genetic code</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Reading frame of 3 nucleotides = codon<br>'+
+      '4³ = 64 possible codons<br>'+
+      '61 code amino acids, 3 are stop signals'+
+      '</div></div>'+
+      '<div class="sec"><h4>Degeneracy</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Most amino acids have multiple codons:<br>'+
+      '• Leu, Ser, Arg — 6 codons each<br>'+
+      '• Met, Trp — 1 codon each<br><br>'+
+      'The third position is often "wobble" — less constrained.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Reading frame</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Same DNA, three forward frames:<br><br>'+
+      'ATG GCA TTT GGC ...<br>'+
+      'A TGG CAT TTG GC...<br>'+
+      'AT GGC ATT TGG C...<br><br>'+
+      'Only one frame usually encodes a meaningful protein.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Evolution</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'The genetic code is nearly universal across all life — strong evidence for common ancestry.<br><br>'+
+      'Minor variants exist in mitochondria and some protists.'+
+      '</div></div>';
+  }
+});
+</script>
+<script>
+var TABS=[
+  {key:'align',icon:'🧬',label:'Align'},
+  {key:'phylo',icon:'🌳',label:'Phylogeny'},
+  {key:'rna',icon:'🔗',label:'RNA Fold'},
+  {key:'orf',icon:'🔍',label:'ORF Finder'},
+  {key:'codon',icon:'📋',label:'Codon Table'}
+];
+function buildTabs(){
+  var tabs=$('tbTabs');tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===key)});
+  $('sbMode').textContent=(MODULES[key]&&MODULES[key].title)||key;
+  if(MODULES[key]&&MODULES[key].init)MODULES[key].init();
+  renderLeftPanel();renderRightPanel();
+}
+function switchRp(name,e){
+  STATE.currentRp=name;
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active')});
+  e.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active')});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+  renderRightPanel();
+}
+function renderLeftPanel(){
+  var body=$('lpBody');if(!body)return;
+  var m=MODULES[STATE.currentTab];if(!m){body.innerHTML='';return;}
+  var html='';
+  html+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--c1);font-size:.7rem">'+m.icon+' '+m.title+'</h4><div style="font-size:.6rem;color:var(--tx3);font-family:var(--mono);line-height:1.5;margin-top:4px">'+m.desc+'</div></div>';
+  if(m.controls)html+=m.controls();
+  body.innerHTML=html;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var statePane=$('rpState');
+  if(statePane){
+    statePane.innerHTML=
+      '<div class="sec"><h4>Live</h4><div class="kv">'+
+      '<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>'+
+      '<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,1)+'s</span></div>'+
+      '<div class="row"><span class="k">Playing</span><span class="v">'+(STATE.playing?'yes':'paused')+'</span></div>'+
+      '</div></div>';
+  }
+  var mathPane=$('rpMath');
+  if(mathPane&&m&&m.mathPanel)mathPane.innerHTML=m.mathPanel();
+  else if(mathPane)mathPane.innerHTML='<div class="empty">No math panel</div>';
+  var helpPane=$('rpHelp');
+  if(helpPane&&m)helpPane.innerHTML=
+    '<div class="sec"><h4>Module</h4>'+
+    '<div style="font-size:.6rem;font-family:var(--mono);line-height:1.6;color:var(--tx2)">'+
+    '<b style="color:var(--c1)">'+m.icon+' '+m.title+'</b><br><br>'+m.desc+'</div></div>';
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){
+  var p=$('rpLogs');if(!p)return;
+  var html='<div class="sec"><h4>Event Log</h4>';
+  if(!LOG.length)html+='<div class="empty" style="padding:20px;font-size:.6rem">No events</div>';
+  else LOG.slice().reverse().forEach(function(l){
+    var color=l.type==='error'?'var(--err)':l.type==='success'?'var(--c1)':l.type==='warn'?'var(--c4)':'var(--c2)';
+    html+='<div style="padding:3px 6px;border-left:2px solid '+color+';margin-bottom:3px;font-family:var(--mono);font-size:.58rem;background:var(--panel3);border-radius:2px">'+
+      '<span style="color:var(--tx3)">'+new Date(l.t).toTimeString().substr(0,8)+'</span> '+
+      '<span style="color:'+color+'">'+esc(l.msg)+'</span></div>';
+  });
+  html+='</div>';
+  p.innerHTML=html;
+}
+function togglePlay(){
+  STATE.playing=!STATE.playing;
+  $('btnPlay').textContent=STATE.playing?'⏸':'▶';
+  $('tbDot').classList.toggle('on',STATE.playing);
+  toast(STATE.playing?'Running':'Paused','info',900);
+}
+function stepOnce(){var m=MODULES[STATE.currentTab];if(m&&m.step)m.step();else toast('No step','info',900);}
+function resetModule(){
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();toast('Reset','success',900);
+  }
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['bio','light','mono'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  var next=THEMES[(i+1)%THEMES.length];
+  document.documentElement.setAttribute('data-theme',next);
+  STATE.theme=next;
+  toast('Theme: '+next,'success');
+}
+function showHelp(){
+  openModal('❓ DNA — Help',
+    '<div class="sec"><h4>🧬 About</h4><div style="font-size:.62rem;line-height:1.75;color:var(--tx2);font-family:var(--mono)">Bioinformatics workbench in one HTML file. Sequence alignment (Smith-Waterman, Needleman-Wunsch), UPGMA phylogeny, Nussinov RNA folding, ORF finding, and the genetic code — all real algorithms, no dependencies.</div></div>'+
+    '<div class="sec"><h4>📚 Modules</h4><div style="font-size:.62rem;line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b style="color:var(--c1)">🧬 Align</b> — Smith-Waterman + Needleman-Wunsch with traceback<br>'+
+    '<b style="color:var(--c1)">🌳 Phylogeny</b> — UPGMA dendrogram from distance matrix<br>'+
+    '<b style="color:var(--c1)">🔗 RNA Fold</b> — Nussinov O(n³) secondary structure<br>'+
+    '<b style="color:var(--c1)">🔍 ORF Finder</b> — 6 reading frames, DNA → protein<br>'+
+    '<b style="color:var(--c1)">📋 Codon Table</b> — 64-codon genetic code, color-coded'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div style="font-size:.62rem;font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b style="color:var(--c1)">Space</b> — Play/pause<br>'+
+    '<b style="color:var(--c1)">→</b> — Single step<br>'+
+    '<b style="color:var(--c1)">R</b> — Reset module<br>'+
+    '<b style="color:var(--c1)">1-5</b> — Jump to module<br>'+
+    '<b style="color:var(--c1)">T</b> — Cycle theme<br>'+
+    '<b style="color:var(--c1)">?</b> — This help'+
+    '</div></div>'+
+    '<div class="sec"><h4>🎮 Tips</h4><div style="font-size:.6rem;font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+    '• Align: presets from short DNA to protein-like sequences; traceback animated with amber arrows<br>'+
+    '• Phylogeny: edit the distance matrix cells to see tree reshape live<br>'+
+    '• RNA Fold: try the tRNA-like preset — the Nussinov arcs reveal cloverleaf structure<br>'+
+    '• ORF Finder: click rows in the ORF list to see the amino acid sequence with color coding<br>'+
+    '• Codon Table: click any codon to select; the "Selected" panel shows its amino acid'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',{size:'lg'});
+}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay();}
+  else if(e.key==='ArrowRight'){e.preventDefault();stepOnce();}
+  else if(e.key==='r'||e.key==='R')resetModule();
+  else if(e.key>='1'&&e.key<='5'){var idx=parseInt(e.key)-1;if(TABS[idx])switchTab(TABS[idx].key);}
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal();
+});
+
+/* Animated DNA double helix for boot */
+function animateBootHelix(){
+  var bc=$('bootHelix');
+  if(!bc)return;
+  bc.width=window.innerWidth;bc.height=window.innerHeight;
+  var bctx=bc.getContext('2d');
+  var t0=performance.now();
+  function frame(){
+    if(!bc.isConnected||$('boot').classList.contains('hidden'))return;
+    var t=(performance.now()-t0)/1000;
+    bctx.clearRect(0,0,bc.width,bc.height);
+    var cy=bc.height/2;
+    var amp=90;
+    var period=400;
+    var phase=t*1.2;
+    /* Draw two sine waves (strands) and rungs */
+    var bases=['#40ffa0','#40d0ff','#ff60a0','#ffd040'];
+    for(var x=0;x<bc.width;x+=8){
+      var y1=cy+Math.sin(x/period+phase)*amp;
+      var y2=cy-Math.sin(x/period+phase)*amp;
+      /* Strand 1 */
+      bctx.fillStyle='#40ffa0';
+      bctx.globalAlpha=0.55;
+      bctx.beginPath();bctx.arc(x,y1,3,0,Math.PI*2);bctx.fill();
+      /* Strand 2 */
+      bctx.fillStyle='#40d0ff';
+      bctx.beginPath();bctx.arc(x,y2,3,0,Math.PI*2);bctx.fill();
+      bctx.globalAlpha=1;
+      /* Rungs every 4th x */
+      if(Math.floor(x/8)%4===0){
+        var col=bases[Math.floor(x/32)%bases.length];
+        bctx.strokeStyle=col;
+        bctx.globalAlpha=0.25;
+        bctx.lineWidth=1.5;
+        bctx.beginPath();bctx.moveTo(x,y1);bctx.lineTo(x,y2);bctx.stroke();
+        bctx.globalAlpha=1;
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+var BOOT_STEPS=[
+  'Compiling Smith-Waterman / Needleman-Wunsch DP...',
+  'Loading genetic code (64 codons → 20 amino acids)...',
+  'Initializing Nussinov O(n³) folding...',
+  'Building UPGMA clustering engine...',
+  'Setting up 6-frame ORF scanner...',
+  'Loading primate/mammal distance matrices...',
+  'Rendering DNA double helix...',
+  'Ready.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  animateBootHelix();
+  var iv=setInterval(function(){
+    pct+=rnd(8,18);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('DNA ready · Press ? for help','success',3200);
+      },400);
+    }
+  },140);
+}
+
+var lastFrameTime=performance.now();
+var fpsAccum=0,fpsFrames=0;
+function mainLoop(now){
+  var dt=Math.min((now-lastFrameTime)/1000,0.05);
+  lastFrameTime=now;
+  fpsAccum+=dt;fpsFrames++;
+  if(fpsAccum>=0.5){
+    $('sbFps').textContent=Math.round(fpsFrames/fpsAccum);
+    fpsAccum=0;fpsFrames=0;
+  }
+  if(STATE.playing){
+    var m=MODULES[STATE.currentTab];
+    if(m&&m.tick){try{m.tick(dt);}catch(e){console.error(e);}}
+    if(m&&m.draw){try{m.draw(CANV.ctx);}catch(e){console.error(e);}}
+  }
+  requestAnimationFrame(mainLoop);
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  buildTabs();
+  initCanvas();
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+  }
+  renderLeftPanel();
+  renderRightPanel();
+  logMsg('DNA initialized','success');
+  bootSequence();
+  requestAnimationFrame(mainLoop);
+  $('tbDot').classList.add('on');
+  $('tbText').textContent='reading';
+  setInterval(function(){if(STATE.currentRp==='logs')renderLogs();},1000);
+});
+
+console.log('%c DNA ','background:linear-gradient(90deg,#40ffa0,#40d0ff,#c060ff,#ff60a0);color:#040a08;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cBioinformatics Lab','color:#40ffa0;font-weight:600');
+console.log('%cAlign · Phylogeny · RNA Fold · ORF · Codon Table','color:#40d0ff');
+console.log('%cPress ? for help','color:#80c0a0');
+</script>
+</body></html>
