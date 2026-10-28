@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CORTEX-CAD PRO | Neuro-Simulator</title>
+<style>
+:root {
+  --bg: #020305; --panel: rgba(5, 10, 20, 0.95); --border: #102540;
+  --text: #6a8ab0; --text-light: #c0d5f0; --accent: #00f0ff; 
+  --neuro: #ff00aa; --warning: #ffb800; --danger: #ff0033; --success: #00ff88;
+  --font-mono: "Fira Code", monospace; --font-ui: system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-ui); overflow: hidden; height: 100vh; }
+
+#desktop { width: 100%; height: 100%; position: relative; display: block; }
+#canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+canvas { display: block; outline: none; touch-action: none; }
+
+/* UI SUPERIOR (DIAGNÓSTICO) */
+#top-hud { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 10; display: flex; justify-content: space-between; gap: 10px; pointer-events: none; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; backdrop-filter: blur(10px); pointer-events: auto; font-family: var(--font-mono); font-size: 0.7rem; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+.hud-row { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 4px; }
+.hud-val { color: #fff; font-weight: bold; }
+.hud-val.safe { color: var(--success); }
+.hud-val.warn { color: var(--warning); }
+.hud-val.fail { color: var(--danger); }
+
+/* MONITOR EEG */
+#eeg-panel { position: absolute; bottom: 50%; right: 10px; width: 200px; height: 100px; background: rgba(0,0,0,0.9); border: 1px solid var(--border); border-radius: 8px; z-index: 10; padding: 5px; pointer-events: none; }
+#eeg-canvas { width: 100%; height: 100%; display: block; }
+
+/* ALERTA CRÍTICO */
+#alert-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,0,51,0.9); color: #fff; padding: 15px 30px; border-radius: 8px; font-family: var(--font-mono); font-weight: bold; font-size: 1.2rem; display: none; z-index: 9999; box-shadow: 0 0 50px var(--danger); text-align: center; border: 2px solid #fff; animation: pulseAlert 0.5s infinite; }
+@keyframes pulseAlert { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }
+
+/* UI INFERIOR (CONTROLES) */
+#bottom-ui { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--panel); border-top: 1px solid var(--border); z-index: 100; border-radius: 15px 15px 0 0; display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); backdrop-filter: blur(20px); box-shadow: 0 -10px 30px rgba(0,0,0,0.5); }
+#ui-header { padding: 10px; display: flex; justify-content: center; cursor: pointer; }
+#ui-drag-handle { width: 50px; height: 5px; background: #333; border-radius: 3px; }
+#ui-content { padding: 0 15px 20px 15px; display: flex; flex-direction: column; gap: 10px; max-height: 50vh; overflow-y: auto; }
+
+/* ABAS */
+.tabs { display: flex; gap: 5px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; }
+.tab-btn { background: transparent; border: 1px solid transparent; color: var(--text); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-family: var(--font-mono); font-size: 0.7rem; white-space: nowrap; }
+.tab-btn.active { background: rgba(0,240,255,0.1); border-color: var(--accent); color: var(--accent); }
+.tab-content { display: none; flex-direction: column; gap: 12px; }
+.tab-content.active { display: flex; }
+
+/* CONTROLES */
+.control-group { display: flex; flex-direction: column; gap: 5px; background: #000; padding: 10px; border-radius: 6px; border: 1px solid var(--border); }
+.control-group label { font-family: var(--font-mono); font-size: 0.75rem; display: flex; justify-content: space-between; color: var(--text-light); }
+.control-group label span { color: var(--accent); }
+input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: #222; border-radius: 3px; outline: none; margin-top: 5px; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 10px var(--accent); }
+
+.grid-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn { background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.75rem; cursor: pointer; text-align: center; transition: 0.2s; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { border-color: var(--danger); color: var(--danger); }
+.btn-active { background: rgba(0,240,255,0.2); border-color: var(--accent); color: var(--accent); }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="alert-box">⚠️ CRISE EPILÉTICA<br><span style="font-size:0.8rem; font-weight:normal;">Nível de Glutamato Tóxico</span></div>
+
+<div id="desktop">
+  <div id="canvas-container"></div>
+
+  <!-- HUD SUPERIOR -->
+  <div id="top-hud">
+    <div class="panel">
+      <div class="hud-row"><span>FOCO:</span> <span class="hud-val" id="stat-focus">50%</span></div>
+      <div class="hud-row"><span>ESTRESSE:</span> <span class="hud-val" id="stat-stress">20%</span></div>
+      <div class="hud-row"><span>HUMOR:</span> <span class="hud-val" id="stat-mood">Neutro</span></div>
+    </div>
+    <div class="panel">
+      <div class="hud-row"><span>Atividade:</span> <span class="hud-val safe" id="stat-activity">Normal</span></div>
+      <div class="hud-row"><span>Temp. Cortex:</span> <span class="hud-val" id="stat-temp">36.5°C</span></div>
+      <div class="hud-row"><span>Modo:</span> <span class="hud-val" id="stat-mode" style="color:var(--accent)">Anatômico</span></div>
+    </div>
+  </div>
+
+  <!-- MONITOR EEG -->
+  <div id="eeg-panel">
+    <canvas id="eeg-canvas"></canvas>
+  </div>
+
+  <!-- UI INFERIOR -->
+  <div id="bottom-ui">
+    <div id="ui-header"><div id="ui-drag-handle"></div></div>
+    <div id="ui-content">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-quimica', event)">🧪 Neuroquímica</button>
+        <button class="tab-btn" onclick="switchTab('tab-estimulo', event)">⚡ Estimulação</button>
+        <button class="tab-btn" onclick="switchTab('tab-visual', event)">👁️ Visualização</button>
+      </div>
+
+      <!-- Aba: Neuroquímica -->
+      <div id="tab-quimica" class="tab-content active">
+        <div class="control-group">
+          <label>Dopamina (Recompensa/Motor) <span id="lbl-dopa">50%</span></label>
+          <input type="range" id="sl-dopa" min="0" max="100" value="50">
+        </div>
+        <div class="control-group">
+          <label>Serotonina (Humor/Sono) <span id="lbl-sero">50%</span></label>
+          <input type="range" id="sl-sero" min="0" max="100" value="50">
+        </div>
+        <div class="control-group">
+          <label>Acetilcolina (Memória/Foco) <span id="lbl-acetil">50%</span></label>
+          <input type="range" id="sl-acetil" min="0" max="100" value="50">
+        </div>
+        <div class="control-group">
+          <label>Glutamato (Excitação) <span id="lbl-glut">30%</span></label>
+          <input type="range" id="sl-glut" min="0" max="100" value="30">
+        </div>
+        <div class="control-group">
+          <label>GABA (Inibição/Ansiolítico) <span id="lbl-gaba">20%</span></label>
+          <input type="range" id="sl-gaba" min="0" max="100" value="20">
+        </div>
+        <div class="grid-btns">
+          <button class="btn btn-danger" onclick="injectOverload()">⚡ Sobrecarga Sináptica</button>
+          <button class="btn" onclick="resetAll()">🔄 Resetar Níveis</button>
+        </div>
+      </div>
+
+      <!-- Aba: Estimulação -->
+      <div id="tab-estimulo" class="tab-content">
+        <div class="control-group">
+          <label>tDCS (Corrente Contínua) <span id="lbl-tdcs">0 mA</span></label>
+          <input type="range" id="sl-tdcs" min="0" max="100" value="0">
+        </div>
+        <div class="grid-btns">
+          <button class="btn" id="btn-tms" onclick="toggleTMS()">🧲 TMS (Pulsos Magnéticos)</button>
+          <button class="btn" id="btn-dbs" onclick="toggleDBS()">🔌 DBS (Estimulação Profunda)</button>
+        </div>
+        <div class="panel" style="text-align:center; font-size:0.7rem; color:#888;">
+          A TMS causa disparos em massa no córtex motor. O DBS afeta os núcleos da base (controle motor e Parkinson).
+        </div>
+      </div>
+
+      <!-- Aba: Visualização -->
+      <div id="tab-visual" class="tab-content">
+        <div class="grid-btns">
+          <button class="btn btn-active" id="btn-vis-anat" onclick="setVisualMode('anat')">🧠 Anatômico</button>
+          <button class="btn" id="btn-vis-fmri" onclick="setVisualMode('fmri')">🔥 Modo fMRI (Calor)</button>
+          <button class="btn" id="btn-vis-neural" onclick="setVisualMode('neural')">🕸️ Rede Neural</button>
+          <button class="btn" onclick="resetCamera()">🎥 Resetar Câmera</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// ESTADO GLOBAL
+// ==========================================
+let state = {
+    dopamine: 50, serotonin: 50, acetylcholine: 50,
+    glutamate: 30, gaba: 20,
+    tdcs: 0, tms: false, dbs: false,
+    visualMode: 'anat', isOverloaded: false
+};
+
+let time = 0;
+let eegData = new Array(150).fill(0);
+const eegCanvas = document.getElementById('eeg-canvas');
+const eegCtx = eegCanvas.getContext('2d');
+
+// ==========================================
+// MOTOR 3D
+// ==========================================
+const container = document.getElementById("canvas-container");
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x020305, 0.02);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 2, 15);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+container.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.5;
+
+// Luzes
+scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+const keyLight = new THREE.DirectionalLight(0x00f0ff, 1.5);
+keyLight.position.set(5, 10, 5);
+scene.add(keyLight);
+const rimLight = new THREE.PointLight(0xff00aa, 2, 30);
+rimLight.position.set(-10, -5, -10);
+scene.add(rimLight);
+
+// ==========================================
+// GERAÇÃO PROCEDURAL DO CÉREBRO (ALTA COMPLEXIDADE)
+// ==========================================
+const brainGroup = new THREE.Group();
+scene.add(brainGroup);
+
+// Função para criar um hemisfério
+function createHemisphere(isLeft) {
+    const geo = new THREE.SphereGeometry(3, 64, 64);
+    const pos = geo.attributes.position;
+    const vertex = new THREE.Vector3();
+    
+    for (let i = 0; i < pos.count; i++) {
+        vertex.fromBufferAttribute(pos, i);
+        
+        // Ruído para simular os giros (gyri) e sulcos (sulci)
+        let n1 = Math.sin(vertex.x * 8) * Math.cos(vertex.y * 8) * Math.sin(vertex.z * 8);
+        let n2 = Math.sin(vertex.x * 20) * Math.cos(vertex.y * 20) * Math.sin(vertex.z * 20);
+        
+        // Escala o hemisfério
+        vertex.multiplyScalar(1 + (n1 * 0.05 + n2 * 0.02));
+        
+        // Achatamento e separação
+        if (isLeft) {
+            if (vertex.x > 0) vertex.x *= 0.1; // Corta o meio
+        } else {
+            if (vertex.x < 0) vertex.x *= 0.1; // Corta o meio
+        }
+        
+        vertex.y *= 0.9; // Levemente oval
+        
+        pos.setXYZ(i, vertex.x, vertex.y, vertex.z);
+    }
+    geo.computeVertexNormals();
+    return geo;
+}
+
+// Material Base
+const matBase = new THREE.MeshStandardMaterial({
+    color: 0x1a2a4a,
+    roughness: 0.7,
+    metalness: 0.1,
+    wireframe: false,
+    transparent: true,
+    opacity: 0.4
+});
+
+// Material Interno (Oco)
+const matInner = new THREE.MeshStandardMaterial({
+    color: 0x050a10,
+    roughness: 0.9,
+    side: THREE.BackSide
+});
+
+// Hemisfério Esquerdo
+const geoL = createHemisphere(true);
+const meshL = new THREE.Mesh(geoL, matBase);
+const coreL = new THREE.Mesh(geoL, matInner);
+meshL.position.x = -0.1;
+coreL.position.x = -0.1;
+brainGroup.add(meshL);
+brainGroup.add(coreL);
+
+// Hemisfério Direito
+const geoR = createHemisphere(false);
+const meshR = new THREE.Mesh(geoR, matBase);
+const coreR = new THREE.Mesh(geoR, matInner);
+meshR.position.x = 0.1;
+coreR.position.x = 0.1;
+brainGroup.add(meshR);
+brainGroup.add(coreR);
+
+// Cerebelo (Parte de trás)
+const cerebeloGeo = new THREE.SphereGeometry(1.8, 32, 32);
+cerebeloGeo.scale(1.2, 0.8, 1);
+const cerebeloMat = new THREE.MeshStandardMaterial({ color: 0x2a3a5a, roughness: 0.8, wireframe: false, transparent: true, opacity: 0.5 });
+const cerebelo = new THREE.Mesh(cerebeloGeo, cerebeloMat);
+cerebelo.position.set(0, -2, -2);
+brainGroup.add(cerebelo);
+
+// Tronco Encefálico
+const troncoGeo = new THREE.CylinderGeometry(0.4, 0.6, 3, 16);
+const tronco = new THREE.Mesh(troncoGeo, new THREE.MeshStandardMaterial({ color: 0x334455, roughness: 0.9 }));
+tronco.position.set(0, -3, -0.5);
+brainGroup.add(tronco);
+
+// ==========================================
+// REDE NEURAL (SINAPSES E CONEXÕES)
+// ==========================================
+const neuronsCount = 1500;
+const neuronGeo = new THREE.BufferGeometry();
+const neuronPos = new Float32Array(neuronsCount * 3);
+const neuronColors = new Float32Array(neuronsCount * 3);
+const neuronVelocities = [];
+
+for (let i = 0; i < neuronsCount; i++) {
+    // Distribui dentro dos hemisférios
+    const isLeft = Math.random() > 0.5;
+    const r = Math.random() * 2.8;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    
+    let x = r * Math.sin(phi) * Math.cos(theta);
+    const y = r * Math.sin(phi) * Math.sin(theta) * 0.9;
+    const z = r * Math.cos(phi);
+    
+    // Empurra para o lado esquerdo ou direito
+    x += isLeft ? -1.5 : 1.5;
+    
+    neuronPos[i*3] = x;
+    neuronPos[i*3+1] = y;
+    neuronPos[i*3+2] = z;
+    
+    neuronColors[i*3] = 0; neuronColors[i*3+1] = 1; neuronColors[i*3+2] = 1; // Ciano
+    
+    neuronVelocities.push(new THREE.Vector3(
+        (Math.random() - 0.5) * 0.02,
+        (Math.random() - 0.5) * 0.02,
+        (Math.random() - 0.5) * 0.02
+    ));
+}
+neuronGeo.setAttribute('position', new THREE.BufferAttribute(neuronPos, 3));
+neuronGeo.setAttribute('color', new THREE.BufferAttribute(neuronColors, 3));
+
+const neuronMat = new THREE.PointsMaterial({ size: 0.06, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true });
+const neuronSystem = new THREE.Points(neuronGeo, neuronMat);
+brainGroup.add(neuronSystem);
+
+// Linhas de Conexão (Teia Neural)
+const linesGeo = new THREE.BufferGeometry();
+const linePositions = [];
+for (let i = 0; i < 400; i++) {
+    // Conecta neurônios aleatórios
+    const idx1 = Math.floor(Math.random() * neuronsCount) * 3;
+    const idx2 = Math.floor(Math.random() * neuronsCount) * 3;
+    
+    // Só conecta se estiverem relativamente próximos
+    const dx = neuronPos[idx1] - neuronPos[idx2];
+    const dy = neuronPos[idx1+1] - neuronPos[idx2+1];
+    const dz = neuronPos[idx1+2] - neuronPos[idx2+2];
+    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    
+    if (dist < 2.0) {
+        linePositions.push(neuronPos[idx1], neuronPos[idx1+1], neuronPos[idx1+2]);
+        linePositions.push(neuronPos[idx2], neuronPos[idx2+1], neuronPos[idx2+2]);
+    }
+}
+linesGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+const linesMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.1 });
+const neuralWeb = new THREE.LineSegments(linesGeo, linesMat);
+brainGroup.add(neuralWeb);
+
+// ==========================================
+// LÓGICA DE UI
+// ==========================================
+function switchTab(tabId, e) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    e.target.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+
+const sliders = {
+    dopa: document.getElementById('sl-dopa'), sero: document.getElementById('sl-sero'), acetil: document.getElementById('sl-acetil'),
+    glut: document.getElementById('sl-glut'), gaba: document.getElementById('sl-gaba'), tdcs: document.getElementById('sl-tdcs')
+};
+
+function updateStateFromUI() {
+    state.dopamine = parseInt(sliders.dopa.value);
+    state.serotonin = parseInt(sliders.sero.value);
+    state.acetylcholine = parseInt(sliders.acetil.value);
+    state.glutamate = parseInt(sliders.glut.value);
+    state.gaba = parseInt(sliders.gaba.value);
+    state.tdcs = parseInt(sliders.tdcs.value);
+    
+    document.getElementById('lbl-dopa').innerText = state.dopamine + '%';
+    document.getElementById('lbl-sero').innerText = state.serotonin + '%';
+    document.getElementById('lbl-acetil').innerText = state.acetylcholine + '%';
+    document.getElementById('lbl-glut').innerText = state.glutamate + '%';
+    document.getElementById('lbl-gaba').innerText = state.gaba + '%';
+    document.getElementById('lbl-tdcs').innerText = state.tdcs + ' mA';
+    
+    // Calcular Métricas Derivadas
+    const focus = Math.floor((state.acetylcholine * 0.7) + (state.dopamine * 0.3) - (state.gaba * 0.2));
+    const stress = Math.floor((state.glutamate * 0.8) + (state.tdcs * 0.5) - (state.gaba * 0.8) - (state.serotonin * 0.4));
+    
+    document.getElementById('stat-focus').innerText = Math.max(0, Math.min(100, focus)) + '%';
+    document.getElementById('stat-stress').innerText = Math.max(0, Math.min(100, stress)) + '%';
+    
+    const moodEl = document.getElementById('stat-mood');
+    if (state.dopamine > 70 && state.serotonin > 70) moodEl.innerText = "Eufórico";
+    else if (state.serotonin > 60) moodEl.innerText = "Calmo";
+    else if (state.dopamine > 70 && state.serotonin < 30) moodEl.innerText = "Ansioso";
+    else if (state.gaba > 70) moodEl.innerText = "Sedado";
+    else moodEl.innerText = "Neutro";
+    
+    // Temperatura
+    const temp = 36.5 + (state.glutamate / 100) * 2.0 + (state.tdcs / 100) * 1.0;
+    document.getElementById('stat-temp').innerText = temp.toFixed(1) + "°C";
+    if (temp > 39) document.getElementById('stat-temp').className = "hud-val fail";
+    else if (temp > 38) document.getElementById('stat-temp').className = "hud-val warn";
+    else document.getElementById('stat-temp').className = "hud-val";
+
+    // Checar Sobrecarga
+    if (state.glutamate > 85 && state.gaba < 15) {
+        state.isOverloaded = true;
+        document.getElementById('alert-box').style.display = 'block';
+        document.getElementById('stat-activity').innerText = "CRÍTICO";
+        document.getElementById('stat-activity').className = "hud-val fail";
+    } else {
+        state.isOverloaded = false;
+        document.getElementById('alert-box').style.display = 'none';
+        document.getElementById('stat-activity').innerText = "Normal";
+        document.getElementById('stat-activity').className = "hud-val safe";
+    }
+}
+
+Object.values(sliders).forEach(slider => slider.addEventListener('input', updateStateFromUI));
+
+window.resetAll = () => {
+    Object.values(sliders).forEach(s => {
+        if (s.id === 'sl-glut') s.value = 30;
+        else if (s.id === 'sl-gaba') s.value = 20;
+        else if (s.id === 'sl-tdcs') s.value = 0;
+        else s.value = 50;
+    });
+    state.tms = false; state.dbs = false;
+    document.getElementById('btn-tms').classList.remove('btn-active');
+    document.getElementById('btn-dbs').classList.remove('btn-active');
+    updateStateFromUI();
+};
+
+window.injectOverload = () => {
+    sliders.glut.value = 100; sliders.gaba.value = 0; sliders.dopamine.value = 100; sliders.tdcs.value = 100;
+    updateStateFromUI();
+};
+
+window.toggleTMS = () => {
+    state.tms = !state.tms;
+    document.getElementById('btn-tms').classList.toggle('btn-active', state.tms);
+};
+
+window.toggleDBS = () => {
+    state.dbs = !state.dbs;
+    document.getElementById('btn-dbs').classList.toggle('btn-active', state.dbs);
+};
+
+window.setVisualMode = (mode) => {
+    state.visualMode = mode;
+    document.getElementById('btn-vis-anat').classList.toggle('btn-active', mode === 'anat');
+    document.getElementById('btn-vis-fmri').classList.toggle('btn-active', mode === 'fmri');
+    document.getElementById('btn-vis-neural').classList.toggle('btn-active', mode === 'neural');
+    
+    document.getElementById('stat-mode').innerText = mode === 'anat' ? 'Anatômico' : mode === 'fmri' ? 'fMRI' : 'Rede Neural';
+    
+    if (mode === 'anat') {
+        matBase.wireframe = false; matBase.opacity = 0.4; matBase.color.setHex(0x1a2a4a);
+        neuralWeb.visible = true; neuronSystem.visible = true;
+    } else if (mode === 'fmri') {
+        matBase.wireframe = false; matBase.opacity = 0.8; matBase.color.setHex(0x000000);
+        neuralWeb.visible = false; neuronSystem.visible = false;
+    } else if (mode === 'neural') {
+        matBase.wireframe = true; matBase.opacity = 0.05; matBase.color.setHex(0x00f0ff);
+        neuralWeb.visible = true; neuronSystem.visible = true;
+    }
+};
+
+window.resetCamera = () => { camera.position.set(0, 2, 15); controls.target.set(0,0,0); };
+
+// ==========================================
+// EEG E LOOP DE ANIMAÇÃO
+// ==========================================
+function updateEEGSignal() {
+    let freq = 10 + (state.glutamate - state.gaba) * 0.15 + state.tdcs * 0.2;
+    if (state.tms) freq += 20; // TMS aumenta a frequência bruscamente
+    
+    let amplitude = 0.2 + (state.glutamate / 100) * 0.8;
+    let val = Math.sin(time * freq * 0.5) * amplitude;
+    
+    if (state.isOverloaded || state.tms) {
+        val += (Math.random() - 0.5) * 1.5; // Ruído extremo
+    } else {
+        val += (Math.random() - 0.5) * 0.1 * (state.tdcs / 100);
+    }
+    eegData.push(val);
+    eegData.shift();
+}
+
+function drawEEG() {
+    const w = eegCanvas.width, h = eegCanvas.height;
+    eegCtx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    eegCtx.fillRect(0, 0, w, h);
+    
+    eegCtx.beginPath();
+    eegCtx.strokeStyle = state.isOverloaded || state.tms ? '#ff0033' : '#00f0ff';
+    eegCtx.lineWidth = 2;
+    eegCtx.shadowBlur = 5; eegCtx.shadowColor = eegCtx.strokeStyle;
+
+    for (let i = 0; i < eegData.length; i++) {
+        const x = (i / eegData.length) * w;
+        const y = h/2 + eegData[i] * (h/2 - 10);
+        if (i === 0) eegCtx.moveTo(x, y);
+        else eegCtx.lineTo(x, y);
+    }
+    eegCtx.stroke();
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    time += 0.05;
+    
+    updateEEGSignal();
+    drawEEG();
+    
+    // Animação da Rede Neural
+    const speed = 1 + (state.tdcs / 50) + (state.glutamate / 100) + (state.tms ? 3 : 0);
+    const positions = neuronSystem.geometry.attributes.position.array;
+    
+    for (let i = 0; i < neuronsCount; i++) {
+        if (state.dbs && i % 10 === 0) continue; // DBS congela alguns neurônios
+        if (state.tms && Math.random() > 0.9) continue; // TMS causa disparos aleatórios (jitter)
+        
+        positions[i*3] += neuronVelocities[i].x * speed;
+        positions[i*3+1] += neuronVelocities[i].y * speed;
+        positions[i*3+2] += neuronVelocities[i].z * speed;
+        
+        if (Math.abs(positions[i*3]) > 5) neuronVelocities[i].x *= -1;
+        if (Math.abs(positions[i*3+1]) > 4) neuronVelocities[i].y *= -1;
+        if (Math.abs(positions[i*3+2]) > 4) neuronVelocities[i].z *= -1;
+        
+        if (state.isOverloaded) {
+            neuronColors[i*3] = 1; neuronColors[i*3+1] = 0; neuronColors[i*3+2] = 0;
+        } else {
+            neuronColors[i*3] = 0; neuronColors[i*3+1] = 1; neuronColors[i*3+2] = 1;
+        }
+    }
+    neuronSystem.geometry.attributes.position.needsUpdate = true;
+    neuronSystem.geometry.attributes.color.needsUpdate = true;
+    
+    // Muda a cor da teia neural
+    if (state.isOverloaded) linesMat.color.setHex(0xff0033);
+    else linesMat.color.setHex(0x00f0ff);
+
+    // Efeito Visual do fMRI (Ondas de calor na superfície)
+    if (state.visualMode === 'fmri') {
+        // Muda a cor do material baseado na atividade
+        const activity = (state.glutamate + state.dopamine + state.tdcs) / 300;
+        const hue = 0.6 - (activity * 0.6); // Vai de azul para vermelho
+        matBase.color.setHSL(hue, 1, 0.5);
+        
+        // Pulsação no tamanho
+        const pulse = 1 + Math.sin(time * 5) * 0.02 * activity;
+        brainGroup.scale.set(pulse, pulse, pulse);
+    } else {
+        brainGroup.scale.set(1, 1, 1);
+    }
+
+    brainGroup.rotation.y += 0.002;
+    
+    renderer.render(scene, camera);
+}
+
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    eegCanvas.width = eegCanvas.clientWidth;
+    eegCanvas.height = eegCanvas.clientHeight;
+});
+
+// Inicialização
+eegCanvas.width = eegCanvas.clientWidth;
+eegCanvas.height = eegCanvas.clientHeight;
+updateStateFromUI();
+animate();
+
+</script>
+</body>
+</html>

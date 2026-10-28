@@ -1,0 +1,2900 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="neural">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>MIND — AI Studio</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+
+:root{
+  --bg:#07050f;--bg2:#0d0a1a;--bg3:#141028;--bg4:#1e1840;
+  --panel:#0d0a1a;--panel2:#141028;--panel3:#1e1840;--panel4:#282058;
+  --bd:#281e50;--bd2:#3c2c78;--bd3:#5840a8;
+  --tx:#e8e0ff;--tx2:#a898d8;--tx3:#706098;--mu:#403870;
+  --c1:#b060ff;--c1h:#c890ff;--c1l:#8030c0;
+  --c2:#40e0ff;--c2h:#80f0ff;--c2l:#20a0c0;
+  --c3:#ffe040;--c3h:#fff080;--c3l:#c0a020;
+  --c4:#ff5080;--c4h:#ff90a8;--c4l:#c03060;
+  --c5:#40ff90;--c5h:#80ffc0;--c5l:#20c060;
+  --c6:#ffa040;--c6h:#ffc080;--c6l:#c07020;
+  --c7:#40ffd0;--c7h:#80ffe0;--c7l:#20c090;
+  --c8:#ff40c0;--c8h:#ff80d8;--c8l:#c02090;
+  --ok:#40ff90;--warn:#ffe040;--err:#ff5080;--info:#40e0ff;
+  --g1:linear-gradient(135deg,#b060ff,#40e0ff);
+  --g2:linear-gradient(135deg,#ffe040,#ff5080);
+  --gHolo:linear-gradient(120deg,#b060ff,#40e0ff,#40ff90,#ffe040,#ff5080,#b060ff);
+  --r:10px;--rs:7px;--rxs:5px;--rf:9999px;
+  --sh:0 8px 32px rgba(0,0,0,.8);
+  --sh2:0 16px 48px rgba(0,0,0,1);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .14s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="terminal"]{--bg:#000800;--bg2:#001200;--bg3:#001e00;--panel:#001200;--panel2:#001e00;
+  --bd:#004000;--bd2:#006000;--tx:#c0ffd0;--tx2:#60ffa0;--tx3:#00c060;
+  --c1:#00ff40;--c2:#00ffa0;--c3:#80ff40;--c4:#40ffc0;
+  --g1:linear-gradient(135deg,#00ff40,#00ffa0)}
+[data-theme="light"]{--bg:#f5f2ff;--bg2:#ede8ff;--bg3:#ddd4ff;--panel:#fff;--panel2:#f5f2ff;--panel3:#ede8ff;--panel4:#ddd4ff;
+  --bd:#c0b8e0;--bd2:#9080c0;--tx:#100830;--tx2:#403070;--tx3:#7060a0;
+  --c1:#6020c0;--c2:#0070c0;--c3:#c08000;--c4:#c00050;
+  --g1:linear-gradient(135deg,#6020c0,#0070c0)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+/* BOOT */
+#boot{position:fixed;inset:0;background:#07050f;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px}
+#boot.hidden{opacity:0;pointer-events:none}
+.boot-brain{width:180px;height:180px;margin-bottom:20px}
+.boot-brain svg{width:100%;height:100%}
+.boot-brain path{fill:none;stroke:#b060ff;stroke-width:2;opacity:.7}
+.boot-brain circle{fill:#40e0ff;filter:drop-shadow(0 0 6px #40e0ff);animation:fire 1.5s ease-in-out infinite}
+.boot-brain circle:nth-child(2n){animation-delay:.3s;fill:#ffe040}
+.boot-brain circle:nth-child(3n){animation-delay:.6s;fill:#40ff90}
+.boot-brain line{stroke:#b060ff;stroke-width:1;opacity:.4}
+.boot-brain line.active{stroke:#40e0ff;opacity:1;animation:fire 1.5s ease-in-out infinite}
+@keyframes fire{0%,100%{opacity:.4}50%{opacity:1}}
+.boot-logo{font-family:var(--disp);font-size:3.4rem;font-weight:900;letter-spacing:16px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:8px}
+.boot-sub{font-size:.7rem;color:#b060ff;letter-spacing:10px;margin-bottom:32px;opacity:.75}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#1e1840;border-radius:2px;overflow:hidden;margin-bottom:12px}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #b060ff}
+.boot-pct{font-size:.7rem;color:#b060ff;margin-bottom:16px}
+.boot-log{font-size:.6rem;color:#706098;text-align:left;width:min(440px,90vw);height:120px;overflow:hidden;line-height:1.7}
+.boot-log .ok{color:#40ff90}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+/* TOPBAR */
+#topbar{height:50px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:10px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:6px;font-size:1rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:10px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:32px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#07050f;box-shadow:0 0 14px rgba(176,96,255,.4)}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.tb-btn{width:32px;height:32px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-btn.primary{background:var(--g1);color:#07050f;border-color:transparent}
+.tb-status{font-family:var(--mono);font-size:.62rem;padding:4px 10px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tb-status .dot{width:8px;height:8px;border-radius:50%;background:#1e1840;transition:var(--t1)}
+.tb-status .dot.on{background:var(--c5);box-shadow:0 0 10px var(--c5);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:300px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.6rem;text-transform:uppercase;letter-spacing:1.6px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#050210;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.co-badge{background:rgba(13,10,26,.9);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 10px;font-family:var(--mono);font-size:.62rem;color:var(--c1);pointer-events:auto;max-width:340px}
+.co-badge.stats{color:var(--c2);display:flex;flex-direction:column;gap:3px;align-items:flex-end;text-align:right;line-height:1.5}
+
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:32px}
+.rp-tab{flex:1;padding:6px;font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+#statusbar{height:28px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;font-family:var(--mono);font-size:.62rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:5px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}.sb-val.c5{color:var(--c5)}
+
+.sec{margin-bottom:14px}
+.sec h4{font-size:.6rem;text-transform:uppercase;letter-spacing:1.4px;color:var(--tx3);margin-bottom:8px;font-weight:700;padding-bottom:5px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.6rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:4px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);text-transform:none;letter-spacing:0}
+.ctrl{margin-bottom:10px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=number],.ctrl select,.ctrl textarea,.ctrl input[type=text]{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:6px 9px;color:var(--tx);font-size:.68rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(176,96,255,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.68rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1h)}
+.btn.primary{background:var(--g1);color:#07050f;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 16px rgba(176,96,255,.5)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:4px 8px;font-size:.6rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.chip-row{display:flex;gap:4px;flex-wrap:wrap}
+.chip{padding:4px 9px;background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rf);cursor:pointer;font-size:.6rem;font-family:var(--mono);transition:var(--t1);color:var(--tx2)}
+.chip:hover{border-color:var(--c1);color:var(--c1)}
+.chip.active{background:var(--g1);color:#07050f;border-color:transparent;font-weight:700}
+
+.kv{font-family:var(--mono);font-size:.62rem;line-height:1.75}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3);white-space:nowrap}
+.kv .v{color:var(--c1);text-align:right;word-break:break-all;font-size:.6rem}
+
+.empty{text-align:center;padding:30px 20px;color:var(--tx3);font-size:.7rem;font-family:var(--mono)}
+
+.data-table{width:100%;font-family:var(--mono);font-size:.62rem;border-collapse:collapse}
+.data-table th{text-align:left;padding:5px 8px;background:var(--panel3);font-size:.55rem;text-transform:uppercase;letter-spacing:.9px;color:var(--tx3);font-weight:700;border-bottom:1px solid var(--bd)}
+.data-table td{padding:4px 8px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+.data-table td.c1{color:var(--c1)}.data-table td.c2{color:var(--c2)}.data-table td.c3{color:var(--c3)}
+
+/* FEN input */
+.fen-box{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:8px;font-family:var(--mono);font-size:.6rem;color:var(--c2);word-break:break-all;line-height:1.5;margin-bottom:8px;user-select:text}
+
+/* Move list */
+.move-list{max-height:280px;overflow-y:auto;font-family:var(--mono);font-size:.62rem}
+.move-row{display:flex;padding:3px 6px;border-radius:3px;margin-bottom:1px}
+.move-row:hover{background:var(--panel3)}
+.move-row .mv-num{width:32px;color:var(--tx3)}
+.move-row .mv-white{flex:1;color:var(--tx)}
+.move-row .mv-black{flex:1;color:var(--tx2)}
+
+/* Chromosome viz */
+.chromo-canvas{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);width:100%;height:auto;display:block;margin-bottom:10px}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;margin-bottom:12px}
+.stat{background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rxs);padding:8px;text-align:center}
+.stat .sv{font-family:var(--mono);font-size:.95rem;font-weight:800;color:var(--c1);line-height:1.1}
+.stat .sl{font-size:.5rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.9rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:20px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:26px;height:26px;border-radius:var(--rxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+#toasts{position:fixed;bottom:44px;right:20px;z-index:9000;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{padding:10px 16px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.7rem;font-weight:500;max-width:340px;min-width:180px;animation:tin .3s;display:flex;align-items:center;gap:10px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c5)}.toast.warn{border-left-color:var(--c3)}.toast.error{border-left-color:var(--err)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:1000px){#leftPanel{width:260px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel{width:0;overflow:hidden}#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="boot-brain">
+    <svg viewBox="0 0 180 180">
+      <path d="M90,20 Q50,30 40,70 Q30,110 60,140 Q80,160 90,160 Q100,160 120,140 Q150,110 140,70 Q130,30 90,20 Z"/>
+      <path d="M90,20 L90,160"/>
+      <path d="M50,60 Q70,80 90,70"/>
+      <path d="M130,60 Q110,80 90,70"/>
+      <path d="M45,100 Q70,110 90,100"/>
+      <path d="M135,100 Q110,110 90,100"/>
+      <circle cx="55" cy="55" r="4"/>
+      <circle cx="125" cy="55" r="4"/>
+      <circle cx="70" cy="85" r="4"/>
+      <circle cx="110" cy="85" r="4"/>
+      <circle cx="60" cy="120" r="4"/>
+      <circle cx="120" cy="120" r="4"/>
+      <circle cx="90" cy="130" r="4"/>
+      <line x1="55" y1="55" x2="70" y2="85"/>
+      <line x1="70" y1="85" x2="90" y2="70"/>
+      <line class="active" x1="90" y1="70" x2="110" y2="85"/>
+      <line class="active" x1="110" y1="85" x2="125" y2="55"/>
+      <line class="active" x1="70" y1="85" x2="60" y2="120"/>
+      <line class="active" x1="110" y1="85" x2="120" y2="120"/>
+      <line x1="60" y1="120" x2="90" y2="130"/>
+      <line x1="120" y1="120" x2="90" y2="130"/>
+    </svg>
+  </div>
+  <div class="boot-logo">MIND</div>
+  <div class="boot-sub">AI STUDIO</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('chess')">MIND</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus">
+      <span class="dot" id="tbDot"></span>
+      <span id="tbText">ready</span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="togglePlay()" title="Play/Pause (Space)">⏸</button>
+      <button class="tb-btn" onclick="resetModule()" title="Reset (R)">↺</button>
+      <button class="tb-btn" onclick="exportState()" title="Export">⬇</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div id="canvasOverlay">
+          <div class="co-badge" id="coBadge">Ready</div>
+          <div class="co-badge stats" id="coStats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+        <div class="rp-tab" data-tab="help" onclick="switchRp('help',this)">ℹ️<span>Info</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpState"></div>
+        <div class="rp-pane" id="rpMath"></div>
+        <div class="rp-pane" id="rpLogs"></div>
+        <div class="rp-pane" id="rpHelp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Gen</span><span class="sb-val c2" id="sbGen">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Score</span><span class="sb-val c3" id="sbScore">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Nodes</span><span class="sb-val c4" id="sbNodes">0</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Depth</span><span class="sb-val c5" id="sbDepth">0</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">Chess</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';return Number(n).toFixed(d)}
+function toast(m,t,d){t=t||'info';d=d||2400;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:1rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   APPLICATION STATE
+   ================================================================ */
+var STATE={
+  currentTab:'chess',
+  currentRp:'state',
+  theme:'neural',
+  time:0,
+  playing:true,
+  /* Chess */
+  chess:{
+    board:null,
+    turn:'w',
+    selected:null,
+    legalMoves:[],
+    lastMove:null,
+    history:[],
+    moveList:[],
+    aiThinking:false,
+    aiDepth:3,
+    playerColor:'w',
+    legalTargets:[],
+    checkmate:false,stalemate:false
+  },
+  /* Game of Life */
+  life:{
+    W:60,H:40,
+    grid:null,
+    next:null,
+    generation:0,
+    speed:10,
+    rule:{birth:[3],survive:[2,3]},
+    ruleString:'B3/S23',
+    running:false,
+    density:0.3,
+    toroidal:true,
+    cellSize:0,
+    preset:'glider',
+    populationHistory:[]
+  },
+  /* Genetic */
+  genetic:{
+    population:[],
+    popSize:80,
+    generation:0,
+    target:'HELLO WORLD',
+    mutationRate:0.02,
+    eliteCount:5,
+    crossoverType:'uniform',
+    best:null,
+    bestScore:0,
+    history:[],
+    running:false
+  },
+  /* Tic-Tac-Toe */
+  ttt:{
+    board:null,
+    turn:'X',
+    winner:null,
+    winLine:null,
+    humanIs:'X',
+    aiDepth:9,
+    aiNodes:0,
+    score:{X:0,O:0,D:0},
+    stats:{totalGames:0,totalNodes:0}
+  },
+  /* N-Queens */
+  nqueens:{
+    N:8,
+    board:null,
+    solution:null,
+    solutions:[],
+    solutionCount:0,
+    solving:false,
+    stepDelay:0,
+    nodesVisited:0,
+    showFirstOnly:true
+  },
+  /* Maze */
+  maze:{
+    W:31,H:21,
+    grid:null,
+    start:{x:1,y:1},
+    end:{x:29,y:19},
+    algorithm:'recursive',
+    solvingAlgorithm:'astar',
+    path:null,
+    visited:null,
+    visitedCount:0,
+    solveTime:0,
+    solveNodes:0,
+    animateSolve:false,
+    solveStep:0,
+    solveOrder:[]
+  }
+};
+
+/* ================================================================
+   CANVAS
+   ================================================================ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');
+  CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){
+  var wrap=CANV.canvas.parentElement;
+  CANV.dpr=window.devicePixelRatio||1;
+  CANV.W=wrap.clientWidth;CANV.H=wrap.clientHeight;
+  CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);
+  CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);
+  CANV.canvas.style.width=CANV.W+'px';
+  CANV.canvas.style.height=CANV.H+'px';
+  CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0);
+}
+var INPUT={down:false,x:0,y:0,lastX:0,lastY:0};
+function canvasPos(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=canvasPos(e);INPUT.down=true;INPUT.x=p.x;INPUT.y=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p,e);}
+function onMove(e){var p=canvasPos(e);INPUT.x=p.x;INPUT.y=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,e);}
+function onUp(e){INPUT.down=false;var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp(e);}
+function onTouchStart(e){if(e.touches.length===1){var t=e.touches[0];onDown({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchMove(e){if(e.touches.length===1){var t=e.touches[0];onMove({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchEnd(e){onUp({});e.preventDefault();}
+
+var MODULES={};
+function registerModule(key,def){def.key=key;MODULES[key]=def;}
+function setStatsHTML(h){var e=$('coStats');if(e)e.innerHTML=h}
+function updateBadge(t){var e=$('coBadge');if(e)e.textContent=t}
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;
+  };
+}
+
+/* ================================================================
+   CHESS ENGINE
+   ================================================================ */
+/* Board is 8×8 array. Pieces: K=king, Q=queen, R=rook, B=bishop, N=knight, P=pawn
+   Lowercase = black, uppercase = white. null = empty. */
+
+function initialBoard(){
+  return [
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','p','p','p','p','p','p'],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    ['P','P','P','P','P','P','P','P'],
+    ['R','N','B','Q','K','B','N','R']
+  ];
+}
+
+function pieceColor(p){
+  if(!p)return null;
+  return p===p.toUpperCase()?'w':'b';
+}
+function isEnemy(p,color){
+  if(!p)return false;
+  return pieceColor(p)!==color;
+}
+function isFriend(p,color){
+  if(!p)return false;
+  return pieceColor(p)===color;
+}
+
+function generateMoves(board,color,enPassantTarget){
+  var moves=[];
+  for(var y=0;y<8;y++){
+    for(var x=0;x<8;x++){
+      var p=board[y][x];
+      if(!p||pieceColor(p)!==color)continue;
+      var type=p.toUpperCase();
+      var dir=color==='w'?-1:1; /* White moves up (decreasing y) */
+      if(type==='P'){
+        /* Forward */
+        var ny=y+dir;
+        if(ny>=0&&ny<8&&!board[ny][x]){
+          moves.push({from:[x,y],to:[x,ny],type:'move',piece:p});
+          /* Double move from starting rank */
+          var startY=color==='w'?6:1;
+          if(y===startY){
+            var nny=y+2*dir;
+            if(nny>=0&&nny<8&&!board[nny][x]){
+              moves.push({from:[x,y],to:[x,nny],type:'double',piece:p});
+            }
+          }
+        }
+        /* Captures */
+        for(var dx=-1;dx<=1;dx+=2){
+          var nx=x+dx;
+          var ncy=ny;
+          if(nx>=0&&nx<8&&ncy>=0&&ncy<8){
+            if(board[ncy][nx]&&isEnemy(board[ncy][nx],color)){
+              moves.push({from:[x,y],to:[nx,ncy],type:'capture',piece:p,captured:board[ncy][nx]});
+            }
+            /* En passant */
+            if(enPassantTarget&&enPassantTarget[0]===nx&&enPassantTarget[1]===ncy){
+              moves.push({from:[x,y],to:[nx,ncy],type:'enpassant',piece:p,captured:color==='w'?'p':'P'});
+            }
+          }
+        }
+      } else if(type==='N'){
+        var knightMoves=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+        knightMoves.forEach(function(m){
+          var nx=x+m[0],ny=y+m[1];
+          if(nx<0||nx>7||ny<0||ny>7)return;
+          if(!board[ny][nx]||isEnemy(board[ny][nx],color)){
+            moves.push({from:[x,y],to:[nx,ny],type:board[ny][nx]?'capture':'move',piece:p,captured:board[ny][nx]});
+          }
+        });
+      } else if(type==='B'||type==='R'||type==='Q'){
+        var dirs=[];
+        if(type==='B'||type==='Q')dirs=dirs.concat([[1,1],[1,-1],[-1,1],[-1,-1]]);
+        if(type==='R'||type==='Q')dirs=dirs.concat([[1,0],[-1,0],[0,1],[0,-1]]);
+        dirs.forEach(function(d){
+          var nx=x+d[0],ny=y+d[1];
+          while(nx>=0&&nx<8&&ny>=0&&ny<8){
+            if(!board[ny][nx]){
+              moves.push({from:[x,y],to:[nx,ny],type:'move',piece:p});
+            } else {
+              if(isEnemy(board[ny][nx],color)){
+                moves.push({from:[x,y],to:[nx,ny],type:'capture',piece:p,captured:board[ny][nx]});
+              }
+              break;
+            }
+            nx+=d[0];ny+=d[1];
+          }
+        });
+      } else if(type==='K'){
+        var kingMoves=[[1,0],[0,1],[-1,0],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+        kingMoves.forEach(function(m){
+          var nx=x+m[0],ny=y+m[1];
+          if(nx<0||nx>7||ny<0||ny>7)return;
+          if(!board[ny][nx]||isEnemy(board[ny][nx],color)){
+            moves.push({from:[x,y],to:[nx,ny],type:board[ny][nx]?'capture':'move',piece:p,captured:board[ny][nx]});
+          }
+        });
+      }
+    }
+  }
+  return moves;
+}
+
+function cloneBoard(b){
+  return b.map(function(row){return row.slice()});
+}
+
+function applyMove(board,move){
+  var b=cloneBoard(board);
+  b[move.to[1]][move.to[0]]=move.piece;
+  b[move.from[1]][move.from[0]]=null;
+  /* Pawn promotion */
+  if(move.piece==='P'&&move.to[1]===0)b[move.to[1]][move.to[0]]='Q';
+  if(move.piece==='p'&&move.to[1]===7)b[move.to[1]][move.to[0]]='q';
+  /* En passant capture removes the pawn */
+  if(move.type==='enpassant'){
+    if(move.piece==='P')b[move.to[1]+1][move.to[0]]=null;
+    else b[move.to[1]-1][move.to[0]]=null;
+  }
+  return b;
+}
+
+function findKing(board,color){
+  var target=color==='w'?'K':'k';
+  for(var y=0;y<8;y++)for(var x=0;x<8;x++)if(board[y][x]===target)return [x,y];
+  return null;
+}
+
+function isSquareAttacked(board,x,y,byColor){
+  /* Check if square (x,y) is attacked by any piece of byColor */
+  /* Knights */
+  var knightOffsets=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+  for(var i=0;i<8;i++){
+    var nx=x+knightOffsets[i][0],ny=y+knightOffsets[i][1];
+    if(nx<0||nx>7||ny<0||ny>7)continue;
+    var p=board[ny][nx];
+    if(p&&pieceColor(p)===byColor&&p.toUpperCase()==='N')return true;
+  }
+  /* Pawns */
+  var pawnDir=byColor==='w'?-1:1;
+  var pawnFromY=y-pawnDir;
+  for(var dx=-1;dx<=1;dx+=2){
+    var px=x+dx;
+    if(px>=0&&px<8&&pawnFromY>=0&&pawnFromY<8){
+      var pp=board[pawnFromY][px];
+      if(pp&&pieceColor(pp)===byColor&&pp.toUpperCase()==='P')return true;
+    }
+  }
+  /* Kings */
+  for(var ky=-1;ky<=1;ky++){
+    for(var kx=-1;kx<=1;kx++){
+      if(kx===0&&ky===0)continue;
+      var kkx=x+kx,kky=y+ky;
+      if(kkx<0||kkx>7||kky<0||kky>7)continue;
+      var kp=board[kky][kkx];
+      if(kp&&pieceColor(kp)===byColor&&kp.toUpperCase()==='K')return true;
+    }
+  }
+  /* Sliding pieces: bishop/queen diagonals, rook/queen orthogonal */
+  var diagDirs=[[1,1],[1,-1],[-1,1],[-1,-1]];
+  for(var d=0;d<4;d++){
+    var xx=x+diagDirs[d][0],yy=y+diagDirs[d][1];
+    while(xx>=0&&xx<8&&yy>=0&&yy<8){
+      var sp=board[yy][xx];
+      if(sp){
+        if(pieceColor(sp)===byColor){
+          var t=sp.toUpperCase();
+          if(t==='B'||t==='Q')return true;
+        }
+        break;
+      }
+      xx+=diagDirs[d][0];yy+=diagDirs[d][1];
+    }
+  }
+  var orthoDirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  for(var o=0;o<4;o++){
+    var xx2=x+orthoDirs[o][0],yy2=y+orthoDirs[o][1];
+    while(xx2>=0&&xx2<8&&yy2>=0&&yy2<8){
+      var sp2=board[yy2][xx2];
+      if(sp2){
+        if(pieceColor(sp2)===byColor){
+          var t2=sp2.toUpperCase();
+          if(t2==='R'||t2==='Q')return true;
+        }
+        break;
+      }
+      xx2+=orthoDirs[o][0];yy2+=orthoDirs[o][1];
+    }
+  }
+  return false;
+}
+
+function inCheck(board,color){
+  var k=findKing(board,color);
+  if(!k)return true;
+  return isSquareAttacked(board,k[0],k[1],color==='w'?'b':'w');
+}
+
+function legalMovesFor(board,color,enPassantTarget){
+  var moves=generateMoves(board,color,enPassantTarget);
+  var legal=[];
+  moves.forEach(function(m){
+    var nb=applyMove(board,m);
+    if(!inCheck(nb,color))legal.push(m);
+  });
+  return legal;
+}
+
+/* Evaluation: material + piece-square tables */
+var PIECE_VALUES={P:100,N:320,B:330,R:500,Q:900,K:20000};
+
+/* Piece-square tables (from white's perspective, y=0 is rank 8) */
+var PST={
+  P:[
+    [ 0,  0,  0,  0,  0,  0,  0,  0],
+    [50, 50, 50, 50, 50, 50, 50, 50],
+    [10, 10, 20, 30, 30, 20, 10, 10],
+    [ 5,  5, 10, 25, 25, 10,  5,  5],
+    [ 0,  0,  0, 20, 20,  0,  0,  0],
+    [ 5, -5,-10,  0,  0,-10, -5,  5],
+    [ 5, 10, 10,-20,-20, 10, 10,  5],
+    [ 0,  0,  0,  0,  0,  0,  0,  0]
+  ],
+  N:[
+    [-50,-40,-30,-30,-30,-30,-40,-50],
+    [-40,-20,  0,  0,  0,  0,-20,-40],
+    [-30,  0, 10, 15, 15, 10,  0,-30],
+    [-30,  5, 15, 20, 20, 15,  5,-30],
+    [-30,  0, 15, 20, 20, 15,  0,-30],
+    [-30,  5, 10, 15, 15, 10,  5,-30],
+    [-40,-20,  0,  5,  5,  0,-20,-40],
+    [-50,-40,-30,-30,-30,-30,-40,-50]
+  ],
+  B:[
+    [-20,-10,-10,-10,-10,-10,-10,-20],
+    [-10,  0,  0,  0,  0,  0,  0,-10],
+    [-10,  0,  5, 10, 10,  5,  0,-10],
+    [-10,  5,  5, 10, 10,  5,  5,-10],
+    [-10,  0, 10, 10, 10, 10,  0,-10],
+    [-10, 10, 10, 10, 10, 10, 10,-10],
+    [-10,  5,  0,  0,  0,  0,  5,-10],
+    [-20,-10,-10,-10,-10,-10,-10,-20]
+  ],
+  R:[
+    [ 0,  0,  0,  0,  0,  0,  0,  0],
+    [ 5, 10, 10, 10, 10, 10, 10,  5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [-5,  0,  0,  0,  0,  0,  0, -5],
+    [ 0,  0,  0,  5,  5,  0,  0,  0]
+  ],
+  Q:[
+    [-20,-10,-10, -5, -5,-10,-10,-20],
+    [-10,  0,  0,  0,  0,  0,  0,-10],
+    [-10,  0,  5,  5,  5,  5,  0,-10],
+    [ -5,  0,  5,  5,  5,  5,  0, -5],
+    [  0,  0,  5,  5,  5,  5,  0, -5],
+    [-10,  5,  5,  5,  5,  5,  0,-10],
+    [-10,  0,  5,  0,  0,  0,  0,-10],
+    [-20,-10,-10, -5, -5,-10,-10,-20]
+  ],
+  K:[
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-20,-30,-30,-40,-40,-30,-30,-20],
+    [-10,-20,-20,-20,-20,-20,-20,-10],
+    [ 20, 20,  0,  0,  0,  0, 20, 20],
+    [ 20, 30, 10,  0,  0, 10, 30, 20]
+  ]
+};
+
+function evaluate(board){
+  /* Positive = good for white */
+  var score=0;
+  for(var y=0;y<8;y++){
+    for(var x=0;x<8;x++){
+      var p=board[y][x];
+      if(!p)continue;
+      var type=p.toUpperCase();
+      var color=pieceColor(p);
+      var val=PIECE_VALUES[type]||0;
+      var pst=PST[type];
+      if(pst){
+        var pstVal=color==='w'?pst[y][x]:pst[7-y][x];
+        val+=pstVal;
+      }
+      score+=(color==='w'?1:-1)*val;
+    }
+  }
+  return score;
+}
+
+/* Minimax with alpha-beta pruning */
+function minimax(board,depth,alpha,beta,maximizing,color,enPassantTarget,stats){
+  stats.nodes++;
+  if(depth===0){
+    var e=evaluate(board);
+    return maximizing?e:-e;
+  }
+  var moves=legalMovesFor(board,color,enPassantTarget);
+  if(moves.length===0){
+    if(inCheck(board,color))return maximizing?-100000-depth:-(-100000-depth);
+    return 0;
+  }
+  var best=maximizing?-Infinity:Infinity;
+  var nextColor=color==='w'?'b':'w';
+  var orderedMoves=moves.slice().sort(function(a,b){
+    /* MVV-LVA ordering */
+    var av=a.captured?(PIECE_VALUES[a.captured.toUpperCase()]||0):0;
+    var bv=b.captured?(PIECE_VALUES[b.captured.toUpperCase()]||0):0;
+    return bv-av;
+  });
+  for(var i=0;i<orderedMoves.length;i++){
+    var m=orderedMoves[i];
+    var nb=applyMove(board,m);
+    var val=minimax(nb,depth-1,alpha,beta,!maximizing,nextColor,null,stats);
+    if(maximizing){
+      if(val>best)best=val;
+      if(best>alpha)alpha=best;
+    } else {
+      if(val<best)best=val;
+      if(best<beta)beta=best;
+    }
+    if(beta<=alpha)break;
+  }
+  return best;
+}
+
+function findBestMove(board,color,depth,enPassantTarget){
+  var stats={nodes:0};
+  var moves=legalMovesFor(board,color,enPassantTarget);
+  if(moves.length===0)return null;
+  /* Sort for better pruning */
+  moves.sort(function(a,b){
+    var av=a.captured?(PIECE_VALUES[a.captured.toUpperCase()]||0):0;
+    var bv=b.captured?(PIECE_VALUES[b.captured.toUpperCase()]||0):0;
+    return bv-av;
+  });
+  var bestMove=moves[0];
+  var bestVal=-Infinity;
+  var alpha=-Infinity,beta=Infinity;
+  var nextColor=color==='w'?'b':'w';
+  for(var i=0;i<moves.length;i++){
+    var m=moves[i];
+    var nb=applyMove(board,m);
+    var val=minimax(nb,depth-1,alpha,beta,false,nextColor,null,stats);
+    if(val>bestVal){
+      bestVal=val;bestMove=m;
+    }
+    if(val>alpha)alpha=val;
+  }
+  return {move:bestMove,value:bestVal,nodes:stats.nodes};
+}
+
+/* ================================================================
+   GAME OF LIFE
+   ================================================================ */
+function parseRule(ruleString){
+  /* Format: B3/S23 */
+  var m=ruleString.match(/B(\d*)\/S(\d*)/i);
+  if(!m)return {birth:[3],survive:[2,3]};
+  var birth=m[1].split('').map(Number);
+  var survive=m[2].split('').map(Number);
+  return {birth:birth,survive:survive};
+}
+function ruleToString(rule){
+  return 'B'+rule.birth.join('')+'/S'+rule.survive.join('');
+}
+function lifeStep(grid,W,H,rule,toroidal){
+  var next=new Uint8Array(W*H);
+  for(var y=0;y<H;y++){
+    for(var x=0;x<W;x++){
+      var n=0;
+      for(var dy=-1;dy<=1;dy++){
+        for(var dx=-1;dx<=1;dx++){
+          if(dx===0&&dy===0)continue;
+          var nx=x+dx,ny=y+dy;
+          if(toroidal){
+            nx=(nx+W)%W;ny=(ny+H)%H;
+          } else {
+            if(nx<0||nx>=W||ny<0||ny>=H)continue;
+          }
+          n+=grid[ny*W+nx];
+        }
+      }
+      var alive=grid[y*W+x];
+      var next_alive=0;
+      if(alive){
+        if(rule.survive.indexOf(n)>=0)next_alive=1;
+      } else {
+        if(rule.birth.indexOf(n)>=0)next_alive=1;
+      }
+      next[y*W+x]=next_alive;
+    }
+  }
+  return next;
+}
+var LIFE_PRESETS={
+  glider:function(W,H){
+    var g=new Uint8Array(W*H);
+    var cx=Math.floor(W/2),cy=Math.floor(H/2);
+    var pat=[[1,0],[2,1],[0,2],[1,2],[2,2]];
+    pat.forEach(function(p){g[(cy+p[1])*W+(cx+p[0])]=1});
+    return g;
+  },
+  glidergun:function(W,H){
+    var g=new Uint8Array(W*H);
+    var pat=[
+      [0,4],[0,5],[1,4],[1,5],
+      [10,4],[10,5],[10,6],[11,3],[11,7],[12,2],[12,8],[13,2],[13,8],
+      [14,5],[15,3],[15,7],[16,4],[16,5],[16,6],[17,5],
+      [20,2],[20,3],[20,4],[21,2],[21,3],[21,4],[22,1],[22,5],
+      [24,0],[24,1],[24,5],[24,6],
+      [34,2],[34,3],[35,2],[35,3]
+    ];
+    pat.forEach(function(p){
+      var x=p[0]+5,y=p[1]+5;
+      if(x<W&&y<H)g[y*W+x]=1;
+    });
+    return g;
+  },
+  pulsar:function(W,H){
+    var g=new Uint8Array(W*H);
+    var cx=Math.floor(W/2),cy=Math.floor(H/2);
+    var pat=[
+      [2,0],[3,0],[4,0],[8,0],[9,0],[10,0],
+      [0,2],[5,2],[7,2],[12,2],
+      [0,3],[5,3],[7,3],[12,3],
+      [0,4],[5,4],[7,4],[12,4],
+      [2,5],[3,5],[4,5],[8,5],[9,5],[10,5],
+      [2,7],[3,7],[4,7],[8,7],[9,7],[10,7],
+      [0,8],[5,8],[7,8],[12,8],
+      [0,9],[5,9],[7,9],[12,9],
+      [0,10],[5,10],[7,10],[12,10],
+      [2,12],[3,12],[4,12],[8,12],[9,12],[10,12]
+    ];
+    pat.forEach(function(p){
+      var x=cx+p[0]-6,y=cy+p[1]-6;
+      if(x>=0&&x<W&&y>=0&&y<H)g[y*W+x]=1;
+    });
+    return g;
+  },
+  lwss:function(W,H){
+    var g=new Uint8Array(W*H);
+    var cx=Math.floor(W/2)-3,cy=Math.floor(H/2)-2;
+    var pat=[[1,0],[4,0],[0,1],[0,2],[4,2],[0,3],[1,3],[2,3],[3,3]];
+    pat.forEach(function(p){g[(cy+p[1])*W+(cx+p[0])]=1});
+    return g;
+  },
+  rpentomino:function(W,H){
+    var g=new Uint8Array(W*H);
+    var cx=Math.floor(W/2),cy=Math.floor(H/2);
+    var pat=[[1,0],[2,0],[0,1],[1,1],[1,2]];
+    pat.forEach(function(p){g[(cy+p[1])*W+(cx+p[0])]=1});
+    return g;
+  }
+};
+
+/* ================================================================
+   GENETIC ALGORITHM
+   ================================================================ */
+function randomCharFromSet(){
+  var chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ ';
+  return chars[rnd(0,chars.length-1)];
+}
+function randomIndividual(len){
+  var s='';
+  for(var i=0;i<len;i++)s+=randomCharFromSet();
+  return s;
+}
+function fitness(individual,target){
+  var score=0;
+  for(var i=0;i<Math.min(individual.length,target.length);i++){
+    if(individual[i]===target[i])score++;
+  }
+  return score;
+}
+function crossover(a,b,type){
+  if(type==='uniform'){
+    var child='';
+    for(var i=0;i<a.length;i++){
+      child+=Math.random()<0.5?a[i]:b[i];
+    }
+    return child;
+  } else if(type==='single'){
+    var point=rnd(1,a.length-1);
+    return a.substring(0,point)+b.substring(point);
+  } else {
+    /* two-point */
+    var p1=rnd(1,a.length-2);
+    var p2=rnd(p1+1,a.length-1);
+    return a.substring(0,p1)+b.substring(p1,p2)+a.substring(p2);
+  }
+}
+function mutate(individual,rate){
+  var out='';
+  for(var i=0;i<individual.length;i++){
+    if(Math.random()<rate)out+=randomCharFromSet();
+    else out+=individual[i];
+  }
+  return out;
+}
+function tournamentSelect(population,fitnesses,k){
+  var best=null,bestFit=-1;
+  for(var i=0;i<k;i++){
+    var idx=rnd(0,population.length-1);
+    if(fitnesses[idx]>bestFit){bestFit=fitnesses[idx];best=population[idx];}
+  }
+  return best;
+}
+
+/* ================================================================
+   TIC-TAC-TOE AI
+   ================================================================ */
+function tttWinner(board){
+  var lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  for(var i=0;i<lines.length;i++){
+    var l=lines[i];
+    if(board[l[0]]&&board[l[0]]===board[l[1]]&&board[l[1]]===board[l[2]]){
+      return {winner:board[l[0]],line:l};
+    }
+  }
+  if(board.every(function(c){return c}))return {winner:'draw',line:null};
+  return null;
+}
+function minimaxTTT(board,player,aiPlayer,depth,stats){
+  stats.nodes++;
+  var result=tttWinner(board);
+  if(result){
+    if(result.winner==='draw')return 0;
+    if(result.winner===aiPlayer)return 10-depth;
+    return depth-10;
+  }
+  var best=player===aiPlayer?-Infinity:Infinity;
+  for(var i=0;i<9;i++){
+    if(board[i])continue;
+    board[i]=player;
+    var val=minimaxTTT(board,player==='X'?'O':'X',aiPlayer,depth+1,stats);
+    board[i]=null;
+    if(player===aiPlayer){
+      if(val>best)best=val;
+    } else {
+      if(val<best)best=val;
+    }
+  }
+  return best;
+}
+function tttBestMove(board,aiPlayer){
+  var stats={nodes:0};
+  var bestMove=-1,bestVal=-Infinity;
+  for(var i=0;i<9;i++){
+    if(board[i])continue;
+    board[i]=aiPlayer;
+    var val=minimaxTTT(board,aiPlayer==='X'?'O':'X',aiPlayer,0,stats);
+    board[i]=null;
+    if(val>bestVal){bestVal=val;bestMove=i;}
+  }
+  return {move:bestMove,value:bestVal,nodes:stats.nodes};
+}
+
+/* ================================================================
+   N-QUEENS
+   ================================================================ */
+function solveNQueens(N,maxSolutions){
+  var solutions=[];
+  var board=new Array(N).fill(-1);
+  var stats={nodes:0};
+  function safe(row,col){
+    for(var i=0;i<row;i++){
+      if(board[i]===col)return false;
+      if(Math.abs(board[i]-col)===Math.abs(i-row))return false;
+    }
+    return true;
+  }
+  function backtrack(row){
+    stats.nodes++;
+    if(solutions.length>=maxSolutions)return true;
+    if(row===N){
+      solutions.push(board.slice());
+      return false;
+    }
+    for(var col=0;col<N;col++){
+      if(safe(row,col)){
+        board[row]=col;
+        if(backtrack(row+1))return true;
+        board[row]=-1;
+      }
+    }
+    return false;
+  }
+  backtrack(0);
+  return {solutions:solutions,nodes:stats.nodes};
+}
+
+/* ================================================================
+   MAZE
+   ================================================================ */
+function generateMazeRecursive(W,H){
+  /* W,H odd */
+  var grid=new Uint8Array(W*H); /* 1=wall, 0=passage */
+  for(var i=0;i<W*H;i++)grid[i]=1;
+  /* Carve starting at (1,1) */
+  var stack=[[1,1]];
+  grid[1*W+1]=0;
+  var dirs=[[2,0],[-2,0],[0,2],[0,-2]];
+  while(stack.length){
+    var cur=stack[stack.length-1];
+    var shuffled=dirs.slice().sort(function(){return Math.random()-0.5});
+    var carved=false;
+    for(var i2=0;i2<shuffled.length;i2++){
+      var d=shuffled[i2];
+      var nx=cur[0]+d[0],ny=cur[1]+d[1];
+      if(nx>0&&nx<W-1&&ny>0&&ny<H-1&&grid[ny*W+nx]===1){
+        grid[(cur[1]+d[1]/2)*W+(cur[0]+d[0]/2)]=0;
+        grid[ny*W+nx]=0;
+        stack.push([nx,ny]);
+        carved=true;
+        break;
+      }
+    }
+    if(!carved)stack.pop();
+  }
+  return grid;
+}
+function generateMazePrim(W,H){
+  var grid=new Uint8Array(W*H);
+  for(var i=0;i<W*H;i++)grid[i]=1;
+  var startX=1,startY=1;
+  grid[startY*W+startX]=0;
+  var walls=[];
+  function addWalls(x,y){
+    var dirs=[[2,0],[-2,0],[0,2],[0,-2]];
+    dirs.forEach(function(d){
+      var nx=x+d[0],ny=y+d[1];
+      if(nx>0&&nx<W-1&&ny>0&&ny<H-1&&grid[ny*W+nx]===1){
+        walls.push([x,y,nx,ny]);
+      }
+    });
+  }
+  addWalls(startX,startY);
+  while(walls.length){
+    var idx=rnd(0,walls.length-1);
+    var w=walls[idx];
+    walls.splice(idx,1);
+    if(grid[w[3]*W+w[2]]===1){
+      grid[((w[1]+w[3])/2)*W+((w[0]+w[2])/2)]=0;
+      grid[w[3]*W+w[2]]=0;
+      addWalls(w[2],w[3]);
+    }
+  }
+  return grid;
+}
+function generateMazeRandom(W,H,density){
+  var grid=new Uint8Array(W*H);
+  density=density||0.3;
+  for(var i=0;i<W*H;i++)grid[i]=Math.random()<density?1:0;
+  /* Border walls */
+  for(var x=0;x<W;x++){grid[x]=1;grid[(H-1)*W+x]=1;}
+  for(var y=0;y<H;y++){grid[y*W]=1;grid[y*W+W-1]=1;}
+  return grid;
+}
+
+/* Pathfinding */
+function solveBFS(grid,W,H,start,end,stats){
+  var visited=new Uint8Array(W*H);
+  var cameFrom=new Int32Array(W*H).fill(-1);
+  var queue=[start[1]*W+start[0]];
+  visited[start[1]*W+start[0]]=1;
+  var order=[];
+  var dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  while(queue.length){
+    var cur=queue.shift();
+    order.push(cur);
+    stats.nodes++;
+    if(cur===end[1]*W+end[0])break;
+    var cx=cur%W,cy=Math.floor(cur/W);
+    for(var i=0;i<4;i++){
+      var nx=cx+dirs[i][0],ny=cy+dirs[i][1];
+      if(nx<0||nx>=W||ny<0||ny>=H)continue;
+      var nIdx=ny*W+nx;
+      if(grid[nIdx]||visited[nIdx])continue;
+      visited[nIdx]=1;
+      cameFrom[nIdx]=cur;
+      queue.push(nIdx);
+    }
+  }
+  return {cameFrom:cameFrom,order:order,endIdx:end[1]*W+end[0]};
+}
+function solveDFS(grid,W,H,start,end,stats){
+  var visited=new Uint8Array(W*H);
+  var cameFrom=new Int32Array(W*H).fill(-1);
+  var stack=[start[1]*W+start[0]];
+  var order=[];
+  var dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  while(stack.length){
+    var cur=stack.pop();
+    if(visited[cur])continue;
+    visited[cur]=1;
+    order.push(cur);
+    stats.nodes++;
+    if(cur===end[1]*W+end[0])break;
+    var cx=cur%W,cy=Math.floor(cur/W);
+    for(var i=0;i<4;i++){
+      var nx=cx+dirs[i][0],ny=cy+dirs[i][1];
+      if(nx<0||nx>=W||ny<0||ny>=H)continue;
+      var nIdx=ny*W+nx;
+      if(grid[nIdx]||visited[nIdx])continue;
+      cameFrom[nIdx]=cur;
+      stack.push(nIdx);
+    }
+  }
+  return {cameFrom:cameFrom,order:order,endIdx:end[1]*W+end[0]};
+}
+function solveAStar(grid,W,H,start,end,stats){
+  var visited=new Uint8Array(W*H);
+  var cameFrom=new Int32Array(W*H).fill(-1);
+  var gScore=new Float64Array(W*H).fill(Infinity);
+  var open=[];
+  var startIdx=start[1]*W+start[0];
+  var endIdx=end[1]*W+end[0];
+  gScore[startIdx]=0;
+  function h(a,b){
+    var ax=a%W,ay=Math.floor(a/W);
+    var bx=b%W,by=Math.floor(b/W);
+    return Math.abs(ax-bx)+Math.abs(ay-by);
+  }
+  open.push({idx:startIdx,f:h(startIdx,endIdx)});
+  var order=[];
+  while(open.length){
+    /* Find min f */
+    var minIdx=0;
+    for(var i=1;i<open.length;i++)if(open[i].f<open[minIdx].f)minIdx=i;
+    var cur=open.splice(minIdx,1)[0];
+    if(visited[cur.idx])continue;
+    visited[cur.idx]=1;
+    order.push(cur.idx);
+    stats.nodes++;
+    if(cur.idx===endIdx)break;
+    var cx=cur.idx%W,cy=Math.floor(cur.idx/W);
+    var dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+    for(var j=0;j<4;j++){
+      var nx=cx+dirs[j][0],ny=cy+dirs[j][1];
+      if(nx<0||nx>=W||ny<0||ny>=H)continue;
+      var nIdx=ny*W+nx;
+      if(grid[nIdx]||visited[nIdx])continue;
+      var tentative=gScore[cur.idx]+1;
+      if(tentative<gScore[nIdx]){
+        gScore[nIdx]=tentative;
+        cameFrom[nIdx]=cur.idx;
+        open.push({idx:nIdx,f:tentative+h(nIdx,endIdx)});
+      }
+    }
+  }
+  return {cameFrom:cameFrom,order:order,endIdx:endIdx};
+}
+function reconstructPath(cameFrom,endIdx){
+  var path=[];
+  var cur=endIdx;
+  while(cur!==-1){
+    path.unshift(cur);
+    cur=cameFrom[cur];
+  }
+  return path;
+}
+
+/* ================================================================
+   LOG
+   ================================================================ */
+var LOG=[];
+function logMsg(msg,type){
+  type=type||'info';
+  LOG.push({t:Date.now(),msg:msg,type:type});
+  if(LOG.length>200)LOG.shift();
+  if(STATE.currentRp==='logs')renderLogs();
+}
+</script>
+<script>
+/* ================================================================
+   MODULE: CHESS
+   ================================================================ */
+registerModule('chess',{
+  title:'Chess AI',
+  icon:'♞',
+  desc:'Full chess engine with minimax + alpha-beta pruning, MVV-LVA move ordering, and piece-square evaluation. Click a piece, then a highlighted square.',
+  init:function(){
+    var c=STATE.chess;
+    c.board=initialBoard();
+    c.turn='w';
+    c.selected=null;
+    c.legalMoves=legalMovesFor(c.board,'w',null);
+    c.legalTargets=[];
+    c.lastMove=null;
+    c.history=[];
+    c.moveList=[];
+    c.aiThinking=false;
+    c.checkmate=false;c.stalemate=false;
+  },
+  updateLegal:function(){
+    var c=STATE.chess;
+    c.legalMoves=legalMovesFor(c.board,c.turn,null);
+    if(c.legalMoves.length===0){
+      if(inCheck(c.board,c.turn))c.checkmate=true;
+      else c.stalemate=true;
+    } else {
+      c.checkmate=false;c.stalemate=false;
+    }
+  },
+  makeMove:function(move){
+    var c=STATE.chess;
+    /* Save history for undo */
+    c.history.push({
+      board:c.board.map(function(row){return row.slice()}),
+      turn:c.turn,
+      moveList:c.moveList.slice()
+    });
+    c.board=applyMove(c.board,move);
+    c.lastMove=move;
+    /* Record algebraic-ish notation */
+    var letter=move.piece.toUpperCase();
+    var files='abcdefgh';
+    var notation=(letter==='P'?'':letter)+files[move.from[0]]+(8-move.from[1])+(move.captured?'x':'-')+files[move.to[0]]+(8-move.to[1]);
+    c.moveList.push(notation);
+    c.turn=c.turn==='w'?'b':'w';
+    c.selected=null;
+    c.legalTargets=[];
+    this.updateLegal();
+    /* AI turn */
+    if(c.turn!==c.playerColor&&!c.checkmate&&!c.stalemate){
+      var self=this;
+      setTimeout(function(){self.aiMove();},50);
+    }
+  },
+  aiMove:function(){
+    var c=STATE.chess;
+    if(c.aiThinking)return;
+    c.aiThinking=true;
+    var self=this;
+    setTimeout(function(){
+      var result=findBestMove(c.board,c.turn,c.aiDepth,null);
+      c.aiThinking=false;
+      if(result&&result.move){
+        STATE.stats=STATE.stats||{};
+        $('sbNodes').textContent=result.nodes;
+        self.makeMove(result.move);
+      }
+      renderLeftPanel();
+    },10);
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#050210';
+    ctx.fillRect(0,0,W,H);
+    var c=STATE.chess;
+    /* Board size and position */
+    var size=Math.min(W-80,H-80);
+    var bx=(W-size)/2,by=(H-size)/2;
+    var sq=size/8;
+    /* Draw squares */
+    for(var y=0;y<8;y++){
+      for(var x=0;x<8;x++){
+        var light=(x+y)%2===0;
+        ctx.fillStyle=light?'#f0d8b0':'#a06840';
+        ctx.fillRect(bx+x*sq,by+y*sq,sq,sq);
+      }
+    }
+    /* Highlight last move */
+    if(c.lastMove){
+      ctx.fillStyle='rgba(255,224,64,.3)';
+      ctx.fillRect(bx+c.lastMove.from[0]*sq,by+c.lastMove.from[1]*sq,sq,sq);
+      ctx.fillRect(bx+c.lastMove.to[0]*sq,by+c.lastMove.to[1]*sq,sq,sq);
+    }
+    /* Highlight selected */
+    if(c.selected){
+      ctx.fillStyle='rgba(64,224,255,.4)';
+      ctx.fillRect(bx+c.selected[0]*sq,by+c.selected[1]*sq,sq,sq);
+    }
+    /* Highlight legal targets */
+    c.legalTargets.forEach(function(t){
+      ctx.fillStyle='rgba(64,255,144,.35)';
+      ctx.beginPath();
+      ctx.arc(bx+t[0]*sq+sq/2,by+t[1]*sq+sq/2,sq*0.15,0,Math.PI*2);
+      ctx.fill();
+    });
+    /* Draw pieces */
+    ctx.font=Math.floor(sq*0.75)+'px serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    for(var y2=0;y2<8;y2++){
+      for(var x2=0;x2<8;x2++){
+        var p=c.board[y2][x2];
+        if(!p)continue;
+        var color=pieceColor(p);
+        var sym=pieceToSymbol(p);
+        /* Shadow */
+        ctx.fillStyle='rgba(0,0,0,.4)';
+        ctx.fillText(sym,bx+x2*sq+sq/2+2,by+y2*sq+sq/2+3);
+        /* Piece */
+        ctx.fillStyle=color==='w'?'#ffffff':'#1a1a1a';
+        ctx.fillText(sym,bx+x2*sq+sq/2,by+y2*sq+sq/2);
+        /* Outline */
+        ctx.strokeStyle=color==='w'?'#000':'#fff';
+        ctx.lineWidth=1;
+        ctx.strokeText(sym,bx+x2*sq+sq/2,by+y2*sq+sq/2);
+      }
+    }
+    /* File/rank labels */
+    ctx.fillStyle='#706098';
+    ctx.font='10px monospace';
+    for(var i=0;i<8;i++){
+      ctx.fillText(String.fromCharCode(97+i),bx+i*sq+sq/2,by+size+16);
+      ctx.fillText((8-i).toString(),bx-10,by+i*sq+sq/2);
+    }
+    /* Check indicator */
+    if(inCheck(c.board,c.turn)){
+      var k=findKing(c.board,c.turn);
+      if(k){
+        ctx.strokeStyle='#ff5080';
+        ctx.lineWidth=4;
+        ctx.strokeRect(bx+k[0]*sq+2,by+k[1]*sq+2,sq-4,sq-4);
+      }
+    }
+    /* Side panel text */
+    ctx.fillStyle=c.turn==='w'?'#fff':'#a898d8';
+    ctx.font='bold 14px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('Turn: '+(c.turn==='w'?'White':'Black'),20,30);
+    ctx.fillStyle='#b060ff';
+    ctx.font='12px monospace';
+    ctx.fillText('Playing as: '+(c.playerColor==='w'?'White':'Black'),20,50);
+    ctx.fillText('AI depth: '+c.aiDepth,20,70);
+    /* Check status */
+    if(c.checkmate){
+      ctx.fillStyle='#ffe040';
+      ctx.font='bold 16px monospace';
+      ctx.fillText('CHECKMATE! '+(c.turn==='w'?'Black':'White')+' wins',bx,by-20);
+    } else if(c.stalemate){
+      ctx.fillStyle='#40e0ff';
+      ctx.font='bold 16px monospace';
+      ctx.fillText('STALEMATE — Draw',bx,by-20);
+    } else if(inCheck(c.board,c.turn)){
+      ctx.fillStyle='#ff5080';
+      ctx.font='bold 14px monospace';
+      ctx.fillText('CHECK!',bx,by-20);
+    }
+    /* Eval bar */
+    var evalScore=evaluate(c.board)/100;
+    var barH=size;
+    var barW=20;
+    var barX=bx+size+20;
+    var barY=by;
+    var whiteH=clamp((evalScore+10)/20,0,1)*barH;
+    ctx.fillStyle='#a898d8';
+    ctx.fillRect(barX,barY,barW,barH);
+    ctx.fillStyle='#fff';
+    ctx.fillRect(barX,barY+barH-whiteH,barW,whiteH);
+    ctx.strokeStyle='#706098';
+    ctx.strokeRect(barX,barY,barW,barH);
+    ctx.fillStyle='#e8e0ff';
+    ctx.font='10px monospace';
+    ctx.textAlign='center';
+    ctx.fillText(fmt(evalScore,1),barX+barW/2,barY+barH/2);
+    setStatsHTML(
+      '<div>Turn: '+(c.turn==='w'?'White':'Black')+'</div>'+
+      '<div>Moves: '+c.moveList.length+'</div>'+
+      '<div>Legal: '+c.legalMoves.length+'</div>'+
+      '<div>Eval: '+fmt(evalScore,2)+'</div>'
+    );
+    updateBadge('♞ Chess · turn '+(c.turn==='w'?'White':'Black')+' · depth '+c.aiDepth);
+    $('sbMode').textContent='Chess';
+    $('sbScore').textContent=fmt(evalScore,2);
+    $('sbDepth').textContent=c.aiDepth;
+  },
+  onDown:function(p){
+    var c=STATE.chess;
+    if(c.aiThinking||c.turn!==c.playerColor||c.checkmate||c.stalemate)return;
+    var W=CANV.W,H=CANV.H;
+    var size=Math.min(W-80,H-80);
+    var bx=(W-size)/2,by=(H-size)/2;
+    var sq=size/8;
+    var sx=Math.floor((p.x-bx)/sq);
+    var sy=Math.floor((p.y-by)/sq);
+    if(sx<0||sx>7||sy<0||sy>7)return;
+    /* If clicked on legal target — make the move */
+    var move=c.legalMoves.find(function(m){
+      return m.from[0]===c.selected&&m.from[1]===c.selected_y&&m.to[0]===sx&&m.to[1]===sy;
+    });
+    if(c.selected){
+      var targetMove=c.legalMoves.find(function(m){
+        return m.from[0]===c.selected[0]&&m.from[1]===c.selected[1]&&m.to[0]===sx&&m.to[1]===sy;
+      });
+      if(targetMove){
+        this.makeMove(targetMove);
+        return;
+      }
+    }
+    /* Select piece */
+    var piece=c.board[sy][sx];
+    if(piece&&pieceColor(piece)===c.turn){
+      c.selected=[sx,sy];
+      c.legalTargets=c.legalMoves.filter(function(m){
+        return m.from[0]===sx&&m.from[1]===sy;
+      }).map(function(m){return m.to});
+    } else {
+      c.selected=null;
+      c.legalTargets=[];
+    }
+  },
+  onUp:function(){},
+  controls:function(){
+    var c=STATE.chess;
+    var html='';
+    html+='<div class="sec"><h4>New game</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.chess.init()">↺ Start new game</button>';
+    html+='<div class="ctrl" style="margin-top:8px"><div class="lbl"><span>Play as</span></div>';
+    html+='<div class="chip-row">';
+    html+='<div class="chip '+(c.playerColor==='w'?'active':'')+'" onclick="STATE.chess.playerColor=\'w\';MODULES.chess.init();renderLeftPanel()">White</div>';
+    html+='<div class="chip '+(c.playerColor==='b'?'active':'')+'" onclick="STATE.chess.playerColor=\'b\';MODULES.chess.init();renderLeftPanel()">Black</div>';
+    html+='</div></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>AI Settings</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Search depth</span><span>'+c.aiDepth+'</span></div>';
+    html+='<input type="range" min="1" max="4" step="1" value="'+c.aiDepth+'" oninput="STATE.chess.aiDepth=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='<div class="text-xs text-dim" style="font-family:var(--mono)">Deeper = stronger but slower</div>';
+    html+='</div>';
+    /* Move list */
+    html+='<div class="sec"><h4>Moves</h4>';
+    html+='<div class="move-list">';
+    for(var i=0;i<c.moveList.length;i+=2){
+      var num=Math.floor(i/2)+1;
+      var w=c.moveList[i]||'';
+      var b=c.moveList[i+1]||'';
+      html+='<div class="move-row"><span class="mv-num">'+num+'.</span><span class="mv-white">'+w+'</span><span class="mv-black">'+b+'</span></div>';
+    }
+    if(!c.moveList.length)html+='<div class="text-xs text-dim" style="font-family:var(--mono)">No moves yet</div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn full sm" onclick="undoChessMove()" '+(c.history.length?'':'disabled')+'>← Undo</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="chessAIMove()" '+((!c.aiThinking&&!c.checkmate&&!c.stalemate)?'':'disabled')+'>🤖 AI move now</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var c=STATE.chess;
+    return '<div class="sec"><h4>Minimax with alpha-beta</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Evaluates positions up to depth '+c.aiDepth+'. Alpha-beta pruning cuts branches that cannot improve the score.<br><br>'+
+      '<b class="text-c1">Alpha:</b> best score white can guarantee<br>'+
+      '<b class="text-c1">Beta:</b> best score black can guarantee<br><br>'+
+      'When β ≤ α, the search stops — the branch is refuted.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Evaluation</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '<b>Material:</b><br>'+
+      'P=100  N=320  B=330  R=500  Q=900  K=20000<br><br>'+
+      '<b>Piece-square tables:</b><br>'+
+      'Knights prefer center, pawns advance, king safe in castled position.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Move ordering (MVV-LVA)</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      'Most Valuable Victim − Least Valuable Attacker. Try captures of high-value pieces first to maximize cutoffs.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current position</h4><div class="kv">'+
+      '<div class="row"><span class="k">Turn</span><span class="v">'+(c.turn==='w'?'White':'Black')+'</span></div>'+
+      '<div class="row"><span class="k">Legal moves</span><span class="v">'+c.legalMoves.length+'</span></div>'+
+      '<div class="row"><span class="k">Eval (centipawns)</span><span class="v">'+fmt(evaluate(c.board),0)+'</span></div>'+
+      '<div class="row"><span class="k">In check</span><span class="v">'+(inCheck(c.board,c.turn)?'yes':'no')+'</span></div>'+
+      '</div></div>';
+  }
+});
+function pieceToSymbol(p){
+  var symbols={
+    'K':'\u265A','Q':'\u265B','R':'\u265C','B':'\u265D','N':'\u265E','P':'\u265F',
+    'k':'\u265A','q':'\u265B','r':'\u265C','b':'\u265D','n':'\u265E','p':'\u265F'
+  };
+  return symbols[p]||p;
+}
+function undoChessMove(){
+  var c=STATE.chess;
+  if(!c.history.length)return;
+  var h=c.history.pop();
+  c.board=h.board;
+  c.turn=h.turn;
+  c.moveList=h.moveList;
+  c.selected=null;
+  c.legalTargets=[];
+  MODULES.chess.updateLegal();
+  renderLeftPanel();
+}
+function chessAIMove(){
+  MODULES.chess.aiMove();
+}
+
+/* ================================================================
+   MODULE: GAME OF LIFE
+   ================================================================ */
+registerModule('life',{
+  title:'Game of Life',
+  icon:'🧬',
+  desc:'Conway\'s cellular automaton with customizable B/S rules. Toroidal wrapping or bounded edges.',
+  init:function(){
+    var l=STATE.life;
+    l.grid=new Uint8Array(l.W*l.H);
+    l.generation=0;
+    l.populationHistory=[];
+    this.randomize(l.density);
+  },
+  randomize:function(density){
+    var l=STATE.life;
+    density=density!=null?density:l.density;
+    for(var i=0;i<l.grid.length;i++){
+      l.grid[i]=Math.random()<density?1:0;
+    }
+    l.generation=0;
+    l.populationHistory=[];
+  },
+  clear:function(){
+    STATE.life.grid=new Uint8Array(STATE.life.W*STATE.life.H);
+    STATE.life.generation=0;
+    STATE.life.populationHistory=[];
+  },
+  setPreset:function(name){
+    var l=STATE.life;
+    if(LIFE_PRESETS[name]){
+      l.grid=LIFE_PRESETS[name](l.W,l.H);
+    }
+    l.generation=0;
+    l.populationHistory=[];
+    l.preset=name;
+  },
+  tick:function(dt){
+    var l=STATE.life;
+    if(!l.running)return;
+    var steps=Math.max(1,Math.round(l.speed*dt));
+    for(var i=0;i<steps;i++){
+      l.grid=lifeStep(l.grid,l.W,l.H,l.rule,l.toroidal);
+      l.generation++;
+      var pop=0;
+      for(var j=0;j<l.grid.length;j++)pop+=l.grid[j];
+      l.populationHistory.push(pop);
+      if(l.populationHistory.length>500)l.populationHistory.shift();
+    }
+    STATE.time+=dt;
+    $('sbGen').textContent=l.generation;
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#050210';
+    ctx.fillRect(0,0,W,H);
+    var l=STATE.life;
+    if(!l.grid)return;
+    var pad=20;
+    var cellW=(W-pad*2)/l.W;
+    var cellH=(H-pad*2)/l.H;
+    var cs=Math.min(cellW,cellH);
+    var ox=(W-cs*l.W)/2;
+    var oy=(H-cs*l.H)/2;
+    l.cellSize=cs;
+    /* Grid background */
+    ctx.fillStyle='rgba(20,16,40,.6)';
+    ctx.fillRect(ox,oy,cs*l.W,cs*l.H);
+    /* Cells */
+    for(var y=0;y<l.H;y++){
+      for(var x=0;x<l.W;x++){
+        if(l.grid[y*l.W+x]){
+          ctx.fillStyle='#b060ff';
+          ctx.fillRect(ox+x*cs+1,oy+y*cs+1,cs-1,cs-1);
+          /* Glow effect */
+          if(cs>4){
+            ctx.fillStyle='rgba(176,96,255,.4)';
+            ctx.fillRect(ox+x*cs,oy+y*cs,cs,cs);
+          }
+        }
+      }
+    }
+    /* Border */
+    ctx.strokeStyle='rgba(176,96,255,.4)';
+    ctx.lineWidth=1;
+    ctx.strokeRect(ox,oy,cs*l.W,cs*l.H);
+    /* Population chart */
+    if(l.populationHistory.length>1&&H>200){
+      var chartX=W-160,chartY=40,chartW=140,chartH=80;
+      ctx.fillStyle='rgba(20,16,40,.8)';
+      ctx.strokeStyle='rgba(64,224,255,.3)';
+      ctx.beginPath();ctx.roundRect(chartX,chartY,chartW,chartH,6);ctx.fill();ctx.stroke();
+      var minP=0,maxP=Math.max.apply(null,l.populationHistory)||1;
+      ctx.strokeStyle='#40e0ff';
+      ctx.lineWidth=1.5;
+      ctx.beginPath();
+      for(var i=0;i<l.populationHistory.length;i++){
+        var px=chartX+(i/(l.populationHistory.length-1))*chartW;
+        var py=chartY+chartH-((l.populationHistory[i]-minP)/(maxP-minP))*chartH;
+        if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      }
+      ctx.stroke();
+      ctx.fillStyle='#40e0ff';
+      ctx.font='9px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('Population',chartX+4,chartY+12);
+      ctx.textAlign='right';
+      ctx.fillText(maxP,chartX+chartW-4,chartY+12);
+    }
+    /* Info */
+    ctx.fillStyle='rgba(13,10,26,.85)';
+    ctx.strokeStyle='rgba(176,96,255,.4)';
+    ctx.beginPath();ctx.roundRect(20,20,220,100,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#b060ff';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('GAME OF LIFE',32,42);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#e8e0ff';
+    ctx.fillText('Rule: '+l.ruleString,32,62);
+    ctx.fillText('Generation: '+l.generation,32,80);
+    var pop=0;for(var k=0;k<l.grid.length;k++)pop+=l.grid[k];
+    ctx.fillText('Population: '+pop,32,98);
+    setStatsHTML(
+      '<div>Gen: '+l.generation+'</div>'+
+      '<div>Pop: '+pop+'</div>'+
+      '<div>Size: '+l.W+'×'+l.H+'</div>'+
+      '<div>Rule: '+l.ruleString+'</div>'
+    );
+    updateBadge('🧬 Life · '+l.ruleString+' · gen '+l.generation);
+    $('sbMode').textContent='Game of Life';
+  },
+  onDown:function(p){
+    var l=STATE.life;
+    var W=CANV.W,H=CANV.H;
+    var pad=20;
+    var cellW=(W-pad*2)/l.W;
+    var cellH=(H-pad*2)/l.H;
+    var cs=Math.min(cellW,cellH);
+    var ox=(W-cs*l.W)/2;
+    var oy=(H-cs*l.H)/2;
+    var sx=Math.floor((p.x-ox)/cs);
+    var sy=Math.floor((p.y-oy)/cs);
+    if(sx<0||sx>=l.W||sy<0||sy>=l.H)return;
+    l.grid[sy*l.W+sx]=l.grid[sy*l.W+sx]?0:1;
+  },
+  onMove:function(p){
+    if(INPUT.down)this.onDown(p);
+  },
+  onUp:function(){},
+  controls:function(){
+    var l=STATE.life;
+    var html='';
+    html+='<div class="sec"><h4>Controls</h4>';
+    html+='<button class="btn primary full" onclick="STATE.life.running=!STATE.life.running;renderLeftPanel()">'+(l.running?'⏸ Pause':'▶ Play')+'</button>';
+    html+='<button class="btn full sm" style="margin-top:6px" onclick="MODULES.life.clear();renderLeftPanel()">🗑 Clear</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.life.randomize();renderLeftPanel()">🎲 Random</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.life.tick(1);renderLeftPanel()">⏭ Step</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Presets</h4>';
+    html+='<div class="chip-row">';
+    Object.keys(LIFE_PRESETS).forEach(function(k){
+      html+='<div class="chip '+(l.preset===k?'active':'')+'" onclick="MODULES.life.setPreset(\''+k+'\');renderLeftPanel()">'+k+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Rule (B/S notation)</h4>';
+    html+='<div class="ctrl"><input type="text" value="'+l.ruleString+'" onchange="applyRuleString(this.value)"></div>';
+    html+='<div class="chip-row">';
+    [['B3/S23','Life'],['B36/S23','HighLife'],['B2/S','Seeds'],['B345/S5','LongLife'],['B34/S34','34 Life'],['B3678/S34678','Day & Night']].forEach(function(r){
+      html+='<div class="chip '+(l.ruleString===r[0]?'active':'')+'" onclick="applyRuleString(\''+r[0]+'\');renderLeftPanel()">'+r[1]+'</div>';
+    });
+    html+='</div>';
+    html+='<div class="ctrl" style="margin-top:8px"><div class="lbl"><span>Birth</span></div>';
+    html+='<div class="chip-row" style="gap:2px">';
+    for(var i=0;i<=8;i++){
+      var has=l.rule.birth.indexOf(i)>=0;
+      html+='<div class="chip '+(has?'active':'')+'" style="padding:3px 7px;min-width:22px;text-align:center" onclick="toggleRule(\'birth\','+i+')">'+i+'</div>';
+    }
+    html+='</div></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Survive</span></div>';
+    html+='<div class="chip-row" style="gap:2px">';
+    for(var j=0;j<=8;j++){
+      var has2=l.rule.survive.indexOf(j)>=0;
+      html+='<div class="chip '+(has2?'active':'')+'" style="padding:3px 7px;min-width:22px;text-align:center" onclick="toggleRule(\'survive\','+j+')">'+j+'</div>';
+    }
+    html+='</div></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Grid</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Width</span><span>'+l.W+'</span></div>';
+    html+='<input type="range" min="20" max="120" step="10" value="'+l.W+'" oninput="STATE.life.W=parseInt(this.value);MODULES.life.init();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Height</span><span>'+l.H+'</span></div>';
+    html+='<input type="range" min="20" max="100" step="10" value="'+l.H+'" oninput="STATE.life.H=parseInt(this.value);MODULES.life.init();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Speed (steps/sec)</span><span>'+l.speed+'</span></div>';
+    html+='<input type="range" min="1" max="50" step="1" value="'+l.speed+'" oninput="STATE.life.speed=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.68rem;color:var(--tx2)">Toroidal wrap</span><div class="chip '+(l.toroidal?'active':'')+'" onclick="STATE.life.toroidal=!STATE.life.toroidal;renderLeftPanel()">'+(l.toroidal?'ON':'OFF')+'</div></div>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var l=STATE.life;
+    return '<div class="sec"><h4>Conway\'s Rules</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'A dead cell with exactly 3 live neighbors becomes alive (birth).<br>'+
+      'A live cell with 2 or 3 live neighbors survives.<br>'+
+      'All other cells die or stay dead.<br><br>'+
+      'Notation: <b>B3/S23</b><br>'+
+      'B = birth counts, S = survive counts'+
+      '</div></div>'+
+      '<div class="sec"><h4>Emergence</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'From simple local rules, complex global patterns emerge:<br><br>'+
+      '<b>Still lifes:</b> block, beehive, loaf<br>'+
+      '<b>Oscillators:</b> blinker (period 2), pulsar (period 3)<br>'+
+      '<b>Spaceships:</b> glider, LWSS, HWSS<br>'+
+      '<b>Guns:</b> Gosper glider gun (period 30)<br>'+
+      '<b>Puffers:</b> leave debris behind<br><br>'+
+      'The Game of Life is Turing-complete!'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current state</h4><div class="kv">'+
+      '<div class="row"><span class="k">Rule</span><span class="v">'+l.ruleString+'</span></div>'+
+      '<div class="row"><span class="k">Generation</span><span class="v">'+l.generation+'</span></div>'+
+      '<div class="row"><span class="k">Grid</span><span class="v">'+l.W+'×'+l.H+'</span></div>'+
+      '<div class="row"><span class="k">Wrap</span><span class="v">'+(l.toroidal?'toroidal':'bounded')+'</span></div>'+
+      '</div></div>';
+  }
+});
+function applyRuleString(s){
+  var r=parseRule(s);
+  STATE.life.rule=r;
+  STATE.life.ruleString=ruleToString(r);
+  renderLeftPanel();
+}
+function toggleRule(kind,val){
+  var l=STATE.life;
+  var arr=l.rule[kind];
+  var i=arr.indexOf(val);
+  if(i>=0)arr.splice(i,1);
+  else arr.push(val);
+  arr.sort(function(a,b){return a-b});
+  l.ruleString=ruleToString(l.rule);
+  renderLeftPanel();
+}
+
+/* ================================================================
+   MODULE: GENETIC ALGORITHM
+   ================================================================ */
+registerModule('genetic',{
+  title:'Genetic Algorithm',
+  icon:'🧬',
+  desc:'Evolve strings towards a target via tournament selection, crossover, and mutation. Watch the population converge.',
+  init:function(){
+    var g=STATE.genetic;
+    g.population=[];
+    for(var i=0;i<g.popSize;i++){
+      g.population.push(randomIndividual(g.target.length));
+    }
+    g.generation=0;
+    g.history=[];
+    g.best=null;
+    g.bestScore=0;
+    this.evaluate();
+  },
+  evaluate:function(){
+    var g=STATE.genetic;
+    var fitnesses=g.population.map(function(ind){
+      return fitness(ind,g.target);
+    });
+    var bestIdx=0;
+    for(var i=1;i<g.population.length;i++){
+      if(fitnesses[i]>fitnesses[bestIdx])bestIdx=i;
+    }
+    g.best=g.population[bestIdx];
+    g.bestScore=fitnesses[bestIdx];
+    var avg=fitnesses.reduce(function(a,b){return a+b},0)/fitnesses.length;
+    g.history.push({best:g.bestScore,avg:avg});
+    return fitnesses;
+  },
+  step:function(){
+    var g=STATE.genetic;
+    var fitnesses=this.evaluate();
+    if(g.bestScore===g.target.length){
+      g.running=false;
+      logMsg('GA converged in '+g.generation+' generations','success');
+      return true;
+    }
+    /* Sort by fitness */
+    var indices=g.population.map(function(_,i){return i});
+    indices.sort(function(a,b){return fitnesses[b]-fitnesses[a]});
+    /* Elitism */
+    var newPop=[];
+    for(var e=0;e<g.eliteCount;e++){
+      newPop.push(g.population[indices[e]]);
+    }
+    /* Generate offspring */
+    while(newPop.length<g.popSize){
+      var p1=tournamentSelect(g.population,fitnesses,3);
+      var p2=tournamentSelect(g.population,fitnesses,3);
+      var child=crossover(p1,p2,g.crossoverType);
+      child=mutate(child,g.mutationRate);
+      newPop.push(child);
+    }
+    g.population=newPop;
+    g.generation++;
+    return false;
+  },
+  tick:function(dt){
+    var g=STATE.genetic;
+    if(!g.running)return;
+    var steps=Math.max(1,Math.round(20*dt));
+    for(var i=0;i<steps;i++){
+      if(this.step())break;
+    }
+    STATE.time+=dt;
+    $('sbGen').textContent=g.generation;
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#050210';
+    ctx.fillRect(0,0,W,H);
+    var g=STATE.genetic;
+    /* Header */
+    ctx.fillStyle='#b060ff';
+    ctx.font='bold 16px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('🧬 GENETIC ALGORITHM',40,30);
+    ctx.fillStyle='#706098';
+    ctx.font='11px monospace';
+    ctx.fillText('Target: "'+g.target+'"',40,52);
+    /* Best individual display */
+    var charW=Math.min(24,(W-80)/g.target.length);
+    var startY=100;
+    ctx.font='bold 22px monospace';
+    ctx.textAlign='center';
+    for(var i=0;i<g.target.length;i++){
+      var x=40+i*charW+charW/2;
+      var bestChar=g.best?g.best[i]:'?';
+      var targetChar=g.target[i];
+      var correct=bestChar===targetChar;
+      /* Character cell */
+      ctx.fillStyle=correct?'rgba(64,255,144,.2)':'rgba(255,80,128,.15)';
+      ctx.beginPath();ctx.roundRect(40+i*charW,startY,charW-2,40,4);ctx.fill();
+      ctx.strokeStyle=correct?'#40ff90':'#ff5080';
+      ctx.lineWidth=1;
+      ctx.stroke();
+      /* Best character */
+      ctx.fillStyle=correct?'#40ff90':'#ff5080';
+      ctx.fillText(bestChar,x,startY+28);
+    }
+    /* Target comparison */
+    ctx.font='bold 16px monospace';
+    ctx.fillStyle='#ffe040';
+    for(var i2=0;i2<g.target.length;i2++){
+      ctx.fillText(g.target[i2],40+i2*charW+charW/2,startY+70);
+    }
+    ctx.font='11px monospace';
+    ctx.fillStyle='#706098';
+    ctx.textAlign='left';
+    ctx.fillText('← Best      Target →',40,startY+92);
+    /* Fitness history chart */
+    if(g.history.length>1){
+      var chartY=260,chartH=160,chartX=40,chartW=W-80;
+      ctx.fillStyle='rgba(20,16,40,.5)';
+      ctx.strokeStyle='rgba(176,96,255,.3)';
+      ctx.beginPath();ctx.roundRect(chartX,chartY,chartW,chartH,6);ctx.fill();ctx.stroke();
+      /* Grid */
+      ctx.strokeStyle='rgba(88,96,152,.1)';
+      for(var gi=0;gi<=4;gi++){
+        var gy=chartY+gi*chartH/4;
+        ctx.beginPath();ctx.moveTo(chartX,gy);ctx.lineTo(chartX+chartW,gy);ctx.stroke();
+      }
+      /* Best fitness line */
+      ctx.strokeStyle='#40ff90';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      for(var hi=0;hi<g.history.length;hi++){
+        var px=chartX+(hi/(g.history.length-1))*chartW;
+        var py=chartY+chartH-(g.history[hi].best/g.target.length)*chartH;
+        if(hi===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      }
+      ctx.stroke();
+      /* Average fitness line */
+      ctx.strokeStyle='#40e0ff';
+      ctx.lineWidth=1.5;
+      ctx.setLineDash([3,3]);
+      ctx.beginPath();
+      for(var hi2=0;hi2<g.history.length;hi2++){
+        var px2=chartX+(hi2/(g.history.length-1))*chartW;
+        var py2=chartY+chartH-(g.history[hi2].avg/g.target.length)*chartH;
+        if(hi2===0)ctx.moveTo(px2,py2);else ctx.lineTo(px2,py2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#40ff90';
+      ctx.font='10px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('— Best fitness',chartX+8,chartY+16);
+      ctx.fillStyle='#40e0ff';
+      ctx.fillText('--- Average fitness',chartX+8,chartY+32);
+      ctx.fillStyle='#706098';
+      ctx.textAlign='right';
+      ctx.fillText('Generation '+g.generation,chartX+chartW-8,chartY+16);
+    }
+    setStatsHTML(
+      '<div>Gen: '+g.generation+'</div>'+
+      '<div>Best: '+g.bestScore+'/'+g.target.length+'</div>'+
+      '<div>Pop: '+g.popSize+'</div>'+
+      '<div>Rate: '+fmt(g.mutationRate*100,1)+'%</div>'
+    );
+    updateBadge('🧬 Genetic · gen '+g.generation+' · score '+g.bestScore+'/'+g.target.length);
+    $('sbMode').textContent='Genetic';
+    $('sbGen').textContent=g.generation;
+    $('sbScore').textContent=g.bestScore+'/'+g.target.length;
+  },
+  onDown:function(){},
+  controls:function(){
+    var g=STATE.genetic;
+    var html='';
+    html+='<div class="sec"><h4>Controls</h4>';
+    html+='<button class="btn primary full" onclick="STATE.genetic.running=!STATE.genetic.running;renderLeftPanel()">'+(g.running?'⏸ Pause':'▶ Evolve')+'</button>';
+    html+='<button class="btn full sm" style="margin-top:6px" onclick="MODULES.genetic.init();renderLeftPanel()">↺ Reset population</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.genetic.step();renderLeftPanel()">⏭ One generation</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Target string</h4>';
+    html+='<div class="ctrl"><input type="text" value="'+esc(g.target)+'" onchange="STATE.genetic.target=this.value.toUpperCase().replace(/[^A-Z ]/g,\'\');MODULES.genetic.init();renderLeftPanel()" maxlength="30"></div>';
+    html+='<div class="chip-row">';
+    ['HELLO WORLD','TO BE OR NOT TO BE','METHINKS IT IS LIKE A WEASEL','JUST DO IT','CARPE DIEM'].forEach(function(t){
+      html+='<div class="chip" onclick="STATE.genetic.target=\''+t+'\';MODULES.genetic.init();renderLeftPanel()">'+t.substring(0,10)+'...</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Population size</span><span>'+g.popSize+'</span></div>';
+    html+='<input type="range" min="20" max="300" step="10" value="'+g.popSize+'" oninput="STATE.genetic.popSize=parseInt(this.value);MODULES.genetic.init();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Mutation rate</span><span>'+fmt(g.mutationRate*100,2)+'%</span></div>';
+    html+='<input type="range" min="0.001" max="0.15" step="0.001" value="'+g.mutationRate+'" oninput="STATE.genetic.mutationRate=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Elite count</span><span>'+g.eliteCount+'</span></div>';
+    html+='<input type="range" min="0" max="20" step="1" value="'+g.eliteCount+'" oninput="STATE.genetic.eliteCount=parseInt(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Crossover</span></div>';
+    html+='<div class="chip-row">';
+    [['uniform','Uniform'],['single','Single point'],['two','Two point']].forEach(function(c){
+      html+='<div class="chip '+(g.crossoverType===c[0]?'active':'')+'" onclick="STATE.genetic.crossoverType=\''+c[0]+'\';renderLeftPanel()">'+c[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Best individual</h4>';
+    html+='<div class="kv">';
+    html+='<div class="row"><span class="k">Best</span><span class="v" style="font-family:var(--mono)">'+(g.best||'—')+'</span></div>';
+    html+='<div class="row"><span class="k">Score</span><span class="v">'+g.bestScore+' / '+g.target.length+'</span></div>';
+    html+='<div class="row"><span class="k">Fitness</span><span class="v">'+fmt(g.bestScore/g.target.length*100,1)+'%</span></div>';
+    html+='</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var g=STATE.genetic;
+    return '<div class="sec"><h4>Genetic Algorithm</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Evolutionary optimization inspired by natural selection:<br><br>'+
+      '1. <b>Initialize</b> random population<br>'+
+      '2. <b>Evaluate</b> each individual\'s fitness<br>'+
+      '3. <b>Select</b> parents via tournament<br>'+
+      '4. <b>Crossover</b> to create offspring<br>'+
+      '5. <b>Mutate</b> with small probability<br>'+
+      '6. <b>Replace</b> population (with elitism)<br>'+
+      '7. Repeat until convergence'+
+      '</div></div>'+
+      '<div class="sec"><h4>Fitness Function</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'f(s) = number of matching characters with target<br><br>'+
+      'Maximum score = target length<br><br>'+
+      'Selection pressure is controlled by tournament size (k=3).'+
+      '</div></div>'+
+      '<div class="sec"><h4>Mutation rate</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      'Too low → population gets stuck in local optima<br>'+
+      'Too high → destroys good solutions<br>'+
+      'Sweet spot usually 1–5%'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current run</h4><div class="kv">'+
+      '<div class="row"><span class="k">Generation</span><span class="v">'+g.generation+'</span></div>'+
+      '<div class="row"><span class="k">Best score</span><span class="v">'+g.bestScore+' / '+g.target.length+'</span></div>'+
+      '<div class="row"><span class="k">Population</span><span class="v">'+g.popSize+'</span></div>'+
+      '<div class="row"><span class="k">Mutate</span><span class="v">'+fmt(g.mutationRate*100,2)+'%</span></div>'+
+      '<div class="row"><span class="k">Elite</span><span class="v">'+g.eliteCount+'</span></div>'+
+      '</div></div>';
+  }
+});
+</script>
+<script>
+/* ================================================================
+   MODULE: TIC-TAC-TOE
+   ================================================================ */
+registerModule('ttt',{
+  title:'Tic-Tac-Toe',
+  icon:'⭕',
+  desc:'Perfect play via full minimax search. The AI is unbeatable — you can at best draw.',
+  init:function(){
+    var t=STATE.ttt;
+    t.board=[null,null,null,null,null,null,null,null,null];
+    t.turn='X';
+    t.winner=null;
+    t.winLine=null;
+    t.aiNodes=0;
+    /* If human is O, AI goes first */
+    if(t.humanIs==='O'){
+      var self=this;
+      setTimeout(function(){self.aiMove();},100);
+    }
+  },
+  aiMove:function(){
+    var t=STATE.ttt;
+    if(t.winner)return;
+    var aiPlayer=t.humanIs==='X'?'O':'X';
+    if(t.turn!==aiPlayer)return;
+    var result=tttBestMove(t.board,aiPlayer);
+    t.aiNodes=result.nodes;
+    t.stats.totalNodes+=result.nodes;
+    if(result.move>=0){
+      t.board[result.move]=aiPlayer;
+      t.turn=t.humanIs;
+      this.checkWinner();
+    }
+  },
+  checkWinner:function(){
+    var t=STATE.ttt;
+    var result=tttWinner(t.board);
+    if(result){
+      t.winner=result.winner;
+      t.winLine=result.line;
+      t.stats.totalGames++;
+      if(result.winner==='draw')t.score.D++;
+      else if(result.winner===t.humanIs)t.score.X++;
+      else t.score.O++;
+    }
+  },
+  tick:function(dt){STATE.time+=dt;},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#050210';
+    ctx.fillRect(0,0,W,H);
+    var t=STATE.ttt;
+    /* Board */
+    var size=Math.min(W-200,H-100);
+    var bx=(W-size)/2,by=(H-size)/2;
+    var cs=size/3;
+    /* Grid lines */
+    ctx.strokeStyle='rgba(176,96,255,.6)';
+    ctx.lineWidth=3;
+    for(var i=1;i<3;i++){
+      ctx.beginPath();ctx.moveTo(bx+i*cs,by);ctx.lineTo(bx+i*cs,by+size);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(bx,by+i*cs);ctx.lineTo(bx+size,by+i*cs);ctx.stroke();
+    }
+    /* X and O */
+    ctx.lineWidth=8;
+    ctx.lineCap='round';
+    for(var idx=0;idx<9;idx++){
+      var x=idx%3,y=Math.floor(idx/3);
+      var cx=bx+x*cs+cs/2,cy=by+y*cs+cs/2;
+      var s=cs*0.35;
+      if(t.board[idx]==='X'){
+        ctx.strokeStyle='#40e0ff';
+        ctx.beginPath();ctx.moveTo(cx-s,cy-s);ctx.lineTo(cx+s,cy+s);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx+s,cy-s);ctx.lineTo(cx-s,cy+s);ctx.stroke();
+      } else if(t.board[idx]==='O'){
+        ctx.strokeStyle='#ff5080';
+        ctx.beginPath();ctx.arc(cx,cy,s,0,Math.PI*2);ctx.stroke();
+      }
+    }
+    /* Winning line */
+    if(t.winLine){
+      var l=t.winLine;
+      var x1=bx+(l[0]%3)*cs+cs/2;
+      var y1=by+Math.floor(l[0]/3)*cs+cs/2;
+      var x2=bx+(l[2]%3)*cs+cs/2;
+      var y2=by+Math.floor(l[2]/3)*cs+cs/2;
+      ctx.strokeStyle='#ffe040';
+      ctx.lineWidth=6;
+      ctx.globalAlpha=0.7;
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+    /* Status */
+    ctx.fillStyle='#b060ff';
+    ctx.font='bold 16px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('TIC-TAC-TOE — Perfect AI',20,30);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#706098';
+    ctx.fillText('You play: '+t.humanIs+' · AI plays: '+(t.humanIs==='X'?'O':'X'),20,50);
+    /* Winner message */
+    if(t.winner){
+      ctx.fillStyle='#ffe040';
+      ctx.font='bold 24px monospace';
+      ctx.textAlign='center';
+      var msg=t.winner==='draw'?'DRAW':(t.winner===t.humanIs?'YOU WIN!':'AI WINS');
+      ctx.fillText(msg,W/2,by+size+50);
+      if(t.winner===t.humanIs&&t.winner!=='draw'){
+        ctx.fillStyle='#40ff90';
+        ctx.font='12px monospace';
+        ctx.fillText('...impossible unless the AI made a mistake',W/2,by+size+72);
+      }
+    } else {
+      ctx.fillStyle=t.turn===t.humanIs?'#40e0ff':'#ff5080';
+      ctx.font='bold 16px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(t.turn===t.humanIs?'Your turn':'AI thinking...',W/2,by+size+50);
+    }
+    setStatsHTML(
+      '<div>You: '+t.score.X+'</div>'+
+      '<div>AI: '+t.score.O+'</div>'+
+      '<div>Draw: '+t.score.D+'</div>'+
+      '<div>Nodes: '+t.stats.totalNodes+'</div>'
+    );
+    updateBadge('⭕ Tic-Tac-Toe · perfect AI (unbeatable)');
+    $('sbMode').textContent='Tic-Tac-Toe';
+  },
+  onDown:function(p){
+    var t=STATE.ttt;
+    if(t.winner||t.turn!==t.humanIs)return;
+    var W=CANV.W,H=CANV.H;
+    var size=Math.min(W-200,H-100);
+    var bx=(W-size)/2,by=(H-size)/2;
+    var cs=size/3;
+    var x=Math.floor((p.x-bx)/cs);
+    var y=Math.floor((p.y-by)/cs);
+    if(x<0||x>2||y<0||y>2)return;
+    var idx=y*3+x;
+    if(t.board[idx])return;
+    t.board[idx]=t.humanIs;
+    t.turn=t.humanIs==='X'?'O':'X';
+    this.checkWinner();
+    if(!t.winner){
+      var self=this;
+      setTimeout(function(){self.aiMove();renderLeftPanel();},300);
+    }
+    renderLeftPanel();
+  },
+  onUp:function(){},
+  controls:function(){
+    var t=STATE.ttt;
+    var html='';
+    html+='<div class="sec"><h4>New game</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.ttt.init();renderLeftPanel()">↺ New game</button>';
+    html+='<div class="ctrl" style="margin-top:8px"><div class="lbl"><span>Play as</span></div>';
+    html+='<div class="chip-row">';
+    html+='<div class="chip '+(t.humanIs==='X'?'active':'')+'" onclick="STATE.ttt.humanIs=\'X\';STATE.ttt.score={X:0,O:0,D:0};STATE.ttt.stats={totalGames:0,totalNodes:0};MODULES.ttt.init();renderLeftPanel()">X (goes first)</div>';
+    html+='<div class="chip '+(t.humanIs==='O'?'active':'')+'" onclick="STATE.ttt.humanIs=\'O\';STATE.ttt.score={X:0,O:0,D:0};STATE.ttt.stats={totalGames:0,totalNodes:0};MODULES.ttt.init();renderLeftPanel()">O (goes second)</div>';
+    html+='</div></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Score</h4>';
+    html+='<div class="stats-grid">';
+    html+='<div class="stat"><div class="sv">'+t.score.X+'</div><div class="sl">You</div></div>';
+    html+='<div class="stat"><div class="sv" style="color:var(--c4)">'+t.score.O+'</div><div class="sl">AI</div></div>';
+    html+='<div class="stat"><div class="sv" style="color:var(--c3)">'+t.score.D+'</div><div class="sl">Draw</div></div>';
+    html+='</div>';
+    html+='<div class="kv">';
+    html+='<div class="row"><span class="k">Total games</span><span class="v">'+t.stats.totalGames+'</span></div>';
+    html+='<div class="row"><span class="k">AI nodes used</span><span class="v">'+t.stats.totalNodes+'</span></div>';
+    html+='</div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Reset score</h4>';
+    html+='<button class="btn full sm danger" onclick="STATE.ttt.score={X:0,O:0,D:0};STATE.ttt.stats={totalGames:0,totalNodes:0};renderLeftPanel()">Clear scores</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var t=STATE.ttt;
+    return '<div class="sec"><h4>Minimax Algorithm</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'For each possible move, simulate the entire game tree and choose the one that maximizes the worst-case outcome.<br><br>'+
+      '<b class="text-c1">Terminal scores:</b><br>'+
+      'Win: +10 − depth (faster wins preferred)<br>'+
+      'Lose: depth − 10 (slower losses preferred)<br>'+
+      'Draw: 0<br><br>'+
+      'Full tree for 3×3 has ~255,168 games — trivially searchable.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Why it\'s unbeatable</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Minimax explores every possible continuation. If a winning strategy exists from any position, the AI will find it.<br><br>'+
+      'Result: from a fresh board, the game is a forced draw. Any human mistake immediately becomes a loss.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current game</h4><div class="kv">'+
+      '<div class="row"><span class="k">Your mark</span><span class="v">'+t.humanIs+'</span></div>'+
+      '<div class="row"><span class="k">AI mark</span><span class="v">'+(t.humanIs==='X'?'O':'X')+'</span></div>'+
+      '<div class="row"><span class="k">Last AI nodes</span><span class="v">'+t.aiNodes+'</span></div>'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE: N-QUEENS
+   ================================================================ */
+registerModule('nqueens',{
+  title:'N-Queens',
+  icon:'♛',
+  desc:'Classic backtracking problem. Place N queens on N×N board so no two attack each other.',
+  init:function(){
+    var n=STATE.nqueens;
+    n.board=new Array(n.N).fill(-1);
+    n.solution=null;
+    n.solutions=[];
+    n.solutionCount=0;
+    n.nodesVisited=0;
+  },
+  solve:function(){
+    var n=STATE.nqueens;
+    var result=solveNQueens(n.N,10);
+    n.solutions=result.solutions;
+    n.nodesVisited=result.nodes;
+    if(result.solutions.length>0){
+      n.solution=result.solutions[0];
+      n.board=n.solution.slice();
+    }
+    logMsg('N-Queens N='+n.N+': '+n.solutions.length+' solutions in '+n.nodesVisited+' nodes','success');
+  },
+  countAll:function(){
+    var n=STATE.nqueens;
+    var start=performance.now();
+    var result=solveNQueens(n.N,1000000);
+    var elapsed=performance.now()-start;
+    n.solutionCount=result.solutions.length;
+    n.nodesVisited=result.nodes;
+    n.solveTime=elapsed;
+    logMsg('Count all N='+n.N+': '+n.solutionCount+' solutions in '+fmt(elapsed,1)+'ms','success');
+  },
+  tick:function(dt){STATE.time+=dt;},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#050210';
+    ctx.fillRect(0,0,W,H);
+    var n=STATE.nqueens;
+    var size=Math.min(W-80,H-80);
+    var bx=(W-size)/2,by=(H-size)/2;
+    var cs=size/n.N;
+    /* Chess board pattern */
+    for(var y=0;y<n.N;y++){
+      for(var x=0;x<n.N;x++){
+        var light=(x+y)%2===0;
+        ctx.fillStyle=light?'#f0d8b0':'#a06840';
+        ctx.fillRect(bx+x*cs,by+y*cs,cs,cs);
+      }
+    }
+    /* Attack visualization (threatened squares) */
+    if(n.solution){
+      ctx.fillStyle='rgba(255,80,128,.08)';
+      for(var qy=0;qy<n.N;qy++){
+        var qx=n.solution[qy];
+        if(qx<0)continue;
+        /* Horizontal */
+        for(var tx=0;tx<n.N;tx++)if(tx!==qx)ctx.fillRect(bx+tx*cs,by+qy*cs,cs,cs);
+        /* Vertical */
+        for(var ty=0;ty<n.N;ty++)if(ty!==qy)ctx.fillRect(bx+qx*cs,by+ty*cs,cs,cs);
+        /* Diagonals */
+        for(var d=1;d<n.N;d++){
+          var x1=qx+d,y1=qy+d;
+          if(x1<n.N&&y1<n.N)ctx.fillRect(bx+x1*cs,by+y1*cs,cs,cs);
+          var x2=qx-d,y2=qy-d;
+          if(x2>=0&&y2>=0)ctx.fillRect(bx+x2*cs,by+y2*cs,cs,cs);
+          var x3=qx+d,y3=qy-d;
+          if(x3<n.N&&y3>=0)ctx.fillRect(bx+x3*cs,by+y3*cs,cs,cs);
+          var x4=qx-d,y4=qy+d;
+          if(x4>=0&&y4<n.N)ctx.fillRect(bx+x4*cs,by+y4*cs,cs,cs);
+        }
+      }
+    }
+    /* Queens */
+    ctx.font=Math.floor(cs*0.85)+'px serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    for(var qy2=0;qy2<n.N;qy2++){
+      var qx2=n.board[qy2];
+      if(qx2<0)continue;
+      /* Shadow */
+      ctx.fillStyle='rgba(0,0,0,.5)';
+      ctx.fillText('\u265B',bx+qx2*cs+cs/2+2,by+qy2*cs+cs/2+3);
+      /* Queen */
+      ctx.fillStyle='#ffe040';
+      ctx.fillText('\u265B',bx+qx2*cs+cs/2,by+qy2*cs+cs/2);
+      ctx.strokeStyle='#c0a020';
+      ctx.lineWidth=2;
+      ctx.strokeText('\u265B',bx+qx2*cs+cs/2,by+qy2*cs+cs/2);
+    }
+    /* Info */
+    ctx.fillStyle='rgba(13,10,26,.85)';
+    ctx.strokeStyle='rgba(176,96,255,.4)';
+    ctx.beginPath();ctx.roundRect(20,20,240,120,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#b060ff';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('N-QUEENS',32,42);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#e8e0ff';
+    ctx.fillText('Board size: '+n.N+'×'+n.N,32,62);
+    ctx.fillText('Nodes visited: '+n.nodesVisited,32,80);
+    if(n.solutionCount>0){
+      ctx.fillStyle='#40ff90';
+      ctx.fillText('Total solutions: '+n.solutionCount,32,98);
+      ctx.fillStyle='#40e0ff';
+      ctx.fillText('Solve time: '+fmt(n.solveTime,2)+' ms',32,116);
+    } else if(n.solution){
+      ctx.fillStyle='#40ff90';
+      ctx.fillText('Solution found (one of many)',32,98);
+    }
+    setStatsHTML(
+      '<div>N: '+n.N+'</div>'+
+      '<div>Nodes: '+n.nodesVisited+'</div>'+
+      '<div>Solutions: '+(n.solutionCount||'?')+'</div>'
+    );
+    updateBadge('♛ N-Queens · N='+n.N);
+    $('sbMode').textContent='N-Queens';
+    $('sbNodes').textContent=n.nodesVisited;
+  },
+  onDown:function(){},
+  controls:function(){
+    var n=STATE.nqueens;
+    var html='';
+    html+='<div class="sec"><h4>Board size</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>N</span><span>'+n.N+'</span></div>';
+    html+='<input type="range" min="4" max="16" step="1" value="'+n.N+'" oninput="STATE.nqueens.N=parseInt(this.value);MODULES.nqueens.init();STATE.nqueens.solutionCount=0;renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Solve</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.nqueens.solve();renderLeftPanel()">🔍 Find first solution</button>';
+    html+='<button class="btn full sm" style="margin-top:6px" onclick="MODULES.nqueens.countAll();renderLeftPanel()">🔢 Count all solutions</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="MODULES.nqueens.init();renderLeftPanel()">↺ Clear</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Known solution counts</h4>';
+    html+='<div class="kv">';
+    var known={4:2,5:10,6:4,7:40,8:92,9:352,10:724,11:2680,12:14200,13:73712,14:365596,15:2279184,16:14772512};
+    for(var k=4;k<=Math.min(12,n.N+2);k++){
+      var isCurrent=k===n.N;
+      html+='<div class="row"><span class="k"'+(isCurrent?' style="color:var(--c1)"':'')+'>N='+k+'</span><span class="v"'+(isCurrent?' style="color:var(--c1)"':'')+'>'+known[k].toLocaleString()+'</span></div>';
+    }
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Statistics</h4>';
+    html+='<div class="stats-grid">';
+    html+='<div class="stat"><div class="sv">'+n.N+'</div><div class="sl">Board</div></div>';
+    html+='<div class="stat"><div class="sv" style="color:var(--c3)">'+n.nodesVisited+'</div><div class="sl">Nodes</div></div>';
+    html+='<div class="stat"><div class="sv" style="color:var(--c5)">'+(n.solutionCount||'?')+'</div><div class="sl">Solutions</div></div>';
+    html+='</div>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var n=STATE.nqueens;
+    var known={4:2,5:10,6:4,7:40,8:92,9:352,10:724,11:2680,12:14200,13:73712,14:365596,15:2279184,16:14772512};
+    return '<div class="sec"><h4>Backtracking</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Recursive search with pruning:<br><br>'+
+      '1. Try placing queen in column 0<br>'+
+      '2. Recurse to next row<br>'+
+      '3. If placement is illegal (attacked), backtrack<br>'+
+      '4. Continue until all N queens placed<br><br>'+
+      'Pruning avoids the factorial search space entirely.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Attack rules</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'Two queens conflict if they share:<br>'+
+      '• A row<br>'+
+      '• A column<br>'+
+      '• A diagonal (|Δx| = |Δy|)<br><br>'+
+      'By construction we place one queen per row, so rows never conflict.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current N='+n.N+'</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      (known[n.N]?'Total solutions: <b>'+known[n.N].toLocaleString()+'</b>':'Total solutions: not computed')+
+      '<br>Nodes visited: <b>'+n.nodesVisited+'</b>'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE: MAZE
+   ================================================================ */
+registerModule('maze',{
+  title:'Maze & Pathfinding',
+  icon:'🌀',
+  desc:'Generate perfect mazes (recursive / Prim) and solve with A*, BFS, or DFS. Compare exploration strategies.',
+  init:function(){
+    this.generate();
+  },
+  generate:function(){
+    var m=STATE.maze;
+    /* Ensure odd dimensions */
+    if(m.W%2===0)m.W++;
+    if(m.H%2===0)m.H++;
+    if(m.algorithm==='recursive')m.grid=generateMazeRecursive(m.W,m.H);
+    else if(m.algorithm==='prim')m.grid=generateMazePrim(m.W,m.H);
+    else m.grid=generateMazeRandom(m.W,m.H,0.3);
+    m.start={x:1,y:1};
+    m.end={x:m.W-2,y:m.H-2};
+    m.grid[m.start.y*m.W+m.start.x]=0;
+    m.grid[m.end.y*m.W+m.end.x]=0;
+    m.path=null;
+    m.visited=null;
+    m.solveNodes=0;
+    m.solveTime=0;
+    m.solveOrder=[];
+    m.solveStep=0;
+  },
+  solve:function(){
+    var m=STATE.maze;
+    var start=performance.now();
+    var stats={nodes:0};
+    var result;
+    if(m.solvingAlgorithm==='astar')result=solveAStar(m.grid,m.W,m.H,[m.start.x,m.start.y],[m.end.x,m.end.y],stats);
+    else if(m.solvingAlgorithm==='bfs')result=solveBFS(m.grid,m.W,m.H,[m.start.x,m.start.y],[m.end.x,m.end.y],stats);
+    else result=solveDFS(m.grid,m.W,m.H,[m.start.x,m.start.y],[m.end.x,m.end.y],stats);
+    m.solveTime=performance.now()-start;
+    m.solveNodes=stats.nodes;
+    m.solveOrder=result.order;
+    m.solveStep=0;
+    /* Check if path found */
+    var endIdx=result.endIdx;
+    if(result.cameFrom[endIdx]!==-1||endIdx===m.start.y*m.W+m.start.x){
+      var path=reconstructPath(result.cameFrom,endIdx);
+      m.path=path.map(function(idx){return {x:idx%m.W,y:Math.floor(idx/m.W)}});
+    } else {
+      m.path=null;
+    }
+    logMsg('Maze solved with '+m.solvingAlgorithm+': '+stats.nodes+' nodes, '+(m.path?m.path.length+' steps':'no path'),'success');
+  },
+  tick:function(dt){
+    var m=STATE.maze;
+    if(m.animateSolve&&m.solveStep<m.solveOrder.length){
+      m.solveStep+=Math.max(1,Math.round(dt*200));
+      if(m.solveStep>m.solveOrder.length)m.solveStep=m.solveOrder.length;
+    }
+    STATE.time+=dt;
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#050210';
+    ctx.fillRect(0,0,W,H);
+    var m=STATE.maze;
+    if(!m.grid)return;
+    var pad=40;
+    var cs=Math.min((W-pad*2)/m.W,(H-pad*2)/m.H);
+    var ox=(W-cs*m.W)/2;
+    var oy=(H-cs*m.H)/2;
+    /* Walls */
+    for(var y=0;y<m.H;y++){
+      for(var x=0;x<m.W;x++){
+        if(m.grid[y*m.W+x]){
+          ctx.fillStyle='#281e50';
+          ctx.fillRect(ox+x*cs,oy+y*cs,cs+0.5,cs+0.5);
+        }
+      }
+    }
+    /* Visited cells (animation) */
+    if(m.solveOrder.length>0){
+      var maxStep=m.solveStep;
+      for(var i=0;i<Math.min(maxStep,m.solveOrder.length);i++){
+        var idx=m.solveOrder[i];
+        var vx=idx%m.W,vy=Math.floor(idx/m.W);
+        ctx.fillStyle='rgba(64,224,255,.3)';
+        ctx.fillRect(ox+vx*cs,oy+vy*cs,cs,cs);
+      }
+    }
+    /* Path */
+    if(m.path){
+      ctx.strokeStyle='#ffe040';
+      ctx.lineWidth=Math.max(2,cs*0.3);
+      ctx.lineCap='round';
+      ctx.lineJoin='round';
+      ctx.beginPath();
+      m.path.forEach(function(p,i){
+        var px=ox+p.x*cs+cs/2;
+        var py=oy+p.y*cs+cs/2;
+        if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      });
+      ctx.stroke();
+    }
+    /* Start / End markers */
+    ctx.fillStyle='#40ff90';
+    ctx.beginPath();
+    ctx.arc(ox+m.start.x*cs+cs/2,oy+m.start.y*cs+cs/2,cs*0.4,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle='#ff5080';
+    ctx.beginPath();
+    ctx.arc(ox+m.end.x*cs+cs/2,oy+m.end.y*cs+cs/2,cs*0.4,0,Math.PI*2);
+    ctx.fill();
+    /* Info */
+    ctx.fillStyle='rgba(13,10,26,.85)';
+    ctx.strokeStyle='rgba(176,96,255,.4)';
+    ctx.beginPath();ctx.roundRect(20,20,240,120,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#b060ff';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('MAZE',32,42);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#e8e0ff';
+    ctx.fillText('Size: '+m.W+'×'+m.H,32,62);
+    ctx.fillText('Algorithm: '+m.algorithm,32,80);
+    ctx.fillText('Solver: '+m.solvingAlgorithm,32,98);
+    if(m.solveNodes){
+      ctx.fillStyle='#40e0ff';
+      ctx.fillText('Nodes: '+m.solveNodes+' · '+fmt(m.solveTime,2)+' ms',32,116);
+    }
+    setStatsHTML(
+      '<div>Size: '+m.W+'×'+m.H+'</div>'+
+      '<div>Solver: '+m.solvingAlgorithm+'</div>'+
+      '<div>Nodes: '+m.solveNodes+'</div>'+
+      '<div>Path: '+(m.path?m.path.length+' steps':'—')+'</div>'+
+      '<div>Time: '+fmt(m.solveTime,2)+' ms</div>'
+    );
+    updateBadge('🌀 Maze · '+m.algorithm+' + '+m.solvingAlgorithm);
+    $('sbMode').textContent='Maze';
+    $('sbNodes').textContent=m.solveNodes;
+  },
+  onDown:function(){},
+  controls:function(){
+    var m=STATE.maze;
+    var html='';
+    html+='<div class="sec"><h4>Generate</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.maze.generate();renderLeftPanel()">🎲 New maze</button>';
+    html+='<div class="ctrl" style="margin-top:8px"><div class="lbl"><span>Generator</span></div>';
+    html+='<div class="chip-row">';
+    [['recursive','Recursive'],['prim','Prim'],['random','Random']].forEach(function(a){
+      html+='<div class="chip '+(m.algorithm===a[0]?'active':'')+'" onclick="STATE.maze.algorithm=\''+a[0]+'\';MODULES.maze.generate();renderLeftPanel()">'+a[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Width</span><span>'+m.W+'</span></div>';
+    html+='<input type="range" min="11" max="61" step="2" value="'+m.W+'" oninput="STATE.maze.W=parseInt(this.value);MODULES.maze.generate();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Height</span><span>'+m.H+'</span></div>';
+    html+='<input type="range" min="11" max="41" step="2" value="'+m.H+'" oninput="STATE.maze.H=parseInt(this.value);MODULES.maze.generate();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Solve</h4>';
+    html+='<button class="btn full" onclick="MODULES.maze.solve();renderLeftPanel()">🔍 Solve maze</button>';
+    html+='<div class="ctrl" style="margin-top:8px"><div class="lbl"><span>Solver</span></div>';
+    html+='<div class="chip-row">';
+    [['astar','A*'],['bfs','BFS'],['dfs','DFS']].forEach(function(a){
+      html+='<div class="chip '+(m.solvingAlgorithm===a[0]?'active':'')+'" onclick="STATE.maze.solvingAlgorithm=\''+a[0]+'\';renderLeftPanel()">'+a[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="ctrl flex-between" style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><span style="font-size:.68rem;color:var(--tx2)">Animate search</span><div class="chip '+(m.animateSolve?'active':'')+'" onclick="STATE.maze.animateSolve=!STATE.maze.animateSolve;renderLeftPanel()">'+(m.animateSolve?'ON':'OFF')+'</div></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Statistics</h4>';
+    html+='<div class="stats-grid">';
+    html+='<div class="stat"><div class="sv">'+m.solveNodes+'</div><div class="sl">Nodes</div></div>';
+    html+='<div class="stat"><div class="sv" style="color:var(--c3)">'+(m.path?m.path.length:0)+'</div><div class="sl">Path</div></div>';
+    html+='<div class="stat"><div class="sv" style="color:var(--c5)">'+fmt(m.solveTime,1)+'</div><div class="sl">ms</div></div>';
+    html+='</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var m=STATE.maze;
+    return '<div class="sec"><h4>A* Search</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      'f(n) = g(n) + h(n)<br><br>'+
+      'g(n): cost from start to n<br>'+
+      'h(n): heuristic estimate from n to goal<br><br>'+
+      'For 4-connected grids, Manhattan distance:<br>'+
+      'h(n) = |x₁ − x₂| + |y₁ − y₂|<br><br>'+
+      'Admissible heuristic → A* finds the optimal path.'+
+      '</div></div>'+
+      '<div class="sec"><h4>BFS vs DFS</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '<b class="text-c1">BFS:</b> FIFO queue. Explores in expanding waves. Finds shortest path in unweighted graphs.<br><br>'+
+      '<b class="text-c1">DFS:</b> LIFO stack. Follows one path deep. Can miss optimal paths.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Maze generation</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.75;color:var(--tx2)">'+
+      '<b class="text-c1">Recursive backtracker:</b><br>'+
+      'DFS through cells, carving passages. Produces long winding corridors (perfect maze, unique path).<br><br>'+
+      '<b class="text-c1">Prim\'s algorithm:</b><br>'+
+      'Grows maze from seed, expanding from random frontier walls. More branching.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current run</h4><div class="kv">'+
+      '<div class="row"><span class="k">Generator</span><span class="v">'+m.algorithm+'</span></div>'+
+      '<div class="row"><span class="k">Solver</span><span class="v">'+m.solvingAlgorithm+'</span></div>'+
+      '<div class="row"><span class="k">Nodes visited</span><span class="v">'+m.solveNodes+'</span></div>'+
+      '<div class="row"><span class="k">Path length</span><span class="v">'+(m.path?m.path.length:'—')+'</span></div>'+
+      '<div class="row"><span class="k">Time</span><span class="v">'+fmt(m.solveTime,3)+' ms</span></div>'+
+      '</div></div>';
+  }
+});
+</script>
+<script>
+/* ================================================================
+   TABS
+   ================================================================ */
+var TABS=[
+  {key:'chess',icon:'♞',label:'Chess'},
+  {key:'life',icon:'🧬',label:'Life'},
+  {key:'genetic',icon:'🧪',label:'Genetic'},
+  {key:'ttt',icon:'⭕',label:'Tic-Tac-Toe'},
+  {key:'nqueens',icon:'♛',label:'N-Queens'},
+  {key:'maze',icon:'🌀',label:'Maze'},
+  {key:'about',icon:'ℹ️',label:'About'}
+];
+function buildTabs(){
+  var tabs=$('tbTabs');
+  tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===key)});
+  $('sbMode').textContent=(MODULES[key]&&MODULES[key].title)||key;
+  if(MODULES[key]&&MODULES[key].init)MODULES[key].init();
+  renderLeftPanel();
+  renderRightPanel();
+}
+function switchRp(name,e){
+  STATE.currentRp=name;
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active');});
+  e.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active');});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+  renderRightPanel();
+}
+function renderLeftPanel(){
+  var body=$('lpBody');
+  if(!body)return;
+  var m=MODULES[STATE.currentTab];
+  if(!m){body.innerHTML='';return;}
+  var html='';
+  html+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--c1);font-size:.72rem">'+m.icon+' '+m.title+'</h4><div class="text-xs text-dim" style="font-family:var(--mono);line-height:1.5;margin-top:4px">'+m.desc+'</div></div>';
+  if(m.controls)html+=m.controls();
+  body.innerHTML=html;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var statePane=$('rpState');
+  if(statePane){
+    statePane.innerHTML=
+      '<div class="sec"><h4>Live</h4>'+
+      '<div class="kv">'+
+      '<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>'+
+      '<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,1)+'s</span></div>'+
+      '<div class="row"><span class="k">Playing</span><span class="v">'+(STATE.playing?'yes':'paused')+'</span></div>'+
+      '</div></div>'+
+      '<div class="sec"><h4>Algorithms summary</h4>'+
+      '<div class="text-xs" style="font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+      '<b class="text-c1">Chess:</b> minimax + alpha-beta<br>'+
+      '<b class="text-c1">Life:</b> cellular automaton<br>'+
+      '<b class="text-c1">Genetic:</b> evolutionary optimization<br>'+
+      '<b class="text-c1">Tic-Tac-Toe:</b> exhaustive game tree<br>'+
+      '<b class="text-c1">N-Queens:</b> backtracking search<br>'+
+      '<b class="text-c1">Maze:</b> A*/BFS/DFS pathfinding'+
+      '</div></div>';
+  }
+  var mathPane=$('rpMath');
+  if(mathPane&&m&&m.mathPanel)mathPane.innerHTML=m.mathPanel();
+  else if(mathPane)mathPane.innerHTML='<div class="empty">No math panel</div>';
+  var helpPane=$('rpHelp');
+  if(helpPane&&m)helpPane.innerHTML=
+    '<div class="sec"><h4>Module</h4>'+
+    '<div class="text-xs" style="font-family:var(--mono);line-height:1.6;color:var(--tx2)">'+
+    '<b class="text-c1">'+m.icon+' '+m.title+'</b><br><br>'+m.desc+'</div></div>';
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){
+  var p=$('rpLogs');
+  if(!p)return;
+  var html='<div class="sec"><h4>Event Log</h4>';
+  if(!LOG.length)html+='<div class="empty" style="padding:20px;font-size:.62rem">No events</div>';
+  else LOG.slice().reverse().forEach(function(l){
+    var color=l.type==='error'?'var(--err)':l.type==='success'?'var(--c5)':'var(--c2)';
+    html+='<div style="padding:4px 6px;border-left:2px solid '+color+';margin-bottom:3px;font-family:var(--mono);font-size:.6rem;background:var(--panel3);border-radius:2px">'+
+      '<span style="color:var(--tx3)">'+new Date(l.t).toTimeString().substr(0,8)+'</span> '+
+      '<span style="color:'+color+'">'+esc(l.msg)+'</span></div>';
+  });
+  html+='</div>';
+  p.innerHTML=html;
+}
+function togglePlay(){
+  STATE.playing=!STATE.playing;
+  $('btnPlay').textContent=STATE.playing?'⏸':'▶';
+  $('tbDot').classList.toggle('on',STATE.playing);
+  toast(STATE.playing?'Playing':'Paused','info',1000);
+}
+function resetModule(){
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+    toast('Reset','success',1000);
+  }
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['neural','terminal','light'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  var next=THEMES[(i+1)%THEMES.length];
+  document.documentElement.setAttribute('data-theme',next);
+  STATE.theme=next;
+  toast('Theme: '+next,'success');
+}
+function exportState(){
+  var data={
+    version:'1.0',
+    timestamp:new Date().toISOString(),
+    chess:{aiDepth:STATE.chess.aiDepth,playerColor:STATE.chess.playerColor,moves:STATE.chess.moveList.length},
+    life:{rule:STATE.life.ruleString,size:[STATE.life.W,STATE.life.H],generation:STATE.life.generation},
+    genetic:{target:STATE.genetic.target,generation:STATE.genetic.generation,best:STATE.genetic.best,bestScore:STATE.genetic.bestScore},
+    ttt:{score:STATE.ttt.score,humanIs:STATE.ttt.humanIs},
+    nqueens:{N:STATE.nqueens.N,nodes:STATE.nqueens.nodesVisited,solutions:STATE.nqueens.solutionCount},
+    maze:{size:[STATE.maze.W,STATE.maze.H],algorithm:STATE.maze.algorithm,solver:STATE.maze.solvingAlgorithm}
+  };
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='mind-config.json';a.click();
+  setTimeout(function(){URL.revokeObjectURL(url)},500);
+  toast('Config exported','success');
+}
+function showHelp(){
+  openModal('❓ MIND — Help',
+    '<div class="sec"><h4>🧠 About</h4><div class="text-xs" style="line-height:1.75;color:var(--tx2);font-family:var(--mono)">An AI workbench with real algorithms — chess engine with alpha-beta pruning, Game of Life cellular automata, genetic algorithm evolution, perfect Tic-Tac-Toe, N-Queens backtracking, and A*/BFS/DFS maze solving.</div></div>'+
+    '<div class="sec"><h4>📚 Modules</h4><div class="text-xs" style="line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b class="text-c1">♞ Chess</b> — full chess engine with minimax AI<br>'+
+    '<b class="text-c1">🧬 Life</b> — Conway\'s Game of Life with custom rules<br>'+
+    '<b class="text-c1">🧪 Genetic</b> — evolve strings with selection/mutation<br>'+
+    '<b class="text-c1">⭕ Tic-Tac-Toe</b> — perfect play via minimax<br>'+
+    '<b class="text-c1">♛ N-Queens</b> — backtracking puzzle solver<br>'+
+    '<b class="text-c1">🌀 Maze</b> — generation + pathfinding algorithms'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div class="text-xs" style="font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b class="text-c1">Space</b> — Play/pause<br>'+
+    '<b class="text-c1">R</b> — Reset current module<br>'+
+    '<b class="text-c1">1-6</b> — Jump to module<br>'+
+    '<b class="text-c1">T</b> — Cycle theme<br>'+
+    '<b class="text-c1">?</b> — This help'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',{size:'lg'});
+}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay();}
+  else if(e.key==='r'||e.key==='R')resetModule();
+  else if(e.key>='1'&&e.key<='6'){var idx=parseInt(e.key)-1;if(TABS[idx])switchTab(TABS[idx].key);}
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal();
+});
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+var BOOT_STEPS=[
+  'Loading chess evaluation tables...',
+  'Compiling minimax + alpha-beta engine...',
+  'Preparing Game of Life rules...',
+  'Warming up genetic algorithm...',
+  'Loading Tic-Tac-Toe game tree...',
+  'Preparing N-Queens backtracker...',
+  'Compiling A* pathfinding...',
+  'Ready.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  var iv=setInterval(function(){
+    pct+=rnd(8,18);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('MIND ready · Press ? for help','success',3500);
+      },400);
+    }
+  },150);
+}
+
+/* ================================================================
+   MAIN LOOP
+   ================================================================ */
+var lastFrameTime=performance.now();
+var fpsAccum=0,fpsFrames=0;
+function mainLoop(now){
+  var dt=Math.min((now-lastFrameTime)/1000,0.05);
+  lastFrameTime=now;
+  fpsAccum+=dt;fpsFrames++;
+  if(fpsAccum>=0.5){
+    $('sbFps').textContent=Math.round(fpsFrames/fpsAccum);
+    fpsAccum=0;fpsFrames=0;
+  }
+  var m=MODULES[STATE.currentTab];
+  if(m&&m.tick){try{m.tick(dt);}catch(e){console.error(e);}}
+  if(m&&m.draw){try{m.draw(CANV.ctx);}catch(e){console.error(e);}}
+  requestAnimationFrame(mainLoop);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',function(){
+  buildTabs();
+  initCanvas();
+  /* Init all modules that have lazy state */
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+  }
+  /* Pre-init life, genetic, ttt, maze */
+  STATE.life.rule=parseRule(STATE.life.ruleString);
+  MODULES.life.init();
+  MODULES.genetic.init();
+  MODULES.ttt.init();
+  MODULES.nqueens.init();
+  MODULES.maze.generate();
+  renderLeftPanel();
+  renderRightPanel();
+  logMsg('MIND initialized','success');
+  bootSequence();
+  requestAnimationFrame(mainLoop);
+  $('tbDot').classList.add('on');
+  $('tbText').textContent='ready';
+  setInterval(function(){
+    if(STATE.currentRp==='logs')renderLogs();
+  },1000);
+});
+
+console.log('%c MIND ','background:linear-gradient(90deg,#b060ff,#40e0ff);color:#07050f;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cArtificial Intelligence Studio','color:#b060ff;font-weight:600');
+console.log('%cChess · Life · Genetic · Tic-Tac-Toe · N-Queens · Maze','color:#40e0ff');
+console.log('%cPress ? for help','color:#a898d8');
+</script>
+</body></html>

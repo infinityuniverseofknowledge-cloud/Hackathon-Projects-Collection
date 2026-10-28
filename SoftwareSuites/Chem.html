@@ -1,0 +1,2168 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="chem">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>CHEM — Chemistry Lab</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:13px;height:100%;overflow:hidden}
+body{height:100vh;width:100vw;overflow:hidden;font-family:var(--sans);color:var(--tx);background:var(--bg);-webkit-font-smoothing:antialiased;user-select:none}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none;border:none;background:none}
+canvas{display:block;touch-action:none}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px;border:2px solid transparent;background-clip:content-box}
+
+:root{
+  --bg:#0a0410;--bg2:#140a20;--bg3:#200e30;--bg4:#341c4c;
+  --panel:#140a20;--panel2:#200e30;--panel3:#341c4c;--panel4:#482a64;
+  --bd:#2a1440;--bd2:#4c2a68;--bd3:#7a4ca0;
+  --tx:#f0e0ff;--tx2:#b098d0;--tx3:#705888;--mu:#503870;
+  --c1:#c060ff;--c1h:#d090ff;--c1l:#8030c0;
+  --c2:#40ffd0;--c2h:#80ffe0;--c2l:#20c0a0;
+  --c3:#ff60a0;--c3h:#ff90c0;--c3l:#c03080;
+  --c4:#40d0ff;--c4h:#80e0ff;--c4l:#2090c0;
+  --c5:#ffd040;--c5h:#ffe880;--c5l:#c0a020;
+  --c6:#40ff80;--c6h:#80ffb0;--c6l:#20c060;
+  --c7:#ff8040;--c7h:#ffa870;--c7l:#c05020;
+  --ok:#40ff80;--warn:#ffd040;--err:#ff60a0;--info:#40d0ff;
+  --g1:linear-gradient(135deg,#c060ff,#40ffd0);
+  --g2:linear-gradient(135deg,#ff60a0,#ffd040);
+  --gHolo:linear-gradient(120deg,#c060ff,#40d0ff,#40ff80,#ffd040,#ff60a0,#c060ff);
+  --r:9px;--rs:6px;--rxs:4px;--rf:9999px;
+  --sh:0 6px 24px rgba(0,0,0,.8);
+  --sh2:0 14px 42px rgba(0,0,0,1);
+  --mono:'JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:'Inter','SF Pro',system-ui,sans-serif;
+  --disp:'Orbitron','Audiowide',monospace;
+  --t1:all .13s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"]{
+  --bg:#faf5ff;--bg2:#f0e5ff;--bg3:#e0d0f8;--panel:#fff;--panel2:#faf5ff;--panel3:#f0e5ff;
+  --bd:#d8c0e8;--bd2:#b898d0;--tx:#180830;--tx2:#4a3068;--tx3:#8870a0;
+  --c1:#7030c0;--c2:#008060;--c3:#c02060;--c4:#0060c0;--c5:#a08000;--c6:#008040;
+  --g1:linear-gradient(135deg,#7030c0,#008060)}
+[data-theme="mono"]{--bg:#08080a;--bg2:#101014;--bg3:#18181e;--panel:#101014;--panel2:#18181e;--panel3:#202028;
+  --bd:#282830;--bd2:#404048;--tx:#e0e0e6;--tx2:#a0a0b0;--c1:#e0e0e6;--c2:#a0a0b0;--c3:#c0c0c8;
+  --g1:linear-gradient(135deg,#e0e0e6,#808088)}
+
+#app{display:flex;flex-direction:column;height:100vh;width:100vw}
+
+#boot{position:fixed;inset:0;background:#0a0410;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;font-family:var(--mono);padding:20px;overflow:hidden}
+#boot.hidden{opacity:0;pointer-events:none}
+#bootAtoms{position:absolute;inset:0;pointer-events:none;opacity:.5}
+.boot-logo{font-family:var(--disp);font-size:3.2rem;font-weight:900;letter-spacing:16px;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 3s linear infinite;margin-bottom:6px;position:relative;z-index:1}
+.boot-sub{font-size:.66rem;color:#c060ff;letter-spacing:10px;margin-bottom:26px;opacity:.75;position:relative;z-index:1}
+.boot-bar{width:320px;max-width:80vw;height:2px;background:#200e30;border-radius:2px;overflow:hidden;margin-bottom:10px;position:relative;z-index:1}
+.boot-bar-fill{height:100%;background:var(--g1);width:0;transition:width .3s;box-shadow:0 0 14px #c060ff}
+.boot-pct{font-size:.66rem;color:#c060ff;margin-bottom:14px;position:relative;z-index:1}
+.boot-log{font-size:.58rem;color:#705888;text-align:left;width:min(460px,90vw);height:130px;overflow:hidden;line-height:1.7;position:relative;z-index:1}
+.boot-log .ok{color:#40ff80}
+@keyframes holo{0%{background-position:0% center}100%{background-position:300% center}}
+
+#topbar{height:48px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:8px;flex-shrink:0;z-index:100}
+.tb-logo{font-family:var(--disp);font-weight:900;letter-spacing:5px;font-size:.96rem;
+  background:var(--gHolo);background-size:300% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;animation:holo 8s linear infinite;padding-right:8px;cursor:pointer}
+.tb-tabs{display:flex;gap:2px;flex:1;overflow-x:auto;align-items:center;height:100%}
+.tb-tab{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:var(--rxs);cursor:pointer;transition:var(--t1);font-size:.66rem;font-weight:600;color:var(--tx2);white-space:nowrap;height:30px}
+.tb-tab:hover{background:var(--panel2);color:var(--tx)}
+.tb-tab.active{background:var(--g1);color:#0a0410;box-shadow:0 0 12px rgba(192,96,255,.4)}
+.tb-tab .tab-icon{font-size:.85rem}
+.tb-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.tb-btn{width:30px;height:30px;border-radius:var(--rxs);background:var(--panel2);border:1px solid var(--bd);color:var(--tx2);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.tb-btn:hover{background:var(--panel3);border-color:var(--c1);color:var(--c1)}
+.tb-status{font-family:var(--mono);font-size:.6rem;padding:4px 9px;background:var(--panel2);border:1px solid var(--bd);border-radius:var(--rxs);color:var(--c1);font-weight:600;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tb-status .dot{width:7px;height:7px;border-radius:50%;background:#200e30;transition:var(--t1)}
+.tb-status .dot.on{background:var(--c6);box-shadow:0 0 10px var(--c6);animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#leftPanel{width:290px;background:var(--panel2);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s;overflow:hidden}
+#leftPanel.collapsed{width:0}
+.panel-head{padding:9px 11px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.panel-title{font-size:.58rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);font-weight:700;font-family:var(--mono)}
+.panel-body{flex:1;overflow-y:auto;padding:10px}
+
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg)}
+#canvasWrap{flex:1;position:relative;background:#08040c;overflow:hidden;min-height:0}
+#mainCanvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#canvasOverlay{position:absolute;inset:0;pointer-events:none;padding:10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.co-badge{background:rgba(20,10,32,.92);backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:var(--rxs);padding:5px 9px;font-family:var(--mono);font-size:.6rem;color:var(--c1);pointer-events:auto;max-width:340px}
+.co-badge.stats{color:var(--c5);display:flex;flex-direction:column;gap:2px;align-items:flex-end;text-align:right;line-height:1.5}
+
+#rightPanel{width:320px;background:var(--panel2);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s}
+#rightPanel.collapsed{width:0}
+.rp-tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--bd);flex-shrink:0;height:30px}
+.rp-tab{flex:1;padding:5px;font-size:.54rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);cursor:pointer;transition:var(--t1);display:flex;align-items:center;justify-content:center;gap:3px;border-bottom:2px solid transparent}
+.rp-tab:hover{color:var(--tx);background:var(--panel2)}
+.rp-tab.active{color:var(--c1);border-bottom-color:var(--c1);background:var(--panel2)}
+.rp-body{flex:1;overflow-y:auto;padding:10px}
+.rp-pane{display:none}
+.rp-pane.active{display:block}
+
+#statusbar{height:26px;background:var(--panel);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:12px;font-family:var(--mono);font-size:.6rem;color:var(--tx3);flex-shrink:0;overflow-x:auto}
+#statusbar .sb-item{display:flex;align-items:center;gap:4px;white-space:nowrap}
+#statusbar .sb-val{color:var(--c1)}
+#statusbar .sb-val.c2{color:var(--c2)}.sb-val.c3{color:var(--c3)}.sb-val.c4{color:var(--c4)}.sb-val.c5{color:var(--c5)}
+
+.sec{margin-bottom:12px}
+.sec h4{font-size:.58rem;text-transform:uppercase;letter-spacing:1.3px;color:var(--tx3);margin-bottom:7px;font-weight:700;padding-bottom:4px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.lbl{font-size:.58rem;color:var(--tx3);display:flex;justify-content:space-between;margin-bottom:3px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;font-family:var(--mono)}
+.lbl span:last-child{color:var(--c1);text-transform:none;letter-spacing:0}
+.ctrl{margin-bottom:9px}
+.ctrl input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--panel4);border-radius:2px;outline:none;cursor:pointer}
+.ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;background:var(--c1);border-radius:50%;cursor:pointer;box-shadow:0 0 10px var(--c1)}
+.ctrl input[type=number],.ctrl select,.ctrl textarea,.ctrl input[type=text]{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rxs);padding:5px 8px;color:var(--tx);font-size:.66rem;transition:var(--t1);font-family:var(--mono)}
+.ctrl textarea{resize:vertical;min-height:60px;line-height:1.5}
+.ctrl input:focus,.ctrl select:focus,.ctrl textarea:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(192,96,255,.15)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:var(--rxs);background:var(--panel3);border:1px solid var(--bd);color:var(--tx);cursor:pointer;transition:var(--t1);font-size:.66rem;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--panel4);border-color:var(--c1);color:var(--c1h)}
+.btn.primary{background:var(--g1);color:#0a0410;border-color:transparent}
+.btn.primary:hover{box-shadow:0 0 14px rgba(192,96,255,.5)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.warn{color:var(--c5);border-color:var(--c5)}
+.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:3px 7px;font-size:.58rem}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.chip-row{display:flex;gap:3px;flex-wrap:wrap}
+.chip{padding:3px 8px;background:var(--panel3);border:1px solid var(--bd);border-radius:var(--rf);cursor:pointer;font-size:.58rem;font-family:var(--mono);transition:var(--t1);color:var(--tx2)}
+.chip:hover{border-color:var(--c1);color:var(--c1)}
+.chip.active{background:var(--g1);color:#0a0410;border-color:transparent;font-weight:700}
+
+.kv{font-family:var(--mono);font-size:.6rem;line-height:1.7}
+.kv .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--bd);gap:8px}
+.kv .row:last-child{border-bottom:none}
+.kv .k{color:var(--tx3);white-space:nowrap}
+.kv .v{color:var(--c1);text-align:right;word-break:break-all;font-size:.58rem}
+.empty{text-align:center;padding:28px 18px;color:var(--tx3);font-size:.68rem;font-family:var(--mono)}
+
+.data-table{width:100%;font-family:var(--mono);font-size:.6rem;border-collapse:collapse}
+.data-table th{text-align:left;padding:4px 7px;background:var(--panel3);font-size:.53rem;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);font-weight:700;border-bottom:1px solid var(--bd)}
+.data-table td{padding:3px 7px;border-bottom:1px solid var(--bd);color:var(--tx2)}
+.data-table td.c1{color:var(--c1)}.data-table td.c2{color:var(--c2)}.data-table td.c3{color:var(--c3)}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:5000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh2);max-width:820px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.modal.lg{max-width:1050px}
+.modal-head{padding:13px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h2{font-size:.88rem;font-weight:700;color:var(--c1);font-family:var(--disp);letter-spacing:1px}
+.modal-body{padding:18px;overflow-y:auto;flex:1;user-select:text}
+.modal-foot{padding:13px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.modal-x{width:24px;height:24px;border-radius:var(--rxs);background:transparent;color:var(--tx3);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:var(--t1)}
+.modal-x:hover{background:var(--panel2);color:var(--err)}
+
+#toasts{position:fixed;bottom:40px;right:18px;z-index:9000;display:flex;flex-direction:column;gap:6px;align-items:flex-end;pointer-events:none}
+.toast{padding:9px 14px;border-radius:var(--rs);background:var(--panel);border:1px solid var(--bd);border-left:3px solid var(--c1);box-shadow:var(--sh);font-size:.68rem;font-weight:500;max-width:320px;min-width:170px;animation:tin .3s;display:flex;align-items:center;gap:9px;backdrop-filter:blur(16px);font-family:var(--mono);pointer-events:auto}
+.toast.success{border-left-color:var(--c6)}.toast.warn{border-left-color:var(--c5)}.toast.error{border-left-color:var(--err)}
+@keyframes tin{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:1000px){#leftPanel{width:250px}#rightPanel{width:280px}}
+@media(max-width:700px){#leftPanel,#rightPanel{width:0;overflow:hidden}.tb-tab span:not(.tab-icon){display:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <canvas id="bootAtoms" style="position:absolute;inset:0"></canvas>
+  <div class="boot-logo">CHEM</div>
+  <div class="boot-sub">CHEMISTRY LAB</div>
+  <div class="boot-bar"><div class="boot-bar-fill" id="bootFill"></div></div>
+  <div class="boot-pct" id="bootPct">0%</div>
+  <div class="boot-log" id="bootLog"></div>
+</div>
+
+<div id="app">
+  <div id="topbar">
+    <div class="tb-logo" onclick="switchTab('periodic')">CHEM</div>
+    <div class="tb-tabs" id="tbTabs"></div>
+    <div class="tb-status" id="tbStatus">
+      <span class="dot" id="tbDot"></span>
+      <span id="tbText">reacting</span>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" id="btnPlay" onclick="togglePlay()" title="Play/Pause (Space)">⏸</button>
+      <button class="tb-btn" onclick="stepOnce()" title="Step (→)">⏭</button>
+      <button class="tb-btn" onclick="resetModule()" title="Reset (R)">↺</button>
+      <button class="tb-btn" onclick="toggleLeftPanel()" title="Toggle left">◀</button>
+      <button class="tb-btn" onclick="toggleRightPanel()" title="Toggle right">▶</button>
+      <button class="tb-btn" onclick="toggleTheme()" title="Theme (T)">🎨</button>
+      <button class="tb-btn" onclick="showHelp()" title="Help (?)">❓</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="leftPanel">
+      <div class="panel-head"><span class="panel-title">Controls</span><button class="tb-btn" style="width:20px;height:20px;font-size:.7rem" onclick="toggleLeftPanel()">⇤</button></div>
+      <div class="panel-body" id="lpBody"></div>
+    </div>
+
+    <div id="workspace">
+      <div id="canvasWrap">
+        <canvas id="mainCanvas"></canvas>
+        <div id="canvasOverlay">
+          <div class="co-badge" id="coBadge">Ready</div>
+          <div class="co-badge stats" id="coStats"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="rightPanel">
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="state" onclick="switchRp('state',this)">📊<span>State</span></div>
+        <div class="rp-tab" data-tab="math" onclick="switchRp('math',this)">∑<span>Math</span></div>
+        <div class="rp-tab" data-tab="logs" onclick="switchRp('logs',this)">📋<span>Log</span></div>
+        <div class="rp-tab" data-tab="help" onclick="switchRp('help',this)">ℹ️<span>Info</span></div>
+      </div>
+      <div class="rp-body">
+        <div class="rp-pane active" id="rpState"></div>
+        <div class="rp-pane" id="rpMath"></div>
+        <div class="rp-pane" id="rpLogs"></div>
+        <div class="rp-pane" id="rpHelp"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div class="sb-item"><span style="color:var(--tx3)">FPS</span><span class="sb-val" id="sbFps">--</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">Z</span><span class="sb-val c2" id="sbZ">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">T</span><span class="sb-val c3" id="sbT">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">pH</span><span class="sb-val c4" id="sbPh">—</span></div>
+    <div class="sb-item"><span style="color:var(--tx3)">K</span><span class="sb-val c5" id="sbK">—</span></div>
+    <div class="sb-item" style="margin-left:auto"><span style="color:var(--tx3)">Module</span><span class="sb-val" id="sbMode">Periodic</span></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h2 id="modalTitle">Modal</h2><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   UTILITIES
+   ================================================================ */
+function $(i){return document.getElementById(i)}
+function $$(s){return document.querySelectorAll(s)}
+function el(t,a,c){var e=document.createElement(t);if(a)for(var k in a){var v=a[k];if(k==='class')e.className=v;else if(k==='style'&&typeof v==='object')Object.assign(e.style,v);else if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k.indexOf('on')===0&&typeof v==='function')e[k]=v;else e.setAttribute(k,v)}if(c){if(typeof c==='string')e.innerHTML=c;else if(Array.isArray(c))c.forEach(function(x){if(x!=null)e.appendChild(typeof x==='string'?document.createTextNode(x):x)});else e.appendChild(c)}return e}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function rndF(a,b){return Math.random()*(b-a)+a}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function fmt(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';return Number(n).toFixed(d)}
+function sci(n,d){d=d==null?2:d;if(!isFinite(n)||isNaN(n))return '—';if(n===0)return '0';var e=Math.floor(Math.log10(Math.abs(n)));if(e>=-2&&e<4)return fmt(n,d);var m=n/Math.pow(10,e);return fmt(m,d)+'×10^'+e}
+function toast(m,t,d){t=t||'info';d=d||2200;var icons={success:'✓',warn:'⚠',error:'✕',info:'ℹ'};var e=el('div',{class:'toast '+t});e.innerHTML='<span style="font-size:.95rem">'+(icons[t]||'ℹ')+'</span><span>'+esc(m)+'</span>';$('toasts').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='all .3s';setTimeout(function(){e.remove()},300)},d)}
+function openModal(t,b,f,opts){$('modalTitle').textContent=t;$('modalBody').innerHTML=b;$('modalFoot').innerHTML=f||'<button class="btn" onclick="closeModal()">Close</button>';$('modal').className='modal'+(opts&&opts.size?' '+opts.size:'');$('modalBg').classList.add('show')}
+function closeModal(){$('modalBg').classList.remove('show')}
+$('modalBg').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+/* ================================================================
+   CANVAS
+   ================================================================ */
+var CANV={canvas:null,ctx:null,W:0,H:0,dpr:1};
+function initCanvas(){
+  CANV.canvas=$('mainCanvas');
+  CANV.ctx=CANV.canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize',resizeCanvas);
+  CANV.canvas.addEventListener('mousedown',onDown);
+  CANV.canvas.addEventListener('mousemove',onMove);
+  CANV.canvas.addEventListener('mouseup',onUp);
+  CANV.canvas.addEventListener('mouseleave',onUp);
+  CANV.canvas.addEventListener('contextmenu',function(e){e.preventDefault()});
+  CANV.canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  CANV.canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  CANV.canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+}
+function resizeCanvas(){
+  var wrap=CANV.canvas.parentElement;
+  CANV.dpr=window.devicePixelRatio||1;
+  CANV.W=wrap.clientWidth;CANV.H=wrap.clientHeight;
+  CANV.canvas.width=Math.floor(CANV.W*CANV.dpr);
+  CANV.canvas.height=Math.floor(CANV.H*CANV.dpr);
+  CANV.canvas.style.width=CANV.W+'px';
+  CANV.canvas.style.height=CANV.H+'px';
+  CANV.ctx.setTransform(CANV.dpr,0,0,CANV.dpr,0,0);
+}
+var INPUT={down:false,x:0,y:0,lastX:0,lastY:0,dx:0,dy:0};
+function canvasPos(e){var r=CANV.canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+function onDown(e){var p=canvasPos(e);INPUT.down=true;INPUT.x=p.x;INPUT.y=p.y;INPUT.lastX=p.x;INPUT.lastY=p.y;INPUT.dx=0;INPUT.dy=0;var m=MODULES[STATE.currentTab];if(m&&m.onDown)m.onDown(p,e);}
+function onMove(e){var p=canvasPos(e);INPUT.dx=p.x-INPUT.lastX;INPUT.dy=p.y-INPUT.lastY;INPUT.lastX=p.x;INPUT.lastY=p.y;INPUT.x=p.x;INPUT.y=p.y;var m=MODULES[STATE.currentTab];if(m&&m.onMove)m.onMove(p,e);}
+function onUp(e){INPUT.down=false;var m=MODULES[STATE.currentTab];if(m&&m.onUp)m.onUp(e);}
+function onTouchStart(e){if(e.touches.length===1){var t=e.touches[0];onDown({clientX:t.clientX,clientY:t.clientY,button:0});}e.preventDefault();}
+function onTouchMove(e){if(e.touches.length===1){var t=e.touches[0];onMove({clientX:t.clientX,clientY:t.clientY});}e.preventDefault();}
+function onTouchEnd(e){onUp({});e.preventDefault();}
+
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);
+    this.arcTo(x+w,y,x+w,y+h,r);this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r);this.arcTo(x,y,x+w,y,r);this.closePath();return this;
+  };
+}
+
+var MODULES={};
+function registerModule(key,def){def.key=key;MODULES[key]=def;}
+function setStatsHTML(h){var e=$('coStats');if(e)e.innerHTML=h}
+function updateBadge(t){var e=$('coBadge');if(e)e.textContent=t}
+
+var LOG=[];
+function logMsg(msg,type){
+  type=type||'info';
+  LOG.push({t:Date.now(),msg:msg,type:type});
+  if(LOG.length>200)LOG.shift();
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function drawGlowText(ctx,text,x,y,color,size,align){
+  ctx.save();
+  ctx.font='bold '+(size||14)+'px monospace';
+  ctx.textAlign=align||'left';
+  ctx.shadowColor=color;ctx.shadowBlur=10;
+  ctx.fillStyle=color;
+  ctx.fillText(text,x,y);
+  ctx.restore();
+}
+</script>
+<script>
+var STATE={
+  currentTab:'periodic',
+  currentRp:'state',
+  theme:'chem',
+  playing:true,
+  time:0,
+  periodic:{
+    selected:'C',
+    colorBy:'category',
+    hover:null,
+    trendProperty:'atomicRadius'
+  },
+  kinetics:{
+    reaction:'A→B',
+    k:0.08,
+    kBack:0,
+    order:1,
+    A0:1.0,
+    B0:0.0,
+    A:1.0,B:0.0,
+    time:0,
+    history:[],
+    maxTime:20,
+    T:298,
+    Ea:50,    /* kJ/mol */
+    A:1e12,   /* pre-exponential */
+    arrheniusMode:false,
+    arrTemps:[]
+  },
+  equilibrium:{
+    K:4.0,
+    A0:1.0,
+    B0:1.0,
+    C0:0.0,
+    D0:0.0,
+    a:1,b:1,c:1,d:1,
+    A:1,B:1,C:0,D:0,
+    t:0,
+    history:[],
+    kf:0.1,kr:0.025,
+    shiftBy:'concentration',
+    tempShift:0,
+    volume:1.0,
+    perturbation:null
+  },
+  titration:{
+    acidType:'weak',  /* strong | weak | diprotic */
+    pKa:4.76,
+    pKa2:9.5,
+    cAcid:0.1,
+    vAcid:25,
+    cBase:0.1,
+    Vb:0,
+    Va:25,
+    VbMax:50,
+    curve:[],
+    pH:1,
+    currentVb:0,
+    running:false,
+    indicator:'phenol'
+  },
+  orbitals:{
+    orbital:'2p',
+    n:2,l:1,m:0,
+    time:0,
+    phase:0,
+    showNodes:true,
+    showRadial:true,
+    crossSection:true
+  }
+};
+
+/* ================================================================
+   PERIODIC TABLE DATA
+   ================================================================ */
+/* Symbol, name, Z, atomic mass, group, period, category, radius(pm), electronegativity, IE(kJ/mol), EA(kJ/mol) */
+var ELEMENTS=[
+  {s:'H',name:'Hydrogen',z:1,mass:1.008,g:1,p:1,cat:'nonmetal',r:53,en:2.20,ie:1312,ea:73},
+  {s:'He',name:'Helium',z:2,mass:4.003,g:18,p:1,cat:'noble',r:31,en:null,ie:2372,ea:0},
+  {s:'Li',name:'Lithium',z:3,mass:6.94,g:1,p:2,cat:'alkali',r:167,en:0.98,ie:520,ea:60},
+  {s:'Be',name:'Beryllium',z:4,mass:9.012,g:2,p:2,cat:'alkaline',r:112,en:1.57,ie:899,ea:0},
+  {s:'B',name:'Boron',z:5,mass:10.81,g:13,p:2,cat:'metalloid',r:87,en:2.04,ie:801,ea:27},
+  {s:'C',name:'Carbon',z:6,mass:12.011,g:14,p:2,cat:'nonmetal',r:67,en:2.55,ie:1086,ea:122},
+  {s:'N',name:'Nitrogen',z:7,mass:14.007,g:15,p:2,cat:'nonmetal',r:56,en:3.04,ie:1402,ea:7},
+  {s:'O',name:'Oxygen',z:8,mass:15.999,g:16,p:2,cat:'nonmetal',r:48,en:3.44,ie:1314,ea:141},
+  {s:'F',name:'Fluorine',z:9,mass:18.998,g:17,p:2,cat:'halogen',r:42,en:3.98,ie:1681,ea:328},
+  {s:'Ne',name:'Neon',z:10,mass:20.180,g:18,p:2,cat:'noble',r:38,en:null,ie:2081,ea:0},
+  {s:'Na',name:'Sodium',z:11,mass:22.990,g:1,p:3,cat:'alkali',r:190,en:0.93,ie:496,ea:53},
+  {s:'Mg',name:'Magnesium',z:12,mass:24.305,g:2,p:3,cat:'alkaline',r:145,en:1.31,ie:738,ea:0},
+  {s:'Al',name:'Aluminium',z:13,mass:26.982,g:13,p:3,cat:'postmetal',r:118,en:1.61,ie:578,ea:43},
+  {s:'Si',name:'Silicon',z:14,mass:28.086,g:14,p:3,cat:'metalloid',r:111,en:1.90,ie:786,ea:134},
+  {s:'P',name:'Phosphorus',z:15,mass:30.974,g:15,p:3,cat:'nonmetal',r:98,en:2.19,ie:1012,ea:72},
+  {s:'S',name:'Sulfur',z:16,mass:32.06,g:16,p:3,cat:'nonmetal',r:88,en:2.58,ie:1000,ea:200},
+  {s:'Cl',name:'Chlorine',z:17,mass:35.45,g:17,p:3,cat:'halogen',r:79,en:3.16,ie:1251,ea:349},
+  {s:'Ar',name:'Argon',z:18,mass:39.948,g:18,p:3,cat:'noble',r:71,en:null,ie:1521,ea:0},
+  {s:'K',name:'Potassium',z:19,mass:39.098,g:1,p:4,cat:'alkali',r:243,en:0.82,ie:419,ea:48},
+  {s:'Ca',name:'Calcium',z:20,mass:40.078,g:2,p:4,cat:'alkaline',r:194,en:1.00,ie:590,ea:2},
+  {s:'Sc',name:'Scandium',z:21,mass:44.956,g:3,p:4,cat:'transition',r:184,en:1.36,ie:633,ea:18},
+  {s:'Ti',name:'Titanium',z:22,mass:47.867,g:4,p:4,cat:'transition',r:176,en:1.54,ie:659,ea:8},
+  {s:'V',name:'Vanadium',z:23,mass:50.942,g:5,p:4,cat:'transition',r:171,en:1.63,ie:651,ea:51},
+  {s:'Cr',name:'Chromium',z:24,mass:51.996,g:6,p:4,cat:'transition',r:166,en:1.66,ie:653,ea:65},
+  {s:'Mn',name:'Manganese',z:25,mass:54.938,g:7,p:4,cat:'transition',r:161,en:1.55,ie:717,ea:0},
+  {s:'Fe',name:'Iron',z:26,mass:55.845,g:8,p:4,cat:'transition',r:156,en:1.83,ie:762,ea:15},
+  {s:'Co',name:'Cobalt',z:27,mass:58.933,g:9,p:4,cat:'transition',r:152,en:1.88,ie:760,ea:64},
+  {s:'Ni',name:'Nickel',z:28,mass:58.693,g:10,p:4,cat:'transition',r:149,en:1.91,ie:737,ea:112},
+  {s:'Cu',name:'Copper',z:29,mass:63.546,g:11,p:4,cat:'transition',r:145,en:1.90,ie:745,ea:119},
+  {s:'Zn',name:'Zinc',z:30,mass:65.38,g:12,p:4,cat:'transition',r:142,en:1.65,ie:906,ea:0},
+  {s:'Ga',name:'Gallium',z:31,mass:69.723,g:13,p:4,cat:'postmetal',r:136,en:1.81,ie:579,ea:29},
+  {s:'Ge',name:'Germanium',z:32,mass:72.63,g:14,p:4,cat:'metalloid',r:125,en:2.01,ie:762,ea:119},
+  {s:'As',name:'Arsenic',z:33,mass:74.922,g:15,p:4,cat:'metalloid',r:114,en:2.18,ie:947,ea:78},
+  {s:'Se',name:'Selenium',z:34,mass:78.971,g:16,p:4,cat:'nonmetal',r:103,en:2.55,ie:941,ea:195},
+  {s:'Br',name:'Bromine',z:35,mass:79.904,g:17,p:4,cat:'halogen',r:94,en:2.96,ie:1140,ea:325},
+  {s:'Kr',name:'Krypton',z:36,mass:83.798,g:18,p:4,cat:'noble',r:88,en:3.00,ie:1351,ea:0},
+  {s:'Rb',name:'Rubidium',z:37,mass:85.468,g:1,p:5,cat:'alkali',r:265,en:0.82,ie:403,ea:47},
+  {s:'Sr',name:'Strontium',z:38,mass:87.62,g:2,p:5,cat:'alkaline',r:219,en:0.95,ie:549,ea:5},
+  {s:'Y',name:'Yttrium',z:39,mass:88.906,g:3,p:5,cat:'transition',r:212,en:1.22,ie:600,ea:30},
+  {s:'Zr',name:'Zirconium',z:40,mass:91.224,g:4,p:5,cat:'transition',r:206,en:1.33,ie:640,ea:41},
+  {s:'Nb',name:'Niobium',z:41,mass:92.906,g:5,p:5,cat:'transition',r:198,en:1.60,ie:652,ea:86},
+  {s:'Mo',name:'Molybdenum',z:42,mass:95.95,g:6,p:5,cat:'transition',r:190,en:2.16,ie:684,ea:72},
+  {s:'Tc',name:'Technetium',z:43,mass:98,g:7,p:5,cat:'transition',r:183,en:1.90,ie:702,ea:53},
+  {s:'Ru',name:'Ruthenium',z:44,mass:101.07,g:8,p:5,cat:'transition',r:178,en:2.20,ie:710,ea:101},
+  {s:'Rh',name:'Rhodium',z:45,mass:102.906,g:9,p:5,cat:'transition',r:173,en:2.28,ie:720,ea:110},
+  {s:'Pd',name:'Palladium',z:46,mass:106.42,g:10,p:5,cat:'transition',r:169,en:2.20,ie:804,ea:54},
+  {s:'Ag',name:'Silver',z:47,mass:107.868,g:11,p:5,cat:'transition',r:165,en:1.93,ie:731,ea:126},
+  {s:'Cd',name:'Cadmium',z:48,mass:112.414,g:12,p:5,cat:'transition',r:161,en:1.69,ie:868,ea:0},
+  {s:'In',name:'Indium',z:49,mass:114.818,g:13,p:5,cat:'postmetal',r:156,en:1.78,ie:558,ea:29},
+  {s:'Sn',name:'Tin',z:50,mass:118.710,g:14,p:5,cat:'postmetal',r:145,en:1.96,ie:709,ea:107},
+  {s:'Sb',name:'Antimony',z:51,mass:121.760,g:15,p:5,cat:'metalloid',r:133,en:2.05,ie:834,ea:101},
+  {s:'Te',name:'Tellurium',z:52,mass:127.60,g:16,p:5,cat:'metalloid',r:123,en:2.10,ie:869,ea:190},
+  {s:'I',name:'Iodine',z:53,mass:126.904,g:17,p:5,cat:'halogen',r:115,en:2.66,ie:1008,ea:295},
+  {s:'Xe',name:'Xenon',z:54,mass:131.293,g:18,p:5,cat:'noble',r:108,en:2.60,ie:1170,ea:0},
+  {s:'Cs',name:'Caesium',z:55,mass:132.905,g:1,p:6,cat:'alkali',r:298,en:0.79,ie:376,ea:46},
+  {s:'Ba',name:'Barium',z:56,mass:137.327,g:2,p:6,cat:'alkaline',r:253,en:0.89,ie:503,ea:14},
+  {s:'La',name:'Lanthanum',z:57,mass:138.905,g:3,p:6,cat:'lanthanide',r:226,en:1.10,ie:538,ea:48},
+  {s:'Ce',name:'Cerium',z:58,mass:140.116,g:3,p:6,cat:'lanthanide',r:210,en:1.12,ie:534,ea:50},
+  {s:'Pr',name:'Praseodymium',z:59,mass:140.908,g:3,p:6,cat:'lanthanide',r:247,en:1.13,ie:527,ea:50},
+  {s:'Nd',name:'Neodymium',z:60,mass:144.242,g:3,p:6,cat:'lanthanide',r:206,en:1.14,ie:533,ea:50},
+  {s:'Pm',name:'Promethium',z:61,mass:145,g:3,p:6,cat:'lanthanide',r:205,en:1.13,ie:540,ea:50},
+  {s:'Sm',name:'Samarium',z:62,mass:150.36,g:3,p:6,cat:'lanthanide',r:238,en:1.17,ie:545,ea:50},
+  {s:'Eu',name:'Europium',z:63,mass:151.964,g:3,p:6,cat:'lanthanide',r:231,en:1.20,ie:547,ea:50},
+  {s:'Gd',name:'Gadolinium',z:64,mass:157.25,g:3,p:6,cat:'lanthanide',r:233,en:1.20,ie:593,ea:50},
+  {s:'Tb',name:'Terbium',z:65,mass:158.925,g:3,p:6,cat:'lanthanide',r:225,en:1.10,ie:566,ea:50},
+  {s:'Dy',name:'Dysprosium',z:66,mass:162.500,g:3,p:6,cat:'lanthanide',r:228,en:1.22,ie:573,ea:50},
+  {s:'Ho',name:'Holmium',z:67,mass:164.930,g:3,p:6,cat:'lanthanide',r:226,en:1.23,ie:581,ea:50},
+  {s:'Er',name:'Erbium',z:68,mass:167.259,g:3,p:6,cat:'lanthanide',r:226,en:1.24,ie:589,ea:50},
+  {s:'Tm',name:'Thulium',z:69,mass:168.934,g:3,p:6,cat:'lanthanide',r:222,en:1.25,ie:597,ea:50},
+  {s:'Yb',name:'Ytterbium',z:70,mass:173.045,g:3,p:6,cat:'lanthanide',r:222,en:1.10,ie:603,ea:50},
+  {s:'Lu',name:'Lutetium',z:71,mass:174.967,g:3,p:6,cat:'lanthanide',r:217,en:1.27,ie:524,ea:50},
+  {s:'Hf',name:'Hafnium',z:72,mass:178.49,g:4,p:6,cat:'transition',r:208,en:1.30,ie:659,ea:0},
+  {s:'Ta',name:'Tantalum',z:73,mass:180.948,g:5,p:6,cat:'transition',r:200,en:1.50,ie:761,ea:31},
+  {s:'W',name:'Tungsten',z:74,mass:183.84,g:6,p:6,cat:'transition',r:193,en:2.36,ie:770,ea:79},
+  {s:'Re',name:'Rhenium',z:75,mass:186.207,g:7,p:6,cat:'transition',r:188,en:1.90,ie:760,ea:6},
+  {s:'Os',name:'Osmium',z:76,mass:190.23,g:8,p:6,cat:'transition',r:185,en:2.20,ie:840,ea:104},
+  {s:'Ir',name:'Iridium',z:77,mass:192.217,g:9,p:6,cat:'transition',r:180,en:2.20,ie:880,ea:151},
+  {s:'Pt',name:'Platinum',z:78,mass:195.084,g:10,p:6,cat:'transition',r:177,en:2.28,ie:870,ea:205},
+  {s:'Au',name:'Gold',z:79,mass:196.967,g:11,p:6,cat:'transition',r:174,en:2.54,ie:890,ea:223},
+  {s:'Hg',name:'Mercury',z:80,mass:200.592,g:12,p:6,cat:'transition',r:171,en:2.00,ie:1007,ea:0},
+  {s:'Tl',name:'Thallium',z:81,mass:204.38,g:13,p:6,cat:'postmetal',r:156,en:1.62,ie:589,ea:19},
+  {s:'Pb',name:'Lead',z:82,mass:207.2,g:14,p:6,cat:'postmetal',r:154,en:2.33,ie:716,ea:35},
+  {s:'Bi',name:'Bismuth',z:83,mass:208.980,g:15,p:6,cat:'postmetal',r:143,en:2.02,ie:703,ea:91},
+  {s:'Po',name:'Polonium',z:84,mass:209,g:16,p:6,cat:'postmetal',r:135,en:2.00,ie:812,ea:136},
+  {s:'At',name:'Astatine',z:85,mass:210,g:17,p:6,cat:'halogen',r:127,en:2.20,ie:899,ea:233},
+  {s:'Rn',name:'Radon',z:86,mass:222,g:18,p:6,cat:'noble',r:120,en:2.20,ie:1037,ea:0},
+  {s:'Fr',name:'Francium',z:87,mass:223,g:1,p:7,cat:'alkali',r:348,en:0.70,ie:380,ea:47},
+  {s:'Ra',name:'Radium',z:88,mass:226,g:2,p:7,cat:'alkaline',r:283,en:0.90,ie:509,ea:10},
+  {s:'Ac',name:'Actinium',z:89,mass:227,g:3,p:7,cat:'actinide',r:222,en:1.10,ie:499,ea:0},
+  {s:'Th',name:'Thorium',z:90,mass:232.038,g:3,p:7,cat:'actinide',r:206,en:1.30,ie:587,ea:0},
+  {s:'Pa',name:'Protactinium',z:91,mass:231.036,g:3,p:7,cat:'actinide',r:200,en:1.50,ie:568,ea:0},
+  {s:'U',name:'Uranium',z:92,mass:238.029,g:3,p:7,cat:'actinide',r:196,en:1.38,ie:598,ea:0},
+  {s:'Np',name:'Neptunium',z:93,mass:237,g:3,p:7,cat:'actinide',r:190,en:1.36,ie:605,ea:0},
+  {s:'Pu',name:'Plutonium',z:94,mass:244,g:3,p:7,cat:'actinide',r:187,en:1.28,ie:585,ea:0},
+  {s:'Am',name:'Americium',z:95,mass:243,g:3,p:7,cat:'actinide',r:180,en:1.30,ie:578,ea:0},
+  {s:'Cm',name:'Curium',z:96,mass:247,g:3,p:7,cat:'actinide',r:169,en:1.30,ie:581,ea:0}
+];
+var CAT_COLORS={
+  'alkali':'#ff60a0',
+  'alkaline':'#ff8040',
+  'transition':'#ffd040',
+  'postmetal':'#40ff80',
+  'metalloid':'#40ffd0',
+  'nonmetal':'#40d0ff',
+  'halogen':'#c060ff',
+  'noble':'#a060ff',
+  'lanthanide':'#ff90c0',
+  'actinide':'#ffa080'
+};
+function getElement(sym){
+  for(var i=0;i<ELEMENTS.length;i++)if(ELEMENTS[i].s===sym)return ELEMENTS[i];
+  return null;
+}
+
+/* ================================================================
+   MODULE 1: PERIODIC TABLE
+   ================================================================ */
+registerModule('periodic',{
+  title:'Periodic Table',
+  icon:'⚛',
+  desc:'Full interactive periodic table with atomic properties. Color by category, electronegativity, atomic radius, or ionization energy. Click any element for details.',
+  init:function(){
+    logMsg('Periodic table: '+ELEMENTS.length+' elements loaded','success');
+  },
+  tick:function(dt){STATE.time+=dt;},
+  stepOnce:function(){},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#08040c';
+    ctx.fillRect(0,0,W,H);
+    var p=STATE.periodic;
+    /* Grid: 18 columns, 10 rows (7 main + spacer + 2 lanthanide/actinide) */
+    var pad=20;
+    var gridW=W-2*pad;
+    var gridH=H-2*pad-40;
+    var cols=18;
+    var rows=10;
+    var cellW=gridW/cols;
+    var cellH=gridH/rows;
+    var cellSize=Math.min(cellW,cellH)*0.92;
+    /* Draw main table */
+    ELEMENTS.forEach(function(e){
+      /* Position in grid */
+      var x=0,y=0;
+      var displayGroup=e.g,displayPeriod=e.p;
+      /* Lanthanides and actinides go in rows 9 and 10 */
+      if(e.cat==='lanthanide'){
+        displayGroup=e.z-57+3;
+        displayPeriod=9;
+      } else if(e.cat==='actinide'){
+        displayGroup=e.z-89+3;
+        displayPeriod=10;
+      }
+      x=pad+(displayGroup-1)*cellW+cellW/2;
+      y=pad+(displayPeriod-1)*cellH+cellH/2;
+      /* Color */
+      var color;
+      if(p.colorBy==='category'){
+        color=CAT_COLORS[e.cat]||'#a060ff';
+      } else if(p.colorBy==='atomicRadius'){
+        var t=clamp((e.r-30)/320,0,1);
+        color='hsl('+(210-t*210)+',90%,60%)';
+      } else if(p.colorBy==='electronegativity'){
+        var t2=e.en!=null?clamp(e.en/4,0,1):0;
+        color='hsl('+(180-t2*180)+',90%,'+(40+t2*30)+'%)';
+      } else if(p.colorBy==='ionization'){
+        var t3=clamp((e.ie-370)/2000,0,1);
+        color='hsl('+(280-t3*280)+',90%,60%)';
+      } else {
+        var t4=clamp(e.ea/350,0,1);
+        color='hsl('+(120-t4*120)+',85%,55%)';
+      }
+      /* Selected / hovered */
+      var isSel=e.s===p.selected;
+      var isHover=p.hover===e.s;
+      var r=cellSize*0.5;
+      ctx.fillStyle=color;
+      ctx.globalAlpha=isSel?1:(isHover?0.95:0.75);
+      ctx.beginPath();
+      ctx.roundRect(x-r,y-r,cellSize,cellSize,4);
+      ctx.fill();
+      ctx.globalAlpha=1;
+      ctx.strokeStyle=isSel?'#ffffff':'rgba(0,0,0,.4)';
+      ctx.lineWidth=isSel?2.5:1;
+      ctx.stroke();
+      /* Text */
+      ctx.fillStyle='#08040c';
+      var fs=Math.max(8,cellSize*0.22);
+      ctx.font='bold '+fs+'px monospace';
+      ctx.textAlign='left';
+      ctx.fillText(String(e.z),x-r+3,y-r+fs);
+      ctx.font='bold '+(fs*1.4)+'px monospace';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(e.s,x,y+2);
+      ctx.textBaseline='alphabetic';
+      if(cellSize>28){
+        ctx.font=(fs*0.7)+'px monospace';
+        ctx.fillStyle='rgba(0,0,0,.65)';
+        ctx.fillText(e.name.substring(0,9),x,y+r-4);
+      }
+    });
+    /* Hover detection */
+    for(var k=0;k<ELEMENTS.length;k++){
+      var e=ELEMENTS[k];
+      var x=0,y=0;
+      var dg=e.g,dp=e.p;
+      if(e.cat==='lanthanide'){dg=e.z-57+3;dp=9}
+      else if(e.cat==='actinide'){dg=e.z-89+3;dp=10}
+      x=pad+(dg-1)*cellW+cellW/2;
+      y=pad+(dp-1)*cellH+cellH/2;
+      var r=cellSize*0.5;
+      if(INPUT.x>x-r&&INPUT.x<x+r&&INPUT.y>y-r&&INPUT.y<y+r){
+        p.hover=e.s;
+        break;
+      }
+      if(k===ELEMENTS.length-1)p.hover=null;
+    }
+    /* Legend at bottom */
+    var legY=H-40;
+    ctx.fillStyle='rgba(20,10,32,.9)';
+    ctx.strokeStyle='rgba(192,96,255,.4)';
+    ctx.beginPath();ctx.roundRect(pad,legY,W-2*pad,34,6);ctx.fill();ctx.stroke();
+    if(p.colorBy==='category'){
+      var cats=['alkali','alkaline','transition','postmetal','metalloid','nonmetal','halogen','noble','lanthanide','actinide'];
+      var cx=pad+15;
+      cats.forEach(function(c){
+        ctx.fillStyle=CAT_COLORS[c];
+        ctx.fillRect(cx,legY+8,10,10);
+        ctx.fillStyle='#f0e0ff';
+        ctx.font='9px monospace';
+        ctx.textAlign='left';
+        ctx.fillText(c,cx+14,legY+17);
+        cx+=Math.min(85,ctx.measureText(c).width+40);
+      });
+    } else {
+      ctx.fillStyle='#f0e0ff';
+      ctx.font='10px monospace';
+      ctx.textAlign='center';
+      ctx.fillText('Color by: '+p.colorBy+'  ·  click any element for details',W/2,legY+22);
+    }
+    /* Selected element detail panel */
+    if(p.selected){
+      var e=getElement(p.selected);
+      if(e){
+        var px=W-320,py=20;
+        ctx.fillStyle='rgba(20,10,32,.95)';
+        ctx.strokeStyle='rgba(192,96,255,.6)';
+        ctx.beginPath();ctx.roundRect(px,py,300,220,8);ctx.fill();ctx.stroke();
+        /* Header */
+        var col=CAT_COLORS[e.cat]||'#a060ff';
+        ctx.fillStyle=col;
+        ctx.font='bold 22px monospace';
+        ctx.textAlign='left';
+        ctx.fillText(e.s,px+16,py+34);
+        ctx.fillStyle='#f0e0ff';
+        ctx.font='12px monospace';
+        ctx.fillText(e.name,px+70,py+30);
+        ctx.fillStyle='#b098d0';
+        ctx.font='10px monospace';
+        ctx.fillText('Z = '+e.z+'  ·  '+e.cat,px+70,py+46);
+        ctx.strokeStyle='rgba(192,96,255,.3)';
+        ctx.beginPath();ctx.moveTo(px+16,py+58);ctx.lineTo(px+284,py+58);ctx.stroke();
+        /* Properties */
+        var props=[
+          ['Atomic mass',e.mass+' u'],
+          ['Group / Period',e.g+' / '+e.p],
+          ['Atomic radius',e.r+' pm'],
+          ['Electronegativity',e.en!=null?e.en.toString():'—'],
+          ['Ionization energy',e.ie+' kJ/mol'],
+          ['Electron affinity',e.ea+' kJ/mol']
+        ];
+        ctx.font='10px monospace';
+        props.forEach(function(pr,i){
+          ctx.fillStyle='#705888';
+          ctx.textAlign='left';
+          ctx.fillText(pr[0],px+16,py+80+i*22);
+          ctx.fillStyle='#c060ff';
+          ctx.textAlign='right';
+          ctx.fillText(pr[1],px+284,py+80+i*22);
+        });
+      }
+    }
+    setStatsHTML(
+      '<div>Elements: '+ELEMENTS.length+'</div>'+
+      '<div>Selected: '+p.selected+'</div>'+
+      '<div>Color: '+p.colorBy+'</div>'
+    );
+    updateBadge('⚛ Periodic Table · '+ELEMENTS.length+' elements · '+p.colorBy);
+    $('sbMode').textContent='Periodic Table';
+  },
+  onDown:function(p){
+    var ps=STATE.periodic;
+    var pad=20;
+    var gridW=CANV.W-2*pad;
+    var gridH=CANV.H-2*pad-40;
+    var cols=18,rows=10;
+    var cellW=gridW/cols,cellH=gridH/rows;
+    var cellSize=Math.min(cellW,cellH)*0.92;
+    for(var k=0;k<ELEMENTS.length;k++){
+      var e=ELEMENTS[k];
+      var dg=e.g,dp=e.p;
+      if(e.cat==='lanthanide'){dg=e.z-57+3;dp=9}
+      else if(e.cat==='actinide'){dg=e.z-89+3;dp=10}
+      var x=pad+(dg-1)*cellW+cellW/2;
+      var y=pad+(dp-1)*cellH+cellH/2;
+      var r=cellSize*0.5;
+      if(p.x>x-r&&p.x<x+r&&p.y>y-r&&p.y<y+r){
+        ps.selected=e.s;
+        logMsg('Selected: '+e.name+' (Z='+e.z+')','info');
+        break;
+      }
+    }
+  },
+  controls:function(){
+    var p=STATE.periodic;
+    var html='';
+    html+='<div class="sec"><h4>Color by</h4><div class="chip-row">';
+    [['category','Category'],['atomicRadius','Radius'],['electronegativity','EN'],['ionization','IE'],['electronAffinity','EA']].forEach(function(c){
+      html+='<div class="chip '+(p.colorBy===c[0]?'active':'')+'" onclick="STATE.periodic.colorBy=\''+c[0]+'\';renderLeftPanel()">'+c[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Jump to element</h4><div class="chip-row">';
+    ['H','C','N','O','Na','Cl','Fe','Cu','Au','U'].forEach(function(s){
+      html+='<div class="chip '+(p.selected===s?'active':'')+'" onclick="STATE.periodic.selected=\''+s+'\';renderLeftPanel()">'+s+'</div>';
+    });
+    html+='</div></div>';
+    if(p.selected){
+      var e=getElement(p.selected);
+      if(e){
+        html+='<div class="sec"><h4>'+e.name+' ('+e.s+')</h4><div class="kv">';
+        html+='<div class="row"><span class="k">Atomic number</span><span class="v">'+e.z+'</span></div>';
+        html+='<div class="row"><span class="k">Atomic mass</span><span class="v">'+e.mass+' u</span></div>';
+        html+='<div class="row"><span class="k">Group</span><span class="v">'+e.g+'</span></div>';
+        html+='<div class="row"><span class="k">Period</span><span class="v">'+e.p+'</span></div>';
+        html+='<div class="row"><span class="k">Category</span><span class="v">'+e.cat+'</span></div>';
+        html+='<div class="row"><span class="k">Radius</span><span class="v">'+e.r+' pm</span></div>';
+        html+='<div class="row"><span class="k">EN</span><span class="v">'+(e.en||'—')+'</span></div>';
+        html+='<div class="row"><span class="k">IE₁</span><span class="v">'+e.ie+' kJ/mol</span></div>';
+        html+='<div class="row"><span class="k">EA</span><span class="v">'+e.ea+' kJ/mol</span></div>';
+        html+='</div></div>';
+      }
+    }
+    html+='<div class="sec"><h4>Trends</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.56rem;line-height:1.65;color:var(--tx2)">'+
+      '<b style="color:var(--c4)">Radius ↓→</b> decreases across period (Z↑, same shell)<br>'+
+      '<b style="color:var(--c4)">Radius ↓↓</b> increases down group (new shells)<br>'+
+      '<b style="color:var(--c5)">EN →↑</b> increases right and up<br>'+
+      '<b style="color:var(--c1)">IE →↑</b> increases right (noble gas peak)<br>'+
+      '<b style="color:var(--c3)">EA →↑</b> most negative for halogens'
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var p=STATE.periodic;
+    var e=p.selected?getElement(p.selected):null;
+    return '<div class="sec"><h4>Periodic law</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Properties of elements are periodic functions of atomic number Z.<br><br>'+
+      'Mendeleev (1869) arranged by mass. Moseley (1913) by Z.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Quantum origin</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Electron configuration by Aufbau:<br>'+
+      '1s → 2s → 2p → 3s → 3p → 4s → 3d → 4p → 5s → 4d → 5p → 6s → 4f → 5d → 6p → 7s → 5f → 6d<br><br>'+
+      'Blocks: s, p, d, f correspond to which orbital is filling.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Trends explained</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      '<b style="color:var(--c4)">Atomic radius:</b> Z_eff increases across period → electrons pulled closer. New shells down group → radius grows.<br><br>'+
+      '<b style="color:var(--c5)">Electronegativity:</b> correlates with Z_eff and radius. F is maximum (3.98).<br><br>'+
+      '<b style="color:var(--c1)">Ionization energy:</b> opposite of radius. Noble gases have peaks.'+
+      '</div></div>'+
+      (e?'<div class="sec"><h4>'+e.name+' electron configuration</h4><div style="font-family:var(--mono);font-size:.62rem;line-height:1.75;color:var(--c1)">'+electronConfig(e.z)+'</div></div>':'');
+  }
+});
+function electronConfig(z){
+  /* Simplified Aufbau filling */
+  var order=[['1s',2],['2s',2],['2p',6],['3s',2],['3p',6],['4s',2],['3d',10],['4p',6],['5s',2],['4d',10],['5p',6],['6s',2],['4f',14],['5d',10],['6p',6],['7s',2],['5f',14],['6d',10],['7p',6]];
+  var remaining=z;
+  var out=[];
+  for(var i=0;i<order.length&&remaining>0;i++){
+    var fill=Math.min(order[i][1],remaining);
+    out.push(order[i][0]+'<sup>'+fill+'</sup>');
+    remaining-=fill;
+  }
+  return out.join(' ');
+}
+
+/* ================================================================
+   MODULE 2: KINETICS
+   ================================================================ */
+var KIN_PRESETS={
+  '1st-A→B':{name:'1st order A→B',order:1,k:0.08,A0:1,B0:0},
+  '1st-fast':{name:'Fast 1st order',order:1,k:0.5,A0:1,B0:0},
+  '2nd-A→B':{name:'2nd order A→B',order:2,k:0.08,A0:1,B0:0},
+  '0th-A→B':{name:'0th order',order:0,k:0.05,A0:1,B0:0},
+  'reversible':{name:'Reversible A⇌B',order:1,k:0.15,kBack:0.05,A0:1,B0:0}
+};
+registerModule('kinetics',{
+  title:'Reaction Kinetics',
+  icon:'⚗️',
+  desc:'Rate laws, reaction order, and the Arrhenius equation. Watch concentrations evolve in real time. Toggle temperature to see Arrhenius behavior.',
+  init:function(){
+    var k=STATE.kinetics;
+    k.A=k.A0;k.B=k.B0;
+    k.time=0;
+    k.history=[];
+    this.computeArrhenius();
+    logMsg('Kinetics: '+k.reaction+' order '+k.order+' k='+k.k,'success');
+  },
+  computeArrhenius:function(){
+    var k=STATE.kinetics;
+    /* k = A·exp(-Ea/(R·T)) */
+    var R=8.314e-3; /* kJ/(mol·K) */
+    k.k=A_ARR(k.A,k.Ea,k.T,R);
+    k.arrTemps=[];
+    for(var T=250;T<=450;T+=5){
+      k.arrTemps.push({T:T,k:A_ARR(k.A,k.Ea,T,R)});
+    }
+  },
+  step:function(dt){
+    var k=STATE.kinetics;
+    var scale=1; /* simulation time scale */
+    var dA,dB;
+    if(k.order===0){
+      dA=-k.k;
+      dB=k.k;
+    } else if(k.order===1){
+      dA=-k.k*k.A;
+      dB=k.k*k.A;
+    } else if(k.order===2){
+      dA=-k.k*k.A*k.A;
+      dB=k.k*k.A*k.A;
+    }
+    /* Reversible */
+    var kBack=k.kBack||0;
+    if(kBack>0){
+      dA+=kBack*k.B;
+      dB-=kBack*k.B;
+    }
+    var nA=k.A+dA*dt*scale;
+    var nB=k.B+dB*dt*scale;
+    if(nA<0)nA=0;
+    if(nB<0)nB=0;
+    k.A=nA;k.B=nB;
+    k.time+=dt*scale;
+    k.history.push({t:k.time,A:k.A,B:k.B});
+    if(k.history.length>800)k.history.shift();
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var k=STATE.kinetics;
+    if(!STATE.playing)return;
+    for(var i=0;i<4;i++)this.step(dt);
+    if(k.time>k.maxTime){k.time=0;k.history=[];k.A=k.A0;k.B=k.B0}
+  },
+  stepOnce:function(){this.step(0.05)},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#08040c';
+    ctx.fillRect(0,0,W,H);
+    var k=STATE.kinetics;
+    /* Two panels: concentration vs time (top), Arrhenius (bottom) */
+    var topH=H*0.6;
+    var pad=40;
+    /* Concentration plot */
+    var plotX=pad,plotY=pad+20;
+    var plotW=W-2*pad,plotH=topH-pad-30;
+    ctx.fillStyle='rgba(20,10,32,.6)';
+    ctx.strokeStyle='rgba(192,96,255,.4)';
+    ctx.beginPath();ctx.roundRect(plotX,plotY,plotW,plotH,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#c060ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('CONCENTRATION vs TIME · '+k.reaction,plotX+10,plotY-6);
+    /* Axes */
+    for(var i=0;i<=4;i++){
+      var y=plotY+i*plotH/4;
+      ctx.strokeStyle='rgba(192,96,255,.1)';
+      ctx.beginPath();ctx.moveTo(plotX,y);ctx.lineTo(plotX+plotW,y);ctx.stroke();
+      ctx.fillStyle='#705888';
+      ctx.font='9px monospace';
+      ctx.textAlign='right';
+      ctx.fillText(fmt((1-i/4)*Math.max(k.A0,1.2),2),plotX-4,y+3);
+    }
+    for(var j=0;j<=5;j++){
+      var x=plotX+j*plotW/5;
+      ctx.strokeStyle='rgba(192,96,255,.1)';
+      ctx.beginPath();ctx.moveTo(x,plotY);ctx.lineTo(x,plotY+plotH);ctx.stroke();
+      ctx.fillStyle='#705888';
+      ctx.font='9px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(fmt(j/5*k.maxTime,1),x,plotY+plotH+12);
+    }
+    ctx.fillText('time (s)',plotX+plotW/2,plotY+plotH+28);
+    /* Draw curves */
+    if(k.history.length>1){
+      var yMax=Math.max(k.A0,k.B0,0.5)*1.1;
+      /* A curve */
+      ctx.strokeStyle='#c060ff';
+      ctx.lineWidth=2.5;
+      ctx.shadowColor='#c060ff';ctx.shadowBlur=8;
+      ctx.beginPath();
+      k.history.forEach(function(h,i){
+        var x=plotX+(h.t/k.maxTime)*plotW;
+        var y=plotY+plotH-(h.A/yMax)*plotH;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      /* B curve */
+      ctx.strokeStyle='#40ffd0';
+      ctx.shadowColor='#40ffd0';
+      ctx.beginPath();
+      k.history.forEach(function(h,i){
+        var x=plotX+(h.t/k.maxTime)*plotW;
+        var y=plotY+plotH-(h.B/yMax)*plotH;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+    /* Legend */
+    ctx.fillStyle='rgba(20,10,32,.9)';
+    ctx.strokeStyle='rgba(192,96,255,.3)';
+    ctx.beginPath();ctx.roundRect(plotX+plotW-180,plotY+10,170,50,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#c060ff';
+    ctx.fillRect(plotX+plotW-170,plotY+22,12,8);
+    ctx.fillStyle='#f0e0ff';
+    ctx.font='10px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('[A] = '+fmt(k.A,4),plotX+plotW-152,plotY+30);
+    ctx.fillStyle='#40ffd0';
+    ctx.fillRect(plotX+plotW-170,plotY+40,12,8);
+    ctx.fillStyle='#f0e0ff';
+    ctx.fillText('[B] = '+fmt(k.B,4),plotX+plotW-152,plotY+48);
+    /* Arrhenius plot */
+    var arrY=topH+20;
+    var arrH=H-arrY-pad;
+    if(arrH>80&&!k.arrheniusMode){
+      ctx.fillStyle='rgba(20,10,32,.6)';
+      ctx.strokeStyle='rgba(255,208,64,.4)';
+      ctx.beginPath();ctx.roundRect(plotX,arrY,plotW,arrH,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#ffd040';
+      ctx.font='bold 11px monospace';
+      ctx.textAlign='left';
+      ctx.fillText('ARRHENIUS · k = A·exp(−Ea/RT)',plotX+10,arrY-6);
+      /* Plot ln(k) vs 1/T */
+      if(k.arrTemps.length>0){
+        var kMin=Infinity,kMax=-Infinity;
+        k.arrTemps.forEach(function(d){if(d.k<kMin)kMin=d.k;if(d.k>kMax)kMax=d.k});
+        ctx.strokeStyle='#ffd040';
+        ctx.lineWidth=2;
+        ctx.shadowColor='#ffd040';ctx.shadowBlur=8;
+        ctx.beginPath();
+        k.arrTemps.forEach(function(d,i){
+          var tFrac=(d.T-250)/200;
+          var logK=Math.log10(d.k);
+          var logMin=Math.log10(Math.max(1e-30,kMin));
+          var logMax=Math.log10(kMax);
+          var yFrac=(logK-logMin)/(logMax-logMin+1e-9);
+          var x=plotX+tFrac*plotW;
+          var y=arrY+arrH-yFrac*arrH;
+          if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+        ctx.shadowBlur=0;
+        /* Mark current T */
+        var curFrac=(k.T-250)/200;
+        var curLogK=Math.log10(k.k);
+        var curLogMin=Math.log10(Math.max(1e-30,kMin));
+        var curLogMax=Math.log10(kMax);
+        var curYFrac=(curLogK-curLogMin)/(curLogMax-curLogMin+1e-9);
+        var cx=plotX+curFrac*plotW;
+        var cy=arrY+arrH-curYFrac*arrH;
+        ctx.fillStyle='#40ffd0';
+        ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#40ffd0';ctx.lineWidth=2;ctx.stroke();
+        /* Labels */
+        ctx.fillStyle='#705888';
+        ctx.font='9px monospace';
+        ctx.textAlign='center';
+        ctx.fillText('250K',plotX,arrY+arrH+12);
+        ctx.fillText('450K',plotX+plotW,arrY+arrH+12);
+      }
+    }
+    /* Info panel */
+    ctx.fillStyle='rgba(20,10,32,.9)';
+    ctx.strokeStyle='rgba(192,96,255,.5)';
+    ctx.beginPath();ctx.roundRect(20,20,250,130,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#c060ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('KINETICS · order '+k.order,32,42);
+    ctx.fillStyle='#f0e0ff';
+    ctx.font='10px monospace';
+    ctx.fillText('[A]₀ = '+fmt(k.A0,2),32,62);
+    ctx.fillText('[B]₀ = '+fmt(k.B0,2),32,78);
+    ctx.fillText('k = '+sci(k.k,3),32,94);
+    ctx.fillText('T = '+k.T+' K',32,110);
+    ctx.fillText('time = '+fmt(k.time,2)+' s',32,126);
+    setStatsHTML(
+      '<div>[A] = '+fmt(k.A,4)+'</div>'+
+      '<div>[B] = '+fmt(k.B,4)+'</div>'+
+      '<div>k = '+sci(k.k,3)+'</div>'+
+      '<div>t = '+fmt(k.time,2)+'s</div>'
+    );
+    updateBadge('⚗️ Kinetics · order '+k.order+' · k='+sci(k.k,2));
+    $('sbMode').textContent='Kinetics';
+    $('sbT').textContent=k.T+'K';
+    $('sbK').textContent=sci(k.k,2);
+  },
+  onDown:function(){},
+  controls:function(){
+    var k=STATE.kinetics;
+    var html='';
+    html+='<div class="sec"><h4>Reaction presets</h4><div class="chip-row">';
+    Object.keys(KIN_PRESETS).forEach(function(key){
+      html+='<div class="chip" onclick="var p=KIN_PRESETS[\''+key+'\'];STATE.kinetics.order=p.order;STATE.kinetics.k=p.k;STATE.kinetics.kBack=p.kBack||0;STATE.kinetics.A0=p.A0;STATE.kinetics.B0=p.B0;MODULES.kinetics.init();renderLeftPanel()">'+KIN_PRESETS[key].name+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Order</h4><div class="chip-row">';
+    [0,1,2].forEach(function(o){
+      html+='<div class="chip '+(k.order===o?'active':'')+'" onclick="STATE.kinetics.order='+o+';MODULES.kinetics.init();renderLeftPanel()">'+o+' order</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Parameters</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Rate constant k</span><span>'+sci(k.k,3)+'</span></div>';
+    html+='<input type="range" min="0.001" max="0.5" step="0.001" value="'+k.k+'" oninput="STATE.kinetics.k=parseFloat(this.value);renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>[A]₀</span><span>'+fmt(k.A0,2)+'</span></div>';
+    html+='<input type="range" min="0.1" max="3" step="0.1" value="'+k.A0+'" oninput="STATE.kinetics.A0=parseFloat(this.value);STATE.kinetics.A=parseFloat(this.value);MODULES.kinetics.init();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>[B]₀</span><span>'+fmt(k.B0,2)+'</span></div>';
+    html+='<input type="range" min="0" max="3" step="0.1" value="'+k.B0+'" oninput="STATE.kinetics.B0=parseFloat(this.value);STATE.kinetics.B=parseFloat(this.value);MODULES.kinetics.init();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Arrhenius</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>Temperature</span><span>'+k.T+' K ('+(k.T-273).toFixed(0)+'°C)</span></div>';
+    html+='<input type="range" min="250" max="450" step="5" value="'+k.T+'" oninput="STATE.kinetics.T=parseInt(this.value);MODULES.kinetics.computeArrhenius();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Ea (kJ/mol)</span><span>'+k.Ea+'</span></div>';
+    html+='<input type="range" min="10" max="200" step="5" value="'+k.Ea+'" oninput="STATE.kinetics.Ea=parseInt(this.value);MODULES.kinetics.computeArrhenius();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Pre-exp A</span><span>1e'+Math.log10(k.A).toFixed(0)+'</span></div>';
+    html+='<input type="range" min="1" max="15" step="1" value="'+Math.log10(k.A)+'" oninput="STATE.kinetics.A=Math.pow(10,parseFloat(this.value));MODULES.kinetics.computeArrhenius();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.kinetics.init()">↺ Restart</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var k=STATE.kinetics;
+    return '<div class="sec"><h4>Rate law</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'For A → B with rate R = k[A]ⁿ:<br><br>'+
+      '<b style="color:var(--c1)">0th order:</b> [A] = [A]₀ − kt<br>'+
+      '<b style="color:var(--c1)">1st order:</b> [A] = [A]₀·e^(−kt)<br>'+
+      '<b style="color:var(--c1)">2nd order:</b> 1/[A] = 1/[A]₀ + kt'+
+      '</div></div>'+
+      '<div class="sec"><h4>Half-life</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      '0th: t½ = [A]₀/(2k)<br>'+
+      '1st: t½ = ln(2)/k  (independent of [A]₀!)<br>'+
+      '2nd: t½ = 1/(k[A]₀)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Arrhenius equation</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'k = A·exp(−Ea/(RT))<br><br>'+
+      'ln(k) = ln(A) − Ea/(RT)<br><br>'+
+      'Plot ln(k) vs 1/T: slope = −Ea/R<br>'+
+      'R = 8.314 J/(mol·K)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current</h4><div class="kv">'+
+      '<div class="row"><span class="k">Order</span><span class="v">'+k.order+'</span></div>'+
+      '<div class="row"><span class="k">k</span><span class="v">'+sci(k.k,3)+'</span></div>'+
+      '<div class="row"><span class="k">T</span><span class="v">'+k.T+' K</span></div>'+
+      '<div class="row"><span class="k">Ea</span><span class="v">'+k.Ea+' kJ/mol</span></div>'+
+      '</div></div>';
+  }
+});
+function A_ARR(A,Ea,T,R){
+  return A*Math.exp(-Ea/(R*T));
+}
+</script>
+<script>
+/* ================================================================
+   MODULE 3: CHEMICAL EQUILIBRIUM
+   ================================================================ */
+registerModule('equilibrium',{
+  title:'Chemical Equilibrium',
+  icon:'⚖️',
+  desc:'Le Chatelier\'s principle in action. Perturb the system and watch it re-equilibrate. Reaction quotient Q vs K governs the direction.',
+  init:function(){
+    var e=STATE.equilibrium;
+    e.A=e.A0;e.B=e.B0;e.C=e.C0;e.D=e.D0;
+    e.t=0;
+    e.history=[];
+    logMsg('Equilibrium: K='+e.K+', started at Q≠K','success');
+  },
+  computeQ:function(){
+    var e=STATE.equilibrium;
+    var num=Math.pow(Math.max(e.C,1e-9),e.c)*Math.pow(Math.max(e.D,1e-9),e.d);
+    var den=Math.pow(Math.max(e.A,1e-9),e.a)*Math.pow(Math.max(e.B,1e-9),e.b);
+    return num/den;
+  },
+  step:function(dt){
+    var e=STATE.equilibrium;
+    /* Rate forward: kf·[A]^a·[B]^b */
+    var rf=e.kf*Math.pow(Math.max(e.A,0),e.a)*Math.pow(Math.max(e.B,0),e.b);
+    /* Rate reverse: kr·[C]^c·[D]^d */
+    var rr=e.kr*Math.pow(Math.max(e.C,0),e.c)*Math.pow(Math.max(e.D,0),e.d);
+    /* Net reaction rate */
+    var net=(rf-rr);
+    var speed=1;
+    e.A=Math.max(0,e.A-net*dt*speed*e.a);
+    e.B=Math.max(0,e.B-net*dt*speed*e.b);
+    e.C+=net*dt*speed*e.c;
+    e.D+=net*dt*speed*e.d;
+    e.t+=dt;
+    e.history.push({t:e.t,A:e.A,B:e.B,C:e.C,D:e.D});
+    if(e.history.length>800)e.history.shift();
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var e=STATE.equilibrium;
+    if(!STATE.playing)return;
+    for(var i=0;i<4;i++)this.step(dt*0.5);
+  },
+  stepOnce:function(){this.step(0.1)},
+  perturb:function(type){
+    var e=STATE.equilibrium;
+    if(type==='addA')e.A+=0.5;
+    else if(type==='removeA')e.A=Math.max(0,e.A-0.5);
+    else if(type==='addC')e.C+=0.5;
+    else if(type==='removeC')e.C=Math.max(0,e.C-0.5);
+    else if(type==='raiseT'){e.kf*=1.5;e.kr*=1.5} /* endothermic */
+    else if(type==='lowerT'){e.kf*=0.7;e.kr*=0.7}
+    else if(type==='halveVolume'){e.A*=2;e.B*=2;e.C*=2;e.D*=2}
+    else if(type==='doubleVolume'){e.A/=2;e.B/=2;e.C/=2;e.D/=2}
+    logMsg('Perturbation: '+type,'info');
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#08040c';
+    ctx.fillRect(0,0,W,H);
+    var e=STATE.equilibrium;
+    var pad=40;
+    /* Left: concentration vs time */
+    var plotW=W*0.62-pad;
+    var plotH=H-2*pad-30;
+    var plotX=pad,plotY=pad+20;
+    ctx.fillStyle='rgba(20,10,32,.6)';
+    ctx.strokeStyle='rgba(192,96,255,.4)';
+    ctx.beginPath();ctx.roundRect(plotX,plotY,plotW,plotH,6);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#c060ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('CONCENTRATIONS',plotX+10,plotY-6);
+    if(e.history.length>1){
+      var tMax=e.history[e.history.length-1].t;
+      var maxC=Math.max(e.A0,e.B0,e.C0,e.D0,2);
+      e.history.forEach(function(h){
+        maxC=Math.max(maxC,h.A,h.B,h.C,h.D);
+      });
+      /* Axes */
+      for(var i=0;i<=4;i++){
+        var y=plotY+i*plotH/4;
+        ctx.strokeStyle='rgba(192,96,255,.1)';
+        ctx.beginPath();ctx.moveTo(plotX,y);ctx.lineTo(plotX+plotW,y);ctx.stroke();
+        ctx.fillStyle='#705888';
+        ctx.font='9px monospace';
+        ctx.textAlign='right';
+        ctx.fillText(fmt((1-i/4)*maxC,1),plotX-4,y+3);
+      }
+      /* Draw 4 curves */
+      var cols={A:'#c060ff',B:'#40d0ff',C:'#40ffd0',D:'#ffd040'};
+      var keys=['A','B','C','D'];
+      keys.forEach(function(key){
+        ctx.strokeStyle=cols[key];
+        ctx.lineWidth=2;
+        ctx.shadowColor=cols[key];ctx.shadowBlur=6;
+        ctx.beginPath();
+        e.history.forEach(function(h,i){
+          var x=plotX+(h.t/Math.max(tMax,0.01))*plotW;
+          var y=plotY+plotH-(h[key]/maxC)*plotH;
+          if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+        ctx.shadowBlur=0;
+      });
+      /* Legend */
+      ctx.fillStyle='rgba(20,10,32,.9)';
+      ctx.strokeStyle='rgba(192,96,255,.3)';
+      ctx.beginPath();ctx.roundRect(plotX+plotW-140,plotY+10,130,90,6);ctx.fill();ctx.stroke();
+      ctx.font='10px monospace';
+      ctx.textAlign='left';
+      keys.forEach(function(key,i){
+        var label=String.fromCharCode(65+i);
+        ctx.fillStyle=cols[key];
+        ctx.fillRect(plotX+plotW-130,plotY+18+i*20,10,8);
+        ctx.fillStyle='#f0e0ff';
+        ctx.fillText('['+label+'] = '+fmt(e[key],3),plotX+plotW-114,plotY+26+i*20);
+      });
+    }
+    /* Right: Q vs K */
+    var qX=plotW+pad+30;
+    var qY=pad;
+    var qW=W-qX-pad;
+    var qH=H-2*pad;
+    ctx.fillStyle='rgba(20,10,32,.8)';
+    ctx.strokeStyle='rgba(255,208,64,.4)';
+    ctx.beginPath();ctx.roundRect(qX,qY,qW,qH,6);ctx.fill();ctx.stroke();
+    /* Big Q vs K */
+    var Q=this.computeQ();
+    ctx.fillStyle='#ffd040';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('REACTION QUOTIENT',qX+14,qY+22);
+    ctx.fillStyle='#f0e0ff';
+    ctx.font='bold 36px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('Q',qX+qW/2,qY+70);
+    ctx.fillStyle='#c060ff';
+    ctx.font='bold 20px monospace';
+    ctx.fillText(fmt(Q,3),qX+qW/2,qY+100);
+    ctx.strokeStyle='rgba(192,96,255,.3)';
+    ctx.beginPath();ctx.moveTo(qX+20,qY+120);ctx.lineTo(qX+qW-20,qY+120);ctx.stroke();
+    ctx.fillStyle='#ffd040';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('EQUILIBRIUM K',qX+14,qY+142);
+    ctx.fillStyle='#f0e0ff';
+    ctx.font='bold 36px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('K',qX+qW/2,qY+190);
+    ctx.fillStyle='#40ffd0';
+    ctx.font='bold 20px monospace';
+    ctx.fillText(fmt(e.K,3),qX+qW/2,qY+220);
+    /* Direction indicator */
+    ctx.strokeStyle='rgba(192,96,255,.3)';
+    ctx.beginPath();ctx.moveTo(qX+20,qY+240);ctx.lineTo(qX+qW-20,qY+240);ctx.stroke();
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='center';
+    if(Math.abs(Q-e.K)<0.02){
+      ctx.fillStyle='#40ff80';
+      ctx.fillText('✓ AT EQUILIBRIUM',qX+qW/2,qY+270);
+    } else if(Q<e.K){
+      ctx.fillStyle='#40d0ff';
+      ctx.fillText('→ FORWARD',qX+qW/2,qY+270);
+      ctx.fillStyle='#705888';
+      ctx.font='10px monospace';
+      ctx.fillText('(Q < K, net forward reaction)',qX+qW/2,qY+288);
+    } else {
+      ctx.fillStyle='#ff60a0';
+      ctx.fillText('← REVERSE',qX+qW/2,qY+270);
+      ctx.fillStyle='#705888';
+      ctx.font='10px monospace';
+      ctx.fillText('(Q > K, net reverse reaction)',qX+qW/2,qY+288);
+    }
+    /* Perturbation log */
+    ctx.font='9px monospace';
+    ctx.fillStyle='#705888';
+    ctx.textAlign='center';
+    ctx.fillText('Use left panel to perturb',qX+qW/2,qY+qH-14);
+    setStatsHTML(
+      '<div>[A]='+fmt(e.A,3)+'  [B]='+fmt(e.B,3)+'</div>'+
+      '<div>[C]='+fmt(e.C,3)+'  [D]='+fmt(e.D,3)+'</div>'+
+      '<div>Q = '+fmt(Q,3)+'</div>'+
+      '<div>K = '+fmt(e.K,3)+'</div>'
+    );
+    updateBadge('⚖️ Equilibrium · Q='+fmt(Q,3)+' K='+fmt(e.K,3)+' '+(Q<e.K?'→':Q>e.K?'←':'✓'));
+    $('sbMode').textContent='Equilibrium';
+    $('sbK').textContent=fmt(e.K,3);
+  },
+  onDown:function(){},
+  controls:function(){
+    var e=STATE.equilibrium;
+    var html='';
+    html+='<div class="sec"><h4>Equilibrium constant</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>K</span><span>'+fmt(e.K,3)+'</span></div>';
+    html+='<input type="range" min="0.1" max="20" step="0.1" value="'+e.K+'" oninput="STATE.equilibrium.K=parseFloat(this.value);STATE.equilibrium.kf=0.1*Math.sqrt(parseFloat(this.value));STATE.equilibrium.kr=0.1/Math.sqrt(parseFloat(this.value));renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Initial concentrations</h4>';
+    html+='<div class="ctrl"><div class="lbl"><span>[A]₀</span><span>'+fmt(e.A0,2)+'</span></div>';
+    html+='<input type="range" min="0" max="3" step="0.1" value="'+e.A0+'" oninput="STATE.equilibrium.A0=parseFloat(this.value);MODULES.equilibrium.init();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>[B]₀</span><span>'+fmt(e.B0,2)+'</span></div>';
+    html+='<input type="range" min="0" max="3" step="0.1" value="'+e.B0+'" oninput="STATE.equilibrium.B0=parseFloat(this.value);MODULES.equilibrium.init();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>[C]₀</span><span>'+fmt(e.C0,2)+'</span></div>';
+    html+='<input type="range" min="0" max="3" step="0.1" value="'+e.C0+'" oninput="STATE.equilibrium.C0=parseFloat(this.value);MODULES.equilibrium.init();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>[D]₀</span><span>'+fmt(e.D0,2)+'</span></div>';
+    html+='<input type="range" min="0" max="3" step="0.1" value="'+e.D0+'" oninput="STATE.equilibrium.D0=parseFloat(this.value);MODULES.equilibrium.init();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Le Chatelier perturbations</h4>';
+    html+='<div class="chip-row">';
+    html+='<div class="chip" style="color:var(--c1)" onclick="MODULES.equilibrium.perturb(\'addA\')">+ [A]</div>';
+    html+='<div class="chip" style="color:var(--c1)" onclick="MODULES.equilibrium.perturb(\'removeA\')">− [A]</div>';
+    html+='<div class="chip" style="color:var(--c2)" onclick="MODULES.equilibrium.perturb(\'addC\')">+ [C]</div>';
+    html+='<div class="chip" style="color:var(--c2)" onclick="MODULES.equilibrium.perturb(\'removeC\')">− [C]</div>';
+    html+='<div class="chip" style="color:var(--c5)" onclick="MODULES.equilibrium.perturb(\'raiseT\')">↑T</div>';
+    html+='<div class="chip" style="color:var(--c4)" onclick="MODULES.equilibrium.perturb(\'lowerT\')">↓T</div>';
+    html+='<div class="chip" onclick="MODULES.equilibrium.perturb(\'halveVolume\')">½ V</div>';
+    html+='<div class="chip" onclick="MODULES.equilibrium.perturb(\'doubleVolume\')">2× V</div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Actions</h4>';
+    html+='<button class="btn primary full" onclick="MODULES.equilibrium.init()">↺ Reset</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.equilibrium.history=[]">✕ Clear history</button>';
+    html+='</div>';
+    return html;
+  },
+  mathPanel:function(){
+    var e=STATE.equilibrium;
+    var Q=this.computeQ();
+    return '<div class="sec"><h4>Equilibrium</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'For aA + bB ⇌ cC + dD at equilibrium:<br><br>'+
+      'K = [C]^c[D]^d / ([A]^a[B]^b)<br><br>'+
+      'Reaction quotient:<br>'+
+      'Q = [C]^c[D]^d / ([A]^a[B]^b) at any time'+
+      '</div></div>'+
+      '<div class="sec"><h4>Direction of reaction</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Q < K → net forward (right)<br>'+
+      'Q = K → at equilibrium<br>'+
+      'Q > K → net reverse (left)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Le Chatelier\'s principle</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'When a system at equilibrium is disturbed, it shifts to counteract the disturbance:<br><br>'+
+      '<b style="color:var(--c1)">Add reactant</b> → shift right<br>'+
+      '<b style="color:var(--c1)">Add product</b> → shift left<br>'+
+      '<b style="color:var(--c4)">Compress</b> → shift toward fewer moles<br>'+
+      '<b style="color:var(--c5)">Raise T</b> → shift endothermic direction'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current</h4><div class="kv">'+
+      '<div class="row"><span class="k">Q</span><span class="v">'+fmt(Q,4)+'</span></div>'+
+      '<div class="row"><span class="k">K</span><span class="v">'+fmt(e.K,4)+'</span></div>'+
+      '<div class="row"><span class="k">Direction</span><span class="v">'+(Q<e.K?'forward':Q>e.K?'reverse':'equilibrium')+'</span></div>'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE 4: TITRATION
+   ================================================================ */
+registerModule('titration',{
+  title:'Acid-Base Titration',
+  icon:'🧪',
+  desc:'Titration curves from Henderson-Hasselbalch. Strong, weak, and diprotic acids. Watch the equivalence point and buffer region.',
+  init:function(){
+    var t=STATE.titration;
+    t.Vb=0;
+    t.curve=[];
+    this.computeCurve();
+    logMsg('Titration: '+t.acidType+' acid pKa='+t.pKa,'success');
+  },
+  pHat:function(Vb){
+    var t=STATE.titration;
+    var ca=t.cAcid, va=t.vAcid, cb=t.cBase;
+    var totalV=va+Vb;
+    var molAcid=ca*va;
+    var molBase=cb*Vb;
+    if(t.acidType==='strong'){
+      /* Strong acid + strong base */
+      var excessAcid=(molAcid-molBase)/totalV;
+      var excessBase=(molBase-molAcid)/totalV;
+      if(excessAcid>1e-6)return -Math.log10(excessAcid);
+      if(excessBase>1e-6)return 14+Math.log10(excessBase);
+      return 7;
+    } else if(t.acidType==='weak'){
+      /* Weak acid HA ⇌ H+ + A- */
+      var Ka=Math.pow(10,-t.pKa);
+      if(molBase<=1e-9){
+        /* Pure weak acid */
+        var c=molAcid/totalV;
+        var h=(-Ka+Math.sqrt(Ka*Ka+4*Ka*c))/2;
+        return -Math.log10(h);
+      }
+      if(molBase<molAcid-1e-6){
+        /* Buffer region: Henderson-Hasselbalch */
+        var ratio=molBase/(molAcid-molBase);
+        return t.pKa+Math.log10(ratio);
+      }
+      if(Math.abs(molBase-molAcid)<1e-6){
+        /* Equivalence: salt of weak acid */
+        var cSalt=molAcid/totalV;
+        var Kb=1e-14/Ka;
+        var oh=Math.sqrt(Kb*cSalt);
+        return 14+Math.log10(oh);
+      }
+      /* Excess strong base */
+      var excessB=(molBase-molAcid)/totalV;
+      return 14+Math.log10(excessB);
+    } else {
+      /* Diprotic acid */
+      var Ka1=Math.pow(10,-t.pKa);
+      var Ka2=Math.pow(10,-t.pKa2);
+      var eq1=molAcid;   /* first equivalence */
+      var eq2=2*molAcid; /* second equivalence */
+      if(molBase<eq1-1e-6){
+        var r=molBase/(molAcid-molBase+1e-9);
+        if(r>0)return t.pKa+Math.log10(r);
+        var c2=molAcid/totalV;
+        var h2=(-Ka1+Math.sqrt(Ka1*Ka1+4*Ka1*c2))/2;
+        return -Math.log10(h2);
+      }
+      if(Math.abs(molBase-eq1)<1e-6){
+        return (t.pKa+t.pKa2)/2;
+      }
+      if(molBase<eq2-1e-6){
+        var r2=(molBase-eq1)/(eq2-molBase+1e-9);
+        if(r2>0)return t.pKa2+Math.log10(r2);
+      }
+      if(Math.abs(molBase-eq2)<1e-6){
+        var cS=molAcid/totalV;
+        var Kb2=1e-14/Ka2;
+        return 14+0.5*Math.log10(Kb2*cS);
+      }
+      var excessB2=(molBase-eq2)/totalV;
+      if(excessB2>1e-9)return 14+Math.log10(excessB2);
+      return 7;
+    }
+  },
+  computeCurve:function(){
+    var t=STATE.titration;
+    t.curve=[];
+    var N=200;
+    for(var i=0;i<=N;i++){
+      var Vb=(i/N)*t.VbMax;
+      var pH=this.pHat(Vb);
+      t.curve.push({Vb:Vb,pH:pH});
+    }
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    var t=STATE.titration;
+    if(!STATE.playing||!t.running)return;
+    t.Vb+=dt*8;
+    if(t.Vb>=t.VbMax){t.Vb=t.VbMax;t.running=false}
+    t.pH=this.pHat(t.Vb);
+  },
+  stepOnce:function(){
+    var t=STATE.titration;
+    t.Vb=Math.min(t.VbMax,t.Vb+2.5);
+    t.pH=this.pHat(t.Vb);
+  },
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#08040c';
+    ctx.fillRect(0,0,W,H);
+    var t=STATE.titration;
+    var pad=60;
+    var plotX=pad,plotY=pad;
+    var plotW=W-2*pad,plotH=H-2*pad-20;
+    /* Panel */
+    ctx.fillStyle='rgba(20,10,32,.6)';
+    ctx.strokeStyle='rgba(192,96,255,.4)';
+    ctx.beginPath();ctx.roundRect(plotX,plotY,plotW,plotH,6);ctx.fill();ctx.stroke();
+    /* Axes */
+    /* Y axis pH 0-14 */
+    for(var i=0;i<=14;i+=2){
+      var y=plotY+(1-i/14)*plotH;
+      ctx.strokeStyle='rgba(192,96,255,.1)';
+      ctx.beginPath();ctx.moveTo(plotX,y);ctx.lineTo(plotX+plotW,y);ctx.stroke();
+      ctx.fillStyle='#705888';
+      ctx.font='9px monospace';
+      ctx.textAlign='right';
+      ctx.fillText(String(i),plotX-6,y+3);
+    }
+    /* X axis Vb */
+    for(var j=0;j<=5;j++){
+      var x=plotX+(j/5)*plotW;
+      ctx.strokeStyle='rgba(192,96,255,.1)';
+      ctx.beginPath();ctx.moveTo(x,plotY);ctx.lineTo(x,plotY+plotH);ctx.stroke();
+      ctx.fillStyle='#705888';
+      ctx.font='9px monospace';
+      ctx.textAlign='center';
+      ctx.fillText(fmt(j/5*t.VbMax,0),x,plotY+plotH+16);
+    }
+    ctx.fillText('Volume base (mL)',plotX+plotW/2,plotY+plotH+32);
+    /* Axis labels */
+    ctx.fillStyle='#c060ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('pH',plotX-30,plotY-8);
+    /* pH 7 line */
+    var y7=plotY+(1-7/14)*plotH;
+    ctx.strokeStyle='rgba(64,208,255,.3)';
+    ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.moveTo(plotX,y7);ctx.lineTo(plotX+plotW,y7);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#40d0ff';
+    ctx.font='9px monospace';
+    ctx.textAlign='right';
+    ctx.fillText('pH 7',plotX-6,y7+3);
+    /* Draw curve */
+    ctx.strokeStyle='#40ffd0';
+    ctx.lineWidth=2.5;
+    ctx.shadowColor='#40ffd0';ctx.shadowBlur=10;
+    ctx.beginPath();
+    t.curve.forEach(function(pt,i){
+      var x=plotX+(pt.Vb/t.VbMax)*plotW;
+      var y=plotY+(1-clamp(pt.pH,0,14)/14)*plotH;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.shadowBlur=0;
+    /* Equivalence point marker */
+    var eqVb;
+    if(t.acidType==='diprotic')eqVb=2*t.cAcid*t.vAcid/t.cBase;
+    else eqVb=t.cAcid*t.vAcid/t.cBase;
+    var eqX=plotX+(eqVb/t.VbMax)*plotW;
+    ctx.strokeStyle='rgba(255,208,64,.6)';
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(eqX,plotY);ctx.lineTo(eqX,plotY+plotH);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#ffd040';
+    ctx.font='bold 10px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('equivalence',eqX,plotY-8);
+    ctx.fillText('Vb='+fmt(eqVb,1)+'mL',eqX,plotY-22);
+    /* First equivalence for diprotic */
+    if(t.acidType==='diprotic'){
+      var eq1Vb=t.cAcid*t.vAcid/t.cBase;
+      var eq1X=plotX+(eq1Vb/t.VbMax)*plotW;
+      ctx.strokeStyle='rgba(192,96,255,.5)';
+      ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(eq1X,plotY);ctx.lineTo(eq1X,plotY+plotH);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#c060ff';
+      ctx.font='9px monospace';
+      ctx.fillText('eq1',eq1X,plotY+plotH-6);
+    }
+    /* Half-equivalence point (pKa) */
+    if(t.acidType==='weak'||t.acidType==='diprotic'){
+      var halfV=eqVb/2;
+      var halfX=plotX+(halfV/t.VbMax)*plotW;
+      ctx.fillStyle='#ff60a0';
+      ctx.beginPath();ctx.arc(halfX,plotY+(1-t.pKa/14)*plotH,6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#ff60a0';
+      ctx.font='bold 10px monospace';
+      ctx.fillText('pKa='+t.pKa,halfX+30,plotY+(1-t.pKa/14)*plotH-8);
+    }
+    /* Current position */
+    if(t.Vb>0){
+      var cx=plotX+(t.Vb/t.VbMax)*plotW;
+      var cy=plotY+(1-clamp(t.pH,0,14)/14)*plotH;
+      ctx.fillStyle='#ffd040';
+      ctx.shadowColor='#ffd040';ctx.shadowBlur=12;
+      ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle='#08040c';ctx.lineWidth=2;
+      ctx.stroke();
+    }
+    /* Info panel */
+    ctx.fillStyle='rgba(20,10,32,.9)';
+    ctx.strokeStyle='rgba(192,96,255,.5)';
+    ctx.beginPath();ctx.roundRect(20,20,250,120,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#c060ff';
+    ctx.font='bold 11px monospace';
+    ctx.textAlign='left';
+    ctx.fillText('TITRATION · '+t.acidType,32,42);
+    ctx.fillStyle='#f0e0ff';
+    ctx.font='10px monospace';
+    ctx.fillText('Acid: '+fmt(t.cAcid,3)+' M × '+t.vAcid+' mL',32,62);
+    ctx.fillText('Base: '+fmt(t.cBase,3)+' M',32,78);
+    ctx.fillText('Vb added: '+fmt(t.Vb,2)+' mL',32,94);
+    ctx.fillText('pH: '+fmt(t.pH,3),32,110);
+    setStatsHTML(
+      '<div>Vb: '+fmt(t.Vb,2)+' mL</div>'+
+      '<div>pH: '+fmt(t.pH,3)+'</div>'+
+      '<div>pKa: '+t.pKa+'</div>'+
+      '<div>Type: '+t.acidType+'</div>'
+    );
+    updateBadge('🧪 Titration · '+t.acidType+' · pH='+fmt(t.pH,2)+' · Vb='+fmt(t.Vb,1)+'mL');
+    $('sbMode').textContent='Titration';
+    $('sbPh').textContent=fmt(t.pH,2);
+  },
+  onDown:function(p){
+    var t=STATE.titration;
+    var pad=60;
+    var plotX=pad,plotW=CANV.W-2*pad;
+    if(p.x<plotX||p.x>plotX+plotW)return;
+    var frac=(p.x-plotX)/plotW;
+    t.Vb=frac*t.VbMax;
+    t.pH=this.pHat(t.Vb);
+  },
+  controls:function(){
+    var t=STATE.titration;
+    var html='';
+    html+='<div class="sec"><h4>Acid type</h4><div class="chip-row">';
+    [['strong','Strong'],['weak','Weak'],['diprotic','Diprotic']].forEach(function(a){
+      html+='<div class="chip '+(t.acidType===a[0]?'active':'')+'" onclick="STATE.titration.acidType=\''+a[0]+'\';MODULES.titration.init();renderLeftPanel()">'+a[1]+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Parameters</h4>';
+    if(t.acidType!=='strong'){
+      html+='<div class="ctrl"><div class="lbl"><span>pKa₁</span><span>'+t.pKa+'</span></div>';
+      html+='<input type="range" min="1" max="12" step="0.1" value="'+t.pKa+'" oninput="STATE.titration.pKa=parseFloat(this.value);MODULES.titration.computeCurve();renderLeftPanel()"></div>';
+    }
+    if(t.acidType==='diprotic'){
+      html+='<div class="ctrl"><div class="lbl"><span>pKa₂</span><span>'+t.pKa2+'</span></div>';
+      html+='<input type="range" min="1" max="14" step="0.1" value="'+t.pKa2+'" oninput="STATE.titration.pKa2=parseFloat(this.value);MODULES.titration.computeCurve();renderLeftPanel()"></div>';
+    }
+    html+='<div class="ctrl"><div class="lbl"><span>Acid conc.</span><span>'+fmt(t.cAcid,3)+' M</span></div>';
+    html+='<input type="range" min="0.01" max="0.5" step="0.01" value="'+t.cAcid+'" oninput="STATE.titration.cAcid=parseFloat(this.value);MODULES.titration.computeCurve();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Acid volume</span><span>'+t.vAcid+' mL</span></div>';
+    html+='<input type="range" min="10" max="50" step="1" value="'+t.vAcid+'" oninput="STATE.titration.vAcid=parseInt(this.value);MODULES.titration.computeCurve();renderLeftPanel()"></div>';
+    html+='<div class="ctrl"><div class="lbl"><span>Base conc.</span><span>'+fmt(t.cBase,3)+' M</span></div>';
+    html+='<input type="range" min="0.01" max="0.5" step="0.01" value="'+t.cBase+'" oninput="STATE.titration.cBase=parseFloat(this.value);MODULES.titration.computeCurve();renderLeftPanel()"></div>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Live titration</h4>';
+    html+='<button class="btn primary full" onclick="STATE.titration.running=!STATE.titration.running">'+(t.running?'⏸ Pause':'▶ Auto-titrate')+'</button>';
+    html+='<button class="btn full sm" style="margin-top:4px" onclick="STATE.titration.Vb=0;STATE.titration.pH=1;STATE.titration.running=false">↺ Reset burette</button>';
+    html+='</div>';
+    html+='<div class="sec"><h4>Current</h4><div class="kv">';
+    html+='<div class="row"><span class="k">Vb</span><span class="v">'+fmt(t.Vb,2)+' mL</span></div>';
+    html+='<div class="row"><span class="k">pH</span><span class="v" style="color:var(--c2)">'+fmt(t.pH,3)+'</span></div>';
+    var eqVb=t.acidType==='diprotic'?2*t.cAcid*t.vAcid/t.cBase:t.cAcid*t.vAcid/t.cBase;
+    html+='<div class="row"><span class="k">Equiv. Vb</span><span class="v">'+fmt(eqVb,2)+' mL</span></div>';
+    html+='</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var t=STATE.titration;
+    return '<div class="sec"><h4>Henderson-Hasselbalch</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'pH = pKa + log₁₀([A⁻]/[HA])<br><br>'+
+      'In the buffer region (before equivalence):<br>'+
+      '[A⁻]/[HA] = mol_base_added / mol_acid_remaining<br><br>'+
+      'At half-equivalence: pH = pKa'+
+      '</div></div>'+
+      '<div class="sec"><h4>Titration regions</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      '<b style="color:var(--c1)">Initial:</b> weak acid alone<br>'+
+      '<b style="color:var(--c1)">Buffer region:</b> Henderson-Hasselbalch<br>'+
+      '<b style="color:var(--c1)">Equivalence:</b> all converted to salt<br>'+
+      '<b style="color:var(--c1)">Past equivalence:</b> excess strong base'+
+      '</div></div>'+
+      '<div class="sec"><h4>Diprotic acids</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Two distinct equivalence points, at Vb and 2·Vb.<br><br>'+
+      'Two buffer regions separated by a midpoint at pH = (pKa₁+pKa₂)/2.<br><br>'+
+      'Example: H₂CO₃ (pKa₁=6.35, pKa₂=10.33) in blood buffering.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current</h4><div class="kv">'+
+      '<div class="row"><span class="k">Type</span><span class="v">'+t.acidType+'</span></div>'+
+      '<div class="row"><span class="k">pKa₁</span><span class="v">'+t.pKa+'</span></div>'+
+      '<div class="row"><span class="k">pH</span><span class="v">'+fmt(t.pH,3)+'</span></div>'+
+      '</div></div>';
+  }
+});
+
+/* ================================================================
+   MODULE 5: ATOMIC ORBITALS
+   ================================================================ */
+registerModule('orbitals',{
+  title:'Atomic Orbitals',
+  icon:'🌀',
+  desc:'Visualize hydrogen-like orbitals 1s through 3d. Real spherical harmonics with radial wavefunctions. Cut-plane view shows nodes.',
+  init:function(){
+    STATE.orbitals.time=0;
+    logMsg('Orbitals: '+STATE.orbitals.orbital,'success');
+  },
+  /* Radial wavefunction (in units of a0) */
+  radial:function(n,l,r){
+    if(n===1&&l===0)return 2*Math.exp(-r);
+    if(n===2&&l===0)return (1/Math.sqrt(2))*(1-r/2)*Math.exp(-r/2);
+    if(n===2&&l===1)return (1/(2*Math.sqrt(6)))*r*Math.exp(-r/2);
+    if(n===3&&l===0)return (2/(81*Math.sqrt(3)))*(27-18*r+2*r*r)*Math.exp(-r/3);
+    if(n===3&&l===1)return (4/(81*Math.sqrt(6)))*(6*r-r*r)*Math.exp(-r/3);
+    if(n===3&&l===2)return (4/(81*Math.sqrt(30)))*r*r*Math.exp(-r/3);
+    return 0;
+  },
+  /* Angular part */
+  angular:function(l,m,theta,phi){
+    if(l===0)return 1/(2*Math.sqrt(Math.PI));
+    if(l===1){
+      if(m===0)return Math.sqrt(3/(4*Math.PI))*Math.cos(theta);
+      if(m===1)return Math.sqrt(3/(4*Math.PI))*Math.sin(theta)*Math.cos(phi);
+      if(m===-1)return Math.sqrt(3/(4*Math.PI))*Math.sin(theta)*Math.sin(phi);
+    }
+    if(l===2){
+      if(m===0)return Math.sqrt(5/(16*Math.PI))*(3*Math.cos(theta)*Math.cos(theta)-1);
+      if(m===1)return Math.sqrt(15/(4*Math.PI))*Math.sin(theta)*Math.cos(theta)*Math.cos(phi);
+      if(m===-1)return Math.sqrt(15/(4*Math.PI))*Math.sin(theta)*Math.cos(theta)*Math.sin(phi);
+      if(m===2)return Math.sqrt(15/(16*Math.PI))*Math.sin(theta)*Math.sin(theta)*Math.cos(2*phi);
+      if(m===-2)return Math.sqrt(15/(16*Math.PI))*Math.sin(theta)*Math.sin(theta)*Math.sin(2*phi);
+    }
+    return 0;
+  },
+  psi:function(x,y,z){
+    var o=STATE.orbitals;
+    var r=Math.sqrt(x*x+y*y+z*z)+1e-9;
+    var theta=Math.acos(z/r);
+    var phi=Math.atan2(y,x);
+    var R=this.radial(o.n,o.l,r*3); /* scale for visual */
+    var Y=this.angular(o.l,o.m,theta,phi);
+    return R*Y;
+  },
+  tick:function(dt){
+    STATE.time+=dt;
+    STATE.orbitals.time+=dt;
+  },
+  stepOnce:function(){},
+  draw:function(ctx){
+    var W=CANV.W,H=CANV.H;
+    ctx.fillStyle='#08040c';
+    ctx.fillRect(0,0,W,H);
+    var o=STATE.orbitals;
+    /* Two panels: xz cross-section (left), xy cross-section (right) */
+    var half=W/2;
+    var cx1=W/4,cy1=H/2;
+    var cx2=W*3/4,cy2=H/2;
+    var R=Math.min(W/4,H/2)*0.8;
+    /* Resolution */
+    var res=100;
+    var pixelW=R*2/res;
+    var pixelH=R*2/res;
+    /* Draw xz plane (y=0) */
+    this.drawPlane(ctx,cx1,cy1,R,res,function(x,z){return o.psi0?0:0},'xz',pixelW,pixelH);
+    this.drawPlane(ctx,cx2,cy2,R,res,null,'xy',pixelW,pixelH);
+    /* Draw plane crossing the two panels */
+    /* Labels */
+    ctx.fillStyle='#c060ff';
+    ctx.font='bold 12px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('xz plane (y=0)',cx1,40);
+    ctx.fillText('xy plane (z=0)',cx2,40);
+    /* Orbital label */
+    var orbName=o.n+['s','p','d','f'][o.l];
+    ctx.fillStyle='#40ffd0';
+    ctx.font='bold 16px monospace';
+    ctx.textAlign='left';
+    ctx.fillText(orbName,20,30);
+    ctx.font='11px monospace';
+    ctx.fillStyle='#b098d0';
+    ctx.fillText('n='+o.n+'  l='+o.l+'  m='+o.m,20,H-20);
+    setStatsHTML(
+      '<div>Orbital: '+orbName+'</div>'+
+      '<div>n='+o.n+'  l='+o.l+'  m='+o.m+'</div>'+
+      '<div>Nodes: '+(o.n-1)+'</div>'
+    );
+    updateBadge('🌀 Orbital '+orbName+' · n='+o.n+' l='+o.l+' m='+o.m);
+    $('sbMode').textContent='Orbitals';
+  },
+  /* Draw |ψ|² on a plane */
+  drawPlane:function(ctx,cx,cy,R,res,unused,plane,pw,ph){
+    var o=STATE.orbitals;
+    var self=this;
+    /* Create image data */
+    var size=res*res;
+    var img=ctx.createImageData(res,res);
+    var d=img.data;
+    var maxVal=0;
+    var values=new Float32Array(size);
+    for(var j=0;j<res;j++){
+      for(var i=0;i<res;i++){
+        var x=((i+0.5)/res*2-1)*3;
+        var y=((j+0.5)/res*2-1)*3;
+        var psi;
+        if(plane==='xz'){
+          /* xz plane: y=0 */
+          psi=self.psi(x,0,y);
+        } else {
+          /* xy plane: z=0 */
+          psi=self.psi(x,y,0);
+        }
+        var v=psi*psi;
+        values[j*res+i]=v;
+        if(v>maxVal)maxVal=v;
+      }
+    }
+    if(maxVal<1e-12)maxVal=1e-12;
+    for(var k=0;k<size;k++){
+      var t=clamp(values[k]/maxVal*1.8,0,1);
+      /* Color: purple to cyan to white */
+      var r,g,b;
+      if(t<0.5){
+        r=Math.round(80+t*160);
+        g=Math.round(30+t*150);
+        b=Math.round(120+t*200);
+      } else {
+        var s=(t-0.5)*2;
+        r=Math.round(160+s*95);
+        g=Math.round(180+s*75);
+        b=Math.round(220+s*35);
+      }
+      d[k*4]=r;
+      d[k*4+1]=g;
+      d[k*4+2]=b;
+      d[k*4+3]=255;
+    }
+    /* Draw to canvas */
+    var off=document.createElement('canvas');
+    off.width=res;off.height=res;
+    off.getContext('2d').putImageData(img,0,0);
+    ctx.drawImage(off,cx-R,cy-R,R*2,R*2);
+    /* Border */
+    ctx.strokeStyle='rgba(192,96,255,.5)';
+    ctx.lineWidth=1.5;
+    ctx.strokeRect(cx-R,cy-R,R*2,R*2);
+    /* Cross-hairs (nucleus) */
+    ctx.strokeStyle='rgba(255,208,64,.5)';
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(cx-R,cy);ctx.lineTo(cx+R,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy-R);ctx.lineTo(cx,cy+R);ctx.stroke();
+    ctx.setLineDash([]);
+    /* Nucleus dot */
+    ctx.fillStyle='#ffd040';
+    ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();
+    /* Axis labels */
+    ctx.fillStyle='#705888';
+    ctx.font='9px monospace';
+    if(plane==='xz'){
+      ctx.textAlign='center';
+      ctx.fillText('z',cx,cy-R-4);
+      ctx.textAlign='right';
+      ctx.fillText('x',cx+R,cy-4);
+    } else {
+      ctx.textAlign='center';
+      ctx.fillText('y',cx,cy-R-4);
+      ctx.textAlign='right';
+      ctx.fillText('x',cx+R,cy-4);
+    }
+  },
+  onDown:function(){},
+  controls:function(){
+    var o=STATE.orbitals;
+    var html='';
+    html+='<div class="sec"><h4>Orbital</h4><div class="chip-row">';
+    var orbs=[
+      {name:'1s',n:1,l:0,m:0},
+      {name:'2s',n:2,l:0,m:0},
+      {name:'2p_z',n:2,l:1,m:0},
+      {name:'2p_x',n:2,l:1,m:1},
+      {name:'2p_y',n:2,l:1,m:-1},
+      {name:'3s',n:3,l:0,m:0},
+      {name:'3p_z',n:3,l:1,m:0},
+      {name:'3d_z²',n:3,l:2,m:0},
+      {name:'3d_xz',n:3,l:2,m:1},
+      {name:'3d_xy',n:3,l:2,m:2}
+    ];
+    orbs.forEach(function(orb){
+      html+='<div class="chip '+(o.orbital===orb.name?'active':'')+'" onclick="STATE.orbitals.orbital=\''+orb.name+'\';STATE.orbitals.n='+orb.n+';STATE.orbitals.l='+orb.l+';STATE.orbitals.m='+orb.m+';renderLeftPanel()">'+orb.name+'</div>';
+    });
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Quantum numbers</h4><div class="kv">';
+    html+='<div class="row"><span class="k">n (principal)</span><span class="v">'+o.n+'</span></div>';
+    html+='<div class="row"><span class="k">l (azimuthal)</span><span class="v">'+o.l+' = '+['s','p','d','f'][o.l]+'</span></div>';
+    html+='<div class="row"><span class="k">m (magnetic)</span><span class="v">'+o.m+'</span></div>';
+    html+='<div class="row"><span class="k">Radial nodes</span><span class="v">'+(o.n-o.l-1)+'</span></div>';
+    html+='<div class="row"><span class="k">Angular nodes</span><span class="v">'+o.l+'</span></div>';
+    html+='<div class="row"><span class="k">Total nodes</span><span class="v">'+(o.n-1)+'</span></div>';
+    html+='</div></div>';
+    html+='<div class="sec"><h4>Info</h4>';
+    html+='<div style="font-family:var(--mono);font-size:.56rem;line-height:1.65;color:var(--tx2)">'+
+      'The two panels show |ψ|² on two perpendicular planes. Bright regions = high probability density.<br><br>'+
+      'Dark bands = nodal planes where ψ = 0.'+
+    '</div></div>';
+    return html;
+  },
+  mathPanel:function(){
+    var o=STATE.orbitals;
+    var orbName=o.n+['s','p','d','f'][o.l];
+    return '<div class="sec"><h4>Hydrogen wavefunction</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'ψ_nlm(r, θ, φ) = R_nl(r)·Y_lm(θ, φ)<br><br>'+
+      'Radial part R_nl from associated Laguerre polynomials.<br>'+
+      'Angular part Y_lm are spherical harmonics.'+
+      '</div></div>'+
+      '<div class="sec"><h4>Quantum numbers</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'n = 1, 2, 3, ... — energy level<br>'+
+      'l = 0, 1, ..., n−1 — angular momentum<br>'+
+      'm = −l, ..., +l — z-component of L<br><br>'+
+      'Orbital shapes:<br>'+
+      'l=0 → s (spherical)<br>'+
+      'l=1 → p (dumbbell)<br>'+
+      'l=2 → d (cloverleaf)'+
+      '</div></div>'+
+      '<div class="sec"><h4>Nodes</h4>'+
+      '<div style="font-family:var(--mono);font-size:.6rem;line-height:1.75;color:var(--tx2)">'+
+      'Radial nodes: n − l − 1<br>'+
+      'Angular nodes (nodal planes): l<br>'+
+      'Total nodes: n − 1'+
+      '</div></div>'+
+      '<div class="sec"><h4>Current: '+orbName+'</h4><div class="kv">'+
+      '<div class="row"><span class="k">n</span><span class="v">'+o.n+'</span></div>'+
+      '<div class="row"><span class="k">l</span><span class="v">'+o.l+'</span></div>'+
+      '<div class="row"><span class="k">m</span><span class="v">'+o.m+'</span></div>'+
+      '<div class="row"><span class="k">Radial nodes</span><span class="v">'+(o.n-o.l-1)+'</span></div>'+
+      '<div class="row"><span class="k">Angular nodes</span><span class="v">'+o.l+'</span></div>'+
+      '</div></div>';
+  }
+});
+</script>
+<script>
+var TABS=[
+  {key:'periodic',icon:'⚛',label:'Periodic'},
+  {key:'kinetics',icon:'⚗️',label:'Kinetics'},
+  {key:'equilibrium',icon:'⚖️',label:'Equilibrium'},
+  {key:'titration',icon:'🧪',label:'Titration'},
+  {key:'orbitals',icon:'🌀',label:'Orbitals'}
+];
+function buildTabs(){
+  var tabs=$('tbTabs');tabs.innerHTML='';
+  TABS.forEach(function(t){
+    var item=el('div',{class:'tb-tab'+(t.key===STATE.currentTab?' active':''),'data-tab':t.key});
+    item.innerHTML='<span class="tab-icon">'+t.icon+'</span><span>'+t.label+'</span>';
+    item.onclick=function(){switchTab(t.key)};
+    tabs.appendChild(item);
+  });
+}
+function switchTab(key){
+  STATE.currentTab=key;
+  $$('.tb-tab').forEach(function(e){e.classList.toggle('active',e.getAttribute('data-tab')===key)});
+  $('sbMode').textContent=(MODULES[key]&&MODULES[key].title)||key;
+  if(MODULES[key]&&MODULES[key].init)MODULES[key].init();
+  renderLeftPanel();renderRightPanel();
+}
+function switchRp(name,e){
+  STATE.currentRp=name;
+  $$('.rp-tab').forEach(function(t){t.classList.remove('active')});
+  e.classList.add('active');
+  $$('.rp-pane').forEach(function(p){p.classList.remove('active')});
+  var pane=$('rp'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(pane)pane.classList.add('active');
+  renderRightPanel();
+}
+function renderLeftPanel(){
+  var body=$('lpBody');if(!body)return;
+  var m=MODULES[STATE.currentTab];if(!m){body.innerHTML='';return;}
+  var html='';
+  html+='<div class="sec" style="margin-bottom:6px"><h4 style="border:none;padding:0;color:var(--c1);font-size:.7rem">'+m.icon+' '+m.title+'</h4><div style="font-size:.6rem;color:var(--tx3);font-family:var(--mono);line-height:1.5;margin-top:4px">'+m.desc+'</div></div>';
+  if(m.controls)html+=m.controls();
+  body.innerHTML=html;
+}
+function renderRightPanel(){
+  var m=MODULES[STATE.currentTab];
+  var statePane=$('rpState');
+  if(statePane){
+    statePane.innerHTML=
+      '<div class="sec"><h4>Live</h4><div class="kv">'+
+      '<div class="row"><span class="k">Module</span><span class="v">'+((m&&m.title)||'—')+'</span></div>'+
+      '<div class="row"><span class="k">Time</span><span class="v">'+fmt(STATE.time,1)+'s</span></div>'+
+      '<div class="row"><span class="k">Playing</span><span class="v">'+(STATE.playing?'yes':'paused')+'</span></div>'+
+      '</div></div>';
+  }
+  var mathPane=$('rpMath');
+  if(mathPane&&m&&m.mathPanel)mathPane.innerHTML=m.mathPanel();
+  else if(mathPane)mathPane.innerHTML='<div class="empty">No math panel</div>';
+  var helpPane=$('rpHelp');
+  if(helpPane&&m)helpPane.innerHTML=
+    '<div class="sec"><h4>Module</h4>'+
+    '<div style="font-size:.6rem;font-family:var(--mono);line-height:1.6;color:var(--tx2)">'+
+    '<b style="color:var(--c1)">'+m.icon+' '+m.title+'</b><br><br>'+m.desc+'</div></div>';
+  if(STATE.currentRp==='logs')renderLogs();
+}
+function renderLogs(){
+  var p=$('rpLogs');if(!p)return;
+  var html='<div class="sec"><h4>Event Log</h4>';
+  if(!LOG.length)html+='<div class="empty" style="padding:20px;font-size:.6rem">No events</div>';
+  else LOG.slice().reverse().forEach(function(l){
+    var color=l.type==='error'?'var(--err)':l.type==='success'?'var(--c6)':l.type==='warn'?'var(--c5)':'var(--c1)';
+    html+='<div style="padding:3px 6px;border-left:2px solid '+color+';margin-bottom:3px;font-family:var(--mono);font-size:.58rem;background:var(--panel3);border-radius:2px">'+
+      '<span style="color:var(--tx3)">'+new Date(l.t).toTimeString().substr(0,8)+'</span> '+
+      '<span style="color:'+color+'">'+esc(l.msg)+'</span></div>';
+  });
+  html+='</div>';
+  p.innerHTML=html;
+}
+function togglePlay(){
+  STATE.playing=!STATE.playing;
+  $('btnPlay').textContent=STATE.playing?'⏸':'▶';
+  $('tbDot').classList.toggle('on',STATE.playing);
+  toast(STATE.playing?'Running':'Paused','info',900);
+}
+function stepOnce(){
+  var m=MODULES[STATE.currentTab];
+  if(m&&m.stepOnce)m.stepOnce();
+  else if(m&&m.step)m.step();
+  else toast('No step','info',900);
+}
+function resetModule(){
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();toast('Reset','success',900);
+  }
+}
+function toggleLeftPanel(){$('leftPanel').classList.toggle('collapsed')}
+function toggleRightPanel(){$('rightPanel').classList.toggle('collapsed')}
+var THEMES=['chem','light','mono'];
+function toggleTheme(){
+  var cur=document.documentElement.getAttribute('data-theme');
+  var i=THEMES.indexOf(cur);
+  var next=THEMES[(i+1)%THEMES.length];
+  document.documentElement.setAttribute('data-theme',next);
+  STATE.theme=next;
+  toast('Theme: '+next,'success');
+}
+function showHelp(){
+  openModal('❓ CHEM — Help',
+    '<div class="sec"><h4>⚗️ About</h4><div style="font-size:.62rem;line-height:1.75;color:var(--tx2);font-family:var(--mono)">Computational chemistry workbench in one HTML file. Full periodic table, kinetics with Arrhenius, Le Chatelier equilibrium, titration curves with Henderson-Hasselbalch, and atomic orbital visualization — all real chemistry, no dependencies.</div></div>'+
+    '<div class="sec"><h4>📚 Modules</h4><div style="font-size:.62rem;line-height:1.85;color:var(--tx2);font-family:var(--mono)">'+
+    '<b style="color:var(--c1)">⚛ Periodic</b> — 96 elements with trends and color maps<br>'+
+    '<b style="color:var(--c1)">⚗️ Kinetics</b> — rate laws, order, Arrhenius plot<br>'+
+    '<b style="color:var(--c1)">⚖️ Equilibrium</b> — Q vs K, Le Chatelier perturbations<br>'+
+    '<b style="color:var(--c1)">🧪 Titration</b> — strong/weak/diprotic pH curves<br>'+
+    '<b style="color:var(--c1)">🌀 Orbitals</b> — hydrogen wavefunctions ψ_nlm'+
+    '</div></div>'+
+    '<div class="sec"><h4>⌨️ Shortcuts</h4><div style="font-size:.62rem;font-family:var(--mono);line-height:1.9;color:var(--tx2)">'+
+    '<b style="color:var(--c1)">Space</b> — Play/pause<br>'+
+    '<b style="color:var(--c1)">→</b> — Single step<br>'+
+    '<b style="color:var(--c1)">R</b> — Reset module<br>'+
+    '<b style="color:var(--c1)">1-5</b> — Jump to module<br>'+
+    '<b style="color:var(--c1)">T</b> — Cycle theme<br>'+
+    '<b style="color:var(--c1)">?</b> — This help'+
+    '</div></div>'+
+    '<div class="sec"><h4>🎮 Tips</h4><div style="font-size:.6rem;font-family:var(--mono);line-height:1.7;color:var(--tx2)">'+
+    '• Periodic: hover any element, click for full data<br>'+
+    '• Kinetics: raise T and watch k increase exponentially (Arrhenius)<br>'+
+    '• Equilibrium: perturb with Le Chatelier buttons — see the shift<br>'+
+    '• Titration: click on the graph to jump the burette position<br>'+
+    '• Orbitals: 2p has one node plane, 3d has two cloverleaf planes'+
+    '</div></div>',
+    '<button class="btn primary" onclick="closeModal()">Got it</button>',{size:'lg'});
+}
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'){e.preventDefault();togglePlay();}
+  else if(e.key==='ArrowRight'){e.preventDefault();stepOnce();}
+  else if(e.key==='r'||e.key==='R')resetModule();
+  else if(e.key>='1'&&e.key<='5'){var idx=parseInt(e.key)-1;if(TABS[idx])switchTab(TABS[idx].key);}
+  else if(e.key==='t'||e.key==='T')toggleTheme();
+  else if(e.key==='?'||(e.shiftKey&&e.key==='/'))showHelp();
+  else if(e.key==='Escape')closeModal();
+});
+
+/* Animated boot atoms */
+function animateBootAtoms(){
+  var bc=$('bootAtoms');
+  if(!bc)return;
+  bc.width=window.innerWidth;bc.height=window.innerHeight;
+  var bctx=bc.getContext('2d');
+  var t0=performance.now();
+  /* Atom positions */
+  var atoms=[];
+  for(var i=0;i<8;i++){
+    atoms.push({
+      x:Math.random()*bc.width,
+      y:Math.random()*bc.height,
+      vx:rndF(-0.3,0.3),
+      vy:rndF(-0.3,0.3),
+      r:rndF(15,35),
+      color:['#c060ff','#40ffd0','#ff60a0','#40d0ff','#ffd040','#ff8040'][i%6]
+    });
+  }
+  function frame(){
+    if(!bc.isConnected||$('boot').classList.contains('hidden'))return;
+    bctx.fillStyle='#0a0410';
+    bctx.fillRect(0,0,bc.width,bc.height);
+    var t=(performance.now()-t0)/1000;
+    atoms.forEach(function(a){
+      a.x+=a.vx;a.y+=a.vy;
+      if(a.x<0||a.x>bc.width)a.vx*=-1;
+      if(a.y<0||a.y>bc.height)a.vy*=-1;
+      /* Electron orbit */
+      bctx.strokeStyle=a.color+'40';
+      bctx.lineWidth=1;
+      bctx.beginPath();bctx.arc(a.x,a.y,a.r,0,Math.PI*2);bctx.stroke();
+      bctx.beginPath();bctx.arc(a.x,a.y,a.r*0.7,0,Math.PI*2);bctx.stroke();
+      /* Electron */
+      var ang=t*2+a.x*0.01;
+      var ex=a.x+Math.cos(ang)*a.r;
+      var ey=a.y+Math.sin(ang)*a.r;
+      bctx.fillStyle=a.color;
+      bctx.shadowColor=a.color;bctx.shadowBlur=8;
+      bctx.beginPath();bctx.arc(ex,ey,3,0,Math.PI*2);bctx.fill();
+      /* Nucleus */
+      bctx.beginPath();bctx.arc(a.x,a.y,6,0,Math.PI*2);bctx.fill();
+      bctx.shadowBlur=0;
+    });
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+var BOOT_STEPS=[
+  'Loading periodic table (96 elements, 8 properties)...',
+  'Compiling rate laws (0th, 1st, 2nd order)...',
+  'Initializing Arrhenius: k = A·exp(−Ea/RT)...',
+  'Setting up Q vs K Le Chatelier solver...',
+  'Building titration curves (Henderson-Hasselbalch)...',
+  'Loading hydrogen wavefunctions R_nl·Y_lm...',
+  'Rendering spherical harmonics...',
+  'Ready.'
+];
+function bootSequence(){
+  var pct=0,idx=0;
+  var fill=$('bootFill'),log=$('bootLog'),pctEl=$('bootPct');
+  animateBootAtoms();
+  var iv=setInterval(function(){
+    pct+=rnd(8,18);if(pct>100)pct=100;
+    fill.style.width=pct+'%';pctEl.textContent=pct+'%';
+    if(idx<BOOT_STEPS.length){
+      var l=el('div',{class:'ok'});
+      l.textContent='[ OK ] '+BOOT_STEPS[idx];
+      log.appendChild(l);log.scrollTop=log.scrollHeight;
+      idx++;
+    }
+    if(pct>=100){
+      clearInterval(iv);
+      setTimeout(function(){
+        $('boot').classList.add('hidden');
+        toast('CHEM ready · Press ? for help','success',3200);
+      },400);
+    }
+  },140);
+}
+
+var lastFrameTime=performance.now();
+var fpsAccum=0,fpsFrames=0;
+function mainLoop(now){
+  var dt=Math.min((now-lastFrameTime)/1000,0.05);
+  lastFrameTime=now;
+  fpsAccum+=dt;fpsFrames++;
+  if(fpsAccum>=0.5){
+    $('sbFps').textContent=Math.round(fpsFrames/fpsAccum);
+    fpsAccum=0;fpsFrames=0;
+  }
+  if(STATE.playing){
+    var m=MODULES[STATE.currentTab];
+    if(m&&m.tick){try{m.tick(dt);}catch(e){console.error(e);}}
+    if(m&&m.draw){try{m.draw(CANV.ctx);}catch(e){console.error(e);}}
+  }
+  requestAnimationFrame(mainLoop);
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  buildTabs();
+  initCanvas();
+  if(MODULES[STATE.currentTab]&&MODULES[STATE.currentTab].init){
+    MODULES[STATE.currentTab].init();
+  }
+  renderLeftPanel();
+  renderRightPanel();
+  logMsg('CHEM initialized','success');
+  bootSequence();
+  requestAnimationFrame(mainLoop);
+  $('tbDot').classList.add('on');
+  $('tbText').textContent='reacting';
+  setInterval(function(){if(STATE.currentRp==='logs')renderLogs();},1000);
+});
+
+console.log('%c CHEM ','background:linear-gradient(90deg,#c060ff,#40ffd0,#40d0ff);color:#0a0410;padding:8px 20px;border-radius:4px;font-weight:900;font-size:16px;letter-spacing:4px');
+console.log('%cChemistry Lab','color:#c060ff;font-weight:600');
+console.log('%cPeriodic · Kinetics · Equilibrium · Titration · Orbitals','color:#40ffd0');
+console.log('%cPress ? for help','color:#b098d0');
+</script>
+</body></html>

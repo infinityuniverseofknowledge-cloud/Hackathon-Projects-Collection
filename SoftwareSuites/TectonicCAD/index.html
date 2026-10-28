@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>TECTONIC CAD PRO</title>
+<style>
+:root {
+  --bg: #06080a; --panel: rgba(15, 22, 35, 0.95); --border: #1f2e45;
+  --text: #8ea4c6; --text-light: #e0e8f5; --accent: #00f0ff;
+  --danger: #ff0033; --warning: #ffb800; --success: #00ff88;
+  --font-mono: "Fira Code", monospace; --font-ui: system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-ui); overflow: hidden; height: 100vh; }
+
+#desktop { width: 100%; height: 100%; position: relative; display: block; }
+#canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+canvas { display: block; outline: none; touch-action: none; }
+
+/* HUD Superior */
+#top-hud { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 10; display: flex; justify-content: space-between; pointer-events: none; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; backdrop-filter: blur(10px); pointer-events: auto; font-family: var(--font-mono); font-size: 0.7rem; }
+.hud-row { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 4px; }
+.hud-val { color: #fff; font-weight: bold; }
+.hud-val.safe { color: var(--success); }
+.hud-val.warn { color: var(--warning); }
+.hud-val.fail { color: var(--danger); }
+
+/* Medição 3D (Overlay) */
+#measure-overlay { position: absolute; z-index: 20; background: var(--accent); color: #000; padding: 4px 8px; border-radius: 4px; font-family: var(--font-mono); font-weight: bold; font-size: 0.75rem; pointer-events: none; display: none; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(0,240,255,0.5); }
+
+/* UI Inferior Retrátil (Menu Extenso) */
+#bottom-ui { position: absolute; bottom: 0; left: 0; width: 100%; background: var(--panel); border-top: 1px solid var(--border); z-index: 100; border-radius: 15px 15px 0 0; display: flex; flex-direction: column; transition: transform 0.3s ease; backdrop-filter: blur(15px); }
+#ui-header { padding: 10px; display: flex; justify-content: center; cursor: pointer; }
+#ui-drag-handle { width: 40px; height: 4px; background: #444; border-radius: 2px; }
+#ui-content { padding: 0 15px 20px 15px; display: flex; flex-direction: column; gap: 10px; max-height: 40vh; overflow-y: auto; }
+
+/* Abas da Interface */
+.tabs { display: flex; gap: 5px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+.tab-btn { background: transparent; border: 1px solid transparent; color: var(--text); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem; flex: 1; }
+.tab-btn.active { background: rgba(0,240,255,0.1); border-color: var(--accent); color: var(--accent); }
+
+.tab-content { display: none; flex-direction: column; gap: 10px; }
+.tab-content.active { display: flex; }
+
+/* Botões de Ação */
+.grid-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn { background: #000; border: 1px solid var(--border); color: #fff; padding: 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.8rem; cursor: pointer; text-align: center; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.btn.active { border-color: var(--accent); background: rgba(0,240,255,0.1); color: var(--accent); }
+.btn:hover { border-color: var(--accent); }
+.btn-danger { border-color: var(--danger); color: var(--danger); }
+.btn-danger:hover { background: rgba(255,0,51,0.1); }
+.btn-warn { border-color: var(--warning); color: var(--warning); }
+.btn-warn:hover { background: rgba(255,184,0,0.1); }
+
+/* Inputs */
+.input-group { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px; border-radius: 6px; border: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.8rem; }
+.input-group input { background: transparent; border: none; color: var(--accent); font-family: var(--font-mono); width: 60px; text-align: right; outline: none; }
+
+/* Crosshair */
+#crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); border: 1px solid rgba(0, 240, 255, 0.5); border-radius: 50%; z-index: 5; pointer-events: none; display: none; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="desktop">
+  <div id="canvas-container"></div>
+  <div id="crosshair"></div>
+  <div id="measure-overlay">0.00m</div>
+
+  <!-- HUD SUPERIOR -->
+  <div id="top-hud">
+    <div class="panel">
+      <div class="hud-row"><span>Blocos:</span> <span class="hud-val" id="hud-blocks">0</span></div>
+      <div class="hud-row"><span>Custo:</span> <span class="hud-val" id="hud-cost">R$ 0</span></div>
+    </div>
+    <div class="panel">
+      <div class="hud-row"><span>F. Segurança:</span> <span class="hud-val safe" id="hud-fos">∞</span></div>
+      <div class="hud-row"><span>Modo:</span> <span class="hud-val" id="hud-mode" style="color:var(--accent)">Construir</span></div>
+    </div>
+  </div>
+
+  <!-- UI INFERIOR -->
+  <div id="bottom-ui">
+    <div id="ui-header">
+      <div id="ui-drag-handle"></div>
+    </div>
+    <div id="ui-content">
+      <!-- Abas -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-tools')">🛠️ Ferramentas</button>
+        <button class="tab-btn" onclick="switchTab('tab-engineer')">📐 Engenharia</button>
+        <button class="tab-btn" onclick="switchTab('tab-history')">⏱️ Histórico</button>
+      </div>
+
+      <!-- Aba: Ferramentas -->
+      <div id="tab-tools" class="tab-content active">
+        <div class="grid-btns">
+          <button class="btn active" id="btn-mode-build" onclick="setMode('build')">🧱 Construir</button>
+          <button class="btn btn-danger" id="btn-mode-delete" onclick="setMode('delete')">⛏️ Quebrar</button>
+          <button class="btn btn-warn" id="btn-mode-measure" onclick="setMode('measure')">📏 Medir (Trena)</button>
+          <button class="btn" onclick="cancelMeasure()">❌ Cancelar Medida</button>
+        </div>
+        <div class="grid-btns" style="margin-top:5px;">
+          <button class="btn" style="border-color:#888;" onclick="selectMat(0)">Concreto (30MPa)</button>
+          <button class="btn" style="border-color:#888;" onclick="selectMat(1)">Aço (250MPa)</button>
+          <button class="btn" style="border-color:#888;" onclick="selectMat(2)">Madeira (20MPa)</button>
+          <button class="btn" style="border-color:#888;" onclick="selectMat(3)">Vidro (50MPa)</button>
+        </div>
+      </div>
+
+      <!-- Aba: Engenharia -->
+      <div id="tab-engineer" class="tab-content">
+        <button class="btn" style="border-color:var(--success); color:var(--success);" onclick="runFEA()">🔬 Executar Análise Estrutural (FEA)</button>
+        <div class="input-group">
+          <span>Vento (kN/m²):</span>
+          <input type="number" id="input-wind" value="15" min="0" max="100">
+        </div>
+        <div class="input-group">
+          <span>Custo/m³ Base:</span>
+          <input type="number" id="input-price" value="500" min="10">
+        </div>
+        <div class="panel" style="margin-top:5px;">
+          <div class="hud-row"><span>Massa Total:</span> <span class="hud-val" id="hud-mass">0 t</span></div>
+          <div class="hud-row"><span>Centro de Massa:</span> <span class="hud-val" id="hud-com">0m, 0m</span></div>
+          <div class="hud-row"><span>Carga Máx Base:</span> <span class="hud-val" id="hud-maxload">0 kN</span></div>
+        </div>
+      </div>
+
+      <!-- Aba: Histórico -->
+      <div id="tab-history" class="tab-content">
+        <div class="grid-btns">
+          <button class="btn" onclick="undo()">⬅️ Desfazer (Undo)</button>
+          <button class="btn" onclick="redo()">➡️ Refazer (Redo)</button>
+        </div>
+        <div class="grid-btns" style="margin-top:5px;">
+          <button class="btn" style="border-color:var(--accent); color:var(--accent);" onclick="exportBlueprint()">💾 Salvar Projeto</button>
+          <button class="btn btn-danger" onclick="clearBuild()">🗑️ Demolir Tudo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// CONFIGURAÇÃO DO MOTOR 3D
+// ==========================================
+const container = document.getElementById("canvas-container");
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x06080a, 0.03);
+scene.background = new THREE.Color(0x06080a);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(12, 15, 15);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+container.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.maxPolarAngle = Math.PI / 2 - 0.05;
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+
+// Iluminação
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+dirLight.position.set(10, 20, 10);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+// Chão
+const gridHelper = new THREE.GridHelper(40, 40, 0x1f2e45, 0x111a28);
+scene.add(gridHelper);
+const plane = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({ color: 0x0a0f18, roughness: 0.9 }));
+plane.rotation.x = -Math.PI / 2;
+plane.position.y = -0.01;
+plane.receiveShadow = true;
+scene.add(plane);
+
+// ==========================================
+// MATERIAIS E DADOS
+// ==========================================
+const materialsData = [
+  { name: "Concreto", color: 0x888888, mass: 2400, strength: 30000 },
+  { name: "Aço", color: 0x445566, mass: 7800, strength: 250000 },
+  { name: "Madeira", color: 0x8b5a2b, mass: 600, strength: 20000 },
+  { name: "Vidro", color: 0x00f0ff, mass: 2500, strength: 50000 }
+];
+
+const meshes = {};
+materialsData.forEach((mat, i) => {
+  meshes[i] = new THREE.MeshStandardMaterial({ 
+    color: mat.color, roughness: i === 3 ? 0.1 : 0.8, metalness: i === 3 ? 0.5 : 0.1,
+    transparent: i === 3, opacity: i === 3 ? 0.6 : 1.0
+  });
+});
+
+let currentMat = 0;
+let blocks = [];
+let currentMode = 'build'; // 'build', 'delete', 'measure'
+const blockGeo = new THREE.BoxGeometry(1, 1, 1);
+
+// ==========================================
+// SISTEMA DE HISTÓRICO (UNDO / REDO)
+// ==========================================
+let history = [];
+let historyIndex = -1;
+
+function saveState() {
+    const state = blocks.map(b => ({
+        x: b.position.x, y: b.position.y, z: b.position.z, type: b.userData.type
+    }));
+    // Remove tudo que estiver à frente do índice atual (se houver refazer pendente)
+    history = history.slice(0, historyIndex + 1);
+    history.push(JSON.stringify(state));
+    historyIndex++;
+    
+    // Limita o histórico a 50 passos para não estourar a memória
+    if (history.length > 50) { history.shift(); historyIndex--; }
+}
+
+function loadState(stateString) {
+    // Limpa a cena atual
+    blocks.forEach(b => scene.remove(b));
+    blocks = [];
+    
+    const state = JSON.parse(stateString);
+    state.forEach(data => {
+        createBlockMesh(data.x, data.y, data.z, data.type, false);
+    });
+    updateHUD();
+    resetColors();
+}
+
+function undo() {
+    if (historyIndex > 0) {
+        historyIndex--;
+        loadState(history[historyIndex]);
+    }
+}
+
+function redo() {
+    if (historyIndex < history.length - 1) {
+        historyIndex++;
+        loadState(history[historyIndex]);
+    }
+}
+
+// ==========================================
+// CRIAÇÃO DE BLOCOS E LÓGICA DE UI
+// ==========================================
+function createBlockMesh(x, y, z, type, save = true) {
+  const mesh = new THREE.Mesh(blockGeo, meshes[type].clone());
+  mesh.position.set(x, y, z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData = { type: type, mass: materialsData[type].mass, strength: materialsData[type].strength, load: 0 };
+  scene.add(mesh);
+  blocks.push(mesh);
+  if (save) saveState();
+  updateHUD();
+}
+
+function selectMat(type) {
+  currentMat = type;
+  // Atualiza a cor dos botões na UI
+  document.querySelectorAll('.grid-btns .btn').forEach((b, i) => {
+      if(i < 4) b.style.borderColor = (i === type) ? 'var(--accent)' : '#888';
+  });
+  resetColors();
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('hud-mode').innerText = mode === 'build' ? 'Construir' : mode === 'delete' ? 'Quebrar' : 'Medir';
+  
+  document.getElementById('btn-mode-build').className = 'btn ' + (mode === 'build' ? 'active' : '');
+  document.getElementById('btn-mode-delete').className = 'btn btn-danger ' + (mode === 'delete' ? 'active' : '');
+  document.getElementById('btn-mode-measure').className = 'btn btn-warn ' + (mode === 'measure' ? 'active' : '');
+  
+  if (mode !== 'measure') cancelMeasure();
+  ghostMesh.visible = (mode === 'build');
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// ==========================================
+// SISTEMA DE MEDIÇÃO (TRENA 3D)
+// ==========================================
+let measurePoints = [];
+let measureLine = null;
+const measureOverlay = document.getElementById('measure-overlay');
+
+function cancelMeasure() {
+    measurePoints = [];
+    if (measureLine) { scene.remove(measureLine); measureLine = null; }
+    measureOverlay.style.display = 'none';
+}
+
+function handleMeasure(pos) {
+    if (measurePoints.length === 0) {
+        measurePoints.push(pos.clone());
+        // Marcador inicial
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({color: 0xffb800}));
+        dot.position.copy(pos);
+        scene.add(dot);
+        measureLine = dot; // Temporário para podermos remover
+    } else if (measurePoints.length === 1) {
+        measurePoints.push(pos.clone());
+        
+        // Desenha a linha
+        const points = [measurePoints[0], measurePoints[1]];
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        const material = new THREE.LineBasicMaterial({ color: 0xffb800, linewidth: 2 });
+        const line = new THREE.Line(geometry, material);
+        scene.add(line);
+        
+        // Calcula distância e exibe
+        const dist = measurePoints[0].distanceTo(measurePoints[1]);
+        measureOverlay.innerText = dist.toFixed(2) + ' m';
+        measureOverlay.style.display = 'block';
+        measureLine = line;
+        
+        // Limpa após 3 segundos
+        setTimeout(cancelMeasure, 3000);
+    }
+}
+
+// ==========================================
+// INTERAÇÃO (TOUCH / MOUSE)
+// ==========================================
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let touchStartTime = 0;
+let touchMoved = false;
+
+const ghostMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.3, wireframe: true });
+const ghostMesh = new THREE.Mesh(blockGeo, ghostMat);
+scene.add(ghostMesh);
+
+function handleInteraction(clientX, clientY, action = 'move') {
+  pointer.x = (clientX / window.innerWidth) * 2 - 1;
+  pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+  
+  raycaster.setFromCamera(pointer, camera);
+  const intersects = raycaster.intersectObjects([plane].concat(blocks));
+
+  if (intersects.length > 0) {
+    const intersect = intersects[0];
+    
+    // Lógica de Medição
+    if (currentMode === 'measure' && action === 'tap') {
+        handleMeasure(intersect.point);
+        return;
+    }
+
+    // Lógica de Construção / Quebra
+    let pos = intersect.point.clone();
+    if (currentMode === 'build') {
+      if (intersect.face) pos.add(intersect.face.normal.multiplyScalar(0.5));
+      pos.x = Math.round(pos.x); pos.y = Math.round(pos.y); pos.z = Math.round(pos.z);
+      if (pos.y < 0) pos.y = 0;
+      
+      ghostMesh.position.copy(pos);
+      if (action === 'move') ghostMesh.visible = true;
+      
+      if (action === 'tap') {
+        createBlockMesh(pos.x, pos.y, pos.z, currentMat);
+        resetColors();
+      }
+    } 
+    else if (currentMode === 'delete' && action === 'tap') {
+      if (intersect.object !== plane) {
+        scene.remove(intersect.object);
+        blocks = blocks.filter(b => b !== intersect.object);
+        saveState();
+        updateHUD();
+        resetColors();
+      }
+    }
+  } else if (currentMode === 'build' && action === 'move') {
+    ghostMesh.visible = false;
+  }
+}
+
+renderer.domElement.addEventListener("touchstart", (e) => {
+  touchStartTime = Date.now(); touchMoved = false;
+  document.getElementById("crosshair").style.display = "block";
+  if (e.touches.length > 0) handleInteraction(e.touches[0].clientX, e.touches[0].clientY, 'move');
+}, { passive: false });
+
+renderer.domElement.addEventListener("touchmove", (e) => {
+  touchMoved = true;
+  if (e.touches.length > 0) handleInteraction(e.touches[0].clientX, e.touches[0].clientY, 'move');
+}, { passive: false });
+
+renderer.domElement.addEventListener("touchend", (e) => {
+  document.getElementById("crosshair").style.display = "none";
+  if (!touchMoved && (Date.now() - touchStartTime) < 250) {
+    const touch = e.changedTouches[0];
+    handleInteraction(touch.clientX, touch.clientY, 'tap');
+  }
+});
+
+// Mouse (PC)
+renderer.domElement.addEventListener("mousemove", (e) => handleInteraction(e.clientX, e.clientY, 'move'));
+renderer.domElement.addEventListener("mousedown", (e) => { if (e.button === 0) handleInteraction(e.clientX, e.clientY, 'tap'); });
+window.addEventListener("contextmenu", (e) => e.preventDefault());
+
+// ==========================================
+// FEA (ANÁLISE ESTRUTURAL)
+// ==========================================
+function resetColors() {
+  blocks.forEach(b => {
+    b.material.color.setHex(materialsData[b.userData.type].color);
+    b.material.emissive.setHex(0x000000);
+    b.userData.load = 0;
+  });
+}
+
+function updateHUD() {
+  document.getElementById("hud-blocks").innerText = blocks.length;
+  
+  // Cálculo de Custo
+  const priceBase = parseFloat(document.getElementById("input-price").value) || 500;
+  let totalCost = 0;
+  blocks.forEach(b => {
+      // Diferentes materiais tem multiplicadores de custo diferentes
+      const mult = b.userData.type === 0 ? 1 : b.userData.type === 1 ? 3 : b.userData.type === 2 ? 0.5 : 2;
+      totalCost += (priceBase * mult);
+  });
+  document.getElementById("hud-cost").innerText = "R$ " + totalCost.toLocaleString('pt-BR');
+  
+  if (blocks.length === 0) resetColors();
+}
+
+function runFEA() {
+  if (blocks.length === 0) return;
+  resetColors();
+  
+  const windForce = parseFloat(document.getElementById("input-wind").value) || 15;
+  const sortedBlocks = [].concat(blocks).sort((a, b) => b.position.y - a.position.y);
+  
+  let totalMass = 0, comX = 0, comY = 0, maxBaseLoad = 0;
+
+  blocks.forEach(b => {
+    totalMass += b.userData.mass;
+    comX += b.position.x * b.userData.mass;
+    comY += b.position.y * b.userData.mass;
+  });
+  comX /= totalMass; comY /= totalMass;
+
+  // Transferência de Carga Vertical
+  sortedBlocks.forEach(block => {
+    block.userData.load = (block.userData.mass * 9.81) / 1000; 
+    const below = sortedBlocks.find(b => 
+        Math.abs(b.position.x - block.position.x) < 0.1 && 
+        Math.abs(b.position.z - block.position.z) < 0.1 && 
+        Math.abs(b.position.y - (block.position.y - 1)) < 0.1
+    );
+    if (below) below.userData.load += block.userData.load;
+    else if (block.userData.load > maxBaseLoad) maxBaseLoad = block.userData.load;
+  });
+
+  // Carga Lateral (Vento)
+  sortedBlocks.forEach(block => block.userData.load += (block.position.y * windForce));
+
+  let minFoS = Infinity, failed = false;
+  blocks.forEach(block => {
+    const stressRatio = block.userData.load / (block.userData.strength / 1000);
+    const fos = 1 / stressRatio;
+    if (fos < minFoS) minFoS = fos;
+
+    if (stressRatio > 1.0) { 
+        block.material.color.setHex(0xff0033); block.material.emissive.setHex(0xff0033); block.material.emissiveIntensity = 0.5; failed = true; 
+    } else if (stressRatio > 0.7) { 
+        block.material.color.setHex(0xffb800); block.material.emissive.setHex(0xffb800); block.material.emissiveIntensity = 0.3; 
+    } else { 
+        block.material.color.setHex(0x00ff88); block.material.emissive.setHex(0x00ff88); block.material.emissiveIntensity = 0.1; 
+    }
+  });
+
+  document.getElementById("hud-mass").innerText = (totalMass / 1000).toFixed(1) + " t";
+  document.getElementById("hud-com").innerText = comX.toFixed(1) + "m, " + comY.toFixed(1) + "m";
+  document.getElementById("hud-maxload").innerText = maxBaseLoad.toFixed(1) + " kN";
+  
+  const fosEl = document.getElementById("hud-fos");
+  if (failed) { fosEl.innerText = "COLAPSO"; fosEl.className = "hud-val fail"; }
+  else { fosEl.innerText = minFoS > 100 ? "∞" : minFoS.toFixed(2); fosEl.className = minFoS < 1.5 ? "hud-val warn" : "hud-val safe"; }
+}
+
+// ==========================================
+// SALVAR PROJETO (KOLMOGOROV-TENSOR)
+// ==========================================
+function exportBlueprint() {
+  const data = blocks.map(b => `${Math.round(b.position.x)},${Math.round(b.position.y)},${Math.round(b.position.z)},${b.userData.type}`).join("|");
+  const compressed = btoa(data); // Base64
+  
+  const blob = new Blob([`TECTONIC-TENSOR-V2
+
+${compressed}`], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `projeto_engenharia_${Date.now()}.tectonic`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearBuild() {
+  if(confirm("Tem certeza que deseja demolir tudo?")) {
+      blocks.forEach(b => scene.remove(b));
+      blocks = [];
+      saveState();
+      updateHUD();
+      resetColors();
+  }
+}
+
+// ==========================================
+// INICIALIZAÇÃO E LOOP
+// ==========================================
+function animate() {
+  requestAnimationFrame(animate);
+  
+  // Posiciona o texto de medida sobre o ponto médio da tela 3D
+  if (measureOverlay.style.display === 'block' && measurePoints.length === 2) {
+      const mid = new THREE.Vector3().addVectors(measurePoints[0], measurePoints[1]).multiplyScalar(0.5);
+      mid.project(camera);
+      const x = (mid.x * .5 + .5) * window.innerWidth;
+      const y = (-(mid.y * .5) + .5) * window.innerHeight;
+      measureOverlay.style.left = x + 'px';
+      measureOverlay.style.top = y + 'px';
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Salva o estado inicial (vazio)
+saveState();
+animate();
+
+</script>
+</body>
+</html>

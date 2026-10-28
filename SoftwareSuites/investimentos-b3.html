@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Investimentos B3 — Cotações e Fundamentos</title>
+<style>
+:root{--bg:#0a0e1a;--card:#111827;--card2:#1a2233;--txt:#e5e7eb;--mut:#6b7280;--acc:#f59e0b;--ok:#10b981;--err:#ef4444;--bd:#1f2937}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:20px}
+.app{max-width:900px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:grid;place-items:center;font-size:22px}
+h1{font-size:1.3rem;font-weight:800}h1 span{display:block;font-size:.75rem;color:var(--mut);font-weight:400;margin-top:2px}
+.tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tabs button{background:var(--card);border:1px solid var(--bd);color:var(--mut);padding:9px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:.15s}
+.tabs button:hover{color:var(--txt);border-color:var(--acc)}
+.tabs button.on{background:var(--acc);border-color:var(--acc);color:#000}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:14px}
+.card h2{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:12px}
+.stock{display:grid;grid-template-columns:1fr auto;gap:10px;padding:12px 0;border-bottom:1px solid var(--bd);align-items:center}
+.stock:last-child{border-bottom:0}
+.stock .sym{font-size:16px;font-weight:800;font-family:ui-monospace,monospace}
+.stock .nm{font-size:11px;color:var(--mut);margin-top:2px}
+.stock .price{font-size:18px;font-weight:800;font-family:ui-monospace,monospace;text-align:right}
+.stock .chg{font-size:12px;font-weight:700;text-align:right;margin-top:2px}
+.up{color:var(--ok)}.dn{color:var(--err)}
+.fund{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:12px}
+.fitem{background:var(--card2);border:1px solid var(--bd);border-radius:10px;padding:10px}
+.fitem .k{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px}
+.fitem .v{font-size:15px;font-weight:800;font-family:ui-monospace,monospace}
+.search{display:flex;gap:6px;margin-bottom:12px}
+.search input{flex:1;background:var(--card2);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;color:var(--txt);font-size:14px;outline:none;font-family:inherit;text-transform:uppercase}
+.search input:focus{border-color:var(--acc)}
+.search button{background:var(--acc);border:0;color:#000;padding:11px 18px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:800;font-family:inherit}
+.msg{padding:20px;text-align:center;color:var(--mut);font-size:13px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--bd);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+.badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;background:var(--acc);color:#000;margin-left:6px}
+footer{text-align:center;font-size:10px;color:var(--mut);margin-top:16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">📈</div>
+    <h1>Investimentos B3<span>brapi.dev · dadosb3 · BCB</span></h1>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button data-t="cotacoes" class="on">💹 Cotações</button>
+    <button data-t="screener">🔎 Screener</button>
+    <button data-t="comparar">⚖ Comparar</button>
+  </div>
+
+  <div class="card">
+    <div class="search">
+      <input id="ticker" placeholder="Ex: PETR4, VALE3, ITUB4, MGLU3, WEGE3" maxlength="10">
+      <button id="go">Buscar</button>
+    </div>
+  </div>
+
+  <div id="content"></div>
+  <footer>brapi.dev (4 ativos grátis sem chave: PETR4, VALE3, ITUB4, MGLU3)</footer>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const FREE=['PETR4','VALE3','ITUB4','MGLU3'];
+
+async function fetchQuote(t){
+  const r=await fetch(`https://brapi.dev/api/quote/${t}`);
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const d=await r.json();
+  if(!d.results||!d.results[0])throw new Error('Ativo não encontrado');
+  return d.results[0];
+}
+
+async function renderCotacoes(){
+  const c=$('#content');
+  c.innerHTML='<div class="msg"><span class="spinner"></span>Carregando cotações...</div>';
+  const results=[];
+  for(const t of FREE){
+    try{ results.push(await fetchQuote(t)); }catch(e){}
+  }
+  if(!results.length){c.innerHTML='<div class="msg" style="color:#fca5a5">Erro ao carregar</div>';return}
+  c.innerHTML=`<div class="card">
+    <h2>Ativos gratuitos · brapi.dev</h2>
+    ${results.map(r=>{
+      const chg=r.regularMarketChangePercent||0;
+      const cls=chg>=0?'up':'dn';
+      return `<div class="stock">
+        <div><div class="sym">${r.symbol}</div><div class="nm">${r.shortName||r.longName||''}</div></div>
+        <div><div class="price">R$ ${(r.regularMarketPrice||0).toFixed(2)}</div>
+        <div class="chg ${cls}">${chg>=0?'▲':'▼'} ${Math.abs(chg).toFixed(2)}%</div></div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+async function buscar(){
+  const t=$('#ticker').value.trim().toUpperCase();
+  if(!t)return;
+  const c=$('#content');
+  c.innerHTML='<div class="msg"><span class="spinner"></span>Buscando '+t+'...</div>';
+  try{
+    const r=await fetchQuote(t);
+    const chg=r.regularMarketChangePercent||0;
+    const cls=chg>=0?'up':'dn';
+    c.innerHTML=`<div class="card">
+      <h2>${r.symbol} <span class="badge">${FREE.includes(t)?'GRÁTIS':'COM CHAVE'}</span></h2>
+      <div class="stock">
+        <div><div class="sym">${r.symbol}</div><div class="nm">${r.shortName||r.longName||''}</div></div>
+        <div><div class="price">R$ ${(r.regularMarketPrice||0).toFixed(2)}</div>
+        <div class="chg ${cls}">${chg>=0?'▲':'▼'} ${Math.abs(chg).toFixed(2)}%</div></div>
+      </div>
+      <div class="fund">
+        <div class="fitem"><div class="k">Abertura</div><div class="v">R$ ${(r.regularMarketOpen||0).toFixed(2)}</div></div>
+        <div class="fitem"><div class="k">Máxima</div><div class="v">R$ ${(r.regularMarketDayHigh||0).toFixed(2)}</div></div>
+        <div class="fitem"><div class="k">Mínima</div><div class="v">R$ ${(r.regularMarketDayLow||0).toFixed(2)}</div></div>
+        <div class="fitem"><div class="k">Volume</div><div class="v">${((r.regularMarketVolume||0)/1e6).toFixed(1)}M</div></div>
+        <div class="fitem"><div class="k">Market Cap</div><div class="v">R$ ${((r.marketCap||0)/1e9).toFixed(1)}B</div></div>
+        <div class="fitem"><div class="k">P/L</div><div class="v">${(r.priceEarnings||0).toFixed(2)}</div></div>
+        <div class="fitem"><div class="k">P/VP</div><div class="v">${(r.priceToBook||0).toFixed(2)}</div></div>
+        <div class="fitem"><div class="k">DY</div><div class="v">${((r.dividendYield||0)*100).toFixed(2)}%</div></div>
+      </div>
+    </div>`;
+  }catch(e){
+    c.innerHTML='<div class="msg" style="color:#fca5a5">Erro: '+e.message+'<br><br>Ativos gratuitos sem chave: <b>'+FREE.join(', ')+'</b></div>';
+  }
+}
+
+$('#go').onclick=buscar;
+$('#ticker').addEventListener('keydown',e=>{if(e.key==='Enter')buscar()});
+renderCotacoes();
+</script>
+</body>
+</html>

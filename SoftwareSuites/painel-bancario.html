@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Bancário Brasileiro</title>
+<style>
+:root{--bg:#0a0e1a;--card:#111827;--card2:#1a2233;--txt:#e5e7eb;--mut:#6b7280;--acc:#10b981;--err:#ef4444;--bd:#1f2937}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:20px}
+.app{max-width:1000px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#10b981,#059669);display:grid;place-items:center;font-size:22px}
+h1{font-size:1.3rem;font-weight:800;flex:1}h1 span{display:block;font-size:.75rem;color:var(--mut);font-weight:400;margin-top:2px}
+.tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tabs button{background:var(--card);border:1px solid var(--bd);color:var(--mut);padding:9px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:.15s}
+.tabs button:hover{color:var(--txt);border-color:var(--acc)}
+.tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:14px}
+.card h2{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;border-bottom:1px solid var(--bd)}
+td{padding:9px 10px;border-bottom:1px solid var(--bd);font-family:ui-monospace,monospace;font-size:12px}
+td.r{text-align:right}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.badge.ok{background:#10b98122;color:#6ee7b7}
+.badge.no{background:#ef444422;color:#fca5a5}
+.quote{display:grid;grid-template-columns:1fr auto;gap:6px;padding:10px 0;border-bottom:1px solid var(--bd);align-items:center}
+.quote:last-child{border-bottom:0}
+.quote .n{font-weight:700;font-size:14px}
+.quote .p{font-family:ui-monospace,monospace;font-weight:800;font-size:16px;text-align:right}
+.quote .v{font-size:11px;color:var(--mut);text-align:right}
+.quote .up{color:#10b981}.quote .dn{color:#ef4444}
+.msg{padding:24px;text-align:center;color:var(--mut);font-size:13px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--bd);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+.search{width:100%;background:var(--card2);border:1px solid var(--bd);border-radius:10px;padding:11px 14px;color:var(--txt);font-size:14px;outline:none;font-family:inherit;margin-bottom:12px}
+.search:focus{border-color:var(--acc)}
+footer{text-align:center;font-size:10px;color:var(--mut);margin-top:16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">🏦</div>
+    <h1>Painel Bancário Brasileiro<span>BrasilAPI · AwesomeAPI · Banco Central</span></h1>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button data-t="bancos" class="on">🏛 Bancos</button>
+    <button data-t="pix">💠 PIX</button>
+    <button data-t="cambio">💱 Câmbio</button>
+    <button data-t="juros">📊 Juros BCB</button>
+  </div>
+
+  <div id="content"><div class="msg"><span class="spinner"></span>Carregando...</div></div>
+  <footer>Dados oficiais do Banco Central do Brasil e mercado</footer>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+let cache={};
+
+async function loadBancos(){
+  if(cache.bancos)return cache.bancos;
+  const r=await fetch('https://brasilapi.com.br/api/banks/v1');
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  cache.bancos=await r.json();
+  return cache.bancos;
+}
+
+async function loadPix(){
+  if(cache.pix)return cache.pix;
+  const r=await fetch('https://brasilapi.com.br/api/pix/v1/participants');
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  cache.pix=await r.json();
+  return cache.pix;
+}
+
+async function loadCambio(){
+  if(cache.cambio)return cache.cambio;
+  const r=await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,GBP-BRL,JPY-BRL,ARS-BRL,CAD-BRL,AUD-BRL,CHF-BRL');
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  cache.cambio=await r.json();
+  return cache.cambio;
+}
+
+async function loadJuros(){
+  // Selic meta (codigo 432), IPCA (433), IGP-M (189), CDI (12)
+  const series=[
+    {c:432,n:'Meta Selic',u:'% a.a.'},
+    {c:433,n:'IPCA',u:'% mensal'},
+    {c:189,n:'IGP-M',u:'% mensal'},
+    {c:12,n:'CDI',u:'% a.d.'},
+    {c:11,n:'Selic efetiva',u:'% a.d.'}
+  ];
+  const out=[];
+  for(const s of series){
+    try{
+      const r=await fetch(`https://api.bcb.gov.br/dados/serie/bcdata.sgs.${s.c}/dados/ultimos/1?formato=json`);
+      if(r.ok){
+        const d=await r.json();
+        if(d[0]) out.push({...s,v:d[0].valor,dt:d[0].data});
+      }
+    }catch(e){}
+  }
+  return out;
+}
+
+async function render(tab){
+  const c=$('#content');
+  c.innerHTML='<div class="msg"><span class="spinner"></span>Carregando...</div>';
+  try{
+    if(tab==='bancos'){
+      const d=await loadBancos();
+      d.sort((a,b)=>(a.code||9999)-(b.code||9999));
+      c.innerHTML=`
+        <div class="card">
+          <h2>${d.length} bancos registrados no BACEN</h2>
+          <input class="search" id="q" placeholder="🔍 Buscar banco por nome ou código COMPE...">
+          <table><thead><tr><th>Código</th><th>Nome</th><th>ISPB</th><th>Razão Social</th></tr></thead>
+          <tbody id="rows">${d.map(b=>`<tr>
+            <td class="r"><b>${b.code||'—'}</b></td>
+            <td>${b.name||'—'}</td>
+            <td>${b.ispb||'—'}</td>
+            <td style="font-size:11px;color:var(--mut)">${(b.fullName||'—').slice(0,50)}</td>
+          </tr>`).join('')}</tbody></table>
+        </div>`;
+      $('#q').addEventListener('input',e=>{
+        const q=e.target.value.toLowerCase();
+        document.querySelectorAll('#rows tr').forEach(tr=>{
+          tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
+        });
+      });
+    }
+    else if(tab==='pix'){
+      const d=await loadPix();
+      const list=Array.isArray(d)?d:(d.participants||[]);
+      c.innerHTML=`
+        <div class="card">
+          <h2>${list.length} participantes do PIX (BCB)</h2>
+          <input class="search" id="q" placeholder="🔍 Buscar por ISPB ou nome...">
+          <table><thead><tr><th>ISPB</th><th>Nome</th><th>Nome Reduzido</th><th>Tipo</th></tr></thead>
+          <tbody id="rows">${list.map(p=>`<tr>
+            <td><b>${p.ispb||p.Ispb||'—'}</b></td>
+            <td>${p.nome||p.Nome||'—'}</td>
+            <td>${p.nomeReduzido||p.NomeReduzido||'—'}</td>
+            <td>${(p.tipoParticipante||p.TipoParticipante||'—')}</td>
+          </tr>`).join('')}</tbody></table>
+        </div>`;
+      $('#q').addEventListener('input',e=>{
+        const q=e.target.value.toLowerCase();
+        document.querySelectorAll('#rows tr').forEach(tr=>{
+          tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
+        });
+      });
+    }
+    else if(tab==='cambio'){
+      const d=await loadCambio();
+      const items=Object.values(d);
+      c.innerHTML=`<div class="card">
+        <h2>Cotações em tempo real (AwesomeAPI · BCB)</h2>
+        ${items.map(q=>{
+          const bid=parseFloat(q.bid),pct=parseFloat(q.pctChange);
+          const cls=pct>=0?'up':'dn';
+          return `<div class="quote">
+            <div><div class="n">${q.name}</div><div class="v">${q.create_date||''}</div></div>
+            <div><div class="p ${cls}">R$ ${bid.toFixed(4)}</div>
+            <div class="v ${cls}">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}%</div></div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+    else if(tab==='juros'){
+      const d=await loadJuros();
+      c.innerHTML=`<div class="card">
+        <h2>Indicadores econômicos · Banco Central (SGS)</h2>
+        ${d.length?d.map(s=>`
+          <div class="quote">
+            <div><div class="n">${s.n}</div><div class="v">${s.dt||'—'}</div></div>
+            <div><div class="p">${s.v} <span style="font-size:11px;color:var(--mut)">${s.u}</span></div></div>
+          </div>`).join(''):'<div class="msg">Sem dados disponíveis</div>'}
+      </div>`;
+    }
+  }catch(e){
+    c.innerHTML='<div class="msg" style="color:#fca5a5">Erro: '+e.message+'</div>';
+  }
+}
+
+$('#tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  render(b.dataset.t);
+});
+render('bancos');
+</script>
+</body>
+</html>

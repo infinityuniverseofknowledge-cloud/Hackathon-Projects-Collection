@@ -1,0 +1,56 @@
+/**
+ * IEEE 9-bus test system (Anderson & Fouad).
+ * 3 generators, 3 loads, 3 transformers, 6 lines.
+ * Base 100 MVA.
+ */
+import type { LoadFlowCase } from './types';
+
+export function ieee9(): LoadFlowCase {
+  return {
+    name: 'IEEE 9-bus',
+    baseMVA: 100,
+    buses: [
+      { id: 1, name: 'Bus 1 (slack)', type: 'SLACK', V: 1.04, theta: 0, Pgen: 0, Qgen: 0, Pload: 0, Qload: 0, baseKV: 345 },
+      { id: 2, name: 'Bus 2 (PV)', type: 'PV', V: 1.025, theta: 0, Pgen: 1.63, Qgen: 0, Pload: 0, Qload: 0, Vset: 1.025, baseKV: 345 },
+      { id: 3, name: 'Bus 3 (PV)', type: 'PV', V: 1.025, theta: 0, Pgen: 0.85, Qgen: 0, Pload: 0, Qload: 0, Vset: 1.025, baseKV: 345 },
+      { id: 4, name: 'Bus 4', type: 'PQ', V: 1.0, theta: 0, Pgen: 0, Qgen: 0, Pload: 0, Qload: 0, baseKV: 345 },
+      { id: 5, name: 'Bus 5', type: 'PQ', V: 1.0, theta: 0, Pgen: 0, Qgen: 0, Pload: 0.90, Qload: 0.30, baseKV: 345 },
+      { id: 6, name: 'Bus 6', type: 'PQ', V: 1.0, theta: 0, Pgen: 0, Qgen: 0, Pload: 1.00, Qload: 0.35, baseKV: 345 },
+      { id: 7, name: 'Bus 7', type: 'PQ', V: 1.0, theta: 0, Pgen: 0, Qgen: 0, Pload: 0, Qload: 0, baseKV: 345 },
+      { id: 8, name: 'Bus 8', type: 'PQ', V: 1.0, theta: 0, Pgen: 0, Qgen: 0, Pload: 1.25, Qload: 0.50, baseKV: 345 },
+      { id: 9, name: 'Bus 9', type: 'PQ', V: 1.0, theta: 0, Pgen: 0, Qgen: 0, Pload: 0, Qload: 0, baseKV: 345 },
+    ],
+    lines: [
+      { from: 0, to: 3, r: 0.0, x: 0.0576, tap: 1.0 },
+      { from: 3, to: 4, r: 0.017, x: 0.092, b_shunt: 0.158 },
+      { from: 3, to: 5, r: 0.039, x: 0.17, b_shunt: 0.358 },
+      { from: 1, to: 6, r: 0.0, x: 0.0625, tap: 1.0 },
+      { from: 6, to: 7, r: 0.0085, x: 0.072, b_shunt: 0.149 },
+      { from: 6, to: 4, r: 0.019, x: 0.161, b_shunt: 0.306 },
+      { from: 2, to: 8, r: 0.0, x: 0.0586, tap: 1.0 },
+      { from: 8, to: 7, r: 0.0119, x: 0.1008, b_shunt: 0.209 },
+      { from: 8, to: 5, r: 0.039, x: 0.17, b_shunt: 0.358 },
+    ],
+  };
+}
+
+/**
+ * 3-bus textbook example (Grainger & Stevenson).
+ * Easy to verify by hand for tests.
+ */
+export function textbook3Bus(): LoadFlowCase {
+  return {
+    name: 'Textbook 3-bus',
+    baseMVA: 100,
+    buses: [
+      { id: 1, name: 'Slack', type: 'SLACK', V: 1.0, theta: 0, Pgen: 0, Qgen: 0, Pload: 0, Qload: 0, baseKV: 138 },
+      { id: 2, name: 'PV', type: 'PV', V: 1.0, theta: 0, Pgen: 0.5, Qgen: 0, Pload: 0, Qload: 0, Vset: 1.0, baseKV: 138 },
+      { id: 3, name: 'PQ', type: 'PQ', V: 1.0, theta: 0, Pgen: 0, Qgen: 0, Pload: 1.0, Qload: 0.5, baseKV: 138 },
+    ],
+    lines: [
+      { from: 0, to: 1, r: 0.0, x: 0.2 },
+      { from: 1, to: 2, r: 0.0, x: 0.25 },
+      { from: 0, to: 2, r: 0.0, x: 0.1 },
+    ],
+  };
+}

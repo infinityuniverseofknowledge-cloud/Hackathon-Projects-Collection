@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Quantum-K OS | Kernel v9.0.4</title>
+<style>
+/* ==========================================
+   RESET E VARIÁVEIS DO SISTEMA
+   ========================================== */
+:root {
+  --bg: #000000; --desktop-bg: #05080f; --window-bg: rgba(10, 15, 25, 0.95);
+  --border: #1a2a3a; --text: #8899aa; --text-light: #ccddee;
+  --accent: #00ffcc; --accent2: #ff0055; --accent3: #7a00ff; --warning: #ffb86c;
+  --font-mono: 'Fira Code', 'Courier New', monospace;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-sans); overflow: hidden; height: 100vh; }
+
+/* ==========================================
+   TELA DE BOOT (INICIALIZAÇÃO)
+   ========================================== */
+#boot-screen {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: #000; z-index: 9999; padding: 30px;
+  font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent);
+  display: flex; flex-direction: column; gap: 5px; overflow: hidden;
+}
+#boot-screen .line { opacity: 0; animation: typeLine 0.1s forwards; }
+@keyframes typeLine { to { opacity: 1; } }
+.boot-cursor { display: inline-block; width: 8px; height: 15px; background: var(--accent); animation: blink 1s infinite; vertical-align: middle; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ==========================================
+   DESKTOP E GERENCIADOR DE JANELAS
+   ========================================== */
+#desktop { display: none; width: 100%; height: 100%; position: relative; background-image: radial-gradient(circle at 50% 50%, #0a1525 0%, #000000 100%); }
+#taskbar { position: absolute; bottom: 0; left: 0; width: 100%; height: 40px; background: rgba(5, 10, 15, 0.9); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 10px; gap: 10px; z-index: 1000; backdrop-filter: blur(10px); }
+.tb-start { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 4px 12px; border-radius: 4px; font-family: var(--font-mono); font-weight: bold; cursor: pointer; font-size: 0.8rem; }
+.tb-start:hover { background: rgba(0, 255, 204, 0.1); }
+.tb-icons { display: flex; gap: 5px; flex: 1; }
+.tb-app-icon { width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 1.1rem; }
+.tb-app-icon:hover { background: rgba(255,255,255,0.1); }
+.tb-app-icon.active { border-bottom: 2px solid var(--accent); background: rgba(0, 255, 204, 0.1); }
+.tb-clock { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); }
+
+.window {
+  position: absolute; background: var(--window-bg); border: 1px solid var(--border);
+  border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: flex;
+  flex-direction: column; min-width: 300px; min-height: 200px; overflow: hidden;
+  backdrop-filter: blur(10px); transition: opacity 0.2s, transform 0.2s; transform: scale(0.95); opacity: 0;
+}
+.window.open { transform: scale(1); opacity: 1; }
+.window-header { height: 35px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 10px; cursor: grab; }
+.window-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-light); display: flex; align-items: center; gap: 8px; }
+.window-controls { display: flex; gap: 8px; }
+.win-btn { width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer; }
+.win-close { background: #ff5f56; }
+.win-min { background: #ffbd2e; }
+.win-max { background: #27c93f; }
+.window-body { flex: 1; padding: 15px; overflow-y: auto; position: relative; display: flex; flex-direction: column; }
+
+/* ==========================================
+   ESTILOS INTERNOS DOS APLICATIVOS
+   ========================================== */
+.app-terminal { background: #000; color: var(--accent); font-family: var(--font-mono); font-size: 0.85rem; height: 100%; display: flex; flex-direction: column; }
+.term-output { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+.term-input-line { display: flex; gap: 5px; }
+.term-input-line span { color: var(--accent2); }
+.term-input { background: transparent; border: none; color: var(--accent); font-family: var(--font-mono); font-size: 0.85rem; width: 100%; outline: none; }
+
+.panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(max-width: 600px) { .panel-grid { grid-template-columns: 1fr; } }
+.data-box { background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 4px; padding: 10px; font-family: var(--font-mono); font-size: 0.75rem; display: flex; flex-direction: column; gap: 5px; }
+.data-box h4 { color: var(--accent); font-size: 0.7rem; text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 4px; }
+.data-box p span { color: var(--warning); }
+.btn { background: rgba(0, 255, 204, 0.1); border: 1px solid var(--accent); color: var(--accent); padding: 8px 15px; border-radius: 4px; cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem; transition: 0.2s; }
+.btn:hover { background: var(--accent); color: #000; }
+textarea { width: 100%; height: 80px; background: #000; border: 1px solid var(--border); color: var(--accent); font-family: var(--font-mono); font-size: 0.8rem; padding: 8px; border-radius: 4px; resize: none; outline: none; }
+textarea:focus { border-color: var(--accent); }
+canvas { width: 100%; border: 1px solid var(--border); border-radius: 4px; background: #000; display: block; }
+
+/* APP ESPECÍFICOS */
+.syntax-editor { font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; color: #fff; background: #000; padding: 10px; border: 1px solid var(--border); border-radius: 4px; overflow-x: auto; white-space: pre; }
+.kw { color: var(--accent3); font-weight: bold; } /* Keywords */
+.fn { color: var(--accent); } /* Functions */
+.str { color: var(--warning); } /* Strings */
+.num { color: var(--accent2); } /* Numbers */
+.cmt { color: #555; font-style: italic; } /* Comments */
+
+/* SCROLLBARS */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- TELA DE BOOT -->
+<div id="boot-screen">
+  <div class="line">[KERNEL] Quantum-K OS v9.0.4 (x86_64-quantum-core) booting...</div>
+  <div class="line">[MEM] Initializing matrix reservoirs... OK.</div>
+  <div class="line">[SYNTAX] Loading syntactic core parser... OK.</div>
+  <div class="line">[K-SCHEME] Mounting Kolmogorov complexity nodes... OK.</div>
+  <div class="line">[Q-PODS] Establishing quantum entanglement links... OK.</div>
+  <div class="line">[SECURITY] Bypassing Shannon's entropy limit... OK.</div>
+  <div class="line">[AI] Injecting autonomous data science agents... OK.</div>
+  <div class="line" style="margin-top: 20px; color: var(--accent2);">> SYSTEM INITIALIZED. WELCOME, ARCHITECT.</div>
+  <div style="margin-top: 20px;"><span class="boot-cursor"></span></div>
+</div>
+
+<!-- AMBIENTE DESKTOP -->
+<div id="desktop">
+  <div id="windows-container" style="position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 40px);"></div>
+  
+  <div id="taskbar">
+    <button class="tb-start" onclick="toggleStartMenu()">⟨K⟩ START</button>
+    <div class="tb-icons" id="taskbar-apps"></div>
+    <div class="tb-clock" id="clock">00:00:00</div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// GERENCIADOR DE JANELAS (WINDOW MANAGER)
+// ==========================================
+let zIndexCounter = 10;
+
+function createWindow(id, title, contentHTML, width = 600, height = 450) {
+  if (document.getElementById(id)) {
+    document.getElementById(id).classList.add('open');
+    document.getElementById(id).style.zIndex = ++zIndexCounter;
+    return;
+  }
+
+  const win = document.createElement('div');
+  win.id = id;
+  win.className = 'window';
+  win.style.width = width + 'px';
+  win.style.height = height + 'px';
+  win.style.top = Math.max(20, (window.innerHeight / 2 - height / 2) + (Math.random() * 40 - 20)) + 'px';
+  win.style.left = Math.max(20, (window.innerWidth / 2 - width / 2) + (Math.random() * 40 - 20)) + 'px';
+  win.style.zIndex = ++zIndexCounter;
+
+  win.innerHTML = `
+    <div class="window-header" onmousedown="startDrag(event, '${id}')">
+      <div class="window-title">${title}</div>
+      <div class="window-controls">
+        <button class="win-btn win-min" onclick="minimizeWindow('${id}')"></button>
+        <button class="win-btn win-max" onclick="maximizeWindow('${id}')"></button>
+        <button class="win-btn win-close" onclick="closeWindow('${id}')"></button>
+      </div>
+    </div>
+    <div class="window-body">${contentHTML}</div>
+  `;
+
+  document.getElementById('windows-container').appendChild(win);
+  
+  // Animação de abertura
+  setTimeout(() => win.classList.add('open'), 10);
+  
+  // Foco na janela
+  win.addEventListener('mousedown', () => { win.style.zIndex = ++zIndexCounter; });
+  
+  // Adicionar à barra de tarefas
+  addToTaskbar(id, title);
+  
+  // Executar scripts específicos do app se necessário
+  if (id === 'app-terminal') initTerminal();
+  if (id === 'app-k-scheme') initKScheme();
+  if (id === 'app-syntax') initSyntax();
+  if (id === 'app-matrix') initMatrix();
+  if (id === 'app-quantum') initQuantum();
+}
+
+function closeWindow(id) {
+  const win = document.getElementById(id);
+  if (win) {
+    win.classList.remove('open');
+    setTimeout(() => win.remove(), 200);
+  }
+  const tbApp = document.getElementById('tb-' + id);
+  if (tbApp) tbApp.remove();
+}
+
+function minimizeWindow(id) {
+  const win = document.getElementById(id);
+  if (win) win.classList.remove('open');
+}
+
+function maximizeWindow(id) {
+  const win = document.getElementById(id);
+  if (win.style.width === '100%') {
+    win.style.width = '600px'; win.style.height = '450px'; win.style.top = '50px'; win.style.left = '50px';
+  } else {
+    win.style.width = '100%'; win.style.height = 'calc(100% - 40px)'; win.style.top = '0'; win.style.left = '0';
+  }
+}
+
+// Lógica de Arrastar Janelas
+let isDragging = false, dragOffsetX, dragOffsetY, activeWindowId = null;
+function startDrag(e, id) {
+  if (e.target.classList.contains('win-btn')) return;
+  isDragging = true;
+  activeWindowId = id;
+  const win = document.getElementById(id);
+  win.style.zIndex = ++zIndexCounter;
+  dragOffsetX = e.clientX - win.offsetLeft;
+  dragOffsetY = e.clientY - win.offsetTop;
+}
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging || !activeWindowId) return;
+  const win = document.getElementById(activeWindowId);
+  win.style.left = (e.clientX - dragOffsetX) + 'px';
+  win.style.top = (e.clientY - dragOffsetY) + 'px';
+});
+document.addEventListener('mouseup', () => { isDragging = false; activeWindowId = null; });
+
+// Barra de Tarefas
+function addToTaskbar(id, title) {
+  const tb = document.getElementById('taskbar-apps');
+  const btn = document.createElement('div');
+  btn.className = 'tb-app-icon';
+  btn.id = 'tb-' + id;
+  btn.innerHTML = title.split(' ')[0]; // Pega o emoji
+  btn.title = title;
+  btn.onclick = () => {
+    const win = document.getElementById(id);
+    if (win) {
+      if (win.classList.contains('open')) {
+        win.classList.remove('open'); // Minimiza se já estiver aberto
+      } else {
+        win.classList.add('open');
+        win.style.zIndex = ++zIndexCounter;
+      }
+    }
+  };
+  tb.appendChild(btn);
+}
+
+function toggleStartMenu() {
+  // Simulação de menu iniciar
+  alert("Quantum-K OS Start Menu\n\n- Terminal\n- K-Scheme Engine\n- Syntax Core\n- Matrix Reservoir\n- Quantum Pods\n\nUse os ícones na barra inferior ou a IA para abrir.");
+}
+
+// Relógio
+setInterval(() => {
+  const d = new Date();
+  document.getElementById('clock').innerText = d.toLocaleTimeString('pt-BR');
+}, 1000);
+
+
+// ==========================================
+// APLICATIVO 1: TERMINAL (KERNEL SHELL)
+// ==========================================
+function initTerminal() {
+  const output = document.getElementById('term-output');
+  const input = document.getElementById('term-input');
+  
+  function print(text, color = 'var(--accent)') {
+    const div = document.createElement('div');
+    div.style.color = color;
+    div.innerText = text;
+    output.appendChild(div);
+    output.scrollTop = output.scrollHeight;
+  }
+
+  print('Quantum-K Shell [Versão 9.0.4]');
+  print('Digite "help" para ver os comandos disponíveis.\n');
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const cmd = input.value.trim();
+      input.value = '';
+      print(`root@qk-os:~# ${cmd}`, 'var(--text-light)');
+      
+      if (cmd === 'help') {
+        print('Comandos: help, clear, launch [app], ping, sysinfo, crack-shannon');
+        print('Apps: k-scheme, syntax, matrix, quantum');
+      } else if (cmd === 'clear') {
+        output.innerHTML = '';
+      } else if (cmd === 'sysinfo') {
+        print('OS: Quantum-K 9.0.4 (WebAssembly Render)');
+        print('CPU: Virtual Tensor Core x64');
+        print('Memory: Infinite (Fractal Allocation)');
+        print('K-Scheme State: Active');
+      } else if (cmd === 'crack-shannon') {
+        print('Erro: O limite de Shannon não pode ser quebrado com dados clássicos.', 'var(--accent2)');
+        print('Dica: Use a Reconstrução Generativa via K-Scheme.', 'var(--warning)');
+      } else if (cmd.startsWith('launch ')) {
+        const app = cmd.split(' ')[1];
+        if (app === 'k-scheme') launchApp('k-scheme');
+        else if (app === 'syntax') launchApp('syntax');
+        else if (app === 'matrix') launchApp('matrix');
+        else if (app === 'quantum') launchApp('quantum');
+        else print('App não encontrado.', 'var(--accent2)');
+      } else if (cmd === 'ping') {
+        print('PING quantum.node.local (10.0.0.1): 56 data bytes');
+        print('64 bytes from 10.0.0.1: icmp_seq=0 ttl=64 time=0.001 ms');
+      } else if (cmd !== '') {
+        print(`Comando não reconhecido: ${cmd}`, 'var(--accent2)');
+      }
+      print('');
+    }
+  });
+}
+
+
+// ==========================================
+// APLICATIVO 2: K-SCHEME ENGINE (COMPRESSÃO EXTREMA)
+// ==========================================
+function initKScheme() {
+  // Já inicializado via HTML
+}
+function runKScheme() {
+  const input = document.getElementById('k-input').value;
+  if (!input) return;
+  
+  const out = document.getElementById('k-output');
+  out.innerHTML = 'Analisando entropia...<br>';
+  
+  setTimeout(() => {
+    // Cálculo de Entropia de Shannon (Data Science)
+    let freq = {};
+    for (let c of input) freq[c] = (freq[c] || 0) + 1;
+    let entropy = 0;
+    for (let c in freq) {
+      let p = freq[c] / input.length;
+      entropy -= p * Math.log2(p);
+    }
+    
+    // Simulação de Kolmogorov (Encontrar o menor programa que gera a string)
+    const kolmogorovSize = Math.max(8, Math.floor(input.length * (entropy / 8))) + Math.floor(Math.random() * 10);
+    
+    out.innerHTML += `
+      <span style="color:var(--accent)">Análise Concluída.</span><br>
+      Entropia (H): ${entropy.toFixed(4)} bits/char<br>
+      Tamanho Original: ${input.length} bytes<br>
+      <span style="color:var(--warning)">K-Complexity (Estimada): ${kolmogorovSize} bytes</span><br>
+      <span style="color:var(--accent2)">Taxa de Compressão: ${(input.length / kolmogorovSize).toFixed(2)}x</span><br><br>
+      <strong>K-Scheme Gerado:</strong><br>
+      <code style="color:var(--accent3); font-size:0.7rem; word-break:break-all;">
+        [K-SCHEME:0x${Math.random().toString(16).slice(2,10).toUpperCase()}] -> { seed: ${entropy.toFixed(3)}, length: ${input.length}, gen_func: 'fractal_mandelbrot' }
+      </code>
+    `;
+  }, 500);
+}
+
+
+// ==========================================
+// APLICATIVO 3: SYNTAX CORE (PARSER E CADEIAS DE STRINGS)
+// ==========================================
+function initSyntax() {
+  updateSyntaxHighlighting();
+}
+
+function updateSyntaxHighlighting() {
+  const input = document.getElementById('syntax-input').value;
+  const output = document.getElementById('syntax-output');
+  
+  // Cadeia de Strings Longas: Parser Simples
+  let highlighted = input
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // Escape HTML
+    .replace(/\b(function|const|let|var|if|else|return|class|new|import|export)\b/g, '<span class="kw">$1</span>')
+    .replace(/\b(console|log|Math|Array|Object|String)\b/g, '<span class="fn">$1</span>')
+    .replace(/(["'`])(.*?)\1/g, '<span class="str">$1$2$1</span>')
+    .replace(/\b(\d+)\b/g, '<span class="num">$1</span>')
+    .replace(/(\/\/.*)/g, '<span class="cmt">$1</span>');
+    
+  output.innerHTML = highlighted;
+}
+
+
+// ==========================================
+// APLICATIVO 4: MATRIX RESERVOIR (RESERVATÓRIO DE MATRIZES)
+// ==========================================
+let matrixAnimId = null;
+function initMatrix() {
+  const canvas = document.getElementById('matrix-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  canvas.width = canvas.parentElement.clientWidth;
+  canvas.height = 300;
+  
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*(){}[]<>".split("");
+  const fontSize = 14;
+  const columns = canvas.width / fontSize;
+  const drops = [];
+  for (let x = 0; x < columns; x++) drops[x] = 1;
+
+  function draw() {
+    // Fundo preto translúcido para efeito de rastro
+    ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Texto da matriz (Reservatório de Dados)
+    ctx.fillStyle = "#00ffcc";
+    ctx.font = fontSize + "px monospace";
+    
+    for (let i = 0; i < drops.length; i++) {
+      // Aleatoriamente escolhe caracteres (simulando a matemática pesada)
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      
+      // Reset da gota
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+    matrixAnimId = requestAnimationFrame(draw);
+  }
+  
+  if(matrixAnimId) cancelAnimationFrame(matrixAnimId);
+  draw();
+}
+
+
+// ==========================================
+// APLICATIVO 5: QUANTUM PODS (SIMULAÇÃO QUÂNTICA)
+// ==========================================
+function initQuantum() {
+  // Já inicializado via HTML
+}
+function entanglePods() {
+  const status = document.getElementById('quantum-status');
+  status.innerHTML = 'Estabelecendo entrelaçamento quântico...<br>';
+  
+  setTimeout(() => {
+    const r1 = Math.random();
+    const r2 = 1 - r1; // Entrelaçamento (Correlação Perfeita)
+    
+    status.innerHTML = `
+      <span style="color:var(--accent)">PODS ENTRELAÇADOS COM SUCESSO.</span><br><br>
+      <strong>Pod A (Qubit 1):</strong><br>
+      Estado |0⟩: ${(r1 * 100).toFixed(2)}%<br>
+      Estado |1⟩: ${((1-r1) * 100).toFixed(2)}%<br>
+      Amplitude (α): ${Math.sqrt(r1).toFixed(4)}<br><br>
+      <strong>Pod B (Qubit 2):</strong><br>
+      Estado |0⟩: ${(r2 * 100).toFixed(2)}%<br>
+      Estado |1⟩: ${((1-r2) * 100).toFixed(2)}%<br>
+      Amplitude (β): ${Math.sqrt(r2).toFixed(4)}<br><br>
+      <span style="color:var(--accent2)">Fidelidade do Entrelaçamento: 99.9998%</span>
+    `;
+  }, 1000);
+}
+
+
+// ==========================================
+// LANÇADOR DE APPS (CHAMADO PELA TASKBAR OU IA)
+// ==========================================
+function launchApp(appId) {
+  if (appId === 'terminal') {
+    createWindow('app-terminal', '💻 Terminal', `
+      <div class="app-terminal">
+        <div class="term-output" id="term-output"></div>
+        <div class="term-input-line">
+          <span>root@qk-os:~#</span>
+          <input type="text" class="term-input" id="term-input" autocomplete="off" spellcheck="false" autofocus>
+        </div>
+      </div>
+    `, 600, 400);
+  }
+  
+  if (appId === 'k-scheme') {
+    createWindow('app-k-scheme', '🧬 K-Scheme Engine', `
+      <div style="display:flex; flex-direction:column; gap:10px; height:100%;">
+        <p style="font-size:0.8rem; color:var(--text);">Compressão baseada na Complexidade de Kolmogorov e Entropia de Shannon.</p>
+        <textarea id="k-input" placeholder="Insira dados (strings longas, DNA, código) para extrair o núcleo semântico...">function generateQuantumState(alpha, beta) { return alpha * 0 + beta * 1; } // Kernel</textarea>
+        <button class="btn" onclick="runKScheme()">Extrair K-Scheme</button>
+        <div id="k-output" class="data-box" style="flex:1; overflow-y:auto;">
+          Aguardando dados...
+        </div>
+      </div>
+    `, 500, 400);
+  }
+  
+  if (appId === 'syntax') {
+    createWindow('app-syntax', '⚙️ Syntax Core & Strings', `
+      <div style="display:flex; flex-direction:column; gap:10px; height:100%;">
+        <p style="font-size:0.8rem; color:var(--text);">Núcleo sintático para análise de cadeias longas de código.</p>
+        <textarea id="syntax-input" oninput="updateSyntaxHighlighting()" style="height:120px;" placeholder="Digite seu código aqui...">const quantumPod = new QuantumPod();
+function entangle(qubitA, qubitB) {
+  // Lógica de entrelaçamento
+  return "State collapsed!";
+}</textarea>
+        <div style="font-size:0.75rem; color:var(--text); margin-top:5px;">AST / Parser Output:</div>
+        <div id="syntax-output" class="syntax-editor" style="flex:1; overflow:auto;"></div>
+      </div>
+    `, 500, 400);
+  }
+  
+  if (appId === 'matrix') {
+    createWindow('app-matrix', '🌌 Matrix Reservoir', `
+      <div style="display:flex; flex-direction:column; gap:10px; height:100%;">
+        <p style="font-size:0.8rem; color:var(--text);">Reservatório de matrizes para processamento tensorial em tempo real.</p>
+        <canvas id="matrix-canvas"></canvas>
+        <div class="data-box">
+          <h4>Status do Reservatório</h4>
+          <p>Matrizes Alocadas: <span>1.048.576</span></p>
+          <p>Throughput: <span>4.2 TB/s</span></p>
+          <p>Latência: <span>0.003 ms</span></p>
+        </div>
+      </div>
+    `, 450, 400);
+  }
+  
+  if (appId === 'quantum') {
+    createWindow('app-quantum', '⚛️ Quantum Pods', `
+      <div style="display:flex; flex-direction:column; gap:10px; height:100%;">
+        <p style="font-size:0.8rem; color:var(--text);">Simulador de Pods Quânticos (Qubits).</p>
+        <button class="btn" onclick="entanglePods()">Iniciar Entrelaçamento</button>
+        <div id="quantum-status" class="data-box" style="flex:1;">
+          Aguardando comando...
+        </div>
+        <div class="panel-grid">
+          <div class="data-box">
+            <h4>Qubit 1 (Pod A)</h4>
+            <p>Estado: <span>Superposição</span></p>
+          </div>
+          <div class="data-box">
+            <h4>Qubit 2 (Pod B)</h4>
+            <p>Estado: <span>Superposição</span></p>
+          </div>
+        </div>
+      </div>
+    `, 450, 450);
+  }
+}
+
+
+// ==========================================
+// INICIALIZAÇÃO DO SISTEMA (BOOT SEQUENCE)
+// ==========================================
+window.onload = () => {
+  // Simula o tempo de boot
+  setTimeout(() => {
+    document.getElementById('boot-screen').style.display = 'none';
+    document.getElementById('desktop').style.display = 'block';
+    
+    // Inicia com o terminal aberto
+    launchApp('terminal');
+    
+    // Opcional: Abre o syntax core para mostrar visualmente
+    setTimeout(() => launchApp('syntax'), 500);
+  }, 3500); // 3.5 segundos de boot
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GridTwin 2030 — Community Microgrid Digital Twin</title>
+<style>
+:root{
+  --bg:#050a12; --panel:#0b1220; --panel2:#111b2e; --bd:#1e2d45; --txt:#e2e8f0; --txt2:#94a3b8; --mut:#475569;
+  --grid:#0ea5e9; --solar:#f59e0b; --battery:#10b981; --load:#ef4444; --p2p:#8b5cf6; --ieee:#00629b;
+  --glow:0 0 20px rgba(14,165,233,.3);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:ui-monospace,'SF Mono',Menlo,monospace;background:radial-gradient(ellipse at top,#0c4a6e22,transparent 50%),var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden}
+.app{max-width:1440px;margin:0 auto;padding:12px}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--bd)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-ic{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#00629b,#00a9e0);display:grid;place-items:center;font-size:20px;box-shadow:var(--glow)}
+.brand-tx{font-weight:800;font-size:1.1rem;letter-spacing:-.3px;line-height:1.1}
+.brand-tx small{display:block;font-size:9px;color:var(--mut);font-weight:500;letter-spacing:.5px;margin-top:2px}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--mut);padding:4px 10px;background:var(--panel);border:1px solid var(--bd);border-radius:20px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.tabs{display:flex;gap:2px;margin-left:auto;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:3px;overflow-x:auto}
+.tabs button{background:transparent;border:0;color:var(--mut);padding:7px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;white-space:nowrap;transition:.15s}
+.tabs button:hover{color:var(--txt2)}
+.tabs button.on{background:linear-gradient(135deg,#00629b,#00a9e0);color:#fff}
+
+/* ── VIEWS ── */
+.view{display:none;animation:fade .3s}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CARDS ── */
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:12px}
+.card-h{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;font-weight:800;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:900px){.grid-3,.grid-4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+/* ── KPIs ── */
+.kpi{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:12px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--grid))}
+.kpi-l{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px}
+.kpi-v{font-size:20px;font-weight:900;color:var(--accent,var(--grid));line-height:1}
+.kpi-s{font-size:10px;color:var(--mut);margin-top:3px}
+
+/* ── TWIN CANVAS ── */
+#twinCanvas{width:100%;height:auto;border-radius:10px;background:#050a12;border:1px solid var(--bd);display:block}
+
+/* ── CONTROLS ── */
+.control{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:8px}
+.control label{display:flex;justify-content:space-between;font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:6px}
+.control input[type=range]{width:100%;accent-color:var(--grid)}
+.control .val{color:var(--grid);font-weight:800;font-family:ui-monospace,monospace}
+
+/* ── BUTTONS ── */
+.btn{background:linear-gradient(135deg,#00629b,#00a9e0);border:0;color:#fff;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:800;font-family:inherit;font-size:12px;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.btn-full{width:100%;justify-content:center}
+.btn-ghost{background:var(--panel2);border:1px solid var(--bd);color:var(--txt2)}
+.btn-ghost:hover{border-color:var(--grid);color:var(--grid)}
+.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626)}
+
+/* ── TABLES ── */
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:6px 8px;font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:800;border-bottom:1px solid var(--bd)}
+td{padding:8px;border-bottom:1px solid var(--bd);font-family:ui-monospace,monospace;font-size:11px}
+tr:hover td{background:var(--panel2)}
+
+/* ── BLOCKCHAIN LEDGER ── */
+.block{background:var(--panel2);border:1px solid var(--bd);border-left:3px solid var(--p2p);border-radius:8px;padding:10px;margin-bottom:6px;font-size:10px;font-family:ui-monospace,monospace}
+.block .hash{color:var(--p2p);word-break:break-all;font-size:9px}
+.block .meta{display:flex;justify-content:space-between;color:var(--mut);margin-top:4px}
+
+/* ── SDG BADGES ── */
+.sdg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+.sdg-item{background:var(--panel2);border:1px solid var(--bd);border-radius:8px;padding:8px;font-size:10px;display:flex;align-items:center;gap:6px;cursor:pointer;transition:.15s}
+.sdg-item.on{border-color:#22c55e;background:rgba(34,197,94,.1)}
+.sdg-item .check{margin-left:auto;font-size:14px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:#00629b;color:#fff;padding:10px 20px;border-radius:24px;font-size:12px;font-weight:700;transition:.3s;z-index:9999;pointer-events:none;max-width:90vw}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.toast.err{background:#dc2626}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="brand">
+    <div class="brand-ic">⚡</div>
+    <div class="brand-tx">GridTwin 2030<small>Community Microgrid · Digital Twin</small></div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div><span id="liveStatus">SIMULATION LIVE</span></div>
+  <nav class="tabs" id="tabs">
+    <button data-v="overview" class="on">📊 Overview</button>
+    <button data-v="twin">🏘️ Digital Twin</button>
+    <button data-v="p2p">🤝 P2P Market</button>
+    <button data-v="forecast">🔮 AI Forecast</button>
+    <button data-v="scorecard">🎯 Scorecard</button>
+    <button data-v="sdg">🌍 SDG</button>
+  </nav>
+</header>
+
+<!-- ══════════════ OVERVIEW ══════════════ -->
+<section class="view on" data-v="overview">
+  <div class="grid-4" id="kpis"></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-h"><span>⚡ Real-time energy balance (kW)</span><span id="balanceChip" style="color:var(--solar)">--</span></div>
+      <canvas id="balanceChart" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-h">🔋 Battery state of charge</div>
+      <canvas id="batteryChart" height="180"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h">🚨 Active demand-response events</div>
+    <div id="drList"></div>
+  </div>
+</section>
+
+<!-- ══════════════ DIGITAL TWIN ══════════════ -->
+<section class="view" data-v="twin">
+  <div class="grid-2" style="grid-template-columns:2fr 1fr">
+    <div class="card">
+      <div class="card-h">🏘️ Community topology — live power flow</div>
+      <canvas id="twinCanvas" width="800" height="500"></canvas>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-h">🎛️ Prosumer controls</div>
+        <div id="prosumerControls"></div>
+      </div>
+      <div class="card">
+        <div class="card-h">📋 Node status</div>
+        <div id="nodeStatus" style="max-height:200px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ P2P MARKET ══════════════ -->
+<section class="view" data-v="p2p">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-h">🤝 Peer-to-peer order book</div>
+      <div id="orderBook"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">⛓️ Immutable trade ledger (simulated)</div>
+      <div id="ledger" style="max-height:400px;overflow-y:auto"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h">📈 P2P price vs. grid tariff</div>
+    <canvas id="priceChart" height="160"></canvas>
+  </div>
+</section>
+
+<!-- ══════════════ FORECAST ══════════════ -->
+<section class="view" data-v="forecast">
+  <div class="card">
+    <div class="card-h">🔮 24-hour AI forecast (LSTM-inspired, simulated)</div>
+    <canvas id="forecastCanvas" height="280"></canvas>
+  </div>
+  <div class="grid-3" id="forecastKPIs"></div>
+  <div class="card">
+    <div class="card-h">🧠 Model telemetry</div>
+    <div id="modelTelemetry" style="font-size:11px;line-height:1.8"></div>
+  </div>
+</section>
+
+<!-- ══════════════ SCORECARD ══════════════ -->
+<section class="view" data-v="scorecard">
+  <div class="card">
+    <div class="card-h">🎯 IEEE 2030 judging scorecard (100 pts)</div>
+    <div id="scoreTotal" style="text-align:center;padding:20px;background:var(--panel2);border-radius:10px;margin-bottom:16px">
+      <div style="font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:2px;font-weight:800">Projected score</div>
+      <div id="scoreValue" style="font-size:48px;font-weight:900;color:var(--grid);line-height:1">0</div>
+      <div style="font-size:11px;color:var(--mut)">/ 100</div>
+    </div>
+    <div id="scoreGrid" class="grid-3"></div>
+    <button class="btn btn-full" id="saveScore" style="margin-top:16px">💾 Save scorecard</button>
+  </div>
+</section>
+
+<!-- ══════════════ SDG ══════════════ -->
+<section class="view" data-v="sdg">
+  <div class="card">
+    <div class="card-h">🌍 SDG alignment</div>
+    <div class="sdg-grid" id="sdgGrid"></div>
+  </div>
+</section>
+
+</div>
+<div class="toast" id="toast"></div>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   GridTwin 2030 — Core Engine
+   ═══════════════════════════════════════════════════════════ */
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+// ── STATE ──
+const STATE = {
+  prosumers: [
+    { id:'P1', name:'House A', solar:4.2, battery:10, load:2.1, soc:72, p2p:true },
+    { id:'P2', name:'House B', solar:3.8, battery:8, load:1.8, soc:58, p2p:true },
+    { id:'P3', name:'House C', solar:5.1, battery:12, load:2.6, soc:81, p2p:false },
+    { id:'P4', name:'School', solar:8.5, battery:20, load:4.2, soc:44, p2p:true },
+    { id:'P5', name:'Shop', solar:2.1, battery:5, load:1.4, soc:29, p2p:false }
+  ],
+  gridPrice: 0.92, // R$/kWh
+  p2pPrice: 0.75,
+  tick: 0,
+  history: { balance: [], battery: [], price: [] },
+  ledger: [],
+  score: { impact: 0, innovation: 0, feasibility: 0, ethics: 0, scalability: 0, adoption: 0 },
+  sdg: { sdg7: false, sdg11: false, sdg12: false, sdg13: false, sdg9: false, sdg17: false }
+};
+
+const CRITERIA = [
+  { id:'impact', n:'Impact', max:25 },
+  { id:'innovation', n:'Innovation', max:20 },
+  { id:'feasibility', n:'Tech Feasibility', max:20 },
+  { id:'ethics', n:'Trust & Ethics', max:15 },
+  { id:'scalability', n:'Scalability', max:10 },
+  { id:'adoption', n:'Ease of Adoption', max:10 }
+];
+
+const SDG_LIST = [
+  { id:'sdg7', n:'SDG 7 — Clean Energy', ic:'⚡' },
+  { id:'sdg11', n:'SDG 11 — Sustainable Cities', ic:'🏙️' },
+  { id:'sdg12', n:'SDG 12 — Responsible Consumption', ic:'♻️' },
+  { id:'sdg13', n:'SDG 13 — Climate Action', ic:'🌍' },
+  { id:'sdg9', n:'SDG 9 — Industry & Innovation', ic:'🏭' },
+  { id:'sdg17', n:'SDG 17 — Partnerships', ic:'🤝' }
+];
+
+// ── PERSISTENCE ──
+function loadState(){
+  try {
+    const s = JSON.parse(localStorage.getItem('gridtwin.v1') || '{}');
+    if (s.score) Object.assign(STATE.score, s.score);
+    if (s.sdg) Object.assign(STATE.sdg, s.sdg);
+    if (s.ledger) STATE.ledger = s.ledger;
+  } catch(e) {}
+}
+function saveState(){
+  localStorage.setItem('gridtwin.v1', JSON.stringify({ score: STATE.score, sdg: STATE.sdg, ledger: STATE.ledger }));
+}
+
+// ── SIMULATION TICK ──
+function simulateTick(){
+  STATE.tick++;
+  // Variação de carga e solar com ruído senoidal
+  const hour = (STATE.tick % 24);
+  const solarFactor = Math.max(0, Math.sin((hour - 6) / 12 * Math.PI));
+  let totalGen = 0, totalLoad = 0, totalBattery = 0;
+
+  STATE.prosumers.forEach(p => {
+    p.solar = Math.max(0, (p.id === 'P4' ? 8.5 : 3 + Math.random() * 3) * solarFactor + (Math.random() - .5) * .8);
+    p.load = Math.max(0.5, (p.id === 'P4' ? 4.2 : 1.5 + Math.random() * 1.5) + (hour > 18 || hour < 6 ? 1.2 : 0) + (Math.random() - .5) * .4);
+    // Bateria carrega se solar > load, descarrega se load > solar
+    const surplus = p.solar - p.load;
+    if (surplus > 0 && p.soc < 100) {
+      p.soc = Math.min(100, p.soc + surplus * 0.5);
+    } else if (surplus < 0 && p.soc > 0) {
+      p.soc = Math.max(0, p.soc + surplus * 0.3);
+    }
+    totalGen += p.solar;
+    totalLoad += p.load;
+    totalBattery += p.soc;
+  });
+
+  const net = totalGen - totalLoad;
+  STATE.history.balance.push(net);
+  STATE.history.battery.push(totalBattery / STATE.prosumers.length);
+  STATE.history.price.push(STATE.p2pPrice);
+  if (STATE.history.balance.length > 40) {
+    STATE.history.balance.shift();
+    STATE.history.battery.shift();
+    STATE.history.price.shift();
+  }
+
+  // Mercado P2P
+  if (net > 0.5) {
+    const seller = STATE.prosumers.filter(p => p.p2p && p.soc > 50)[0];
+    if (seller) {
+      const trade = {
+        id: 'tx_' + Date.now(),
+        from: seller.id,
+        to: 'Community Pool',
+        kwh: +(net * 0.5).toFixed(2),
+        price: STATE.p2pPrice,
+        hash: '0x' + Math.random().toString(16).slice(2, 10) + '...' + Math.random().toString(16).slice(2, 6)
+      };
+      STATE.ledger.unshift(trade);
+      if (STATE.ledger.length > 20) STATE.ledger.pop();
+      saveState();
+    }
+  }
+
+  // Demand Response
+  const drActive = net < -2;
+  renderDR(drActive);
+
+  updateKPIs(totalGen, totalLoad, net);
+  drawBalanceChart();
+  drawBatteryChart();
+  drawTwin();
+  renderOrderBook();
+  renderLedger();
+  drawPriceChart();
+  if (STATE.tick % 3 === 0) updateForecast();
+}
+
+// ── RENDER: KPIs ──
+function updateKPIs(gen, load, net){
+  $('#kpis').innerHTML = `
+    <div class="kpi" style="--accent:var(--solar)"><div class="kpi-l">☀️ Generation</div><div class="kpi-v">${gen.toFixed(1)} <small style="font-size:11px;color:var(--mut)">kW</small></div><div class="kpi-s">Community total</div></div>
+    <div class="kpi" style="--accent:var(--load)"><div class="kpi-l">🏠 Load</div><div class="kpi-v">${load.toFixed(1)} <small style="font-size:11px;color:var(--mut)">kW</small></div><div class="kpi-s">All prosumers</div></div>
+    <div class="kpi" style="--accent:${net>=0?'var(--battery)':'var(--load)'}"><div class="kpi-l">⚖️ Net balance</div><div class="kpi-v">${net>=0?'+':''}${net.toFixed(1)} <small style="font-size:11px;color:var(--mut)">kW</small></div><div class="kpi-s">${net>=0?'Surplus → P2P':'Deficit → Grid'}</div></div>
+    <div class="kpi" style="--accent:var(--p2p)"><div class="kpi-l">💰 P2P price</div><div class="kpi-v">R$ ${STATE.p2pPrice.toFixed(2)}</div><div class="kpi-s">Grid: R$ ${STATE.gridPrice.toFixed(2)}</div></div>
+  `;
+  $('#balanceChip').textContent = `${net>=0?'+':''}${net.toFixed(2)} kW`;
+  $('#balanceChip').style.color = net>=0?'var(--battery)':'var(--load)';
+}
+
+// ── RENDER: CHARTS ──
+function drawLineChart(canvasId, data, color, fill){
+  const cv = document.getElementById(canvasId);
+  if(!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.height;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  if (!data.length) return;
+  const max = Math.max(...data, 1), min = Math.min(...data, -1);
+  const range = max - min || 1;
+  const pad = 10;
+  const xStep = (w - pad*2) / (data.length - 1 || 1);
+  const yScale = v => h - pad - ((v - min) / range) * (h - pad*2);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,.05)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad + i * (h - pad*2) / 4;
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(w - pad, y); ctx.stroke();
+  }
+
+  // Area
+  if (fill) {
+    ctx.beginPath();
+    data.forEach((v, i) => {
+      const x = pad + i * xStep, y = yScale(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.lineTo(pad + (data.length-1)*xStep, h - pad);
+    ctx.lineTo(pad, h - pad);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, color + '44');
+    grad.addColorStop(1, color + '00');
+    ctx.fillStyle = grad; ctx.fill();
+  }
+
+  // Line
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = pad + i * xStep, y = yScale(v);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+}
+function drawBalanceChart(){ drawLineChart('balanceChart', STATE.history.balance, '#f59e0b', true); }
+function drawBatteryChart(){ drawLineChart('batteryChart', STATE.history.battery, '#10b981', true); }
+function drawPriceChart(){ drawLineChart('priceChart', STATE.history.price, '#8b5cf6', true); }
+
+// ── RENDER: DIGITAL TWIN ──
+function drawTwin(){
+  const cv = document.getElementById('twinCanvas');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const w = cv.width, h = cv.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Central hub
+  const cx = w/2, cy = h/2;
+  ctx.beginPath(); ctx.arc(cx, cy, 40, 0, Math.PI*2);
+  ctx.fillStyle = '#0b1220'; ctx.fill();
+  ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#0ea5e9'; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('GRID', cx, cy + 4);
+
+  // Prosumers
+  STATE.prosumers.forEach((p, i) => {
+    const angle = (i / STATE.prosumers.length) * Math.PI * 2 - Math.PI/2;
+    const r = 160;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+
+    // Connection line
+    const surplus = p.solar - p.load;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y);
+    ctx.strokeStyle = surplus >= 0 ? '#10b98188' : '#ef444488';
+    ctx.lineWidth = Math.abs(surplus) * 1.5 + 1;
+    ctx.stroke();
+
+    // Node
+    ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI*2);
+    ctx.fillStyle = surplus >= 0 ? '#064e3b' : '#7f1d1d'; ctx.fill();
+    ctx.strokeStyle = surplus >= 0 ? '#10b981' : '#ef4444'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Icon + label
+    ctx.font = '16px monospace'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+    ctx.fillText(p.id === 'P4' ? '🏫' : '🏠', x, y + 5);
+    ctx.font = '9px monospace'; ctx.fillStyle = '#94a3b8';
+    ctx.fillText(p.id, x, y + 36);
+
+    // SOC bar
+    ctx.fillStyle = '#1e293b'; ctx.fillRect(x - 20, y + 42, 40, 4);
+    ctx.fillStyle = p.soc > 50 ? '#10b981' : p.soc > 20 ? '#f59e0b' : '#ef4444';
+    ctx.fillRect(x - 20, y + 42, 40 * (p.soc/100), 4);
+
+    // Surplus label
+    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = surplus >= 0 ? '#10b981' : '#ef4444';
+    ctx.fillText((surplus >= 0 ? '+' : '') + surplus.toFixed(1) + ' kW', x, y - 32);
+  });
+}
+
+// ── RENDER: PROSUMER CONTROLS ──
+function renderProsumerControls(){
+  $('#prosumerControls').innerHTML = STATE.prosumers.map(p => `
+    <div class="control">
+      <label><span>${p.id} — ${p.name}</span><span class="val">${p.soc.toFixed(0)}%</span></label>
+      <input type="range" min="0" max="100" value="${p.soc}" data-pid="${p.id}">
+      <div style="font-size:9px;color:var(--mut);margin-top:4px">Solar: ${p.solar.toFixed(1)} kW · Load: ${p.load.toFixed(1)} kW</div>
+    </div>
+  `).join('');
+  $$('#prosumerControls input[type=range]').forEach(sl => {
+    sl.oninput = () => {
+      const p = STATE.prosumers.find(x => x.id === sl.dataset.pid);
+      if (p) p.soc = +sl.value;
+    };
+  });
+}
+
+// ── RENDER: ORDER BOOK ──
+function renderOrderBook(){
+  const sellers = STATE.prosumers.filter(p => p.p2p && p.soc > 55).sort((a,b) => b.soc - a.soc);
+  const buyers = STATE.prosumers.filter(p => p.p2p && p.soc < 40).sort((a,b) => a.soc - b.soc);
+  $('#orderBook').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div><div style="font-size:10px;color:var(--battery);font-weight:800;margin-bottom:6px">🟢 SELL ORDERS</div>
+        ${sellers.length ? sellers.map(p => `<div style="background:var(--panel2);border:1px solid var(--bd);border-radius:6px;padding:8px;margin-bottom:4px;font-size:10px"><b>${p.id}</b> — ${(p.soc-50).toFixed(0)}% surplus<br><span style="color:var(--battery)">R$ ${STATE.p2pPrice.toFixed(2)}/kWh</span></div>`).join('') : '<div style="color:var(--mut);font-size:10px">No sellers</div>'}
+      </div>
+      <div><div style="font-size:10px;color:var(--load);font-weight:800;margin-bottom:6px">🔴 BUY ORDERS</div>
+        ${buyers.length ? buyers.map(p => `<div style="background:var(--panel2);border:1px solid var(--bd);border-radius:6px;padding:8px;margin-bottom:4px;font-size:10px"><b>${p.id}</b> — needs ${(50-p.soc).toFixed(0)}%<br><span style="color:var(--load)">R$ ${STATE.p2pPrice.toFixed(2)}/kWh</span></div>`).join('') : '<div style="color:var(--mut);font-size:10px">No buyers</div>'}
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:10px;color:var(--mut)">Clearing price: <b style="color:var(--p2p)">R$ ${STATE.p2pPrice.toFixed(2)}/kWh</b> · Grid: R$ ${STATE.gridPrice.toFixed(2)}/kWh</div>
+  `;
+}
+
+// ── RENDER: LEDGER ──
+function renderLedger(){
+  $('#ledger').innerHTML = STATE.ledger.length ? STATE.ledger.slice(0,10).map(tx => `
+    <div class="block">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--p2p);font-weight:800">${tx.id}</span><span style="color:var(--mut)">${tx.kwh} kWh</span></div>
+      <div style="font-size:9px;color:var(--txt2)">${tx.from} → ${tx.to}</div>
+      <div class="hash">${tx.hash}</div>
+      <div class="meta"><span>R$ ${tx.price.toFixed(2)}/kWh</span><span>${new Date().toLocaleTimeString()}</span></div>
+    </div>
+  `).join('') : '<div style="text-align:center;color:var(--mut);font-size:10px;padding:20px">Ledger empty — waiting for trades</div>';
+}
+
+// ── RENDER: DEMAND RESPONSE ──
+function renderDR(active){
+  $('#drList').innerHTML = active ? `
+    <div style="background:rgba(239,68,68,.1);border:1px solid #ef4444;border-radius:8px;padding:12px;font-size:12px">
+      <b style="color:#ef4444">⚠️ OVERLOAD DETECTED</b><br>
+      <span style="color:var(--txt2)">Community load exceeds generation by ${Math.abs(STATE.history.balance.slice(-1)[0] || 0).toFixed(1)} kW. Suggested action: reduce non-critical loads.</span>
+    </div>
+  ` : `
+    <div style="background:rgba(16,185,129,.1);border:1px solid #10b981;border-radius:8px;padding:12px;font-size:12px">
+      <b style="color:#10b981">✅ GRID STABLE</b><br>
+      <span style="color:var(--mut)">No active demand-response events. All prosumers within safe operating range.</span>
+    </div>
+  `;
+}
+
+// ── RENDER: FORECAST ──
+function updateForecast(){
+  const cv = document.getElementById('forecastCanvas');
+  if (!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.height;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  const past = STATE.history.balance.slice(-20);
+  const future = Array.from({length: 24}, (_, i) => {
+    const base = past.length ? past[past.length-1] : 0;
+    return base + Math.sin(i / 4) * 3 + (Math.random() - .5) * 2;
+  });
+  const data = [...past, ...future];
+  const max = Math.max(...data, 5), min = Math.min(...data, -5);
+  const range = max - min || 1;
+  const pad = 20;
+  const xStep = (w - pad*2) / (data.length - 1 || 1);
+  const yScale = v => h - pad - ((v - min) / range) * (h - pad*2);
+
+  // Split line
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(pad + past.length*xStep, pad); ctx.lineTo(pad + past.length*xStep, h-pad);
+  ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#475569'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('NOW', pad + past.length*xStep, pad - 6);
+
+  // Past line
+  ctx.beginPath();
+  past.forEach((v, i) => { const x = pad + i*xStep, y = yScale(v); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.strokeStyle = '#0ea5e9'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Forecast line
+  ctx.beginPath();
+  future.forEach((v, i) => { const x = pad + (past.length+i)*xStep, y = yScale(v); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Confidence band
+  ctx.beginPath();
+  future.forEach((v, i) => { const x = pad + (past.length+i)*xStep, y = yScale(v+2); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  future.slice().reverse().forEach((v, i) => { const x = pad + (past.length+future.length-1-i)*xStep, y = yScale(v-2); ctx.lineTo(x,y); });
+  ctx.closePath(); ctx.fillStyle = 'rgba(139,92,246,.1)'; ctx.fill();
+
+  // KPIs
+  const avgForecast = future.reduce((a,b)=>a+b,0)/future.length;
+  const maxForecast = Math.max(...future);
+  const minForecast = Math.min(...future);
+  $('#forecastKPIs').innerHTML = `
+    <div class="kpi" style="--accent:var(--p2p)"><div class="kpi-l">Avg forecast</div><div class="kpi-v">${avgForecast.toFixed(1)}</div><div class="kpi-s">kW (next 24h)</div></div>
+    <div class="kpi" style="--accent:var(--load)"><div class="kpi-l">Peak risk</div><div class="kpi-v">${maxForecast.toFixed(1)}</div><div class="kpi-s">kW at peak hour</div></div>
+    <div class="kpi" style="--accent:var(--battery)"><div class="kpi-l">Min surplus</div><div class="kpi-v">${minForecast.toFixed(1)}</div><div class="kpi-s">kW at valley</div></div>
+  `;
+  $('#modelTelemetry').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+      <div>Model: <b style="color:var(--p2p)">LSTM-24h (simulated)</b></div>
+      <div>Input features: <b>solar, load, SOC, price</b></div>
+      <div>RMSE: <b style="color:var(--battery)">0.42 kW</b></div>
+      <div>MAE: <b style="color:var(--battery)">0.31 kW</b></div>
+      <div>Inference time: <b>8 ms</b></div>
+      <div>Last retrain: <b>2 min ago</b></div>
+    </div>
+  `;
+}
+
+// ── RENDER: SCORECARD ──
+function renderScorecard(){
+  $('#scoreGrid').innerHTML = CRITERIA.map(c => `
+    <div class="control">
+      <label><span>${c.n} (${c.max})</span><span class="val" id="sv_${c.id}">${STATE.score[c.id]}</span></label>
+      <input type="range" min="0" max="${c.max}" value="${STATE.score[c.id]}" data-crit="${c.id}">
+    </div>
+  `).join('');
+  $$('#scoreGrid input[type=range]').forEach(inp => {
+    inp.oninput = () => {
+      const id = inp.dataset.crit;
+      STATE.score[id] = +inp.value;
+      $('#sv_' + id).textContent = inp.value;
+      updateScoreTotal();
+    };
+  });
+  updateScoreTotal();
+}
+function updateScoreTotal(){
+  const total = Object.values(STATE.score).reduce((a,b) => a+b, 0);
+  $('#scoreValue').textContent = total;
+  $('#scoreValue').style.color = total >= 80 ? '#10b981' : total >= 50 ? '#f59e0b' : '#ef4444';
+}
+
+// ── RENDER: SDG ──
+function renderSDG(){
+  $('#sdgGrid').innerHTML = SDG_LIST.map(s => `
+    <div class="sdg-item ${STATE.sdg[s.id] ? 'on' : ''}" data-sdg="${s.id}">
+      <span>${s.ic}</span><span>${s.n}</span><span class="check">${STATE.sdg[s.id] ? '✅' : '⬜'}</span>
+    </div>
+  `).join('');
+  $$('.sdg-item').forEach(el => {
+    el.onclick = () => {
+      const id = el.dataset.sdg;
+      STATE.sdg[id] = !STATE.sdg[id];
+      saveState(); renderSDG();
+    };
+  });
+}
+
+// ── TOAST ──
+function toast(msg, err){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (err ? ' err' : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.className = 'toast', 2200);
+}
+
+// ── INIT ──
+loadState();
+renderScorecard();
+renderSDG();
+renderProsumerControls();
+simulateTick();
+setInterval(simulateTick, 1500);
+
+$('#saveScore').onclick = () => { saveState(); toast('Scorecard saved'); };
+
+$$('.tabs button').forEach(b => {
+  b.onclick = () => {
+    $$('.tabs button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    $$('.view').forEach(v => v.classList.toggle('on', v.dataset.v === b.dataset.v));
+    if (b.dataset.v === 'scorecard') renderScorecard();
+    if (b.dataset.v === 'sdg') renderSDG();
+    if (b.dataset.v === 'forecast') updateForecast();
+  };
+});
+</script>
+</body>
+</html>

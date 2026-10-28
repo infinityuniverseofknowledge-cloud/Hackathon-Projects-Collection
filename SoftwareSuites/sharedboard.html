@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SharedBoard — Kanban</title>
+<style>
+:root{--bg:#0a0e1a;--c:#22c55e;--card:#111827;--bd:#1f2937;--txt:#e5e7eb;--mut:#6b7280}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:16px}
+.app{max-width:1200px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2rem;color:var(--c);flex:1}
+.logo .ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#22c55e,#16a34a);display:grid;place-items:center;font-size:20px}
+header button{background:var(--c);color:#000;border:0;padding:9px 16px;border-radius:8px;cursor:pointer;font-weight:800;font-family:inherit;font-size:12px;transition:.15s}
+header button:hover{filter:brightness(1.1)}
+header .sec{background:transparent;color:var(--txt);border:1px solid var(--bd)}
+header .sec:hover{border-color:var(--c);color:var(--c)}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:800px){.kanban{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.kanban{grid-template-columns:1fr}}
+.col{background:rgba(255,255,255,.03);border:1px solid var(--bd);border-radius:12px;padding:10px;min-height:200px;display:flex;flex-direction:column;gap:8px}
+.col-head{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px}
+.col[data-col="todo"] .col-head{background:rgba(59,130,246,.15);color:#60a5fa}
+.col[data-col="doing"] .col-head{background:rgba(245,158,11,.15);color:#fbbf24}
+.col[data-col="done"] .col-head{background:rgba(34,197,94,.15);color:#4ade80}
+.col[data-col="blocked"] .col-head{background:rgba(239,68,68,.15);color:#f87171}
+.col-head .cnt{background:rgba(0,0,0,.4);padding:2px 8px;border-radius:10px;font-family:ui-monospace,monospace;font-size:10px}
+.card-item{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px;cursor:grab;transition:.15s;font-size:13px;line-height:1.4;position:relative}
+.card-item:hover{border-color:var(--c);transform:translateY(-2px);box-shadow:0 4px 15px rgba(34,197,94,.15)}
+.card-item.dragging{opacity:.4}
+.card-item .del{position:absolute;top:4px;right:6px;background:transparent;border:0;color:var(--mut);cursor:pointer;font-size:12px;opacity:0;transition:.15s}
+.card-item:hover .del{opacity:1}
+.card-item .del:hover{color:#ef4444}
+.add-btn{background:transparent;border:1px dashed var(--bd);color:var(--mut);padding:8px;border-radius:8px;cursor:pointer;font-size:12px;font-family:inherit;transition:.15s}
+.add-btn:hover{border-color:var(--c);color:var(--c);background:rgba(34,197,94,.05)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+.modal.on{display:flex}
+.mbox{background:var(--card);border:1px solid var(--c);border-radius:14px;padding:20px;max-width:440px;width:100%}
+.mbox h2{font-size:14px;color:var(--c);margin-bottom:14px;font-weight:800}
+.mbox label{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:800;margin-bottom:5px;display:block}
+.mbox input,.mbox select,.mbox textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;color:var(--txt);font-size:13px;font-family:inherit;outline:0;margin-bottom:12px;transition:.15s}
+.mbox input:focus,.mbox select:focus,.mbox textarea:focus{border-color:var(--c)}
+.mbox textarea{resize:vertical;min-height:60px}
+.mbox .btns{display:flex;gap:8px}
+.mbox button{flex:1;border:0;padding:11px;border-radius:9px;cursor:pointer;font-family:inherit;font-weight:800;font-size:13px}
+.mbox button.primary{background:var(--c);color:#000}
+.mbox button.sec{background:transparent;color:var(--txt);border:1px solid var(--bd)}
+</style></head><body>
+<div class="app">
+<header><div class="logo"><div class="ic">📋</div>SharedBoard</div><button class="sec" id="share">🔗 Compartilhar</button><button class="sec" id="clear">🗑 Limpar</button><button id="add">+ Novo cartão</button></header>
+<div class="kanban" id="kanban"></div>
+</div>
+<div class="modal" id="modal">
+<div class="mbox">
+<button id="closeM" style="float:right;background:transparent;border:0;color:var(--mut);font-size:18px;cursor:pointer;padding:0">×</button>
+<h2 id="mTitle">Novo cartão</h2>
+<label>Título</label>
+<input id="fTitle" placeholder="Título do cartão">
+<label>Descrição</label>
+<textarea id="fDesc" placeholder="Detalhes..."></textarea>
+<label>Coluna</label>
+<select id="fCol"><option value="todo">A Fazer</option><option value="doing">Em Andamento</option><option value="done">Concluído</option><option value="blocked">Bloqueado</option></select>
+<div class="btns">
+<button class="sec" id="mCancel">Cancelar</button>
+<button class="primary" id="mSave">Salvar</button>
+</div>
+</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const KEY='sharedboard.v1';
+const COLS={todo:'A Fazer',doing:'Em Andamento',done:'Concluído',blocked:'Bloqueado'};
+let cards=JSON.parse(localStorage.getItem(KEY)||'[]');
+let editing=null;
+let dragId=null;
+function save(){localStorage.setItem(KEY,JSON.stringify(cards))}
+function paint(){
+  const kanban=$('#kanban');
+  kanban.innerHTML=Object.keys(COLS).map(c=>{
+    const list=cards.filter(x=>x.col===c);
+    return '<div class="col" data-col="'+c+'" ondragover="event.preventDefault();this.style.borderColor=\'var(--c)\'" ondragleave="this.style.borderColor=\'\'" ondrop="drop(event,\''+c+'\')">'+
+      '<div class="col-head"><span>'+COLS[c]+'</span><span class="cnt">'+list.length+'</span></div>'+
+      list.map(card=>
+        '<div class="card-item" draggable="true" data-id="'+card.id+'" ondragstart="drag(event,'+card.id+')" ondragend="this.classList.remove(\'dragging\');this.style.borderColor=\'\'">'+
+          '<button class="del" onclick="delCard('+card.id+')">✕</button>'+
+          '<div onclick="editCard('+card.id+')"><strong>'+esc(card.title)+'</strong>'+(card.desc?'<div style="color:var(--mut);font-size:12px;margin-top:4px">'+esc(card.desc.slice(0,80))+'</div>':'')+'</div>'+
+        '</div>'
+      ).join('')+
+      '<button class="add-btn" onclick="addIn(\''+c+'\')">+ Adicionar</button>'+
+    '</div>';
+  }).join('');
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+window.drag=(e,id)=>{dragId=id;e.target.classList.add('dragging')};
+window.drop=(e,col)=>{e.preventDefault();if(dragId!=null){const c=cards.find(x=>x.id===dragId);if(c){c.col=col;save();paint()}}dragId=null;e.currentTarget.style.borderColor=''};
+window.delCard=(id)=>{if(confirm('Excluir?')){cards=cards.filter(x=>x.id!==id);save();paint()}};
+window.addIn=(col)=>{editing=null;$('#mTitle').textContent='Novo cartão';$('#fTitle').value='';$('#fDesc').value='';$('#fCol').value=col;$('#modal').classList.add('on');$('#fTitle').focus()};
+window.editCard=(id)=>{editing=id;const c=cards.find(x=>x.id===id);if(!c)return;$('#mTitle').textContent='Editar cartão';$('#fTitle').value=c.title;$('#fDesc').value=c.desc||'';$('#fCol').value=c.col;$('#modal').classList.add('on')};
+$('#add').onclick=()=>addIn('todo');
+$('#mSave').onclick=()=>{
+  const title=$('#fTitle').value.trim();if(!title){alert('Digite um título');return}
+  const data={title,desc:$('#fDesc').value.trim(),col:$('#fCol').value};
+  if(editing){Object.assign(cards.find(x=>x.id===editing),data)}
+  else cards.push({id:Date.now()+Math.floor(Math.random()*1000),...data});
+  save();$('#modal').classList.remove('on');paint();
+};
+$('#mCancel').onclick=()=>$('#modal').classList.remove('on');
+$('#closeM').onclick=()=>$('#modal').classList.remove('on');
+$('#share').onclick=()=>{
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify(cards))));
+  const url=location.origin+location.pathname+'#data='+code;
+  navigator.clipboard?.writeText(url).then(()=>alert('Link copiado! ('+url.length+' chars)')).catch(()=>prompt('Copie o link:',url));
+};
+$('#clear').onclick=()=>{if(confirm('Apagar tudo?')){cards=[];save();paint()}};
+if(location.hash.startsWith('#data=')){
+  try{cards=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6)))));save()}catch{}
+}
+if(!cards.length){
+  cards=[
+    {id:1,col:'todo',title:'Pesquisar concorrentes',desc:'Analisar 5 empresas do setor'},
+    {id:2,col:'todo',title:'Criar landing page',desc:'Hero + features + preços'},
+    {id:3,col:'doing',title:'Design do logo',desc:'3 variações para escolher'},
+    {id:4,col:'done',title:'Definir público-alvo',desc:'Persona definida'},
+  ];
+  save();
+}
+paint();
+</script></body></html>

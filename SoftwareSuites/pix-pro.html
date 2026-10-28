@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PIX Pro — Gerador de BR Code</title>
+<style>
+:root{--bg:#0a0e1a;--card:#111827;--card2:#1a2233;--txt:#e5e7eb;--mut:#6b7280;--acc:#32bcad;--err:#ef4444;--bd:#1f2937}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:20px}
+.app{max-width:900px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#32bcad,#1a9d8f);display:grid;place-items:center;font-size:22px}
+h1{font-size:1.3rem;font-weight:800}h1 span{display:block;font-size:.75rem;color:var(--mut);font-weight:400;margin-top:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px}
+.card h2{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:14px}
+label{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:5px;display:block}
+input,select{width:100%;background:var(--card2);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;color:var(--txt);font-size:14px;outline:none;font-family:inherit;transition:.15s}
+input:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 3px #32bcad33}
+.field{margin-bottom:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button.primary{width:100%;background:var(--acc);border:0;color:#fff;padding:14px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:800;font-family:inherit;transition:.15s;margin-top:8px}
+button.primary:hover{filter:brightness(1.1)}
+button.ghost{width:100%;background:var(--card2);border:1px solid var(--bd);color:var(--txt);padding:11px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:.15s;margin-top:6px}
+button.ghost:hover{border-color:var(--acc)}
+.qr-box{background:#fff;border-radius:14px;padding:20px;display:grid;place-items:center;min-height:280px;margin-bottom:14px}
+.qr-box img{max-width:100%;image-rendering:pixelated}
+.qr-box .empty{color:#9ca3af;font-size:13px;text-align:center;padding:40px}
+.payload{background:var(--card2);border:1px solid var(--bd);border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:11px;word-break:break-all;color:#6ee7b7;line-height:1.5;max-height:120px;overflow-y:auto}
+.msg{padding:12px;border-radius:9px;font-size:12px;text-align:center;margin-top:10px}
+.msg.ok{background:#10b98122;color:#6ee7b7;border:1px solid #10b98155}
+.msg.err{background:#ef444422;color:#fca5a5;border:1px solid #ef444455}
+.info{font-size:11px;color:var(--mut);line-height:1.6;margin-top:10px;padding:10px;background:var(--card2);border-radius:8px}
+.crc{font-family:ui-monospace,monospace;color:var(--acc);font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">💠</div>
+    <h1>PIX Pro — Gerador de BR Code<span>Payload EMV válido · CRC16/CCITT · BACEN</span></h1>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Dados do recebedor</h2>
+      <div class="field"><label>Chave PIX</label><input id="key" placeholder="CPF, CNPJ, email, telefone ou aleatória"></div>
+      <div class="field"><label>Nome do recebedor (máx 25)</label><input id="name" placeholder="João Silva" maxlength="25"></div>
+      <div class="field"><label>Cidade (máx 15)</label><input id="city" placeholder="SAO PAULO" maxlength="15"></div>
+      <div class="row">
+        <div class="field"><label>Valor (opcional)</label><input id="amount" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>TxID (opcional)</label><input id="txid" placeholder="***" maxlength="25"></div>
+      </div>
+      <div class="field"><label>Descrição (opcional)</label><input id="desc" placeholder="Pagamento" maxlength="40"></div>
+      <button class="primary" id="gen">⚡ Gerar BR Code PIX</button>
+    </div>
+
+    <div class="card">
+      <h2>QR Code + Copia e Cola</h2>
+      <div class="qr-box" id="qrbox"><div class="empty">Preencha os dados<br>e clique em <b>Gerar</b></div></div>
+      <div class="payload" id="payload">—</div>
+      <div id="msg"></div>
+      <button class="ghost" id="copy">📋 Copiar payload PIX</button>
+      <button class="ghost" id="test">🔍 Validar CRC16</button>
+      <div class="info">
+        <b>Este BR Code é válido</b> e pode ser pago em qualquer banco brasileiro.
+        O QR Code segue o padrão EMV/BACEN com CRC16-CCITT.
+        <br><span id="crcinfo"></span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+
+// ═══════ CRC16-CCITT (polinômio 0x1021) — padrão BACEN ═══════
+function crc16(str){
+  let crc=0xFFFF;
+  for(let i=0;i<str.length;i++){
+    crc^=(str.charCodeAt(i)<<8);
+    for(let j=0;j<8;j++){
+      crc=(crc&0x8000)?((crc<<1)^0x1021):(crc<<1);
+      crc&=0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4,'0');
+}
+
+// ═══════ TLV (Type-Length-Value) ═══════
+function tlv(id,val){
+  const len=String(val.length).padStart(2,'0');
+  return id+len+val;
+}
+
+// ═══════ Gera payload PIX estático (BR Code) ═══════
+function buildPix({key,name,city,amount,txid,desc}){
+  // 00 - Payload Format Indicator
+  let p=tlv('00','01');
+  // 26 - Merchant Account Information (PIX)
+  let mai='';
+  mai+=tlv('00','br.gov.bcb.pix');  // GUI
+  mai+=tlv('01',key);               // Chave
+  if(desc)mai+=tlv('02',desc);      // Descrição
+  p+=tlv('26',mai);
+  // 52 - Merchant Category Code
+  p+=tlv('52','0000');
+  // 53 - Transaction Currency (986 = BRL)
+  p+=tlv('53','986');
+  // 54 - Transaction Amount
+  if(amount&&parseFloat(amount)>0){
+    p+=tlv('54',parseFloat(amount).toFixed(2));
+  }
+  // 58 - Country Code
+  p+=tlv('58','BR');
+  // 59 - Merchant Name
+  p+=tlv('59',(name||'').toUpperCase().slice(0,25));
+  // 60 - Merchant City
+  p+=tlv('60',(city||'').toUpperCase().slice(0,15));
+  // 62 - Additional Data Field
+  const tid=(txid||'***').slice(0,25);
+  p+=tlv('62',tlv('05',tid));
+  // 63 - CRC16 (placeholder)
+  p+='6304';
+  // Calcula CRC sobre o payload + "6304"
+  const crc=crc16(p);
+  return p+crc;
+}
+
+function build(){
+  const key=$('#key').value.trim();
+  const name=$('#name').value.trim();
+  const city=$('#city').value.trim();
+  if(!key||!name||!city){
+    $('#msg').innerHTML='<div class="msg err">Preencha chave, nome e cidade</div>';
+    return;
+  }
+  const amount=$('#amount').value;
+  const txid=$('#txid').value;
+  const desc=$('#desc').value.trim();
+  const payload=buildPix({key,name,city,amount,txid,desc});
+  $('#payload').textContent=payload;
+
+  // Gera QR Code via API pública (api.qrserver.com)
+  const url='https://api.qrserver.com/v1/create-qr-code/?size=400x400&data='+encodeURIComponent(payload)+'&ecc=M&qzone=2';
+  const img=new Image();
+  img.onload=()=>{ $('#qrbox').innerHTML=''; $('#qrbox').appendChild(img); img.style.width='100%'; img.style.maxWidth='340px'; };
+  img.onerror=()=>{ $('#qrbox').innerHTML='<div class="empty">Erro ao gerar QR</div>'; };
+  img.alt='QR Code PIX'; img.src=url;
+
+  // Mostra CRC
+  const crc=payload.slice(-4);
+  $('#crcinfo').innerHTML='CRC16: <span class="crc">'+crc+'</span> · '+payload.length+' caracteres';
+  $('#msg').innerHTML='<div class="msg ok">✓ BR Code PIX gerado com sucesso</div>';
+}
+
+function validateCRC(){
+  const p=$('#payload').textContent;
+  if(!p||p==='—')return;
+  const body=p.slice(0,-4);
+  const expected=p.slice(-4);
+  const calc=crc16(body+'6304');
+  if(calc===expected){
+    $('#msg').innerHTML='<div class="msg ok">✓ CRC16 válido: '+calc+'</div>';
+  }else{
+    $('#msg').innerHTML='<div class="msg err">✗ CRC inválido. Esperado: '+expected+' · Calculado: '+calc+'</div>';
+  }
+}
+
+$('#gen').onclick=build;
+$('#copy').onclick=async()=>{
+  const p=$('#payload').textContent;
+  if(p==='—')return;
+  try{await navigator.clipboard.writeText(p);$('#msg').innerHTML='<div class="msg ok">📋 Copiado!</div>'}catch{$('#msg').innerHTML='<div class="msg err">Não foi possível copiar</div>'}
+};
+$('#test').onclick=validateCRC;
+
+// Auto-gera exemplo inicial
+$('#key').value='+5511999999999';
+$('#name').value='JOAO SILVA';
+$('#city').value='SAO PAULO';
+build();
+</script>
+</body>
+</html>

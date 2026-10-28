@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OMEGA AGI FORGE</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #121a2e;
+        --panel-alt: #1a2440;
+        --text: #edf3ff;
+        --muted: #a4b3d6;
+        --accent: #7dd3fc;
+        --accent-strong: #38bdf8;
+        --good: #34d399;
+        --bad: #f87171;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; font-family: Arial, sans-serif; background: var(--bg); color: var(--text);
+        min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      }
+      .shell {
+        width: min(980px, calc(100vw - 24px)); display: grid; gap: 16px;
+      }
+      .panel {
+        background: var(--panel); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px;
+      }
+      .header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+      .status { color: var(--good); font-weight: bold; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+      .stat { background: var(--panel-alt); border-radius: 10px; padding: 12px; }
+      .label { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+      .value { font-size: 1.3rem; font-weight: bold; margin-top: 6px; }
+      textarea {
+        width: 100%; min-height: 110px; border-radius: 10px; padding: 12px; border: 1px solid rgba(255,255,255,0.08);
+        background: #0c1222; color: var(--text); resize: vertical;
+      }
+      button {
+        border: 0; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        color: #04111b; cursor: pointer; font-weight: bold; padding: 10px 14px;
+      }
+      .row { display: flex; gap: 10px; flex-wrap: wrap; }
+      .messages { display: grid; gap: 10px; }
+      .message { padding: 10px 12px; border-radius: 8px; background: var(--panel-alt); }
+      .message.user { border-left: 3px solid var(--accent-strong); }
+      .message.assistant { border-left: 3px solid var(--good); }
+      .message strong { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+      .message p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+      pre {
+        white-space: pre-wrap; word-break: break-word; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px;
+      }
+      @media (max-width: 600px) {
+        .header { flex-direction: column; align-items: flex-start; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="panel header">
+        <div>
+          <h1>OMEGA AGI FORGE</h1>
+          <div id="status" class="status">Checking backend…</div>
+        </div>
+        <button id="refresh">Refresh</button>
+      </div>
+
+      <div class="grid panel" id="capabilities"></div>
+
+      <div class="panel">
+        <h2>Ask the runtime</h2>
+        <textarea id="prompt" placeholder="Example: (9 + 3) * 2"></textarea>
+        <div class="row" style="margin-top: 12px;">
+          <button id="submit">Send</button>
+          <button id="new-session" type="button">New session</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Conversation</h2>
+        <div id="messages" class="messages" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <script>
+      const statusEl = document.getElementById('status');
+      const capabilitiesEl = document.getElementById('capabilities');
+      const messagesEl = document.getElementById('messages');
+      const promptEl = document.getElementById('prompt');
+      const sessionKey = 'omega-session-id';
+      function makeSessionId() {
+        return globalThis.crypto && crypto.randomUUID
+          ? crypto.randomUUID().replaceAll('-', '')
+          : `session_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      }
+      function currentSessionId() {
+        try {
+          let id = localStorage.getItem(sessionKey);
+          if (!id) {
+            id = makeSessionId();
+            localStorage.setItem(sessionKey, id);
+          }
+          return id;
+        } catch (_) {
+          return makeSessionId();
+        }
+      }
+      const sessionId = currentSessionId();
+
+      async function fetchJson(url, options = {}) {
+        const response = await fetch(url, options);
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || 'Request failed');
+        }
+        return payload;
+      }
+
+      async function refresh() {
+        try {
+          const health = await fetchJson('/health');
+          statusEl.textContent = health.status === 'ok' ? 'Backend online' : 'Backend unavailable';
+          const caps = await fetchJson('/capabilities');
+          const items = [];
+          for (const [key, value] of Object.entries(caps.capabilities || {})) {
+            const block = document.createElement('div');
+            block.className = 'stat';
+            const label = document.createElement('div');
+            label.className = 'label';
+            label.textContent = key.replaceAll('_', ' ');
+            const valueEl = document.createElement('div');
+            valueEl.className = 'value';
+            valueEl.textContent = String(value);
+            block.append(label, valueEl);
+            items.push(block);
+          }
+          capabilitiesEl.innerHTML = '';
+          items.forEach(el => capabilitiesEl.appendChild(el));
+          const history = await fetchJson(`/sessions/${encodeURIComponent(sessionId)}`);
+          renderMessages(history.messages || []);
+        } catch (error) {
+          statusEl.textContent = 'Backend unavailable';
+          renderMessages([{ role: 'assistant', content: String(error.message || error) }]);
+        }
+      }
+
+      function renderMessages(messages) {
+        messagesEl.replaceChildren();
+        for (const message of messages) {
+          const entry = document.createElement('article');
+          entry.className = `message ${message.role === 'user' ? 'user' : 'assistant'}`;
+          const role = document.createElement('strong');
+          role.textContent = message.role === 'user' ? 'You' : 'OMEGA';
+          const content = document.createElement('p');
+          content.textContent = message.content;
+          entry.append(role, content);
+          messagesEl.appendChild(entry);
+        }
+        if (!messages.length) {
+          const empty = document.createElement('p');
+          empty.textContent = 'No messages in this session yet.';
+          messagesEl.appendChild(empty);
+        }
+      }
+
+      document.getElementById('submit').addEventListener('click', async () => {
+        const prompt = promptEl.value.trim();
+        if (!prompt) {
+          promptEl.focus();
+          return;
+        }
+        statusEl.textContent = 'Processing request…';
+        try {
+          const result = await fetchJson('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, session_id: sessionId })
+          });
+          promptEl.value = '';
+          statusEl.textContent = `Backend online · ${result.model || 'offline'}`;
+          const history = await fetchJson(`/sessions/${encodeURIComponent(result.session_id)}`);
+          renderMessages(history.messages || []);
+        } catch (error) {
+          statusEl.textContent = `Request failed: ${String(error.message || error)}`;
+        }
+      });
+
+      document.getElementById('new-session').addEventListener('click', () => {
+        try { localStorage.setItem(sessionKey, makeSessionId()); } catch (_) {}
+        globalThis.location.reload();
+      });
+      document.getElementById('refresh').addEventListener('click', refresh);
+      refresh();
+    </script>
+  </body>
+</html>

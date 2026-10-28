@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CloudSync</title>
+<style>
+:root{--bg:#0a0e1a;--c:#06b6d4;--card:#111827;--bd:#1f2937;--txt:#e5e7eb;--mut:#6b7280}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:16px;max-width:720px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2rem;color:var(--c);flex:1}
+.logo .ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#06b6d4,#0891b2);display:grid;place-items:center;font-size:20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:14px}
+.card h2{font-size:11px;color:var(--c);text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:12px}
+.desc{font-size:12px;color:var(--mut);line-height:1.6;margin-bottom:14px}
+label{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:800;margin-bottom:5px;display:block}
+textarea,input{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;color:var(--txt);font-size:13px;font-family:ui-monospace,monospace;outline:0;margin-bottom:10px;transition:.15s;resize:vertical;line-height:1.6}
+textarea:focus,input:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(6,182,212,.15)}
+.btn{background:var(--c);color:#000;border:0;padding:12px 20px;border-radius:10px;cursor:pointer;font-weight:800;font-family:inherit;font-size:13px;transition:.15s}
+.btn:hover{filter:brightness(1.15)}
+.btn.sec{background:transparent;color:var(--txt);border:1px solid var(--bd)}
+.btn.sec:hover{border-color:var(--c);color:var(--c)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+@media(max-width:500px){.row{grid-template-columns:1fr}}
+.list{max-height:280px;overflow-y:auto;margin-top:12px}
+.item{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:5px;display:flex;align-items:center;gap:10px;font-size:12px;transition:.15s}
+.item:hover{border-color:var(--c)}
+.item .n{flex:1;font-family:ui-monospace,monospace;color:var(--txt);word-break:break-all;font-size:12px}
+.item .s{font-size:10px;color:var(--mut);font-family:ui-monospace,monospace;white-space:nowrap}
+.item button{background:transparent;border:0;color:var(--mut);cursor:pointer;font-size:14px;padding:3px 6px;transition:.15s}
+.item button:hover{color:var(--c)}
+.share-url{background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.3);border-radius:9px;padding:12px;font-family:ui-monospace,monospace;font-size:11px;word-break:break-all;color:var(--c);line-height:1.5;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px;text-align:center}
+.stat .k{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px}
+.stat .v{font-size:16px;font-weight:800;color:var(--c);font-family:ui-monospace,monospace}
+.empty{text-align:center;color:var(--mut);padding:30px 10px;font-size:12px;font-style:italic}
+</style></head><body>
+<header><div class="logo"><div class="ic">☁️</div>CloudSync</div></header>
+<div class="card">
+<h2>📊 Status</h2>
+<div class="stats">
+<div class="stat"><div class="k">Itens</div><div class="v" id="s1">0</div></div>
+<div class="stat"><div class="k">Tamanho</div><div class="v" id="s2">0B</div></div>
+<div class="stat"><div class="k">Sincronizado</div><div class="v" id="s3">✓</div></div>
+</div>
+</div>
+<div class="card">
+<h2>💾 Criar backup (chave)</h2>
+<div class="desc">Salve qualquer dado JSON em nuvem local. Cada backup gera uma chave única que pode ser importada em outro dispositivo.</div>
+<label>Nome do backup</label>
+<input id="keyName" placeholder="Ex: contatos-2025">
+<label>Dados (JSON ou texto)</label>
+<textarea id="keyData" rows="4" placeholder='{"nome":"João","email":"joao@email.com"}'></textarea>
+<div class="row">
+<button class="btn" id="btnSave">💾 Salvar na nuvem</button>
+<button class="btn sec" id="btnSaveCurrent">📤 Salvar todos os dados do navegador</button>
+</div>
+</div>
+<div class="card">
+<h2>🔑 Backups salvos</h2>
+<div class="list" id="list"></div>
+</div>
+<div class="card">
+<h2>📥 Importar chave externa</h2>
+<div class="desc">Cole uma chave no formato <code style="background:var(--bg);padding:2px 6px;border-radius:4px">cloudsync:chave</code> gerada em outro dispositivo.</div>
+<label>Chave</label>
+<input id="impKey" placeholder="cole a chave aqui">
+<button class="btn" id="btnImport" style="margin-top:10px">📥 Importar</button>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const KEY='cloudsync.v1';
+let data=JSON.parse(localStorage.getItem(KEY)||'{}');
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function fmtSize(bytes){if(bytes<1024)return bytes+'B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+'KB';return (bytes/1024/1024).toFixed(1)+'MB'}
+function paint(){
+  const keys=Object.keys(data);
+  $('#s1').textContent=keys.length;
+  const total=JSON.stringify(data).length;
+  $('#s2').textContent=fmtSize(total);
+  $('#list').innerHTML=keys.length?keys.map(k=>{
+    const item=data[k];
+    const bytes=JSON.stringify(item.d).length;
+    return '<div class="item"><span class="n">'+k+'</span><span class="s">'+fmtSize(bytes)+'</span><button data-k="'+k+'" title="Exportar">⬇</button><button data-del="'+k+'" title="Excluir">✕</button></div>';
+  }).join(''):'<div class="empty">Nenhum backup salvo</div>';
+  document.querySelectorAll('[data-k]').forEach(b=>{
+    b.onclick=()=>{
+      const k=b.dataset.k;
+      const code='cloudsync:'+btoa(unescape(encodeURIComponent(JSON.stringify({k,d:data[k].d,t:data[k].t}))));
+      navigator.clipboard?.writeText(code).then(()=>alert('Chave copiada!\n\n'+code.slice(0,80)+'...'));
+    };
+  });
+  document.querySelectorAll('[data-del]').forEach(b=>{
+    b.onclick=()=>{if(confirm('Excluir '+b.dataset.del+'?')){delete data[b.dataset.del];save();paint()}};
+  });
+}
+$('#btnSave').onclick=()=>{
+  const k=$('#keyName').value.trim();
+  const d=$('#keyData').value.trim();
+  if(!k||!d){alert('Preencha nome e dados');return}
+  try{JSON.parse(d)}catch{alert('JSON inválido');return}
+  data[k]={d:JSON.parse(d),t:Date.now()};
+  save();paint();
+  $('#keyName').value='';$('#keyData').value='';
+  alert('Backup "'+k+'" salvo!');
+};
+$('#btnSaveCurrent').onclick=()=>{
+  const dump={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k!==KEY)dump[k]=localStorage.getItem(k);
+  }
+  const name='auto-'+new Date().toISOString().slice(0,10);
+  data[name]={d:dump,t:Date.now()};
+  save();paint();
+  alert('Todos os dados do navegador salvos em "'+name+'"');
+};
+$('#btnImport').onclick=()=>{
+  const code=$('#impKey').value.trim();
+  if(!code.startsWith('cloudsync:')){alert('Chave inválida');return}
+  try{
+    const payload=JSON.parse(decodeURIComponent(escape(atob(code.slice(10)))));
+    data[payload.k]=payload;
+    save();paint();
+    $('#impKey').value='';
+    alert('Backup "'+payload.k+'" importado!');
+  }catch(e){alert('Erro: '+e.message)}
+};
+paint();
+</script></body></html>

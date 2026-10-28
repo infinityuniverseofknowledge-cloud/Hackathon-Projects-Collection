@@ -1,0 +1,5 @@
+# Privacy
+
+OMEGA creates `.omega/omega.sqlite3` under the project root when run. It stores tasks, explicit user-added memories, indexed text, and event records. No automatic conversation history or memory consolidation exists. `omega memory list`, `omega memory search`, `omega memory delete ID`, and `omega export` provide basic inspection, deletion, and export. Remove the project-owned `.omega/` directory yourself when OMEGA is stopped to erase all local state.
+
+Set `OMEGA_MEMORY_DISABLED=1` to disable CLI memory additions. This does not disable task or knowledge storage. A configured remote chat provider receives the prompt supplied to `omega chat`; local documents, SQLite notes, and credentials are not attached automatically. Do not put secrets in prompts. OMEGA has no telemetry or background network calls. Storage is plaintext and not encrypted.

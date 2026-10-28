@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>AGI Core — Interface</title>
+<style>
+  :root { --bg:#0a0e1a; --fg:#e6f1ff; --acc:#00e5ff; --acc2:#ff2e97; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: radial-gradient(circle at 20% 20%, #131a2e, #05070d);
+    color: var(--fg); min-height: 100vh; padding: 24px;
+  }
+  h1 {
+    font-size: 28px; letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--acc), var(--acc2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .sub { color:#6d7ea6; font-size: 12px; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .panel {
+    background: rgba(15,22,40,.8); border: 1px solid #1e2a4a;
+    border-radius: 12px; padding: 18px;
+    backdrop-filter: blur(8px);
+  }
+  .panel h2 { font-size: 13px; color: var(--acc); margin-bottom: 12px; letter-spacing: 1.5px; }
+  textarea, input {
+    width: 100%; background: #0a0f1e; color: var(--fg);
+    border: 1px solid #223056; border-radius: 8px; padding: 10px;
+    font-family: inherit; font-size: 13px; resize: vertical;
+  }
+  textarea:focus, input:focus { outline: none; border-color: var(--acc); }
+  button {
+    margin-top: 10px; padding: 10px 18px; border: none; border-radius: 8px;
+    background: linear-gradient(90deg, var(--acc), var(--acc2));
+    color: #001018; font-weight: 700; cursor: pointer; letter-spacing: 1px;
+    transition: transform .15s;
+  }
+  button:hover { transform: translateY(-2px); }
+  #output {
+    background:#05070d; border-radius:8px; padding:12px;
+    font-size:12px; color:#9be7ff; max-height:300px; overflow:auto;
+    white-space: pre-wrap; border: 1px solid #16203a;
+  }
+  .metric { display:flex; justify-content:space-between; font-size:12px; padding:4px 0; border-bottom:1px dashed #1e2a4a; }
+  .metric span:last-child { color: var(--acc); }
+</style>
+</head>
+<body>
+  <h1>◇ AGI CORE</h1>
+  <div class="sub">Adaptive Hebbian Attention Network — interface cognitiva em tempo real</div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>▸ INPUT SENSORIAL</h2>
+      <textarea id="input" rows="4" placeholder="Digite um pensamento, pergunta ou estímulo..."></textarea>
+      <button onclick="think()">ENVIAR ESTÍMULO</button>
+
+      <h2 style="margin-top:20px">▸ APRENDIZADO SUPERVISIONADO</h2>
+      <input id="target" placeholder="Alvo (target) para aprender...">
+      <button onclick="learn()">TREINAR</button>
+    </div>
+
+    <div class="panel">
+      <h2>▸ ESTADO COGNITIVO</h2>
+      <div id="metrics"></div>
+      <h2 style="margin-top:16px">▸ FLUXO DE PENSAMENTO</h2>
+      <div id="output">aguardando estímulo...</div>
+    </div>
+  </div>
+
+<script>
+async function think() {
+  const input = document.getElementById('input').value;
+  if (!input) return;
+  const out = document.getElementById('output');
+  out.textContent = '⌛ processando...';
+  const r = await fetch('/api/think', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({input})
+  });
+  const data = await r.json();
+  out.textContent = JSON.stringify(data, null, 2);
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><span>norma do vetor</span><span>${data.vector_norm.toFixed(4)}</span></div>
+    <div class="metric"><span>associações recuperadas</span><span>${data.thoughts.length}</span></div>
+    <div class="metric"><span>timestamp</span><span>${new Date().toLocaleTimeString()}</span></div>
+  `;
+}
+
+async function learn() {
+  const input = document.getElementById('input').value;
+  const target = document.getElementById('target').value;
+  if (!input || !target) return;
+  const r = await fetch('/api/learn', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({input, target})
+  });
+  const data = await r.json();
+  document.getElementById('output').textContent = `✅ loss = ${data.loss.toFixed(6)}`;
+}
+</script>
+</body>
+</html>

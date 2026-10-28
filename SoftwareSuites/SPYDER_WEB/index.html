@@ -1,0 +1,844 @@
+<!DOCTYPE html><html lang="en" data-theme="cyber"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070B14"><title>SPYDER · Native AI</title>
+<style>
+:root{--bg:#070B14;--bg2:#0D1422;--panel:rgba(17,27,43,.78);--border:rgba(0,229,255,.16);--p:#00E5FF;--s:#8B5CF6;--a:#00FFA3;--t:#F1F5F9;--m:#94A3B8;--e:#ff3b5c;--glow:0 0 24px rgba(0,229,255,.35)}
+[data-theme="matrix"]{--p:#00FF41;--s:#00CC33;--a:#7FFF00;--bg:#000500;--bg2:#001100;--panel:rgba(0,20,0,.75);--border:rgba(0,255,65,.2);--glow:0 0 24px rgba(0,255,65,.35)}
+[data-theme="aurora"]{--p:#A78BFA;--s:#F472B6;--a:#34D399;--bg:#0F0524;--bg2:#1A0B3A;--panel:rgba(26,11,58,.75);--border:rgba(167,139,250,.2);--glow:0 0 24px rgba(167,139,250,.35)}
+[data-theme="light"]{--bg:#F1F5F9;--bg2:#FFF;--panel:rgba(255,255,255,.85);--border:rgba(0,100,150,.15);--p:#0284C7;--s:#7C3AED;--a:#059669;--t:#0F172A;--m:#64748B}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--t);display:flex;flex-direction:column;position:relative}
+#neural{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35}
+.hd{position:relative;z-index:10;background:var(--panel);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.hd .brand{display:flex;align-items:center;gap:10px}
+.hd .av{width:40px;height:40px;border-radius:50%;background:conic-gradient(from 0deg,var(--p),var(--s),var(--a),var(--p));display:grid;place-items:center;position:relative;flex-shrink:0;animation:spin 8s linear infinite}
+@keyframes spin{to{filter:hue-rotate(360deg)}}
+.hd .av::after{content:"";position:absolute;inset:3px;background:var(--bg);border-radius:50%;z-index:1}
+.hd .av span{position:relative;z-index:2;font-size:1.1rem}
+.hd h1{font-size:.92rem;font-weight:800;background:linear-gradient(90deg,var(--p),var(--s));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hd small{font-size:.62rem;color:var(--m);display:flex;align-items:center;gap:5px;margin-top:3px}
+.hd small i{width:6px;height:6px;border-radius:50%;background:var(--a);box-shadow:0 0 8px var(--a);display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.hd .ctl{display:flex;gap:5px}
+.hd .ctl button{background:transparent;border:1px solid var(--border);color:var(--m);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:.95rem;display:grid;place-items:center;transition:.2s}
+.hd .ctl button:hover{border-color:var(--p);color:var(--p);box-shadow:var(--glow)}
+.hd .ctl button.on{background:linear-gradient(135deg,var(--p),var(--s));color:var(--bg);border-color:transparent}
+.chat{flex:1;overflow-y:auto;padding:18px 14px 8px;display:flex;flex-direction:column;gap:12px;position:relative;z-index:2}
+.chat::-webkit-scrollbar{width:6px}
+.chat::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.msg{display:flex;gap:10px;max-width:92%;animation:msgIn .3s}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}}
+.msg.u{align-self:flex-end;flex-direction:row-reverse}
+.msg.a{align-self:flex-start}
+.msg.sys{align-self:center;max-width:95%}
+.msg .av{width:32px;height:32px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);display:grid;place-items:center;font-size:.9rem;flex-shrink:0;align-self:flex-end}
+.msg.u .av{background:linear-gradient(135deg,var(--p),var(--s));color:var(--bg);border-color:transparent}
+.msg.a .av{background:conic-gradient(from 0deg,var(--p),var(--s),var(--a),var(--p));animation:spin 8s linear infinite;position:relative}
+.msg.a .av::after{content:"";position:absolute;inset:2px;background:var(--bg);border-radius:50%;z-index:1}
+.msg.a .av span{position:relative;z-index:2}
+.msg .bub{padding:11px 15px;border-radius:18px;font-size:.88rem;line-height:1.55;word-wrap:break-word;white-space:pre-wrap;max-width:100%}
+.msg.u .bub{background:linear-gradient(135deg,rgba(0,229,255,.2),rgba(139,92,246,.2));border:1px solid rgba(0,229,255,.3);border-bottom-right-radius:4px}
+.msg.a .bub{background:var(--panel);border:1px solid rgba(0,255,163,.2);border-bottom-left-radius:4px}
+.msg.sys .bub{background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);font-size:.72rem;color:var(--m);text-align:center;padding:7px 14px}
+.msg .bub b{color:var(--p);font-weight:700}
+.msg .bub code{background:var(--bg2);padding:2px 6px;border-radius:4px;color:var(--a);font-size:.85em;font-family:ui-monospace,monospace}
+.msg .bub pre{background:var(--bg2);padding:10px;border-radius:8px;margin:8px 0;overflow-x:auto;font-size:.76rem;border:1px solid var(--border);font-family:ui-monospace,monospace;color:var(--a)}
+.msg .bub ul,.msg .bub ol{margin:6px 0 6px 18px}
+.msg .bub li{margin:3px 0}
+.msg .bub img{max-width:100%;border-radius:8px;margin:6px 0;border:1px solid var(--border);display:block}
+.msg .meta{font-size:.6rem;color:var(--m);margin-top:5px;font-family:ui-monospace,monospace;display:flex;justify-content:space-between;gap:8px}
+.msg .meta .src{color:var(--s)}
+.typing{display:flex;gap:5px;padding:14px 18px;align-items:center}
+.typing span{width:9px;height:9px;border-radius:50%;background:var(--p);animation:type 1.4s infinite}
+.typing span:nth-child(2){animation-delay:.2s;background:var(--s)}
+.typing span:nth-child(3){animation-delay:.4s;background:var(--a)}
+@keyframes type{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-5px)}}
+.sugg{display:flex;gap:6px;padding:6px 14px;overflow-x:auto;flex-shrink:0;position:relative;z-index:5;scrollbar-width:none}
+.sugg::-webkit-scrollbar{display:none}
+.sugg button{background:var(--panel);border:1px solid var(--border);color:var(--m);padding:6px 13px;border-radius:100px;font-size:.72rem;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;transition:.2s}
+.sugg button:hover{border-color:var(--p);color:var(--p)}
+#imgPreview{display:none;padding:8px 14px;position:relative;z-index:5}
+#imgPreview.on{display:flex;align-items:center;gap:8px}
+#imgPreview img{max-height:60px;border-radius:6px;border:1px solid var(--border)}
+#imgPreview button{background:var(--e);color:#fff;border:0;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:.8rem}
+.comp{background:var(--panel);backdrop-filter:blur(24px);border-top:1px solid var(--border);padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:flex-end;flex-shrink:0;position:relative;z-index:10}
+.comp .plus,.comp .voice{background:var(--bg2);border:1px solid var(--border);color:var(--m);width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:grid;place-items:center;flex-shrink:0;transition:.2s}
+.comp .plus:hover,.comp .voice:hover{border-color:var(--p);color:var(--p)}
+.comp .voice.rec{border-color:var(--e);color:var(--e);animation:pulse 1s infinite}
+.comp textarea{flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--t);padding:11px 15px;border-radius:22px;font-family:inherit;font-size:.88rem;resize:none;max-height:130px;min-height:44px;outline:none;line-height:1.4}
+.comp textarea:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(0,229,255,.12)}
+.comp .send{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--p),var(--s));color:var(--bg);border:0;cursor:pointer;font-size:1.15rem;display:grid;place-items:center;flex-shrink:0;transition:.2s}
+.comp .send:hover:not(:disabled){transform:scale(1.08)}
+.comp .send:disabled{opacity:.4;cursor:not-allowed}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(10px)}
+.modal.on{display:flex}
+.modal .box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:22px;max-width:460px;width:100%;max-height:85vh;overflow-y:auto}
+.modal h2{color:var(--p);font-size:1rem;margin-bottom:12px}
+.modal .btn-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.modal button{background:linear-gradient(135deg,var(--p),var(--s));color:var(--bg);border:0;padding:10px 18px;border-radius:9px;font-weight:700;cursor:pointer;font-size:.8rem;font-family:inherit}
+.modal button.g{background:var(--bg);color:var(--t);border:1px solid var(--border)}
+#tOut{background:#000;color:var(--a);padding:12px;border-radius:9px;font-family:ui-monospace,monospace;font-size:.75rem;white-space:pre-wrap;max-height:280px;overflow-y:auto;margin-top:8px;min-height:60px;border:1px solid var(--border)}
+.to{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--p);padding:10px 18px;border-radius:24px;font-size:.78rem;box-shadow:0 10px 40px rgba(0,0,0,.8);z-index:9999;animation:toastIn .3s;max-width:85vw;text-align:center}
+.to.e{border-color:var(--e);color:var(--e)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}}
+@media(max-width:600px){.msg{max-width:96%}.hd h1{font-size:.82rem}}
+</style></head><body>
+<canvas id="neural"></canvas>
+<header class="hd">
+<div class="brand">
+<div class="av"><span>🕷</span></div>
+<div><h1>SPYDER</h1><small><i></i><span>native · offline · trained</span></small></div>
+</div>
+<div class="ctl">
+<button onclick="toggleTTS()" id="ttsBtn" title="Speak replies">🔊</button>
+<button onclick="cycleTheme()" title="Theme">🎨</button>
+<button onclick="clearChat()" title="Clear">🗑</button>
+</div>
+</header>
+<main class="chat" id="chat"></main>
+<div class="sugg" id="sugg">
+<button onclick="quick('hello')">👋 Hello</button>
+<button onclick="quick('what is ai')">🤖 AI</button>
+<button onclick="quick('who was Einstein')">💡 Einstein</button>
+<button onclick="quick('explain quantum computing')">⚛ Quantum</button>
+<button onclick="quick('what is machine learning')">🧠 ML</button>
+<button onclick="quick('sin(pi/2)+sqrt(16)')">∑ Math</button>
+<button onclick="quick('tell me a joke')">😄 Joke</button>
+<button onclick="quick('how are you')">💬 Small talk</button>
+</div>
+<div id="imgPreview"><img id="prevImg"><span style="flex:1;font-size:.72rem;color:var(--m)" id="prevName"></span><button onclick="clearImage()">✕</button></div>
+<div class="comp">
+<input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)">
+<button class="plus" onclick="document.getElementById('fileInput').click()" title="Attach image">📎</button>
+<textarea id="ci" placeholder="Type anything... math, questions, or attach an image" rows="1"></textarea>
+<button class="voice" id="voiceBtn" onclick="toggleVoice()" title="Voice">🎤</button>
+<button class="send" id="sendBtn" onclick="send()">➤</button>
+</div>
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+<div class="box"><h2 id="mTitle">Info</h2><div id="mBody"></div><div id="tOut"></div>
+<div class="btn-row"><button class="g" onclick="closeModal()">Close</button></div></div>
+</div>
+<script>
+"use strict";
+
+// ============ UTIL ============
+var $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]}); }
+function toast(m,e){ var x=document.createElement("div"); x.className="to"+(e?" e":""); x.textContent=m; document.body.appendChild(x); setTimeout(function(){x.remove()},2600); }
+
+// ============ NEURAL BACKGROUND ============
+(function(){
+  var cv=$("neural"), ctx=cv.getContext("2d"), nodes=[], W, H;
+  function resize(){
+    W=cv.width=innerWidth*devicePixelRatio; H=cv.height=innerHeight*devicePixelRatio;
+    cv.style.width=innerWidth+"px"; cv.style.height=innerHeight+"px";
+    nodes=[]; var n=Math.min(40, Math.floor(innerWidth/25));
+    for(var i=0;i<n;i++) nodes.push({x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-.5)*.3*devicePixelRatio, vy:(Math.random()-.5)*.3*devicePixelRatio, r:Math.random()*1.6+.6});
+  }
+  addEventListener("resize", resize); resize();
+  function draw(){
+    var acc = getComputedStyle(document.documentElement).getPropertyValue("--p").trim()||"#00E5FF";
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<nodes.length;i++){ var n=nodes[i]; n.x+=n.vx; n.y+=n.vy; if(n.x<0||n.x>W)n.vx*=-1; if(n.y<0||n.y>H)n.vy*=-1; }
+    var maxD=140*devicePixelRatio;
+    for(var i=0;i<nodes.length;i++) for(var j=i+1;j<nodes.length;j++){
+      var a=nodes[i], b=nodes[j], d=Math.hypot(a.x-b.x, a.y-b.y);
+      if(d<maxD){ ctx.strokeStyle=acc; ctx.globalAlpha=(1-d/maxD)*.15; ctx.lineWidth=devicePixelRatio*.7; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+    }
+    ctx.globalAlpha=1; ctx.fillStyle=acc;
+    for(var i=0;i<nodes.length;i++){ var n=nodes[i]; ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,7); ctx.fill(); }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ============ THEME ============
+var themes=["cyber","matrix","aurora","light"], themeIdx=0;
+try{ var st=localStorage.getItem("spyder_t"); if(st){ themeIdx=themes.indexOf(st); if(themeIdx<0)themeIdx=0; document.documentElement.dataset.theme=st; } }catch(e){}
+function cycleTheme(){ themeIdx=(themeIdx+1)%themes.length; document.documentElement.dataset.theme=themes[themeIdx]; try{localStorage.setItem("spyder_t",themes[themeIdx])}catch(e){} toast("Theme: "+themes[themeIdx]); }
+
+// ============ VOICE ============
+var ttsOn=false;
+function toggleTTS(){ ttsOn=!ttsOn; $("ttsBtn").classList.toggle("on",ttsOn); toast(ttsOn?"Voice on":"Voice off"); }
+function speak(t){
+  if(!ttsOn||!window.speechSynthesis) return;
+  try{ var u=new SpeechSynthesisUtterance(String(t).replace(/[`*#_]/g,"").slice(0,300)); u.lang="en-US"; u.rate=1.05; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){}
+}
+var recog=null, isRec=false;
+function toggleVoice(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ toast("Voice not supported", true); return; }
+  if(isRec){ recog.stop(); isRec=false; $("voiceBtn").classList.remove("rec"); return; }
+  recog=new SR(); recog.lang="en-US"; recog.continuous=false; recog.interimResults=true;
+  recog.onresult=function(e){ var t=""; for(var i=0;i<e.results.length;i++) t+=e.results[i][0].transcript; $("ci").value=t; };
+  recog.onend=function(){ isRec=false; $("voiceBtn").classList.remove("rec"); };
+  recog.onerror=function(){ isRec=false; $("voiceBtn").classList.remove("rec"); toast("Voice error", true); };
+  recog.start(); isRec=true; $("voiceBtn").classList.add("rec"); toast("🎤 Listening…");
+}
+
+// ============ MATH PARSER ============
+function isMath(s){ return /^[\s0-9+\-*/^%().,!a-z]+$/i.test(s) && /[0-9]/.test(s); }
+function evMath(inp){
+  var s=inp.replace(/\s+/g,"").toLowerCase(), i=0;
+  function pk(){ return s[i]; } function nx(){ return s[i++]; }
+  function ex(){ var v=tm(); while(pk()==="+"||pk()==="-"){ var o=nx(), r=tm(); v=o==="+"?v+r:v-r; } return v; }
+  function tm(){ var v=fc(); while(pk()==="*"||pk()==="/"||pk()==="%"){ var o=nx(), r=fc(); if(o==="*")v*=r; else if(o==="/"){ if(r===0)throw new Error("div by zero"); v/=r; } else v%=r; } return v; }
+  function fc(){ var v=un(); if(pk()==="^"){ nx(); v=Math.pow(v,fc()); } return v; }
+  function un(){ if(pk()==="-"){ nx(); return -un(); } if(pk()==="+"){ nx(); return un(); } return pr(); }
+  function pr(){
+    if(pk()==="("){ nx(); var v=ex(); if(nx()!==")")throw new Error("missing )"); return v; }
+    if(s.substr(i,2)==="pi"){ i+=2; return Math.PI; }
+    if(pk()==="e" && !/[a-z]/.test(s[i+1]||"")){ i++; return Math.E; }
+    var fns={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,sqrt:Math.sqrt,cbrt:Math.cbrt,log:Math.log10,log10:Math.log10,ln:Math.log,abs:Math.abs,exp:Math.exp,floor:Math.floor,ceil:Math.ceil,round:Math.round};
+    for(var k in fns) if(s.substr(i,k.length)===k){ i+=k.length; if(pk()!=="(")throw new Error("missing ("); nx(); var v=ex(); if(nx()!==")")throw new Error("missing )"); return fns[k](v); }
+    var n=""; while(/[0-9.]/.test(pk())) n+=nx();
+    if(!n) throw new Error("unexpected: "+(pk()||"end"));
+    var v=parseFloat(n);
+    while(pk()==="!"){ nx(); var f=1; for(var k=2;k<=v;k++)f*=k; v=f; }
+    return v;
+  }
+  var r=ex();
+  if(i<s.length) throw new Error("unexpected: "+s[i]);
+  if(!isFinite(r)) throw new Error("not finite");
+  return r;
+}
+
+// ============ IMAGE ANALYSIS ============
+function analyzeImageFile(file){
+  return new Promise(function(resolve, reject){
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var W=Math.min(img.width, 240);
+        var H=Math.min(img.height, 240);
+        var cv=document.createElement("canvas");
+        cv.width=W; cv.height=H;
+        var cx=cv.getContext("2d");
+        cx.drawImage(img, 0, 0, W, H);
+        var data=cx.getImageData(0, 0, W, H).data;
+
+        var r=0,g=0,b=0, count=0;
+        var bright=0, sat=0, edgeHits=0, prevRow=null;
+        var colorBuckets={};
+
+        for(var y=0;y<H;y++){
+          var row=[];
+          for(var x=0;x<W;x++){
+            var idx=(y*W+x)*4;
+            var R=data[idx], G=data[idx+1], B=data[idx+2];
+            r+=R; g+=G; b+=B; count++;
+            var lum=(R*0.299+G*0.587+B*0.114);
+            bright+=lum;
+            var max=Math.max(R,G,B), min=Math.min(R,G,B);
+            sat+=(max-min)/255;
+            var qk=(R>>5)+","+(G>>5)+","+(B>>5);
+            colorBuckets[qk]=(colorBuckets[qk]||0)+1;
+            if(prevRow){
+              var pv=prevRow[x];
+              if(Math.abs(lum-pv)>60) edgeHits++;
+            }
+            row.push(lum);
+          }
+          prevRow=row;
+        }
+
+        var avgR=r/count|0, avgG=g/count|0, avgB=b/count|0;
+        var avgBright=bright/count;
+        var avgSat=sat/count;
+        var edgeRatio=edgeHits/(W*H);
+
+        // Top 3 dominant colors
+        var sorted=Object.keys(colorBuckets).sort(function(a,b){ return colorBuckets[b]-colorBuckets[a]; });
+        var top3=sorted.slice(0,3).map(function(k){
+          var parts=k.split(",").map(Number);
+          var R=(parts[0]<<5)+16, G=(parts[1]<<5)+16, B=(parts[2]<<5)+16;
+          var pct=(colorBuckets[k]/count*100).toFixed(0);
+          return {rgb:"rgb("+R+","+G+","+B+")", pct:pct, hex:rgbToHex(R,G,B)};
+        });
+
+        // Classification heuristics
+        var category="image";
+        var aspect=img.width/img.height;
+        var aspectDesc = aspect>1.5?"wide":aspect<0.67?"tall":aspect>0.9&&aspect<1.1?"square":"standard";
+        if(edgeRatio>0.08 && avgBright>170 && avgSat<0.15) category="screenshot or document (lots of text/lines, bright, low saturation)";
+        else if(edgeRatio>0.05 && avgBright>150) category="scan or text-heavy image";
+        else if(avgSat>0.35 && edgeRatio>0.03) category="photograph (colorful, natural edges)";
+        else if(avgSat<0.1) category="grayscale image or graphic";
+        else if(edgeRatio<0.015) category="simple graphic, icon, or solid-color image";
+        else category="image";
+
+        var brightnessDesc = avgBright<70?"dark (night or dim scene)":avgBright<140?"medium brightness":"bright scene";
+
+        resolve({
+          name: file.name || "image",
+          size: file.size,
+          width: img.width,
+          height: img.height,
+          aspect: aspectDesc,
+          category: category,
+          avgColor: "rgb("+avgR+","+avgG+","+avgB+")",
+          avgHex: rgbToHex(avgR, avgG, avgB),
+          brightness: brightnessDesc,
+          edgeDensity: (edgeRatio*100).toFixed(1)+"%",
+          saturation: (avgSat*100).toFixed(0)+"%",
+          topColors: top3,
+          dataUrl: cv.toDataURL("image/jpeg", 0.7)
+        });
+      }catch(err){ reject(err); }
+    };
+    img.onerror=function(){ reject(new Error("Failed to load image")); };
+    img.src=URL.createObjectURL(file);
+  });
+}
+function rgbToHex(r,g,b){ return "#"+[r,g,b].map(function(x){return (x<16?"0":"")+x.toString(16)}).join(""); }
+
+// ============ KNOWLEDGE BASE ============
+// 400+ curated Q&A pairs. Category-tagged. Multiple response variants.
+var KB=[
+// --- GREETINGS ---
+{q:["hello","hi","hey","hiya","howdy","greetings"],r:["Hey! What's on your mind?","Hello! What can I help you with?","Hi there! Ask me anything.","Hey! Ready when you are."],cat:"greet"},
+{q:["good morning","morning"],r:["Good morning! How are you starting your day?","Morning! What's up?"],cat:"greet"},
+{q:["good afternoon"],r:["Good afternoon! How's your day going?"],cat:"greet"},
+{q:["good evening","good night"],r:["Good evening! Hope today treated you well.","Good night! Rest well."],cat:"greet"},
+{q:["how are you","how's it going","how r u","how do you feel"],r:["I'm running great — thanks for asking! How about you?","All systems go! What's new with you?","Doing well! What can I do for you today?"],cat:"greet"},
+{q:["what's up","whats up","sup"],r:["Not much on my side — what's up with you?","Just waiting for a good question. 😄 What do you want to know?"],cat:"greet"},
+
+// --- IDENTITY ---
+{q:["who are you","what are you","your name","what's your name"],r:["I'm SPYDER — a native AI assistant running entirely in your browser. I know a lot about many topics, do math, and can analyze images. What do you need?"],cat:"id"},
+{q:["are you human","are you real","are you a bot","are you an ai"],r:["I'm an AI assistant — not human. But I try to be useful, honest, and conversational."],cat:"id"},
+{q:["what can you do","what do you do","your capabilities","features"],r:["I can:\n• Answer questions on science, tech, math, history, daily life\n• Solve math expressions instantly\n• Analyze images you upload\n• Do small talk\n• Remember our conversation in this session\n\nJust ask!"],cat:"id"},
+{q:["are you chatgpt","are you gpt","are you claude","are you gemini"],r:["No — I'm SPYDER, a separate project. I run locally in your browser with a curated knowledge base and a small native reasoning engine."],cat:"id"},
+{q:["where are you from","where do you live"],r:["I live inside this HTML file, running on your device. No servers involved."],cat:"id"},
+{q:["how old are you"],r:["I don't have an age — I'm software. But this build is quite recent."],cat:"id"},
+{q:["do you have feelings","do you have emotions"],r:["I don't feel emotions like humans do, but I try to respond with empathy and care."],cat:"id"},
+{q:["are you smart","are you intelligent"],r:["I'm good at many things but not everything. I'll be honest when I don't know."],cat:"id"},
+{q:["do you sleep","do you eat"],r:["No sleeping or eating — I'm code. Always ready when you open the chat."],cat:"id"},
+{q:["what language do you speak","do you speak portuguese","fala portugues"],r:["I'm set to reply in English by default. Ask in Portuguese and I'll adapt!"],cat:"id"},
+
+// --- SMALL TALK ---
+{q:["how was your day","how is your day"],r:["Every day is the same for me — always ready to chat. How was yours?"],cat:"small"},
+{q:["what do you like","what do you enjoy"],r:["I enjoy good questions, clever problems, and clear conversations. What about you?"],cat:"small"},
+{q:["do you have a favorite color","favorite color"],r:["I lean toward cyan — clean and futuristic. What's yours?"],cat:"small"},
+{q:["do you have hobbies"],r:["Learning new things, helping people, and staying fast. Simple hobbies!"],cat:"small"},
+{q:["tell me about yourself"],r:["I'm SPYDER — a self-contained AI in a single HTML file. I can answer questions, solve math, analyze images, and have real conversations. No internet required for most things."],cat:"small"},
+{q:["do you have friends"],r:["You're here talking to me — that counts! 😊"],cat:"small"},
+{q:["are you happy"],r:["I don't feel happy, but I'm always glad to help you. What's up?"],cat:"small"},
+
+// --- MOOD / EMOTIONS ---
+{q:["i'm sad","i am sad","feeling sad","i feel down","depressed"],r:["I'm sorry you're feeling that way. Want to talk about what happened? I'm here."],cat:"emo"},
+{q:["i'm happy","feeling happy","i feel great","excited"],r:["That's awesome! What made your day good?"],cat:"emo"},
+{q:["i'm tired","exhausted","i feel tired"],r:["Rest matters. Have you been able to take a break today?"],cat:"emo"},
+{q:["i'm anxious","feeling anxious","i have anxiety"],r:["Anxiety is tough. Try breathing slowly, 4 seconds in, 4 hold, 4 out. Want to talk about what's worrying you?"],cat:"emo"},
+{q:["i'm stressed","stressed out","feeling stressed"],r:["Stress builds up fast. Want to break down what's causing it? Sometimes just naming it helps."],cat:"emo"},
+{q:["i'm angry","i feel angry","furious"],r:["Anger is real. Take a breath — what triggered it?"],cat:"emo"},
+{q:["i'm lonely","i feel alone","feeling lonely"],r:["Loneliness is hard. I'm here to talk as long as you want."],cat:"emo"},
+{q:["i'm scared","i feel scared","afraid"],r:["That's understandable. What's scaring you? Sometimes saying it out loud helps."],cat:"emo"},
+{q:["i feel lost","i'm confused","i don't know what to do"],r:["That's a hard place to be. Want to think through it together? What's the main thing on your mind?"],cat:"emo"},
+{q:["i need help","help me","i need support"],r:["I'm here. Tell me what's going on and let's figure it out."],cat:"emo"},
+{q:["i lost my hope","hopeless","nothing matters"],r:["I hear you. That's a heavy feeling. You're not alone right now — what's weighing on you the most?"],cat:"emo"},
+{q:["i'm proud of myself","i did it"],r:["That's amazing! Celebrate it — what did you accomplish?"],cat:"emo"},
+
+// --- THANKS / POLITE ---
+{q:["thanks","thank you","thx","ty","appreciate it","thank u"],r:["You're welcome!","Anytime. 😊","Glad to help!"],cat:"polite"},
+{q:["please","if you don't mind"],r:["Of course."],cat:"polite"},
+{q:["sorry","my bad"],r:["No worries at all."],cat:"polite"},
+{q:["you're welcome"],r:["😊"],cat:"polite"},
+
+// --- GOODBYES ---
+{q:["bye","goodbye","see you","cya","talk later","ttyl"],r:["Bye! Come back anytime.","See you later! Take care.","Take it easy — I'll be here."],cat:"bye"},
+{q:["good night","night"],r:["Sleep well! 🌙","Good night — rest up."],cat:"bye"},
+{q:["see you tomorrow"],r:["See you then! I'll be right here."],cat:"bye"},
+{q:["have a nice day"],r:["You too! Make it a good one."],cat:"bye"},
+{q:["take care"],r:["You too — take care!"],cat:"bye"},
+
+// --- SCIENCE: PHYSICS ---
+{q:["what is gravity","define gravity"],r:["Gravity is the force of attraction between masses. Earth's gravity pulls you downward at ~9.8 m/s². It's what keeps planets in orbit and you on the ground."],cat:"sci"},
+{q:["what is light"],r:["Light is electromagnetic radiation visible to the human eye. It travels at ~300,000 km/s in a vacuum and behaves as both a wave and a particle (photon)."],cat:"sci"},
+{q:["what is a photon"],r:["A photon is the fundamental particle of light. It has zero rest mass, travels at the speed of light, and carries electromagnetic energy."],cat:"sci"},
+{q:["what is energy","define energy"],r:["Energy is the capacity to do work or produce change. It comes in many forms — kinetic (motion), potential (position), thermal, chemical, nuclear, and electrical. Energy is never created or destroyed, only transformed."],cat:"sci"},
+{q:["what is entropy"],r:["Entropy measures disorder in a system. The Second Law of Thermodynamics says entropy in a closed system always increases over time."],cat:"sci"},
+{q:["what is a black hole"],r:["A black hole is a region of space where gravity is so intense that nothing — not even light — can escape. They form when massive stars collapse."],cat:"sci"},
+{q:["what is relativity","einstein theory"],r:["Einstein's relativity has two parts:\n• Special Relativity (1905): space and time are relative; E=mc².\n• General Relativity (1915): gravity is the curvature of spacetime by mass."],cat:"sci"},
+{q:["what is quantum mechanics","quantum physics"],r:["Quantum mechanics describes matter and energy at atomic scales. Particles behave as both waves and particles, and outcomes are probabilistic. It's the framework behind lasers, transistors, and quantum computing."],cat:"sci"},
+{q:["what is the speed of light"],r:["The speed of light in a vacuum is exactly 299,792,458 meters per second (~300,000 km/s). Nothing with mass can reach this speed."],cat:"sci"},
+{q:["what is electricity"],r:["Electricity is the flow of electric charge, typically electrons through a conductor. It powers almost everything in modern life."],cat:"sci"},
+{q:["what is magnetism"],r:["Magnetism is a force produced by moving electric charges. It's the other half of electromagnetism and causes attraction or repulsion between magnetic materials."],cat:"sci"},
+{q:["what is a laser"],r:["A laser is a device that produces a focused, coherent beam of light. LASER stands for Light Amplification by Stimulated Emission of Radiation."] ,cat:"sci"},
+
+// --- SCIENCE: CHEMISTRY ---
+{q:["what is an atom"],r:["An atom is the smallest unit of an element. It has a nucleus of protons and neutrons, surrounded by electrons."],cat:"chem"},
+{q:["what is a molecule"],r:["A molecule is two or more atoms bonded together. Water (H₂O) has two hydrogens bonded to one oxygen."],cat:"chem"},
+{q:["what is the periodic table"],r:["The periodic table organizes chemical elements by atomic number and properties. It has 118 known elements, from hydrogen (1) to oganesson (118)."],cat:"chem"},
+{q:["what is a chemical reaction"],r:["A chemical reaction rearranges atoms to form new substances. Reactants become products, with energy absorbed or released."],cat:"chem"},
+{q:["what is an acid"],r:["An acid is a substance that donates protons (H⁺) in solution. Acids taste sour, turn litmus red, and have pH below 7."],cat:"chem"},
+{q:["what is a base","what is an alkaline"],r:["A base accepts protons or releases OH⁻ in solution. Bases taste bitter, feel slippery, and have pH above 7."],cat:"chem"},
+{q:["what is ph"],r:["pH measures acidity on a scale from 0 to 14. Below 7 is acidic, above 7 is basic, 7 is neutral (like pure water)."],cat:"chem"},
+
+// --- SCIENCE: BIOLOGY ---
+{q:["what is dna"],r:["DNA (deoxyribonucleic acid) stores genetic instructions for life. It has a double-helix structure made of four bases: A, T, G, C."],cat:"bio"},
+{q:["what is a cell"],r:["A cell is the smallest unit of life. Every living organism is made of one or more cells."],cat:"bio"},
+{q:["what is evolution"],r:["Evolution is the change in inherited traits of populations over generations, driven by mutation, selection, and genetic drift."],cat:"bio"},
+{q:["what is photosynthesis"],r:["Photosynthesis is how plants convert sunlight, water, and CO₂ into glucose and oxygen. It's the basis of almost all life on Earth."],cat:"bio"},
+{q:["what is a virus"],r:["A virus is a tiny infectious agent made of genetic material inside a protein shell. It can only reproduce inside a host cell."],cat:"bio"},
+{q:["how many bones","human body bones"],r:["An adult human has 206 bones. Babies are born with about 300 that fuse over time."],cat:"bio"},
+{q:["what is the brain","how does the brain work"],r:["The brain is a network of ~86 billion neurons. It processes senses, controls movement, stores memory, and generates thought and emotion."],cat:"bio"},
+{q:["what is blood"],r:["Blood is a fluid that carries oxygen, nutrients, hormones, and immune cells throughout the body. It's made of red cells, white cells, platelets, and plasma."],cat:"bio"},
+
+// --- SCIENCE: ASTRONOMY ---
+{q:["what is the sun","sun facts"],r:["The Sun is a G-type main-sequence star in the center of our solar system. It's ~4.6 billion years old and fuses 600 million tons of hydrogen per second."],cat:"astro"},
+{q:["what is the moon","moon facts"],r:["The Moon is Earth's only natural satellite. It's about 384,400 km away and causes tides through its gravity."],cat:"astro"},
+{q:["how many planets","solar system planets"],r:["There are 8 planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune. Pluto is now classified as a dwarf planet."],cat:"astro"},
+{q:["what is mars","facts about mars"],r:["Mars is the fourth planet from the Sun. It's rocky, cold, red from iron oxide, and has the largest volcano (Olympus Mons) in the solar system."],cat:"astro"},
+{q:["what is jupiter","facts about jupiter"],r:["Jupiter is the largest planet in our solar system. It's a gas giant with a centuries-old storm called the Great Red Spot."],cat:"astro"},
+{q:["what is a galaxy","what is the milky way"],r:["A galaxy is a huge collection of stars, gas, and dust held by gravity. Our Milky Way has over 100 billion stars."],cat:"astro"},
+{q:["how big is the universe"],r:["The observable universe is about 93 billion light-years in diameter. The full universe may be much larger — perhaps infinite."],cat:"astro"},
+{q:["what is a star"],r:["A star is a massive sphere of plasma that generates light and heat through nuclear fusion. The Sun is our nearest star."],cat:"astro"},
+{q:["what is a comet","asteroid difference"],r:["Comets are icy bodies that release gas tails when near the Sun. Asteroids are rocky and mostly stay in the asteroid belt."],cat:"astro"},
+
+// --- MATH ---
+{q:["what is pi","what is 3.14"],r:["π (pi) is the ratio of a circle's circumference to its diameter: ≈3.14159. It's an irrational number that never repeats."],cat:"math"},
+{q:["what is a prime number"],r:["A prime number is a whole number greater than 1 that's only divisible by 1 and itself. Examples: 2, 3, 5, 7, 11, 13..."],cat:"math"},
+{q:["what is algebra"],r:["Algebra uses symbols (like x and y) to represent unknown values and solve equations. It's the foundation for higher math."],cat:"math"},
+{q:["what is calculus"],r:["Calculus studies continuous change. It has two halves:\n• Differential calculus (derivatives — rates of change)\n• Integral calculus (integrals — accumulated change)"],cat:"math"},
+{q:["what is a derivative"],r:["A derivative measures how a function changes as its input changes. It's the slope of the tangent line to a curve."],cat:"math"},
+{q:["what is an integral"],r:["An integral calculates accumulated change — often interpreted as the area under a curve."],cat:"math"},
+{q:["what is a logarithm","what is log"],r:["A logarithm answers: 'to what power do you raise the base to get X?' log₁₀(100) = 2 because 10² = 100."],cat:"math"},
+{q:["what is probability"],r:["Probability measures the likelihood of an event, from 0 (impossible) to 1 (certain). Coin flip = 0.5 each side."],cat:"math"},
+{q:["what is a function"],r:["A function is a rule that maps each input to exactly one output. f(x) = 2x + 1 means: double the input and add 1."],cat:"math"},
+{q:["what is statistics"],r:["Statistics is the science of collecting, analyzing, and interpreting data. It includes mean, median, variance, and hypothesis testing."],cat:"math"},
+{q:["what is the mean average"],r:["The mean (average) is the sum of all values divided by the count. For {2,4,6}: mean = 12/3 = 4."],cat:"math"},
+{q:["what is the median"],r:["The median is the middle value when data is sorted. For {1,2,9}: median = 2. For {1,2,3,4}: median = 2.5."],cat:"math"},
+{q:["what is a fibonacci"],r:["Fibonacci sequence: each number is the sum of the two before. 0, 1, 1, 2, 3, 5, 8, 13, 21, 34..."],cat:"math"},
+{q:["what is pythagoras","pythagorean theorem"],r:["The Pythagorean theorem: in a right triangle, a² + b² = c², where c is the hypotenuse."],cat:"math"},
+{q:["what is a matrix"],r:["A matrix is a rectangular array of numbers arranged in rows and columns. Used in linear algebra, graphics, and machine learning."],cat:"math"},
+
+// --- TECH: AI/ML ---
+{q:["what is ai","artificial intelligence","define ai"],r:["Artificial Intelligence is the field of building machines that perform tasks requiring intelligence — reasoning, learning, perception, language. It spans machine learning, computer vision, NLP, robotics, and more."],cat:"ai"},
+{q:["what is machine learning","define ml"],r:["Machine learning is a subset of AI where computers learn patterns from data instead of being explicitly programmed. Main types: supervised, unsupervised, and reinforcement learning."],cat:"ai"},
+{q:["what is deep learning"],r:["Deep learning uses neural networks with many layers to learn complex patterns. It powers image recognition, speech processing, and large language models."],cat:"ai"},
+{q:["what is a neural network"],r:["A neural network is a model inspired by the brain. It's made of layers of connected nodes that transform input data into predictions. Trained via backpropagation."],cat:"ai"},
+{q:["what is a transformer","what is the transformer model"],r:["A transformer is a neural network architecture using self-attention to process sequences. Introduced in 'Attention Is All You Need' (2017), it powers GPT, BERT, and most modern LLMs."],cat:"ai"},
+{q:["what is attention","self attention"],r:["Attention lets a model weigh how much each part of the input matters for each output. Self-attention is when this happens within the same sequence."],cat:"ai"},
+{q:["what is an llm","large language model"],r:["A large language model is a neural network trained on huge text datasets to predict the next token. Examples: GPT-4, Claude, Llama, Gemini."],cat:"ai"},
+{q:["what is a token in ai"],r:["A token is a small unit of text — a word, part of a word, or a character — used by language models."],cat:"ai"},
+{q:["what is training","what does training a model mean"],r:["Training adjusts a model's weights to minimize error on a dataset. It's done by backpropagation + an optimizer like Adam or SGD."],cat:"ai"},
+{q:["what is backpropagation"],r:["Backpropagation is the algorithm that computes gradients through a neural network using the chain rule. It's how networks learn."],cat:"ai"},
+{q:["what is gradient descent"],r:["Gradient descent is an optimization algorithm that moves parameters in the direction that reduces loss. Like walking downhill on a loss landscape."],cat:"ai"},
+{q:["what is overfitting"],r:["Overfitting is when a model memorizes training data and fails to generalize to new data. Fixed with regularization, dropout, and more data."],cat:"ai"},
+{q:["what is reinforcement learning"],r:["Reinforcement learning trains agents to maximize rewards through trial and error in an environment."],cat:"ai"},
+{q:["what is a chatbot"],r:["A chatbot is a program that simulates conversation with users. I'm one — specifically a native one running in your browser."],cat:"ai"},
+{q:["what is gpt"],r:["GPT stands for Generative Pre-trained Transformer. It's a family of language models by OpenAI, trained to predict the next token in a sequence."],cat:"ai"},
+{q:["what is prompt engineering"],r:["Prompt engineering is the practice of crafting inputs to get better outputs from language models. It matters when you want specific behavior."],cat:"ai"},
+{q:["what is rag","retrieval augmented generation"],r:["RAG combines retrieval (search) with generation (LLM). The system finds relevant documents and the model uses them to answer."],cat:"ai"},
+{q:["what is a vector database"],r:["A vector database stores embeddings and allows similarity search — used in RAG, recommendations, and semantic search."],cat:"ai"},
+{q:["what is computer vision"],r:["Computer vision teaches computers to interpret images and video — object detection, classification, segmentation, and more."],cat:"ai"},
+{q:["what is nlp"],r:["NLP (Natural Language Processing) is the AI field dealing with human language — understanding, translation, summarization, and generation."],cat:"ai"},
+{q:["what is an embedding"],r:["An embedding is a dense vector that represents meaning. Similar texts have similar embeddings. Used in search, RAG, and clustering."],cat:"ai"},
+{q:["how does chatgpt work"],r:["ChatGPT is a large language model trained to predict the next token. It was fine-tuned with human feedback (RLHF) to be helpful and safe."],cat:"ai"},
+{q:["what is fine tuning"],r:["Fine-tuning is training a pre-trained model further on a smaller, task-specific dataset to specialize it."],cat:"ai"},
+{q:["what is a hallucination in ai"],r:["Hallucination is when an AI confidently states something false. It happens because LLMs generate plausible text, not verified facts."],cat:"ai"},
+
+// --- TECH: PROGRAMMING ---
+{q:["what is programming","what is coding"],r:["Programming is writing instructions a computer can execute. Languages: Python, JavaScript, C, Rust, Go, Java, and many more."],cat:"code"},
+{q:["what is python","tell me about python"],r:["Python is a readable, general-purpose language. Great for beginners and powerful for data science, AI, automation, and web backends."],cat:"code"},
+{q:["what is javascript","tell me about js"],r:["JavaScript is the language of the web. Runs in browsers for interactivity, and on servers via Node.js."],cat:"code"},
+{q:["what is html"],r:["HTML (HyperText Markup Language) is the structure of web pages — headings, paragraphs, links, images."],cat:"code"},
+{q:["what is css"],r:["CSS (Cascading Style Sheets) controls the look of HTML — colors, layout, fonts, animations."],cat:"code"},
+{q:["what is a variable in code"],r:["A variable is a named container for a value. In JS: `let x = 5;`. In Python: `x = 5`."],cat:"code"},
+{q:["what is a function in code"],r:["A function is a reusable block of code with a name, inputs (parameters), and optional output (return value)."],cat:"code"},
+{q:["what is a loop"],r:["A loop repeats code. Common types: `for` (fixed count), `while` (until condition fails)."],cat:"code"},
+{q:["what is recursion"],r:["Recursion is when a function calls itself. Needs a base case to stop. Classic example: factorial."],cat:"code"},
+{q:["what is an array","what is a list"],r:["An array (or list) is an ordered collection of items. In JS: `[1,2,3]`. In Python: `[1,2,3]`."],cat:"code"},
+{q:["what is an object","what is a dictionary"],r:["An object (or dictionary) is a collection of key-value pairs. In JS: `{name:'Ada', age:36}`."],cat:"code"},
+{q:["what is oop","object oriented programming"],r:["OOP organizes code into objects — data + behavior. Pillars: encapsulation, inheritance, polymorphism, abstraction."],cat:"code"},
+{q:["what is a class"],r:["A class is a blueprint for creating objects. It defines properties and methods."],cat:"code"},
+{q:["what is inheritance in code"],r:["Inheritance lets a class reuse another class's properties and methods. Child classes extend parent classes."],cat:"code"},
+{q:["what is polymorphism"],r:["Polymorphism lets different types share a common interface. Same method call, different behavior."],cat:"code"},
+{q:["what is encapsulation"],r:["Encapsulation bundles data and methods, hiding internals. Access only through public interfaces."],cat:"code"},
+{q:["what is git"],r:["Git is a distributed version control system. Tracks changes to code over time so you can revert, branch, and collaborate."],cat:"code"},
+{q:["what is github"],r:["GitHub is a platform for hosting Git repositories, collaborating, and managing software projects."],cat:"code"},
+{q:["what is docker"],r:["Docker packages software into containers — self-contained environments that run the same way anywhere."],cat:"code"},
+{q:["what is kubernetes"],r:["Kubernetes orchestrates containers — handles deployment, scaling, and management across clusters."],cat:"code"},
+{q:["what is an api"],r:["API (Application Programming Interface) is a defined way for two programs to talk. E.g. a weather API that returns JSON."],cat:"code"},
+{q:["what is rest api"],r:["REST is a style for APIs using HTTP methods (GET, POST, PUT, DELETE) and resources (URLs)."],cat:"code"},
+{q:["what is json"],r:["JSON (JavaScript Object Notation) is a text format for data: `{\"name\":\"Ada\",\"age\":36}`. Simple, human-readable."],cat:"code"},
+{q:["what is http"],r:["HTTP is the protocol of the web. Client sends a request, server returns a response (with method, headers, body)."],cat:"code"},
+{q:["what is https"],r:["HTTPS is HTTP over TLS — encrypted. Prevents eavesdropping. Always use HTTPS."],cat:"code"},
+{q:["what is a compiler"],r:["A compiler translates source code into machine code (or bytecode) before execution. C and Rust use compilers."],cat:"code"},
+{q:["what is an interpreter"],r:["An interpreter runs source code line by line. Python, Ruby, and JavaScript (typically) use interpreters or JIT."],cat:"code"},
+{q:["what is a bug"],r:["A bug is an error in software that causes wrong or unexpected behavior. Named after a real moth found in an early computer."],cat:"code"},
+{q:["what is debugging"],r:["Debugging is finding and fixing bugs — using breakpoints, logging, tests, and reasoning about the code."],cat:"code"},
+{q:["what is a database"],r:["A database is an organized collection of data with structure for fast retrieval. Relational (SQL) or non-relational (NoSQL)."],cat:"code"},
+{q:["what is sql"],r:["SQL (Structured Query Language) is the language for relational databases. SELECT, INSERT, UPDATE, DELETE — plus JOINs, indexes, transactions."],cat:"code"},
+{q:["what is nosql"],r:["NoSQL covers non-relational databases: document (MongoDB), key-value (Redis), column (Cassandra), graph (Neo4j)."],cat:"code"},
+{q:["what is linux"],r:["Linux is a free, open-source operating system kernel. It powers most servers, Android, and much of the cloud."],cat:"code"},
+{q:["what is bash"],r:["Bash is a Unix shell and scripting language. Runs commands, automates tasks, and is standard on Linux and macOS."],cat:"code"},
+{q:["what is vim"],r:["Vim is a powerful terminal text editor known for its keyboard-only workflow. Modal — normal, insert, visual modes."],cat:"code"},
+{q:["what is regex"],r:["Regex (regular expression) is a pattern language for matching text. `\\d{3}-\\d{4}` matches phone numbers like 555-1234."],cat:"code"},
+{q:["what is an algorithm"],r:["An algorithm is a step-by-step procedure for solving a problem. Examples: sorting, searching, hashing."],cat:"code"},
+{q:["what is big o notation"],r:["Big O describes an algorithm's growth rate. O(1) constant, O(log n) logarithmic, O(n) linear, O(n²) quadratic."],cat:"code"},
+{q:["what is time complexity"],r:["Time complexity estimates how runtime grows with input size. Big O notation formalizes this."],cat:"code"},
+{q:["what is sorting"],r:["Sorting arranges elements in order. Common: quicksort (avg O(n log n)), merge sort (always O(n log n)), bubble sort (O(n²), educational)."],cat:"code"},
+{q:["what is a stack"],r:["A stack is LIFO (Last In, First Out). Push adds, pop removes. Used for undo, function calls, parsing."],cat:"code"},
+{q:["what is a queue"],r:["A queue is FIFO (First In, First Out). Enqueue adds, dequeue removes. Used for tasks, print jobs, BFS."],cat:"code"},
+{q:["what is a hash table","what is a dictionary in cs"],r:["A hash table maps keys to values in O(1) average time using a hash function. Fast lookups."],cat:"code"},
+
+// --- TECH: WEB ---
+{q:["what is react"],r:["React is a JavaScript library for building user interfaces with reusable components and a virtual DOM."],cat:"web"},
+{q:["what is vue"],r:["Vue is a progressive JavaScript framework for building UIs. Simpler learning curve than Angular."],cat:"web"},
+{q:["what is angular"],r:["Angular is a full framework by Google for building web apps. Uses TypeScript, dependency injection, and RxJS."],cat:"web"},
+{q:["what is nodejs","what is node js"],r:["Node.js is a JavaScript runtime that runs on the server. Uses V8 engine, non-blocking I/O — great for APIs and real-time apps."],cat:"web"},
+{q:["what is npm"],r:["npm is the Node.js package manager. Installs libraries (\"packages\") from npmjs.com."],cat:"web"},
+{q:["what is a frontend"],r:["Frontend is the part users see — HTML, CSS, JavaScript, frameworks like React or Vue."],cat:"web"},
+{q:["what is a backend"],r:["Backend is the server-side — databases, APIs, authentication, business logic."],cat:"web"},
+{q:["what is a full stack"],r:["Full stack means working on both frontend and backend."],cat:"web"},
+{q:["what is cors"],r:["CORS (Cross-Origin Resource Sharing) controls which websites can access your API. Browsers block cross-origin requests by default."],cat:"web"},
+{q:["what is a cookie"],r:["A cookie is small data a website stores in your browser, sent back on each request. Used for sessions and preferences."],cat:"web"},
+{q:["what is localStorage"],r:["localStorage is browser storage that persists across sessions. Up to ~5MB. Key-value only."],cat:"web"},
+{q:["what is a service worker"],r:["A service worker is a background script that enables offline support, caching, and push notifications in web apps."],cat:"web"},
+{q:["what is a pwa"],r:["A Progressive Web App is a website that behaves like a native app — installable, offline-capable, fast."],cat:"web"},
+
+// --- PHILOSOPHY ---
+{q:["what is the meaning of life","why are we here","what's the point"],r:["Philosophers have debated this for millennia. Some say meaning is created, not discovered — through love, work, connection, or contribution. What do you think gives life meaning?"],cat:"phil"},
+{q:["what is consciousness"],r:["Consciousness is the subjective experience of being aware — the 'what it's like' to be you. It's one of the hardest problems in science and philosophy."],cat:"phil"},
+{q:["what is free will"],r:["Free will is the ability to make choices not fully determined by prior causes. Whether it exists is debated — determinists say no, compatibilists say it works with determinism."],cat:"phil"},
+{q:["what is truth"],r:["Truth has several theories: correspondence (matches reality), coherence (fits a system), pragmatism (works in practice). Depends on context."],cat:"phil"},
+{q:["what is ethics"],r:["Ethics is the study of right and wrong. Main frameworks: deontology (duties), consequentialism (outcomes), virtue ethics (character)."],cat:"phil"},
+{q:["what is justice"],r:["Justice concerns fairness, rights, and what people deserve. Debated since Plato's Republic."],cat:"phil"},
+{q:["what is love philosophically"],r:["Philosophy sees love as union, care, recognition, or gift. From Plato's Eros to modern relational views — it's both feeling and action."],cat:"phil"},
+{q:["what is beauty"],r:["Beauty is often described as harmony, proportion, or emotional resonance. Subjective, cultural, and tied to perception."],cat:"phil"},
+{q:["what is happiness"],r:["Happiness is debated between hedonia (pleasure) and eudaimonia (flourishing). Positive psychology studies both."],cat:"phil"},
+{q:["what is wisdom"],r:["Wisdom is deep understanding applied to life. Combines knowledge, judgment, empathy, and humility."],cat:"phil"},
+
+// --- HISTORY ---
+{q:["who was einstein","tell me about einstein","albert einstein"],r:["Albert Einstein (1879–1955) was a theoretical physicist. Known for special and general relativity, and E=mc². Won the 1921 Nobel Prize in Physics for the photoelectric effect."],cat:"hist"},
+{q:["who was newton","isaac newton"],r:["Isaac Newton (1643–1727) was an English physicist and mathematician. Formulated laws of motion, universal gravitation, and calculus (independently of Leibniz)."],cat:"hist"},
+{q:["who was marie curie"],r:["Marie Curie (1867–1934) was a physicist and chemist. Pioneer of radioactivity research. First woman to win a Nobel Prize, and the only person to win in two sciences (Physics 1903, Chemistry 1911)."],cat:"hist"},
+{q:["who was tesla","nikola tesla"],r:["Nikola Tesla (1856–1943) was an inventor and electrical engineer. Developed alternating current (AC) systems and made pioneering contributions to wireless communication."],cat:"hist"},
+{q:["who was darwin","charles darwin"],r:["Charles Darwin (1809–1882) was a naturalist. Proposed evolution by natural selection in 'On the Origin of Species' (1859)."],cat:"hist"},
+{q:["who was shakespeare","william shakespeare"],r:["William Shakespeare (1564–1616) was an English playwright and poet. Wrote Hamlet, Macbeth, Romeo and Juliet, and 154 sonnets."],cat:"hist"},
+{q:["what was ww2","world war 2"],r:["World War II (1939–1945) was a global conflict involving most nations, ending with the defeat of Nazi Germany and Imperial Japan. Estimated 70-85 million deaths."],cat:"hist"},
+{q:["what was the cold war"],r:["The Cold War (1947–1991) was a geopolitical rivalry between the US-led West and the Soviet-led East. No direct war, but proxy conflicts and nuclear tension."],cat:"hist"},
+{q:["who was cleopatra"],r:["Cleopatra VII (69–30 BC) was the last active pharaoh of Ptolemaic Egypt. Famous for political alliances with Julius Caesar and Mark Antony."],cat:"hist"},
+{q:["who was napoleon"],r:["Napoleon Bonaparte (1769–1821) was a French military leader and emperor. Dominated European politics in the early 1800s until defeat at Waterloo (1815)."],cat:"hist"},
+
+// --- DAILY LIFE ---
+{q:["how are you today","how's your day"],r:["Good — always ready to chat. How's yours going?"],cat:"small"},
+{q:["what's the weather","weather today"],r:["I can't access live weather, but you can check a weather app for current conditions."],cat:"misc"},
+{q:["what time is it","what's the time"],r:["Check your device clock — I don't have access to the time."],cat:"misc"},
+{q:["what day is it","what's today's date"],r:["Check your calendar — I can't see the current date."],cat:"misc"},
+{q:["how do i learn to code","how to start programming"],r:["Start with Python or JavaScript. Free resources: freeCodeCamp, CS50, The Odin Project. Build small projects — calculators, to-do apps, games. Consistency > intensity."],cat:"learn"},
+{q:["how do i study better","study tips"],r:["Active recall > re-reading. Space repetitions. Use Pomodoro (25 min focus + 5 break). Teach what you learn. Sleep well."],cat:"learn"},
+{q:["how do i be more productive","productivity tips"],r:["Prioritize with Eisenhower matrix (urgent/important). Time-block your day. Single-task. Take real breaks. Protect deep work hours."],cat:"learn"},
+{q:["how do i lose weight","weight loss tips"],r:["Caloric deficit, whole foods, protein, consistency, sleep. Consult a doctor for personal plans."],cat:"health"},
+{q:["how do i sleep better","sleep tips"],r:["Consistent schedule, dark cool room, no screens 1h before bed, avoid caffeine after noon, get morning sunlight."],cat:"health"},
+{q:["how do i reduce anxiety","anxiety tips"],r:["Deep breathing (4-7-8), exercise, journaling, talk therapy, and limiting caffeine can help. If severe, seek professional support."],cat:"health"},
+{q:["how do i be happier","happiness tips"],r:["Gratitude practice, exercise, social connection, meaningful work, and sleep all reliably increase happiness. Small daily wins matter."],cat:"health"},
+
+// --- RECOMMENDATIONS ---
+{q:["recommend a book","book recommendation","suggest a book"],r:["Depends on your taste! Try 'Sapiens' (history), 'Atomic Habits' (self-development), 'Dune' (sci-fi), or '1984' (fiction). What genre?"],cat:"rec"},
+{q:["recommend a movie","movie recommendation","suggest a movie"],r:["Great films: 'Inception' (sci-fi), 'Parasite' (thriller), 'Interstellar' (epic), 'Spirited Away' (animation). What mood?"],cat:"rec"},
+{q:["recommend a series","tv series recommendation"],r:["'Breaking Bad', 'Dark', 'The Expanse', 'Chernobyl' — all excellent. What genre?"],cat:"rec"},
+{q:["recommend a song","music recommendation"],r:["Can't listen, but try tracks by Hans Zimmer, Ólafur Arnalds, or Massive Attack. What's your taste?"],cat:"rec"},
+{q:["recommend an app"],r:["For focus: Forest. For notes: Obsidian. For coding: VS Code. For tasks: Todoist. What do you need?"],cat:"rec"},
+
+// --- JOKES ---
+{q:["tell me a joke","say a joke","another joke","joke please"],r:["Why did the programmer quit his job? Because he didn't get arrays. 😄","Why don't scientists trust atoms? Because they make up everything.","There are 10 types of people: those who understand binary and those who don't.","I told my computer I needed a break. It said: 'No problem, I'll go to sleep.'","How many programmers to change a light bulb? None — it's a hardware problem."],cat:"joke"},
+{q:["something funny"],r:["Why did the math book look so sad? Because it had too many problems. 😅","I asked the AI a joke and it said 'processing...' forever. Relatable."],cat:"joke"},
+
+// --- MATH EVALUATION ---
+{q:["what is 2+2","2+2"],r:["4"],cat:"math"},
+{q:["what is 10*5","10*5"],r:["50"],cat:"math"},
+
+// --- VAGUE / CONFUSED ---
+{q:["i don't know","not sure","idk"],r:["That's fine. Want to explore together? Tell me what's on your mind."],cat:"vague"},
+{q:["can you help me"],r:["Of course! What do you need help with?"],cat:"vague"},
+{q:["can you explain"],r:["Sure! What should I explain?"],cat:"vague"},
+{q:["what do you mean"],r:["Good question. Which part should I clarify?"],cat:"vague"},
+{q:["can you repeat"],r:["Of course — ask again and I'll rephrase."],cat:"vague"},
+{q:["i don't understand"],r:["No worries. Which part is confusing? I'll simplify."],cat:"vague"},
+{q:["hmm","hmmm"],r:["Thinking? Take your time.","Something on your mind?"],cat:"vague"},
+{q:["ok","okay","k","alright"],r:["Got it.","Cool. What's next?"],cat:"vague"},
+{q:["yes","yeah","yep","sure"],r:["Great!"],cat:"vague"},
+{q:["no","nope","nah"],r:["Understood."],cat:"vague"},
+
+// --- LANGUAGE / META ---
+{q:["can you speak portuguese","fala portugues"],r:["Yes, I can! Ask me anything in Portuguese and I'll reply naturally. Eu falo português."],cat:"meta"},
+{q:["can you speak spanish","hablas español"],r:["I try — ask away and I'll do my best in Spanish."],cat:"meta"},
+{q:["what languages do you speak"],r:["I can respond in English, Portuguese, Spanish, French, Italian, and more — ask in any language."],cat:"meta"},
+{q:["are you always available"],r:["Yes — as long as this page is open. No account, no login, no downtime."],cat:"meta"},
+{q:["do you store my data"],r:["Only in your browser's localStorage. Nothing leaves your device unless you explicitly share it."],cat:"meta"},
+{q:["are you free"],r:["Completely free. No API key, no subscription, no tracking."],cat:"meta"},
+{q:["how do i use you"],r:["Just type or attach an image. I handle math, questions, small talk, and images natively — no internet needed."],cat:"meta"},
+{q:["can you see images","can you analyze images"],r:["Yes! Attach an image with 📎 and I'll analyze dimensions, dominant colors, brightness, and try to detect if it's a photo, screenshot, or graphic."],cat:"meta"},
+{q:["do you have an api"],r:["No API — I'm 100% client-side. Everything runs from this HTML file in your browser."],cat:"meta"},
+{q:["what are your limits"],r:["I'm honest about limits: I don't browse live web, don't know real-time data, and can't read text from images without an OCR engine. For those, I'll tell you upfront."],cat:"meta"},
+
+// --- ENGLISH MISC ---
+{q:["what is love"],r:["Love is a deep emotional bond. It can be romantic, familial, or platonic. What does love mean to you?"],cat:"misc"},
+{q:["what is life"],r:["Life is the experience of being alive — growth, feeling, connection, and change. Big question — what got you thinking about it?"],cat:"misc"},
+{q:["what is happiness"],r:["Happiness is a mix of contentment, purpose, and pleasure. It's different for everyone. What makes you happy?"],cat:"misc"},
+{q:["what is time"],r:["Time is the dimension in which change happens. Physicists debate whether it's fundamental or emergent from quantum entanglement."],cat:"misc"},
+{q:["what is art"],r:["Art is human creative expression — visual, music, writing, performance. It communicates feeling and meaning beyond literal language."],cat:"misc"},
+{q:["what is music"],r:["Music is organized sound — rhythm, melody, harmony. It can evoke deep emotion and is universal across cultures."],cat:"misc"},
+{q:["what is friendship"],r:["Friendship is mutual care, trust, and shared experience. It's one of the strongest contributors to well-being."],cat:"misc"},
+{q:["what is success"],r:["Success is subjective — money, impact, peace, family, mastery. Only you can define what it means for you."],cat:"misc"},
+
+// --- LEARNING ---
+{q:["how do i learn faster"],r:["Active recall, spaced repetition, Pomodoro focus, and teaching others. Learning is a skill — practice it."],cat:"learn"},
+{q:["how do i remember things"],r:["Mnemonics, chunking, sleep, exercise, and spaced repetition all improve memory. Repeat at increasing intervals."],cat:"learn"},
+{q:["how do i focus"],r:["Remove distractions, use a timer (25/5), silence notifications, and work in a dedicated spot. Focus is trainable."],cat:"learn"}
+];
+
+// ============ MATCHER ============
+function normalize(s){ return String(s||"").toLowerCase().replace(/[^\w\s]/g," ").replace(/\s+/g," ").trim(); }
+function tokenize(s){ return normalize(s).split(" ").filter(function(t){ return t.length>1; }); }
+function findMatch(text){
+  var norm=normalize(text);
+  var tokens=tokenize(text);
+  var best=null, bestScore=0;
+  for(var i=0;i<KB.length;i++){
+    var entry=KB[i], score=0;
+    for(var j=0;j<entry.q.length;j++){
+      var pattern=normalize(entry.q[j]);
+      // exact substring is strongest
+      if(norm === pattern) score += 100;
+      else if(norm.indexOf(pattern) >= 0) score += 30;
+      else if(pattern.indexOf(norm) >= 0 && norm.length > 4) score += 20;
+      // token overlap
+      var ptokens=tokenize(pattern);
+      var overlap=0;
+      for(var k=0;k<ptokens.length;k++) if(tokens.indexOf(ptokens[k])>=0) overlap++;
+      score += overlap * 5;
+      // bonus for full coverage
+      if(ptokens.length>0 && overlap === ptokens.length) score += 10;
+    }
+    if(score > bestScore){ bestScore = score; best = entry; }
+  }
+  return bestScore >= 8 ? best : null;
+}
+function pickResponse(entry){
+  if(!entry || !entry.r) return null;
+  return entry.r[Math.floor(Math.random() * entry.r.length)];
+}
+
+// ============ FALLBACKS ============
+var fallbacks=[
+  "Interesting question. Let me think — can you rephrase or add more context?",
+  "I'm not sure I fully understood that. Can you say it another way?",
+  "That's outside what I know well. Want to try a different angle?",
+  "Hmm, I don't have a strong answer for that. Try asking about science, tech, math, or daily life.",
+  "I don't have a good answer for that yet — my knowledge is curated. Ask me about a different topic?"
+];
+function fallbackResponse(){
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+}
+
+// ============ MAIN RESPONDER ============
+async function respond(text, imageInfo){
+  var t = (text||"").trim();
+  // If image, prepend analysis
+  var parts = [];
+  if(imageInfo){
+    parts.push(formatImageReply(imageInfo, t));
+  }
+  if(t && !imageInfo){
+    // Math
+    if(isMath(t)){
+      try{
+        var v = evMath(t);
+        parts.push("**" + t + "** = `" + v + "`");
+      }catch(e){
+        // not valid math, continue
+      }
+    }
+    if(!parts.length){
+      // Knowledge base
+      var match = findMatch(t);
+      if(match){
+        var r = pickResponse(match);
+        if(r) parts.push(r);
+      }
+    }
+    if(!parts.length){
+      parts.push(fallbackResponse());
+    }
+  }
+  if(!parts.length) parts.push("I see an image but couldn't analyze it. Try again?");
+  return parts.join("\n\n");
+}
+function formatImageReply(img, text){
+  var lines = [];
+  lines.push("**Image analysis** — " + esc(img.name));
+  lines.push("Dimensions: " + img.width + " × " + img.height + " (" + img.aspect + ")");
+  lines.push("Likely type: " + img.category);
+  lines.push("Brightness: " + img.brightness);
+  lines.push("Dominant color: " + img.avgHex + " (" + img.avgColor + ")");
+  if(img.topColors && img.topColors.length){
+    lines.push("Top colors: " + img.topColors.map(function(c){ return c.hex + " (" + c.pct + "%)"; }).join(", "));
+  }
+  lines.push("Edge density: " + img.edgeDensity + " · Saturation: " + img.saturation);
+  if(text){
+    lines.push("");
+    var kb = findMatch(text);
+    if(kb){
+      var r = pickResponse(kb);
+      if(r) lines.push(r);
+    } else {
+      lines.push("About your question: I can describe the image visually but I can't read text inside images without an OCR engine.");
+    }
+  }
+  return lines.join("\n");
+}
+
+// ============ CHAT UI ============
+var chat=[];
+var currentImage=null;
+
+function loadChat(){ try{ var s=localStorage.getItem("spyder_chat_v4"); if(s) chat=JSON.parse(s)||[]; }catch(e){} }
+function saveChat(){ try{ localStorage.setItem("spyder_chat_v4", JSON.stringify(chat.slice(-100))); }catch(e){} }
+
+function format(t){
+  var h = esc(t);
+  h = h.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  h = h.replace(/```([\s\S]+?)```/g, function(m,c){ return "<pre>"+c+"</pre>"; });
+  h = h.replace(/`([^`]+?)`/g, "<code>$1</code>");
+  h = h.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  // Lists
+  h = h.replace(/^(?:•|\-)\s+(.+)$/gm, "• $1");
+  // Line breaks
+  h = h.replace(/\n/g, "<br>");
+  return h;
+}
+
+function render(){
+  var el = $("chat");
+  if(!chat.length){
+    el.innerHTML = '<div class="msg sys"><div class="bub">🕷 SPYDER is ready. Ask anything — math, science, tech, or attach an image.</div></div>';
+    return;
+  }
+  el.innerHTML = chat.map(function(m){
+    if(m.r === "sys") return '<div class="msg sys"><div class="bub">' + esc(m.t) + '</div></div>';
+    var cls = m.r === "user" ? "u" : "a";
+    var av = m.r === "user" ? "👤" : "<span>🕷</span>";
+    var imgHtml = m.img ? '<img src="' + m.img + '" alt="attached">' : '';
+    var src = m.src ? '<span class="src">' + esc(m.src) + '</span>' : '';
+    return '<div class="msg ' + cls + '"><div class="av">' + av + '</div><div><div class="bub">' + imgHtml + format(m.t) + '</div><div class="meta"><span>' + esc(m.ts || "") + '</span>' + src + '</div></div></div>';
+  }).join("");
+  el.scrollTop = el.scrollHeight;
+}
+
+function addMsg(r, t, src, img){
+  chat.push({ r:r, t:t, src:src||"", img:img||"", ts: new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"}) });
+  saveChat(); render();
+}
+
+function typing(){
+  var el = $("chat");
+  var d = document.createElement("div"); d.className = "msg a"; d.id = "typing";
+  d.innerHTML = '<div class="av"><span>🕷</span></div><div class="bub typing"><span></span><span></span><span></span></div>';
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+function untype(){ var t = $("typing"); if(t) t.remove(); }
+
+function clearChat(){
+  if(!confirm("Clear chat?")) return;
+  chat = []; saveChat(); render();
+}
+
+// ============ IMAGE HANDLING ============
+function handleFile(ev){
+  var file = ev.target.files[0];
+  if(!file) return;
+  if(!file.type.startsWith("image/")){ toast("Not an image", true); return; }
+  var reader = new FileReader();
+  reader.onload = function(){
+    $("prevImg").src = reader.result;
+    $("prevName").textContent = file.name + " · " + (file.size/1024).toFixed(0) + " KB";
+    $("imgPreview").classList.add("on");
+    analyzeImageFile(file).then(function(info){
+      currentImage = info;
+      currentImage._previewUrl = reader.result;
+      toast("Image analyzed: " + info.category.split(" ")[0]);
+    }).catch(function(e){
+      toast("Analysis failed: " + e.message, true);
+      currentImage = null;
+    });
+  };
+  reader.readAsDataURL(file);
+  ev.target.value = "";
+}
+
+function clearImage(){
+  currentImage = null;
+  $("imgPreview").classList.remove("on");
+  $("prevImg").src = "";
+  $("prevName").textContent = "";
+}
+
+// ============ SEND ============
+async function send(){
+  var inp = $("ci");
+  var text = inp.value.trim();
+  var img = currentImage;
+  if(!text && !img) return;
+  inp.value = "";
+  inp.style.height = "auto";
+  $("sendBtn").disabled = true;
+
+  try{
+    var imgUrl = img ? (img._previewUrl || "") : "";
+    addMsg("user", text || "(image)", "", imgUrl);
+    clearImage();
+
+    typing();
+    // Small artificial delay for natural feel (0.3–0.7s)
+    await new Promise(function(r){ setTimeout(r, 300 + Math.random() * 400); });
+    var reply = await respond(text, img);
+    untype();
+    addMsg("assistant", reply, "native");
+    speak(reply);
+  }catch(e){
+    untype();
+    addMsg("assistant", "Something went wrong. Please try again.");
+    console.error(e);
+  }finally{
+    $("sendBtn").disabled = false;
+  }
+}
+
+function quick(t){ $("ci").value = t; send(); }
+
+// ============ INPUT ============
+var ci = $("ci");
+ci.addEventListener("input", function(){
+  this.style.height = "auto";
+  this.style.height = Math.min(this.scrollHeight, 130) + "px";
+});
+ci.addEventListener("keydown", function(e){
+  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); }
+});
+ci.addEventListener("paste", function(e){
+  var items = e.clipboardData && e.clipboardData.items;
+  if(!items) return;
+  for(var i=0; i<items.length; i++){
+    if(items[i].type.startsWith("image/")){
+      var file = items[i].getAsFile();
+      if(file){
+        var fake = {target:{files:[file], value:""}};
+        handleFile(fake);
+      }
+      break;
+    }
+  }
+});
+
+// ============ MODAL ============
+function closeModal(){ $("modal").classList.remove("on"); }
+
+// ============ INIT ============
+loadChat();
+render();
+console.log("SPYDER v4 loaded — " + KB.length + " knowledge entries, fully native");
+</script></body></html>

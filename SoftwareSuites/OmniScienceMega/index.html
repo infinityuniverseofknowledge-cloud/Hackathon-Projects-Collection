@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>OMNI-SCIENCE MEGA | 12 Simulations</title>
+<style>
+:root {
+  --bg: #020408; --panel: rgba(6, 12, 20, 0.95); --border: #142a45;
+  --text: #7a9cb5; --text-light: #d0e5f5; --accent: #00f0ff; 
+  --bio: #00ff88; --danger: #ff0033; --warning: #ffb800; --magic: #a855f7;
+  --font-mono: "Fira Code", monospace; --font-ui: system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-ui); overflow: hidden; height: 100vh; }
+
+#app { display: flex; height: 100vh; flex-direction: column; }
+#viewport { flex: 1; position: relative; overflow: hidden; background: radial-gradient(circle at center, #0a1525 0%, #000000 100%); }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+
+/* TOP HUD */
+#top-hud { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
+.hud-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; backdrop-filter: blur(10px); pointer-events: auto; font-family: var(--font-mono); font-size: 0.7rem; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+.hud-title { color: var(--accent); font-weight: bold; margin-bottom: 4px; letter-spacing: 1px; }
+.hud-row { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 2px; }
+.hud-val { color: #fff; }
+
+/* DOCK (SCROLLABLE) */
+#dock { height: 70px; background: rgba(2, 4, 8, 0.95); border-top: 1px solid var(--border); display: flex; justify-content: flex-start; align-items: center; gap: 8px; padding: 0 10px; z-index: 100; overflow-x: auto; white-space: nowrap; }
+#dock::-webkit-scrollbar { display: none; }
+.module-btn { min-width: 65px; background: #000; border: 1px solid var(--border); color: var(--text); padding: 6px; border-radius: 6px; cursor: pointer; font-family: var(--font-mono); font-size: 0.6rem; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: 0.2s; }
+.module-btn .icon { font-size: 1.2rem; }
+.module-btn.active { background: rgba(0, 240, 255, 0.15); border-color: var(--accent); color: var(--accent); }
+
+/* FLOATING PANELS */
+.control-panel { position: absolute; bottom: 80px; right: 10px; width: 260px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; backdrop-filter: blur(15px); z-index: 20; display: none; flex-direction: column; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+.control-panel.active { display: flex; }
+.control-panel h3 { font-family: var(--font-mono); font-size: 0.8rem; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 4px; }
+.input-group { display: flex; flex-direction: column; gap: 4px; font-family: var(--font-mono); font-size: 0.7rem; }
+.input-group label { display: flex; justify-content: space-between; color: var(--text-light); }
+input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #111; border-radius: 2px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+.btn { background: #000; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.7rem; cursor: pointer; text-align: center; transition: 0.2s; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { border-color: var(--danger); color: var(--danger); }
+
+/* GRAPH OVERLAY */
+#graph-canvas { position: absolute; bottom: 80px; left: 10px; width: 200px; height: 100px; background: rgba(0,0,0,0.8); border: 1px solid var(--border); border-radius: 6px; display: none; z-index: 10; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <div id="viewport">
+    <canvas id="science-canvas"></canvas>
+    <canvas id="graph-canvas" width="200" height="100"></canvas>
+    
+    <!-- HUD -->
+    <div id="top-hud">
+      <div class="hud-panel">
+        <div class="hud-title">OMNI-SCIENCE v6.0</div>
+        <div class="hud-row"><span>MOD:</span> <span class="hud-val" id="hud-module">ACOUSTICS</span></div>
+      </div>
+      <div class="hud-panel">
+        <div class="hud-row"><span>SYS:</span> <span class="hud-val" id="hud-status" style="color:var(--bio)">ONLINE</span></div>
+      </div>
+    </div>
+
+    <!-- 1. ACOUSTICS -->
+    <div id="panel-acoustic" class="control-panel active">
+      <h3>🔊 Cymatics (Chladni)</h3>
+      <div class="input-group"><label>Freq X (m) <span id="val-m">1</span></label><input type="range" id="sl-m" min="1" max="10" value="1"></div>
+      <div class="input-group"><label>Freq Y (n) <span id="val-n">1</span></label><input type="range" id="sl-n" min="1" max="10" value="1"></div>
+    </div>
+
+    <!-- 2. QUANTUM -->
+    <div id="panel-quantum" class="control-panel">
+      <h3>⚛️ Quantum Harmonic</h3>
+      <div class="input-group"><label>Energy (n) <span id="val-qn">2</span></label><input type="range" id="sl-qn" min="1" max="5" value="2"></div>
+      <button class="btn" onclick="quantumCollapse()">Measure Particle</button>
+    </div>
+
+    <!-- 3. ASTRO -->
+    <div id="panel-astro" class="control-panel">
+      <h3>🌟 Stellar Evolution</h3>
+      <div class="input-group"><label>Mass <span id="val-mass">1.0</span></label><input type="range" id="sl-mass" min="1" max="20" value="1"></div>
+      <button class="btn btn-danger" onclick="triggerSupernova()">Trigger Supernova</button>
+    </div>
+
+    <!-- 4. ECOLOGY -->
+    <div id="panel-eco" class="control-panel">
+      <h3>🐺 Predator-Prey</h3>
+      <div class="input-group"><label>Prey Repr. <span id="val-alpha">1.2</span></label><input type="range" id="sl-alpha" min="5" max="20" value="12"></div>
+      <div class="input-group"><label>Pred. Death <span id="val-gamma">1.0</span></label><input type="range" id="sl-gamma" min="5" max="20" value="10"></div>
+      <button class="btn" onclick="resetEco()">Reset Eco</button>
+    </div>
+
+    <!-- 5. GEOLOGY -->
+    <div id="panel-geo" class="control-panel">
+      <h3>🌋 Tectonic Stress</h3>
+      <div class="input-group"><label>Stress <span id="val-stress">0%</span></label><input type="range" id="sl-stress" min="0" max="100" value="0"></div>
+      <button class="btn btn-danger" onclick="earthquake()">Trigger Quake</button>
+    </div>
+
+    <!-- 6. METEOROLOGY -->
+    <div id="panel-meteo" class="control-panel">
+      <h3>🌪️ Fluid Dynamics</h3>
+      <div class="input-group"><label>Wind Speed <span id="val-wind">50</span></label><input type="range" id="sl-wind" min="10" max="200" value="50"></div>
+      <button class="btn" onclick="toggleTurbulence()">Toggle Turbulence</button>
+    </div>
+
+    <!-- 7. BIOLOGY -->
+    <div id="panel-bio" class="control-panel">
+      <h3>🦠 Cellular Mitosis</h3>
+      <button class="btn" onclick="triggerMitosis()">Induce Division</button>
+      <button class="btn" onclick="resetCells()">Reset Cell</button>
+    </div>
+
+    <!-- 8. CHEMISTRY -->
+    <div id="panel-chem" class="control-panel">
+      <h3>💎 Molecular Synthesis</h3>
+      <button class="btn" onclick="synthesizeMolecule('H2O')">Synthesize H2O</button>
+      <button class="btn" onclick="synthesizeMolecule('CO2')">Synthesize CO2</button>
+      <button class="btn" onclick="synthesizeMolecule('CH4')">Synthesize CH4</button>
+    </div>
+
+    <!-- 9. ELECTROMAGNETISM -->
+    <div id="panel-em" class="control-panel">
+      <h3>🧲 Magnetic Dipole</h3>
+      <div class="input-group"><label>Field Strength <span id="val-field">1.0</span></label><input type="range" id="sl-field" min="5" max="20" value="10"></div>
+      <button class="btn" onclick="flipMagnet()">Flip Polarity</button>
+    </div>
+
+    <!-- 10. THERMODYNAMICS -->
+    <div id="panel-thermo" class="control-panel">
+      <h3>🌡️ Ideal Gas Law</h3>
+      <div class="input-group"><label>Temperature <span id="val-temp">300</span>K</label><input type="range" id="sl-temp" min="100" max="1000" value="300"></div>
+      <div class="input-group"><label>Volume <span id="val-vol">10</span>L</label><input type="range" id="sl-vol" min="5" max="20" value="10"></div>
+    </div>
+
+    <!-- 11. BOTANY -->
+    <div id="panel-botany" class="control-panel">
+      <h3>🌿 L-System Growth</h3>
+      <div class="input-group"><label>Depth <span id="val-depth">4</span></label><input type="range" id="sl-depth" min="1" max="6" value="4"></div>
+      <button class="btn" onclick="growPlant()">Grow Plant</button>
+    </div>
+
+    <!-- 12. OCEANOGRAPHY -->
+    <div id="panel-ocean" class="control-panel">
+      <h3>🌊 Tsunami Wave</h3>
+      <div class="input-group"><label>Amplitude <span id="val-amp">1.0</span></label><input type="range" id="sl-amp" min="1" max="50" value="10"></div>
+      <div class="input-group"><label>Wavelength <span id="val-wave">10</span></label><input type="range" id="sl-wave" min="5" max="50" value="10"></div>
+    </div>
+
+  </div>
+
+  <!-- DOCK -->
+  <div id="dock">
+    <div class="module-btn active" onclick="switchModule('acoustic', event)"><span class="icon">🔊</span>Acoustic</div>
+    <div class="module-btn" onclick="switchModule('quantum', event)"><span class="icon">⚛️</span>Quantum</div>
+    <div class="module-btn" onclick="switchModule('astro', event)"><span class="icon">🌟</span>Astro</div>
+    <div class="module-btn" onclick="switchModule('eco', event)"><span class="icon">🐺</span>Ecology</div>
+    <div class="module-btn" onclick="switchModule('geo', event)"><span class="icon">🌋</span>Geology</div>
+    <div class="module-btn" onclick="switchModule('meteo', event)"><span class="icon">🌪️</span>Meteorology</div>
+    <div class="module-btn" onclick="switchModule('bio', event)"><span class="icon">🦠</span>Biology</div>
+    <div class="module-btn" onclick="switchModule('chem', event)"><span class="icon">💎</span>Chemistry</div>
+    <div class="module-btn" onclick="switchModule('em', event)"><span class="icon">🧲</span>Magnetism</div>
+    <div class="module-btn" onclick="switchModule('thermo', event)"><span class="icon">🌡️</span>Thermo</div>
+    <div class="module-btn" onclick="switchModule('botany', event)"><span class="icon">🌿</span>Botany</div>
+    <div class="module-btn" onclick="switchModule('ocean', event)"><span class="icon">🌊</span>Ocean</div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// CORE SETUP
+// ==========================================
+const canvas = document.getElementById('science-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+camera.position.set(0, 5, 15);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(10, 20, 10);
+scene.add(dirLight);
+
+const groups = {};
+const panels = {};
+const modules = ['acoustic', 'quantum', 'astro', 'eco', 'geo', 'meteo', 'bio', 'chem', 'em', 'thermo', 'botany', 'ocean'];
+
+modules.forEach(m => {
+    groups[m] = new THREE.Group();
+    groups[m].visible = false;
+    scene.add(groups[m]);
+    panels[m] = document.getElementById('panel-' + m);
+});
+
+let currentModule = '';
+let time = 0;
+let activeAnimations = [];
+
+function switchModule(mod, e) {
+    if(currentModule === mod) return;
+    
+    document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
+    if(e) e.currentTarget.classList.add('active');
+    
+    Object.values(panels).forEach(p => p.classList.remove('active'));
+    panels[mod].classList.add('active');
+    
+    Object.values(groups).forEach(g => g.visible = false);
+    groups[mod].visible = true;
+    
+    currentModule = mod;
+    document.getElementById('hud-module').innerText = mod.toUpperCase();
+    activeAnimations = [];
+    
+    camera.position.set(0, 5, 15);
+    controls.target.set(0, 0, 0);
+    
+    if (mod === 'acoustic') initAcoustic();
+    if (mod === 'quantum') initQuantum();
+    if (mod === 'astro') initAstro();
+    if (mod === 'eco') initEco();
+    if (mod === 'geo') initGeo();
+    if (mod === 'meteo') initMeteo();
+    if (mod === 'bio') initBio();
+    if (mod === 'chem') initChem();
+    if (mod === 'em') initEM();
+    if (mod === 'thermo') initThermo();
+    if (mod === 'botany') initBotany();
+    if (mod === 'ocean') initOcean();
+    
+    document.getElementById('graph-canvas').style.display = (mod === 'eco') ? 'block' : 'none';
+}
+
+// ==========================================
+// 1. ACOUSTICS: CYMATICS
+// ==========================================
+let chladniMesh, chladniParticles;
+function initAcoustic() {
+    const g = groups.acoustic;
+    g.clear();
+    const geo = new THREE.PlaneGeometry(10, 10, 64, 64);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x112233, wireframe: true, transparent: true, opacity: 0.8 });
+    chladniMesh = new THREE.Mesh(geo, mat);
+    chladniMesh.rotation.x = -Math.PI / 2;
+    g.add(chladniMesh);
+    
+    const pGeo = new THREE.BufferGeometry();
+    const pPos = [];
+    for(let i=0; i<3000; i++) pPos.push((Math.random()-0.5)*10, 0.1, (Math.random()-0.5)*10);
+    pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
+    chladniParticles = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.05 }));
+    g.add(chladniParticles);
+    
+    updateChladni();
+    document.getElementById('sl-m').oninput = updateChladni;
+    document.getElementById('sl-n').oninput = updateChladni;
+    activeAnimations.push(() => { g.rotation.y += 0.002; });
+}
+
+function updateChladni() {
+    const m = parseInt(document.getElementById('sl-m').value);
+    const n = parseInt(document.getElementById('sl-n').value);
+    document.getElementById('val-m').innerText = m;
+    document.getElementById('val-n').innerText = n;
+    
+    const pos = chladniMesh.geometry.attributes.position;
+    for(let i=0; i<pos.count; i++) {
+        const x = pos.getX(i), y = pos.getY(i);
+        const z = Math.cos(n * Math.PI * x / 5) * Math.cos(m * Math.PI * y / 5) - Math.cos(m * Math.PI * x / 5) * Math.cos(n * Math.PI * y / 5);
+        pos.setZ(i, z * 0.5);
+    }
+    chladniMesh.geometry.computeVertexNormals();
+    pos.needsUpdate = true;
+    
+    const pPos = chladniParticles.geometry.attributes.position;
+    for(let i=0; i<pPos.count; i++) {
+        let px = pPos.getX(i), pz = pPos.getZ(i);
+        const val = Math.cos(n * Math.PI * px / 5) * Math.cos(m * Math.PI * pz / 5) - Math.cos(m * Math.PI * px / 5) * Math.cos(n * Math.PI * pz / 5);
+        if (Math.abs(val) < 0.3) {
+             pPos.setX(i, px * 0.95); pPos.setZ(i, pz * 0.95);
+        } else {
+             pPos.setX(i, px + (Math.random()-0.5)*0.2); pPos.setZ(i, pz + (Math.random()-0.5)*0.2);
+        }
+    }
+    pPos.needsUpdate = true;
+}
+
+// ==========================================
+// 2. QUANTUM
+// ==========================================
+let quantumCloud;
+function initQuantum() {
+    const g = groups.quantum;
+    g.clear();
+    const pGeo = new THREE.BufferGeometry();
+    const pPos = [], pCol = [];
+    for(let i=0; i<2000; i++) {
+        const r = 2 + Math.random() * 3;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        pPos.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+        const intensity = 1 - (r - 2)/3;
+        pCol.push(0, intensity, intensity);
+    }
+    pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
+    pGeo.setAttribute('color', new THREE.Float32BufferAttribute(pCol, 3));
+    quantumCloud = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.1, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending }));
+    g.add(quantumCloud);
+    activeAnimations.push(() => { quantumCloud.rotation.y += 0.01; quantumCloud.rotation.z += 0.005; });
+}
+window.quantumCollapse = () => {
+    const pPos = quantumCloud.geometry.attributes.position;
+    for(let i=0; i<pPos.count; i++) pPos.setXYZ(i, pPos.getX(i)*0.05, pPos.getY(i)*0.05, pPos.getZ(i)*0.05);
+    pPos.needsUpdate = true;
+    setTimeout(() => { initQuantum(); }, 2000);
+};
+
+// ==========================================
+// 3. ASTRO
+// ==========================================
+let starMesh, starLight;
+function initAstro() {
+    const g = groups.astro;
+    g.clear();
+    starMesh = new THREE.Mesh(new THREE.SphereGeometry(2, 32, 32), new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 2 }));
+    g.add(starMesh);
+    starLight = new THREE.PointLight(0xffaa00, 2, 50);
+    g.add(starLight);
+    activeAnimations.push(() => { const scale = 1 + Math.sin(time*2)*0.05; starMesh.scale.set(scale, scale, scale); });
+}
+window.triggerSupernova = () => {
+    const mass = parseInt(document.getElementById('sl-mass').value);
+    document.getElementById('val-mass').innerText = mass;
+    if (mass < 8) {
+        starMesh.material.color.setHex(0xff4400); starMesh.scale.set(4, 4, 4);
+        setTimeout(() => { starMesh.material.color.setHex(0xffffff); starMesh.scale.set(0.2, 0.2, 0.2); starLight.color.setHex(0xffffff); }, 1500);
+    } else {
+        starMesh.material.color.setHex(0xffffff); starMesh.scale.set(6, 6, 6); starLight.intensity = 10;
+        setTimeout(() => {
+            starMesh.material.color.setHex(0x000000); starMesh.scale.set(1, 1, 1); starLight.intensity = 0;
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(2, 0.2, 16, 100), new THREE.MeshBasicMaterial({color: 0xff00ff}));
+            ring.rotation.x = Math.PI/2; groups.astro.add(ring);
+        }, 1000);
+    }
+};
+
+// ==========================================
+// 4. ECOLOGY
+// ==========================================
+let preys = [], predators = [];
+let historyPrey = [], historyPred = [];
+const ecoCtx = document.getElementById('graph-canvas').getContext('2d');
+function initEco() {
+    const g = groups.eco;
+    g.clear();
+    preys = []; predators = []; historyPrey = []; historyPred = [];
+    const preyGeo = new THREE.SphereGeometry(0.2, 8, 8), preyMat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+    const predGeo = new THREE.ConeGeometry(0.3, 0.8, 8), predMat = new THREE.MeshBasicMaterial({ color: 0xff0033 });
+    
+    for(let i=0; i<40; i++) {
+        const m = new THREE.Mesh(preyGeo, preyMat);
+        m.position.set((Math.random()-0.5)*15, 0, (Math.random()-0.5)*15);
+        m.userData = { vx: (Math.random()-0.5)*0.1, vz: (Math.random()-0.5)*0.1 };
+        g.add(m); preys.push(m);
+    }
+    for(let i=0; i<8; i++) {
+        const m = new THREE.Mesh(predGeo, predMat);
+        m.position.set((Math.random()-0.5)*15, 0, (Math.random()-0.5)*15);
+        g.add(m); predators.push(m);
+    }
+    activeAnimations.push(updateEco);
+}
+function updateEco() {
+    preys.forEach(p => {
+        p.position.x += p.userData.vx; p.position.z += p.userData.vz;
+        if(Math.abs(p.position.x) > 8) p.userData.vx *= -1;
+        if(Math.abs(p.position.z) > 8) p.userData.vz *= -1;
+    });
+    predators.forEach(pred => {
+        if(preys.length > 0) {
+            let nearest = preys[0], minDist = pred.position.distanceTo(nearest.position);
+            preys.forEach(p => { const d = pred.position.distanceTo(p.position); if(d < minDist) { minDist = d; nearest = p; } });
+            const dir = new THREE.Vector3().subVectors(nearest.position, pred.position).normalize();
+            pred.position.x += dir.x * 0.12; pred.position.z += dir.z * 0.12;
+            if(minDist < 0.5) { groups.eco.remove(nearest); preys = preys.filter(p => p !== nearest); }
+        }
+    });
+    if (Math.random() < 0.05 && preys.length < 100) {
+        const parent = preys[Math.floor(Math.random()*preys.length)];
+        if(parent) { const child = parent.clone(); child.position.x += 0.5; groups.eco.add(child); preys.push(child); }
+    }
+    if (Math.random() < 0.02 && predators.length > 0) { const dead = predators.pop(); groups.eco.remove(dead); }
+    
+    historyPrey.push(preys.length); historyPred.push(predators.length);
+    if(historyPrey.length > 100) { historyPrey.shift(); historyPred.shift(); }
+    ecoCtx.clearRect(0,0,200,100);
+    ecoCtx.beginPath(); ecoCtx.strokeStyle = '#00ff88'; ecoCtx.lineWidth = 2;
+    historyPrey.forEach((v,i) => { const x=(i/100)*200, y=100-(v/100)*100; if(i===0) ecoCtx.moveTo(x,y); else ecoCtx.lineTo(x,y); }); ecoCtx.stroke();
+    ecoCtx.beginPath(); ecoCtx.strokeStyle = '#ff0033'; ecoCtx.lineWidth = 2;
+    historyPred.forEach((v,i) => { const x=(i/100)*200, y=100-(v/20)*100; if(i===0) ecoCtx.moveTo(x,y); else ecoCtx.lineTo(x,y); }); ecoCtx.stroke();
+}
+window.resetEco = () => { initEco(); };
+
+// ==========================================
+// 5. GEOLOGY
+// ==========================================
+let plate1, plate2, lava, isQuaking = false;
+function initGeo() {
+    const g = groups.geo;
+    g.clear(); isQuaking = false;
+    plate1 = new THREE.Mesh(new THREE.BoxGeometry(5, 2, 10), new THREE.MeshStandardMaterial({ color: 0x334455 }));
+    plate1.position.set(-2.6, 0, 0); g.add(plate1);
+    plate2 = new THREE.Mesh(new THREE.BoxGeometry(5, 2, 10), new THREE.MeshStandardMaterial({ color: 0x445566 }));
+    plate2.position.set(2.6, 0, 0); g.add(plate2);
+    
+    const pGeo = new THREE.BufferGeometry(), pPos = new Float32Array(300 * 3);
+    for(let i=0; i<300; i++) { pPos[i*3]=(Math.random()-0.5)*0.5; pPos[i*3+1]=Math.random()*2; pPos[i*3+2]=(Math.random()-0.5)*10; }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    lava = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xff3300, size: 0.1 })); lava.visible = false; g.add(lava);
+    
+    activeAnimations.push(() => {
+        const stress = parseInt(document.getElementById('sl-stress').value);
+        document.getElementById('val-stress').innerText = stress + '%';
+        if(!isQuaking) {
+            plate1.position.x = -2.6 - (stress*0.01); plate2.position.x = 2.6 + (stress*0.01);
+            plate1.material.color.setHex(stress > 90 ? 0x883333 : 0x334455);
+            plate2.material.color.setHex(stress > 90 ? 0x883333 : 0x445566);
+        }
+    });
+}
+window.earthquake = () => {
+    if(isQuaking) return; isQuaking = true; lava.visible = true;
+    let shake = 0;
+    const int = setInterval(() => {
+        camera.position.x = (Math.random()-0.5) * 2; camera.position.y = 5 + (Math.random()-0.5) * 2;
+        plate1.position.x -= 0.2; plate2.position.x += 0.2;
+        shake++;
+        if(shake > 20) {
+            clearInterval(int); camera.position.set(0,5,15); document.getElementById('sl-stress').value = 0;
+            setTimeout(() => { plate1.position.set(-2.6, 0, 0); plate2.position.set(2.6, 0, 0); lava.visible = false; isQuaking = false; }, 1000);
+        }
+    }, 50);
+};
+
+// ==========================================
+// 6. METEOROLOGY
+// ==========================================
+let windParticles, obstacle;
+function initMeteo() {
+    const g = groups.meteo;
+    g.clear();
+    obstacle = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 4, 16), new THREE.MeshStandardMaterial({ color: 0x222222, wireframe: true }));
+    g.add(obstacle);
+    
+    const pGeo = new THREE.BufferGeometry(), pPos = new Float32Array(1000 * 3);
+    for(let i=0; i<1000; i++) { pPos[i*3]=-10; pPos[i*3+1]=(Math.random()-0.5)*8; pPos[i*3+2]=(Math.random()-0.5)*8; }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    windParticles = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.05, transparent: true, opacity: 0.6 }));
+    g.add(windParticles);
+    
+    activeAnimations.push(() => {
+        const speed = parseInt(document.getElementById('sl-wind').value) / 100;
+        const pos = windParticles.geometry.attributes.position.array;
+        for(let i=0; i<1000; i++) {
+            pos[i*3] += speed;
+            const x = pos[i*3], y = pos[i*3+1], z = pos[i*3+2];
+            if(x > -2 && x < 2 && Math.sqrt(y*y+z*z) < 1.5) {
+                pos[i*3+1] += (y > 0 ? 0.1 : -0.1); pos[i*3+2] += (z > 0 ? 0.1 : -0.1);
+            }
+            if(x > 10) { pos[i*3]=-10; pos[i*3+1]=(Math.random()-0.5)*8; pos[i*3+2]=(Math.random()-0.5)*8; }
+        }
+        windParticles.geometry.attributes.position.needsUpdate = true;
+    });
+}
+window.toggleTurbulence = () => {
+    const mat = windParticles.material;
+    mat.color.setHex(mat.color.getHex() === 0x00f0ff ? 0xff00ff : 0x00f0ff);
+};
+
+// ==========================================
+// 7. BIOLOGY
+// ==========================================
+let cells = [];
+function initBio() {
+    const g = groups.bio;
+    g.clear(); cells = [];
+    const geo = new THREE.SphereGeometry(1, 32, 32), mat = new THREE.MeshStandardMaterial({ color: 0x00ff88, transparent: true, opacity: 0.5, wireframe: true });
+    const main = new THREE.Mesh(geo, mat); g.add(main); cells.push(main);
+    activeAnimations.push(() => {
+        cells.forEach((c, i) => {
+            c.rotation.y += 0.01;
+            if(i === 0) c.scale.set(1 + Math.sin(time*2)*0.05, 1 + Math.sin(time*2)*0.05, 1 + Math.sin(time*2)*0.05);
+        });
+    });
+}
+window.triggerMitosis = () => {
+    if(cells.length >= 8) return;
+    const newCells = [];
+    cells.forEach(c => {
+        if(c.scale.x < 2) {
+            c.scale.set(2, 2, 2);
+            setTimeout(() => {
+                groups.bio.remove(c); cells = cells.filter(cell => cell !== c);
+                for(let i=0; i<2; i++) {
+                    const child = new THREE.Mesh(new THREE.SphereGeometry(0.8, 32, 32), new THREE.MeshStandardMaterial({ color: 0x00ff88, transparent: true, opacity: 0.5, wireframe: true }));
+                    child.position.copy(c.position); child.position.x += (i===0 ? -1.5 : 1.5);
+                    groups.bio.add(child); newCells.push(child);
+                }
+            }, 500);
+        }
+    });
+    setTimeout(() => { cells = cells.concat(newCells); }, 600);
+};
+window.resetCells = () => { initBio(); };
+
+// ==========================================
+// 8. CHEMISTRY
+// ==========================================
+function initChem() {
+    const g = groups.chem; g.clear();
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.8, 32, 32), new THREE.MeshStandardMaterial({ color: 0x333333 })));
+    activeAnimations.push(() => { g.rotation.y += 0.005; g.rotation.x = Math.sin(time*0.5)*0.2; });
+}
+window.synthesizeMolecule = (mol) => {
+    const g = groups.chem; g.clear();
+    const bondMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+    const addAtom = (x,y,z,color,size) => {
+        const atom = new THREE.Mesh(new THREE.SphereGeometry(size, 32, 32), new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.2 }));
+        atom.position.set(x,y,z); g.add(atom);
+        const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(x,y,z)]), bondMat);
+        g.add(line);
+    };
+    if(mol === 'H2O') { addAtom(1.5, 1, 0, 0xffffff, 0.5); addAtom(-1.5, 1, 0, 0xffffff, 0.5); }
+    else if(mol === 'CO2') { addAtom(2, 0, 0, 0xff0033, 0.7); addAtom(-2, 0, 0, 0xff0033, 0.7); }
+    else if(mol === 'CH4') { addAtom(1.5,1.5,1.5,0xffffff,0.5); addAtom(-1.5,-1.5,1.5,0xffffff,0.5); addAtom(-1.5,1.5,-1.5,0xffffff,0.5); addAtom(1.5,-1.5,-1.5,0xffffff,0.5); }
+};
+
+// ==========================================
+// 9. ELECTROMAGNETISM (NEW)
+// ==========================================
+let magnetGroup, fieldLines = [];
+let polarity = 1;
+function initEM() {
+    const g = groups.em; g.clear(); fieldLines = [];
+    magnetGroup = new THREE.Group();
+    
+    const north = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), new THREE.MeshStandardMaterial({ color: 0xff0033, emissive: 0xff0033, emissiveIntensity: 0.5 }));
+    north.position.set(0, 1.5, 0);
+    const south = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.5 }));
+    south.position.set(0, -1.5, 0);
+    
+    magnetGroup.add(north); magnetGroup.add(south);
+    g.add(magnetGroup);
+    
+    // Generate Magnetic Field Lines (Dipole formula)
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.4 });
+    for(let i=0; i<12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        const pts = [];
+        for(let t=-Math.PI/2; t<=Math.PI/2; t+=0.1) {
+            // Parametric dipole field line equation
+            const r = 3 * Math.cos(t) * Math.cos(t);
+            const x = r * Math.sin(t) * Math.cos(angle);
+            const z = r * Math.sin(t) * Math.sin(angle);
+            const y = 3 * Math.sin(t) * Math.cos(t);
+            pts.push(new THREE.Vector3(x, y*1.5, z));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const line = new THREE.Line(geo, lineMat);
+        fieldLines.push(line);
+        g.add(line);
+    }
+    
+    activeAnimations.push(() => {
+        const strength = parseInt(document.getElementById('sl-field').value) / 10;
+        document.getElementById('val-field').innerText = strength.toFixed(1);
+        magnetGroup.rotation.y += 0.01;
+        fieldLines.forEach(l => l.scale.set(strength, strength, strength));
+    });
+}
+window.flipMagnet = () => {
+    polarity *= -1;
+    groups.em.rotation.z = polarity > 0 ? 0 : Math.PI;
+};
+
+// ==========================================
+// 10. THERMODYNAMICS (NEW)
+// ==========================================
+let gasBox, gasParticles;
+let gasPositions = [], gasVelocities = [];
+function initThermo() {
+    const g = groups.thermo; g.clear();
+    gasBox = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true, transparent: true, opacity: 0.2 }));
+    g.add(gasBox);
+    
+    const pGeo = new THREE.BufferGeometry();
+    gasPositions = new Float32Array(500 * 3);
+    gasVelocities = [];
+    for(let i=0; i<500; i++) {
+        gasPositions[i*3] = (Math.random()-0.5)*10;
+        gasPositions[i*3+1] = (Math.random()-0.5)*10;
+        gasPositions[i*3+2] = (Math.random()-0.5)*10;
+        gasVelocities.push(new THREE.Vector3((Math.random()-0.5)*2, (Math.random()-0.5)*2, (Math.random()-0.5)*2));
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(gasPositions, 3));
+    gasParticles = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xffb800, size: 0.2 }));
+    g.add(gasParticles);
+    
+    activeAnimations.push(() => {
+        const temp = parseInt(document.getElementById('sl-temp').value);
+        document.getElementById('val-temp').innerText = temp;
+        const speedMult = temp / 300; // 300K is base speed
+        
+        const pos = gasParticles.geometry.attributes.position.array;
+        for(let i=0; i<500; i++) {
+            pos[i*3] += gasVelocities[i].x * speedMult;
+            pos[i*3+1] += gasVelocities[i].y * speedMult;
+            pos[i*3+2] += gasVelocities[i].z * speedMult;
+            
+            // Bounce off walls (elastic collision)
+            if(Math.abs(pos[i*3]) > 5) { gasVelocities[i].x *= -1; pos[i*3] = Math.sign(pos[i*3])*5; }
+            if(Math.abs(pos[i*3+1]) > 5) { gasVelocities[i].y *= -1; pos[i*3+1] = Math.sign(pos[i*3+1])*5; }
+            if(Math.abs(pos[i*3+2]) > 5) { gasVelocities[i].z *= -1; pos[i*3+2] = Math.sign(pos[i*3+2])*5; }
+        }
+        gasParticles.geometry.attributes.position.needsUpdate = true;
+        gasParticles.material.color.setHSL(0.1 - (temp-100)/1000, 1, 0.5); // Color changes with temp
+    });
+}
+
+// ==========================================
+// 11. BOTANY (L-SYSTEMS) (NEW)
+// ==========================================
+let plantGroup;
+function initBotany() {
+    const g = groups.botany; g.clear();
+    plantGroup = new THREE.Group();
+    g.add(plantGroup);
+    growPlant();
+    activeAnimations.push(() => { plantGroup.rotation.y += 0.005; });
+}
+window.growPlant = () => {
+    while(plantGroup.children.length > 0) plantGroup.remove(plantGroup.children[0]);
+    const depth = parseInt(document.getElementById('sl-depth').value);
+    document.getElementById('val-depth').innerText = depth;
+    
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x004400 });
+    
+    function createBranch(startPos, dir, length, radius, depthLevel) {
+        if(depthLevel === 0) return;
+        
+        const endPos = startPos.clone().add(dir.clone().multiplyScalar(length));
+        
+        // Create branch cylinder
+        const cylGeo = new THREE.CylinderGeometry(radius*0.7, radius, length, 6);
+        const cyl = new THREE.Mesh(cylGeo, trunkMat);
+        cyl.position.copy(startPos).add(endPos).multiplyScalar(0.5);
+        cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.clone().normalize());
+        plantGroup.add(cyl);
+        
+        // Add leaf at tip
+        if(depthLevel === 1) {
+            const leaf = new THREE.Mesh(new THREE.SphereGeometry(radius*2, 8, 8), leafMat);
+            leaf.position.copy(endPos);
+            plantGroup.add(leaf);
+        }
+        
+        // Recursive branches (L-system logic)
+        const numBranches = depthLevel > 2 ? 2 : 3;
+        for(let i=0; i<numBranches; i++) {
+            const angleY = (i / numBranches) * Math.PI * 2 + Math.random();
+            const angleX = Math.random() * 0.5 + 0.2; // Tilt outwards
+            
+            const newDir = new THREE.Vector3(
+                Math.sin(angleX) * Math.cos(angleY),
+                Math.cos(angleX),
+                Math.sin(angleX) * Math.sin(angleY)
+            );
+            newDir.normalize();
+            
+            createBranch(endPos, newDir, length * 0.7, radius * 0.6, depthLevel - 1);
+        }
+    }
+    
+    createBranch(new THREE.Vector3(0, -3, 0), new THREE.Vector3(0, 1, 0), 3, 0.4, depth);
+};
+
+// ==========================================
+// 12. OCEANOGRAPHY (NEW)
+// ==========================================
+let oceanMesh;
+function initOcean() {
+    const g = groups.ocean; g.clear();
+    const geo = new THREE.PlaneGeometry(20, 20, 64, 64);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x004488, wireframe: false, flatShading: true, emissive: 0x001122 });
+    oceanMesh = new THREE.Mesh(geo, mat);
+    oceanMesh.rotation.x = -Math.PI / 2;
+    g.add(oceanMesh);
+    
+    const sun = new THREE.DirectionalLight(0xffffff, 1);
+    sun.position.set(0, 10, 10);
+    g.add(sun);
+    
+    activeAnimations.push(() => {
+        const amp = parseInt(document.getElementById('sl-amp').value) / 100;
+        const wavelength = parseInt(document.getElementById('sl-wave').value) / 10;
+        document.getElementById('val-amp').innerText = (amp*10).toFixed(1);
+        document.getElementById('val-wave').innerText = (wavelength*10).toFixed(0);
+        
+        const pos = oceanMesh.geometry.attributes.position;
+        for(let i=0; i<pos.count; i++) {
+            const x = pos.getX(i);
+            const y = pos.getY(i); // In plane geometry, y is the depth axis before rotation
+            
+            // Traveling wave equation: z = A * sin(kx - wt)
+            const z = amp * Math.sin((x / wavelength) - time * 3);
+            // Interference pattern (slight noise)
+            const z2 = amp * 0.5 * Math.sin((y / (wavelength * 1.5)) + time * 2);
+            
+            pos.setZ(i, z + z2);
+        }
+        oceanMesh.geometry.computeVertexNormals();
+        pos.needsUpdate = true;
+    });
+}
+
+// ==========================================
+// MAIN LOOP
+// ==========================================
+function animate() {
+    requestAnimationFrame(animate);
+    time += 0.05;
+    controls.update();
+    activeAnimations.forEach(fn => fn());
+    renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+});
+
+// Start
+switchModule('acoustic');
+animate();
+</script>
+</body>
+</html>

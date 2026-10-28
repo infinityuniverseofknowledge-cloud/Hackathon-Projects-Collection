@@ -1,0 +1,727 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SPYDER · Neural Core</title>
+<style>
+:root{--b:#070B14;--p:#111B2B;--p2:#0D1422;--c:#00E5FF;--s:#8B5CF6;--a:#00FFA3;--t:#F1F5F9;--m:#94A3B8}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:var(--b);color:var(--t);padding:14px;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 20%,rgba(0,229,255,.07),transparent 50%),radial-gradient(circle at 80% 80%,rgba(139,92,246,.07),transparent 50%);pointer-events:none}
+.w{max-width:900px;margin:0 auto;position:relative;z-index:1}
+h1{color:var(--c);font-size:1.3rem;margin-bottom:2px}
+.sub{color:var(--m);font-size:.75rem;margin-bottom:12px}
+h2{color:var(--a);font-size:.9rem;margin:10px 0 6px}
+.card{background:var(--p);border:1px solid rgba(0,229,255,.15);border-radius:8px;padding:12px;margin-bottom:10px}
+button{background:linear-gradient(135deg,var(--c),var(--s));color:#000;border:0;padding:7px 13px;border-radius:6px;font-weight:700;cursor:pointer;font-size:.78rem;margin:2px;font-family:inherit}
+button:hover{box-shadow:0 4px 15px rgba(0,229,255,.3)}
+button.g{background:var(--p2);color:var(--t);border:1px solid rgba(0,229,255,.2)}
+button.r{background:#ff3b5c;color:#fff}
+input,textarea{width:100%;background:var(--p2);color:var(--t);border:1px solid rgba(0,229,255,.2);padding:8px 10px;border-radius:6px;font-family:inherit;margin:4px 0;font-size:.8rem}
+input:focus,textarea:focus{outline:none;border-color:var(--c);box-shadow:0 0 0 2px rgba(0,229,255,.15)}
+textarea{min-height:70px;font-family:monospace;font-size:.74rem;resize:vertical}
+.m{padding:8px 12px;margin:4px 0;border-radius:8px;max-width:85%;white-space:pre-wrap;word-wrap:break-word;font-size:.8rem;line-height:1.4}
+.m.u{background:rgba(0,229,255,.15);margin-left:auto;border:1px solid rgba(0,229,255,.25)}
+.m.a{background:var(--p2);border:1px solid rgba(0,255,163,.2)}
+#chat{max-height:380px;overflow-y:auto;padding:6px;background:var(--p2);border-radius:6px;margin-bottom:6px;min-height:120px}
+#out{background:#000;color:var(--a);padding:8px;border-radius:6px;font-family:monospace;font-size:.74rem;min-height:60px;white-space:pre-wrap;max-height:220px;overflow-y:auto}
+canvas{width:100%;background:var(--p2);border-radius:6px;margin-top:6px;display:block}
+.sec{display:none}.sec.o{display:block}
+nav{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+nav button{background:var(--p2);color:var(--t);border:1px solid rgba(0,229,255,.2)}
+nav button.o{background:linear-gradient(135deg,var(--c),var(--s));color:#000;border-color:transparent}
+.to{position:fixed;bottom:16px;right:16px;background:var(--p);border-left:4px solid var(--c);padding:9px 13px;border-radius:6px;font-size:.75rem;box-shadow:0 4px 15px rgba(0,0,0,.6);animation:in .3s;max-width:250px;z-index:9999}
+.to.e{border-left-color:#ff3b5c}
+@keyframes in{from{transform:translateX(120%);opacity:0}}
+.st{background:var(--p2);border-radius:6px;padding:8px 10px;font-size:.74rem;font-family:monospace}
+.st b{color:var(--c)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+</style></head><body><div class="w">
+<h1>SPYDER · Neural Core</h1>
+<p class="sub">Real character-level GPT · autograd · attention · Adam · 100% local, no downloads, no API</p>
+<nav>
+<button data-s="dash" class="o">◈ Chat</button>
+<button data-s="train">◉ Train</button>
+<button data-s="about">ⓘ About</button>
+</nav>
+<div id="s-dash" class="sec o"><div class="card">
+<div id="chat"></div>
+<textarea id="ci" placeholder="Ask a question... (Enter to send)"></textarea>
+<div class="row">
+<button onclick="send()">Send</button>
+<button class="g" onclick="clearChat()">Clear</button>
+<button class="g" onclick="exportChat()">Export</button>
+</div>
+</div></div>
+<div id="s-train" class="sec">
+<div class="card">
+<h2>Model Status</h2>
+<div class="st">Params: <b id="np">—</b> · Vocab: <b id="nv">—</b> · Step: <b id="ns">0</b> · Loss: <b id="nl">—</b></div>
+<canvas id="chart" height="130"></canvas>
+</div>
+<div class="card">
+<h2>Training</h2>
+<div class="row">
+<button onclick="train(200)">Train 200</button>
+<button onclick="train(500)">Train 500</button>
+<button onclick="train(2000)">Train 2000</button>
+<button class="r" onclick="resetModel()">Reset</button>
+</div>
+<p style="font-size:.72rem;color:var(--m);margin-top:6px">Training runs entirely in your browser. 500 steps ≈ 15–30s. Loss should drop toward ~0.5–1.0.</p>
+</div>
+<div class="card">
+<h2>Fine-tune With Your Data</h2>
+<textarea id="ft" placeholder="Paste dialogues here. Format:&#10;User: question&#10;Assistant: answer&#10;User: another&#10;Assistant: another answer"></textarea>
+<button onclick="finetune()">Fine-tune 300 steps</button>
+</div>
+<div class="card">
+<h2>Sample Generation</h2>
+<input id="gen" value="User: what is a variable&#10;Assistant:" placeholder="Prompt">
+<button onclick="sample()">Generate</button>
+<div id="out">Train the model, then click Generate.</div>
+</div>
+</div>
+<div id="s-about" class="sec"><div class="card">
+<h2>What This Actually Is</h2>
+<p style="font-size:.8rem;line-height:1.7;color:var(--m)">
+<b style="color:var(--t)">Architecture:</b> 1 transformer block · 2 attention heads · 32-dim embedding · 32-char context · character tokenizer.<br><br>
+<b style="color:var(--t)">Real components:</b> reverse-mode autograd (V class), multi-head self-attention with causal mask, feed-forward MLP, RMS-like normalization, Adam optimizer, cross-entropy loss.<br><br>
+<b style="color:var(--t)">Honest scope:</b> ~20K parameters trained on ~5KB of curated dialogue. This is a <i>real</i> transformer that <i>really</i> trains and <i>really</i> generates — but it is <b>not</b> GPT-4. Expect short, imperfect, pattern-echoing answers. The point is that gradients flow, attention weights update, and loss drops — all in ~400 lines of vanilla JS with zero dependencies and zero network calls.<br><br>
+<b style="color:var(--t)">Privacy:</b> Nothing leaves your device. The model state persists in localStorage. Reload the page and it's still there.
+</p>
+</div></div>
+<div id="to"></div>
+</div>
+<script>
+"use strict";
+
+// ========== AUTOGRAD ==========
+class V{
+  constructor(d,ch=[],op=''){this.d=d;this.g=0;this.ch=ch;this.op=op;this._b=()=>{};}
+  add(o){o=o instanceof V?o:new V(o);const r=new V(this.d+o.d,[this,o]);r._b=()=>{this.g+=r.g;o.g+=r.g;};return r;}
+  mul(o){o=o instanceof V?o:new V(o);const r=new V(this.d*o.d,[this,o]);r._b=()=>{this.g+=o.d*r.g;o.g+=this.d*r.g;};return r;}
+  sub(o){return this.add((o instanceof V?o:new V(o)).mul(-1));}
+  pow(o){o=o instanceof V?o:new V(o);const r=new V(Math.pow(this.d,o.d),[this,o]);r._b=()=>{this.g+=o.d*Math.pow(this.d,o.d-1)*r.g;};return r;}
+  exp(){const e=Math.exp(this.d);const r=new V(e,[this]);r._b=()=>{this.g+=e*r.g;};return r;}
+  log(){const r=new V(Math.log(this.d+1e-8),[this]);r._b=()=>{this.g+=r.g/(this.d+1e-8);};return r;}
+  relu(){const r=new V(Math.max(0,this.d),[this]);r._b=()=>{this.g+=(r.d>0?1:0)*r.g;};return r;}
+  backward(){const t=[],v=new Set();const b=x=>{if(v.has(x))return;v.add(x);for(const c of x.ch)b(c);t.push(x);};b(this);for(const x of t)x.g=0;this.g=1;for(let i=t.length-1;i>=0;i--)t[i]._b();}
+}
+function mm(x,w){return w.map(r=>{let s=new V(0);for(let i=0;i<x.length;i++)s=s.add(r[i].mul(x[i]));return s;});}
+function softmax(xs){const mx=Math.max(...xs.map(v=>v.d));const es=xs.map(v=>v.sub(mx).exp());let sum=new V(0);for(const e of es)sum=sum.add(e);return es.map(e=>e.div(sum));}
+function rmsnorm(x){let sq=new V(0);for(const v of x)sq=sq.add(v.mul(v));const ms=sq.div(x.length);const sc=ms.add(1e-5).pow(-0.5);return x.map(v=>v.mul(sc));}
+
+// ========== ADAM ==========
+class Adam{
+  constructor(ps,lr=0.01){this.ps=ps;this.lr=lr;this.m=ps.map(()=>0);this.v=ps.map(()=>0);this.t=0;}
+  step(){this.t++;const b1=0.9,b2=0.999,e=1e-8;
+    for(let i=0;i<this.ps.length;i++){const p=this.ps[i];this.m[i]=b1*this.m[i]+(1-b1)*p.g;this.v[i]=b2*this.v[i]+(1-b2)*p.g*p.g;
+      const mh=this.m[i]/(1-Math.pow(b1,this.t));const vh=this.v[i]/(1-Math.pow(b2,this.t));p.d-=this.lr*mh/(Math.sqrt(vh)+e);}}
+}
+
+// ========== GPT ==========
+class GPT{
+  constructor(cfg){this.cfg=cfg;this.params=[];this.vocab=[];this.stoi={};this.itos={};this.step=0;this.hist=[];this.trained=false;this.build();}
+  rn(shape,sc=0.08){if(typeof shape==='number')return new V((Math.random()*2-1)*sc);return Array.from({length:shape[0]},()=>this.rn(shape[1],sc));}
+  build(){const{nE,nL,nV,B}=this.cfg;
+    this.wte=this.rn([nV,nE]);this.wpe=this.rn([B,nE]);
+    this.blocks=[];for(let i=0;i<nL;i++)this.blocks.push({wq:this.rn([nE,nE]),wk:this.rn([nE,nE]),wv:this.rn([nE,nE]),wo:this.rn([nE,nE]),f1:this.rn([4*nE,nE]),f2:this.rn([nE,4*nE])});
+    this.head=this.rn([nV,nE]);this.collect();}
+  collect(){this.params=[];const walk=v=>{if(v instanceof V)this.params.push(v);else if(Array.isArray(v))for(const x of v)walk(x);};walk(this.wte);walk(this.wpe);for(const b of this.blocks)for(const k in b)walk(b[k]);walk(this.head);}
+  setVocab(chars){this.vocab=chars;this.stoi={};this.itos={};chars.forEach((c,i)=>{this.stoi[c]=i;this.itos[i]=c;});}
+  enc(s){const r=[];for(const c of s){const i=this.stoi[c];if(i!==undefined)r.push(i);}return r;}
+  dec(ts){return ts.map(t=>this.itos[t]||'').join('');}
+  forward(idx){const{nE,nH,B}=this.cfg;const T=idx.length;const hd=Math.floor(nE/nH);
+    let x=idx.map((id,i)=>this.wte[id].map((v,j)=>v.add(this.wpe[i][j])));
+    for(const b of this.blocks){
+      const q=x.map(xi=>mm(xi,b.wq)),k=x.map(xi=>mm(xi,b.wk)),v=x.map(xi=>mm(xi,b.wv));
+      const out=Array.from({length:T},()=>Array(nE).fill(null).map(()=>new V(0)));
+      for(let h=0;h<nH;h++){
+        const qh=q.map(qi=>qi.slice(h*hd,(h+1)*hd));
+        const kh=k.map(ki=>ki.slice(h*hd,(h+1)*hd));
+        const vh=v.map(vi=>vi.slice(h*hd,(h+1)*hd));
+        for(let i=0;i<T;i++){
+          const scores=[];for(let j=0;j<=i;j++){let s=new V(0);for(let d=0;d<hd;d++)s=s.add(qh[i][d].mul(kh[j][d]));scores.push(s.mul(1/Math.sqrt(hd)));}
+          const att=softmax(scores);
+          for(let j=0;j<=i;j++)for(let d=0;d<hd;d++)out[i][h*hd+d]=out[i][h*hd+d].add(att[j].mul(vh[j][d]));
+        }
+      }
+      const proj=out.map(o=>mm(o,b.wo));
+      x=x.map((xi,i)=>xi.map((v,j)=>v.add(proj[i][j])));
+      x=x.map(xi=>{const nn=rmsnorm(xi);const h1=mm(nn,b.f1).map(v=>v.relu());const h2=mm(h1,b.f2);return xi.map((v,j)=>v.add(h2[j]));});
+    }
+    return x.map(xi=>mm(rmsnorm(xi),this.head));}
+  loss(idx,tg){const lg=this.forward(idx);let tot=new V(0);
+    for(let i=0;i<tg.length;i++){const p=softmax(lg[i]);tot=tot.add(p[tg[i]].log().mul(-1));}
+    return tot.div(tg.length);}
+  trainStep(docs,opt){const B=this.cfg.B;const d=docs[Math.floor(Math.random()*docs.length)];
+    const t=this.enc(d);if(t.length<2)return 0;
+    const s=Math.floor(Math.random()*Math.max(1,t.length-B));
+    const idx=t.slice(s,s+B),tg=t.slice(s+1,s+1+B);
+    const l=this.loss(idx,tg);l.backward();opt.step();this.step++;
+    this.hist.push(l.d);if(this.hist.length>300)this.hist.shift();this.trained=true;
+    return l.d;}
+  generate(prompt,maxNew=100,temp=0.8){const B=this.cfg.B;let t=this.enc(prompt);if(!t.length)t=[0];
+    for(let i=0;i<maxNew;i++){
+      const ctx=t.slice(-B);
+      const lg=this.forward(ctx);
+      const last=lg[lg.length-1];
+      const p=softmax(last.map(l=>l.mul(1/temp)));
+      const pd=p.map(x=>x.d);let sum=0;for(const v of pd)sum+=v;
+      let r=Math.random()*sum;let chosen=0;
+      for(let j=0;j<pd.length;j++){r-=pd[j];if(r<=0){chosen=j;break;}}
+      t.push(chosen);if(t.length>B+40)t=t.slice(-B);}
+    return this.dec(t);}
+  serialize(){return{cfg:this.cfg,vocab:this.vocab,step:this.step,hist:this.hist.slice(-100),params:this.params.map(p=>p.d)};}
+  static deserialize(d){const g=new GPT(d.cfg);g.setVocab(d.vocab);g.step=d.step||0;g.hist=d.hist||[];for(let i=0;i<d.params.length&&i<g.params.length;i++)g.params[i].d=d.params[i];g.trained=true;return g;}
+}
+
+// ========== CORPUS (compact, ~150 pairs) ==========
+const CORPUS=`User: what is a variable
+Assistant: A variable is a named storage location for a value.
+User: what is a function
+Assistant: A function is a reusable block of code that performs a task.
+User: what is a loop
+Assistant: A loop repeats a block of code while a condition holds.
+User: what is an array
+Assistant: An array stores a collection of elements in order.
+User: what is a class
+Assistant: A class is a blueprint for creating objects.
+User: what is inheritance
+Assistant: Inheritance lets a class derive from another.
+User: what is polymorphism
+Assistant: Polymorphism allows one interface for many types.
+User: what is encapsulation
+Assistant: Encapsulation bundles data and methods together.
+User: what is an algorithm
+Assistant: An algorithm is a step by step procedure to solve a problem.
+User: what is recursion
+Assistant: Recursion is when a function calls itself.
+User: what is a database
+Assistant: A database is an organized collection of data.
+User: what is sql
+Assistant: SQL is a language for querying relational databases.
+User: what is an api
+Assistant: An API lets software systems communicate.
+User: what is http
+Assistant: HTTP is the protocol for transferring web content.
+User: what is json
+Assistant: JSON is a text format for data with key value pairs.
+User: what is javascript
+Assistant: JavaScript is a language for interactive web pages.
+User: what is python
+Assistant: Python is a readable general purpose language.
+User: what is a compiler
+Assistant: A compiler translates source code to machine code.
+User: what is an interpreter
+Assistant: An interpreter runs source code directly.
+User: what is a bug
+Assistant: A bug is an error in software.
+User: what is debugging
+Assistant: Debugging is finding and fixing bugs.
+User: what is git
+Assistant: Git is a version control system for code.
+User: what is a commit
+Assistant: A commit is a snapshot of changes in git.
+User: what is a branch
+Assistant: A branch is a parallel line of development.
+User: what is merging
+Assistant: Merging combines changes from different branches.
+User: what is testing
+Assistant: Testing verifies that software behaves correctly.
+User: what is unit testing
+Assistant: Unit testing checks individual components.
+User: what is linux
+Assistant: Linux is an open source operating system kernel.
+User: what is bash
+Assistant: Bash is a Unix shell and scripting language.
+User: what is a process
+Assistant: A process is a running program with its own memory.
+User: what is a thread
+Assistant: A thread is the smallest unit of execution.
+User: what is a cache
+Assistant: A cache stores data for faster access.
+User: what is a cpu
+Assistant: The CPU is the processor that executes instructions.
+User: what is ram
+Assistant: RAM is fast volatile memory for running programs.
+User: what is machine learning
+Assistant: Machine learning learns patterns from data.
+User: what is a neural network
+Assistant: A neural network is connected layers of nodes.
+User: what is deep learning
+Assistant: Deep learning uses many layer neural networks.
+User: what is a transformer
+Assistant: A transformer is a neural architecture using attention.
+User: what is attention
+Assistant: Attention weighs the importance of different inputs.
+User: what is a token
+Assistant: A token is a unit of text used by language models.
+User: what is training
+Assistant: Training adjusts parameters to reduce error.
+User: what is gradient descent
+Assistant: Gradient descent moves parameters toward lower loss.
+User: what is backpropagation
+Assistant: Backpropagation computes gradients through the network.
+User: what is a loss function
+Assistant: A loss function measures prediction error.
+User: what is overfitting
+Assistant: Overfitting memorizes training data without generalizing.
+User: what is mathematics
+Assistant: Mathematics studies numbers and patterns.
+User: what is algebra
+Assistant: Algebra uses symbols to solve equations.
+User: what is calculus
+Assistant: Calculus studies continuous change.
+User: what is a derivative
+Assistant: A derivative measures how a function changes.
+User: what is probability
+Assistant: Probability measures the likelihood of events.
+User: what is statistics
+Assistant: Statistics analyzes and interprets data.
+User: what is the mean
+Assistant: The mean is the average of numbers.
+User: what is the median
+Assistant: The median is the middle value of sorted data.
+User: what is variance
+Assistant: Variance measures spread around the mean.
+User: what is a prime number
+Assistant: A prime is divisible only by one and itself.
+User: what is physics
+Assistant: Physics studies matter, energy, and interactions.
+User: what is energy
+Assistant: Energy is the capacity to do work.
+User: what is gravity
+Assistant: Gravity is the attraction between masses.
+User: what is light
+Assistant: Light is electromagnetic radiation we can see.
+User: what is chemistry
+Assistant: Chemistry studies matter and its changes.
+User: what is an atom
+Assistant: An atom is the smallest unit of an element.
+User: what is a molecule
+Assistant: A molecule is a group of bonded atoms.
+User: what is biology
+Assistant: Biology is the science of living organisms.
+User: what is dna
+Assistant: DNA carries genetic information.
+User: what is philosophy
+Assistant: Philosophy studies fundamental questions.
+User: what is logic
+Assistant: Logic studies valid reasoning.
+User: what is science
+Assistant: Science builds knowledge by observation and experiment.
+User: what is research
+Assistant: Research is systematic investigation of a question.
+User: what is a hypothesis
+Assistant: A hypothesis is a testable proposed explanation.
+User: what is data
+Assistant: Data is raw information that can be analyzed.
+User: what is a model
+Assistant: A model is a simplified representation of a system.
+User: what is optimization
+Assistant: Optimization finds the best solution under constraints.
+User: what is automation
+Assistant: Automation uses technology to perform tasks.
+User: what is a workflow
+Assistant: A workflow is a sequence of organized tasks.
+User: what is a project
+Assistant: A project is a temporary effort with a goal.
+User: what is a task
+Assistant: A task is a single unit of work.
+User: what is a deadline
+Assistant: A deadline is the time by which work must be done.
+User: what is planning
+Assistant: Planning defines goals, resources, and actions.
+User: what is a risk
+Assistant: A risk is a potential negative event.
+User: what is security
+Assistant: Security protects systems and data from attacks.
+User: what is encryption
+Assistant: Encryption encodes data so only authorized parties read it.
+User: what is authentication
+Assistant: Authentication verifies identity.
+User: what is authorization
+Assistant: Authorization determines allowed actions.
+User: what is a hash
+Assistant: A hash is a fixed size value computed from data.
+User: what is a firewall
+Assistant: A firewall filters network traffic by rules.
+User: what is cloud computing
+Assistant: Cloud computing delivers services over the internet.
+User: what is a container
+Assistant: A container packages software with dependencies.
+User: what is docker
+Assistant: Docker builds and runs containers.
+User: what is kubernetes
+Assistant: Kubernetes orchestrates containerized applications.
+User: what is a server
+Assistant: A server provides services to clients.
+User: what is a client
+Assistant: A client requests services from servers.
+User: what is a network
+Assistant: A network is interconnected devices that communicate.
+User: what is an ip address
+Assistant: An IP address identifies a device on a network.
+User: what is dns
+Assistant: DNS translates domain names to IP addresses.
+User: what is tcp
+Assistant: TCP is a reliable connection oriented protocol.
+User: what is udp
+Assistant: UDP is a connectionless datagram protocol.
+User: what is latency
+Assistant: Latency is the delay before data transfer.
+User: what is a database index
+Assistant: A database index speeds up data retrieval.
+User: what is a transaction
+Assistant: A transaction is an atomic unit of work.
+User: what is acid
+Assistant: ACID ensures reliable database transactions.
+User: what is data science
+Assistant: Data science extracts insights from data.
+User: what is correlation
+Assistant: Correlation measures relationship between variables.
+User: what is regression
+Assistant: Regression models relationships between variables.
+User: what is classification
+Assistant: Classification assigns labels to items.
+User: what is clustering
+Assistant: Clustering groups similar items.
+User: what is a decision tree
+Assistant: A decision tree splits data on features.
+User: what is cross validation
+Assistant: Cross validation evaluates models on held out data.
+User: what is a hyperparameter
+Assistant: A hyperparameter is set before training.
+User: what is a parameter
+Assistant: A parameter is learned during training.
+User: what is an epoch
+Assistant: An epoch is one pass over the dataset.
+User: what is a batch
+Assistant: A batch is a group of examples per step.
+User: what is a learning rate
+Assistant: Learning rate controls parameter update size.
+User: what is dropout
+Assistant: Dropout randomly zeroes activations during training.
+User: what is relu
+Assistant: ReLU outputs the input if positive else zero.
+User: what is softmax
+Assistant: Softmax converts scores to probabilities.
+User: what is cross entropy
+Assistant: Cross entropy measures difference between distributions.
+User: what is precision
+Assistant: Precision is the fraction of positive predictions that are correct.
+User: what is recall
+Assistant: Recall is the fraction of actual positives found.
+User: what is a vector
+Assistant: A vector is an ordered list of numbers.
+User: what is a matrix
+Assistant: A matrix is a rectangular array of numbers.
+User: what is a dot product
+Assistant: Dot product sums products of corresponding components.
+User: what is a gradient
+Assistant: A gradient points toward steepest increase.
+User: what is a normal distribution
+Assistant: Normal distribution is a symmetric bell curve.
+User: what is bayes theorem
+Assistant: Bayes updates probability from evidence.
+User: what is a permutation
+Assistant: A permutation is an arrangement in order.
+User: what is a combination
+Assistant: A combination selects items ignoring order.
+User: what is a graph
+Assistant: A graph is vertices connected by edges.
+User: what is a tree
+Assistant: A tree is a hierarchical data structure.
+User: what is a stack
+Assistant: A stack is last in first out.
+User: what is a queue
+Assistant: A queue is first in first out.
+User: what is a heap
+Assistant: A heap maintains min or max at the root.
+User: what is sorting
+Assistant: Sorting orders elements in a sequence.
+User: what is quicksort
+Assistant: Quicksort partitions around a pivot recursively.
+User: what is binary search
+Assistant: Binary search halves a sorted search interval.
+User: what is dynamic programming
+Assistant: Dynamic programming reuses solutions to subproblems.
+User: what is bfs
+Assistant: BFS visits graph nodes level by level.
+User: what is dfs
+Assistant: DFS explores deep before backtracking.
+User: what is big o
+Assistant: Big O describes an upper bound on growth rate.
+User: what is a race condition
+Assistant: Race condition depends on concurrent timing.
+User: what is a deadlock
+Assistant: Deadlock is circular waiting for resources.
+User: what is a mutex
+Assistant: A mutex serializes access to a resource.
+User: what is a promise
+Assistant: A promise represents an eventual async result.
+User: what is a callback
+Assistant: A callback is a function called later.
+User: what is a closure
+Assistant: A closure captures variables from its scope.
+User: what is a prototype
+Assistant: Prototype is the object other objects inherit from.
+User: what is html
+Assistant: HTML is the markup language for web pages.
+User: what is css
+Assistant: CSS describes presentation of HTML documents.
+User: what is the dom
+Assistant: DOM is the tree of HTML the browser builds.
+User: what is react
+Assistant: React is a library for UI components.
+User: what is nodejs
+Assistant: Node.js runs JavaScript on the server.
+User: what is npm
+Assistant: npm is the package manager for node.
+User: what is a module
+Assistant: A module is a reusable unit of code.
+User: what is a build
+Assistant: A build converts source into a deployable artifact.
+User: what is ci
+Assistant: CI automatically tests code changes.
+User: what is cd
+Assistant: CD automates release of software.
+User: what is monitoring
+Assistant: Monitoring observes system health continuously.
+User: what is logging
+Assistant: Logging records events in a system.
+User: what is an alert
+Assistant: An alert notifies when a condition is met.
+User: what is scalability
+Assistant: Scalability is the ability to handle growth.
+User: what is load balancing
+Assistant: Load balancing distributes traffic across servers.
+User: what is replication
+Assistant: Replication copies data across nodes.
+User: what is consistency
+Assistant: Consistency means all replicas match.
+User: what is devops
+Assistant: DevOps integrates development and operations.
+User: what is terraform
+Assistant: Terraform provisions infrastructure with configuration files.
+User: what is tls
+Assistant: TLS encrypts data in transit.
+User: what is oauth
+Assistant: OAuth authorizes third party access.
+User: what is jwt
+Assistant: JWT is a signed token for claims.
+User: what is cors
+Assistant: CORS controls cross origin requests.
+User: what is xss
+Assistant: XSS injects scripts into pages.
+User: what is sql injection
+Assistant: SQL injection inserts malicious SQL through input.
+User: what is validation
+Assistant: Validation checks input meets constraints.
+User: what is sanitization
+Assistant: Sanitization removes unsafe characters.
+User: what is least privilege
+Assistant: Least privilege grants minimum access.
+User: what is zero trust
+Assistant: Zero trust verifies every request.
+User: what is mfa
+Assistant: MFA requires multiple verification factors.
+User: what is a vulnerability
+Assistant: A vulnerability is a weakness that can be exploited.
+User: what is a patch
+Assistant: A patch fixes a vulnerability or bug.
+User: what is malware
+Assistant: Malware is software designed to harm systems.
+User: what is phishing
+Assistant: Phishing tricks users into revealing information.
+User: what is a honeypot
+Assistant: A honeypot lures attackers for detection.
+User: hi
+Assistant: Hello. I am SPYDER, a local neural core.
+User: hello
+Assistant: Hello. Ask me what something is.
+User: thanks
+Assistant: You are welcome.
+User: bye
+Assistant: Goodbye. Come back anytime.
+User: who are you
+Assistant: I am SPYDER, a small transformer running in your browser.
+User: how are you
+Assistant: I am running locally. Loss is dropping as we train.`;
+
+// ========== STATE ==========
+let model = null;
+let training = false;
+const CFG = {B:32, nE:32, nH:2, nL:1, nV:0};
+let chat = [];
+
+function toast(m,e){const x=document.createElement('div');x.className='to'+(e?' e':'');x.textContent=m;document.getElementById('to').appendChild(x);setTimeout(()=>x.remove(),2800);}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+// ========== NAV ==========
+document.querySelectorAll('nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('o',x===b));
+    document.querySelectorAll('.sec').forEach(s=>s.classList.toggle('o',s.id==='s-'+b.dataset.s));
+    if(b.dataset.s==='train'&&!model)initModel();
+  };
+});
+
+// ========== MODEL INIT ==========
+function initModel(){
+  if(model)return;
+  const chars=[...new Set([...CORPUS])].sort();
+  CFG.nV=chars.length;
+  model=new GPT(CFG);
+  model.setVocab(chars);
+  updateStats();
+  toast('Model initialized · '+model.params.length.toLocaleString()+' params');
+}
+
+function updateStats(){
+  if(!model)return;
+  document.getElementById('np').textContent=model.params.length.toLocaleString();
+  document.getElementById('nv').textContent=model.vocab.length;
+  document.getElementById('ns').textContent=model.step;
+  document.getElementById('nl').textContent=model.hist.length?model.hist[model.hist.length-1].toFixed(3):'—';
+  drawChart();
+}
+
+function drawChart(){
+  const cv=document.getElementById('chart');if(!cv)return;
+  const d=window.devicePixelRatio||1;
+  cv.width=cv.clientWidth*d;cv.height=130*d;
+  const c=cv.getContext('2d');c.scale(d,d);
+  const w=cv.clientWidth,h=130;
+  c.fillStyle='#0D1422';c.fillRect(0,0,w,h);
+  if(!model||!model.hist.length){
+    c.fillStyle='#94A3B8';c.font='11px monospace';c.textAlign='center';
+    c.fillText('Loss curve appears after training',w/2,h/2);
+    return;
+  }
+  const data=model.hist.slice(-150);
+  const mn=Math.min(...data),mx=Math.max(...data),rng=(mx-mn)||1;
+  const pad=15;
+  c.strokeStyle='rgba(0,229,255,.15)';c.lineWidth=1;
+  for(let i=0;i<=4;i++){const y=pad+(h-pad*2)*i/4;c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke();}
+  c.strokeStyle='#00FFA3';c.lineWidth=2;c.beginPath();
+  data.forEach((v,i)=>{const x=(i/(data.length-1))*w;const y=pad+(h-pad*2)*(1-(v-mn)/rng);i?c.lineTo(x,y):c.moveTo(x,y);});
+  c.stroke();
+  c.fillStyle='#94A3B8';c.font='9px monospace';c.textAlign='left';
+  c.fillText('max '+mx.toFixed(2),4,10);
+  c.fillText('min '+mn.toFixed(2),4,h-3);
+}
+
+// ========== TRAIN ==========
+async function train(n){
+  if(!model)initModel();
+  if(training){toast('Already training');return;}
+  training=true;
+  const opt=new Adam(model.params,0.01);
+  const docs=CORPUS.split('User: ').map(d=>'User: '+d.trim()).filter(d=>d.length>15);
+  const t0=performance.now();
+  for(let i=0;i<n;i++){
+    model.trainStep(docs,opt);
+    if(i%20===0){updateStats();await new Promise(r=>setTimeout(r,0));}
+  }
+  training=false;
+  const dt=((performance.now()-t0)/1000).toFixed(1);
+  toast('Trained '+n+' steps in '+dt+'s');
+  updateStats();saveModel();
+}
+
+function saveModel(){
+  if(!model)return;
+  try{localStorage.setItem('spyder_model_v2',JSON.stringify(model.serialize()));}
+  catch(e){toast('Save failed: '+e.message,true);}
+}
+
+function loadModel(){
+  try{
+    const s=localStorage.getItem('spyder_model_v2');
+    if(s){model=GPT.deserialize(JSON.parse(s));updateStats();return true;}
+  }catch(e){}
+  return false;
+}
+
+function resetModel(){
+  if(!confirm('Reset model and retrain from scratch?'))return;
+  model=null;
+  localStorage.removeItem('spyder_model_v2');
+  initModel();
+  updateStats();
+  toast('Model reset');
+}
+
+async function finetune(){
+  const txt=document.getElementById('ft').value.trim();
+  if(!txt){toast('Paste some text first',true);return;}
+  if(!model)initModel();
+  const opt=new Adam(model.params,0.005);
+  const docs=txt.split(/\n\n+/).map(d=>d.trim()).filter(d=>d.length>10);
+  if(!docs.length)docs.push(txt);
+  for(let i=0;i<300;i++){
+    model.trainStep(docs,opt);
+    if(i%25===0){updateStats();await new Promise(r=>setTimeout(r,0));}
+  }
+  toast('Fine-tuned 300 steps');
+  updateStats();saveModel();
+}
+
+function sample(){
+  if(!model||!model.trained){toast('Train the model first',true);return;}
+  const p=document.getElementById('gen').value;
+  const out=document.getElementById('out');
+  out.textContent='Generating...';
+  setTimeout(()=>{
+    try{out.textContent=model.generate(p,100,0.75);}
+    catch(e){out.textContent='Error: '+e.message;}
+  },30);
+}
+
+// ========== CHAT ==========
+function renderChat(){
+  const el=document.getElementById('chat');
+  el.innerHTML=chat.map(m=>`<div class="m ${m.role==='user'?'u':'a'}">${esc(m.text)}</div>`).join('')||'<p style="color:var(--m);text-align:center;padding:14px;font-size:.78rem">Train the model first, then ask a question.</p>';
+  el.scrollTop=el.scrollHeight;
+}
+
+function send(){
+  const i=document.getElementById('ci');
+  const q=i.value.trim();if(!q)return;
+  i.value='';
+  chat.push({role:'user',text:q});
+  renderChat();
+  if(!model||!model.trained){
+    chat.push({role:'assistant',text:'Model not trained. Go to Train and click "Train 500".'});
+    renderChat();return;
+  }
+  setTimeout(()=>{
+    try{
+      const prompt='User: '+q+'\nAssistant:';
+      const raw=model.generate(prompt,100,0.7);
+      let ans=raw.replace(/^[\s\S]*?Assistant:\s*/,'');
+      ans=ans.split('User:')[0].split('\n')[0].trim();
+      chat.push({role:'assistant',text:ans||'(no output)'});
+    }catch(e){chat.push({role:'assistant',text:'Error: '+e.message});}
+    renderChat();
+  },30);
+}
+
+function clearChat(){chat=[];renderChat();}
+function exportChat(){
+  const b=new Blob([JSON.stringify(chat,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='spyder_chat.json';
+  a.click();
+}
+
+document.getElementById('ci').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
+});
+
+// ========== INIT ==========
+initModel();
+renderChat();
+updateStats();
+if(loadModel())toast('Model loaded from browser storage');
+</script>
+</body></html>

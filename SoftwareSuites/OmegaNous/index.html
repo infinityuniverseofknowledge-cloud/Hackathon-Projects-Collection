@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>OMEGA-NOUS | Cognitive Colossus</title>
+<style>
+:root {
+  --bg: #020305; --desktop: #050812; --win-bg: rgba(8, 14, 26, 0.85);
+  --border: rgba(0, 240, 255, 0.2); --text: #8ab4d5; --text-light: #e0f0ff; 
+  --accent: #00f0ff; --accent2: #ff00aa; --success: #00ff88; --danger: #ff0033;
+  --font-mono: "Fira Code", monospace; --font-ui: system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-ui); overflow: hidden; height: 100vh; }
+
+/* BOOT SCREEN */
+#boot-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; display:flex; flex-direction:column; padding:30px; font-family:var(--font-mono); color:var(--accent); font-size:0.8rem; gap:8px; }
+.boot-line { opacity:0; animation: fadeIn 0.2s forwards; }
+@keyframes fadeIn { to { opacity:1; } }
+.progress-bar { width:100%; max-width:400px; height:4px; background:#111; margin-top:20px; border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--accent); width:0%; transition: width 0.1s; box-shadow: 0 0 10px var(--accent); }
+
+/* DESKTOP */
+#desktop { width: 100%; height: 100%; position: relative; display: none; background: var(--desktop); }
+#bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+
+/* TASKBAR */
+#taskbar { position: absolute; bottom: 0; left: 0; width: 100%; height: 45px; background: rgba(2, 4, 8, 0.9); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; gap: 15px; z-index: 1000; backdrop-filter: blur(15px); }
+.tb-start { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 5px 15px; border-radius: 6px; font-family: var(--font-mono); font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.2); }
+.tb-start:hover { background: rgba(0,240,255,0.1); }
+.tb-apps { display: flex; gap: 8px; flex: 1; }
+.tb-icon { width: 34px; height: 34px; display: flex; justify-content: center; align-items: center; border-radius: 6px; cursor: pointer; font-size: 1.1rem; transition: 0.2s; border: 1px solid transparent; }
+.tb-icon:hover { border-color: var(--accent); background: rgba(0,240,255,0.1); }
+.tb-icon.active { border-bottom: 2px solid var(--accent); background: rgba(0,240,255,0.15); }
+.tb-clock { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); }
+
+/* WINDOWS */
+.window { position: absolute; background: var(--win-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); display: flex; flex-direction: column; overflow: hidden; backdrop-filter: blur(20px); transform: scale(0.95); opacity: 0; transition: 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: auto; }
+.window.open { transform: scale(1); opacity: 1; }
+.window-header { height: 35px; background: rgba(0,0,0,0.5); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 12px; cursor: grab; }
+.window-title { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-light); display: flex; align-items: center; gap: 8px; }
+.window-controls { display: flex; gap: 8px; }
+.win-btn { width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer; }
+.win-close { background: var(--danger); box-shadow: 0 0 8px var(--danger); } 
+.win-min { background: #ffbd2e; } 
+.win-max { background: var(--success); }
+.window-body { flex: 1; padding: 0; display: flex; position: relative; overflow: hidden; }
+
+/* OMEGA-NOUS UI */
+#ai-split-view { display: flex; width: 100%; height: 100%; }
+#chat-panel { flex: 1.2; display: flex; flex-direction: column; border-right: 1px solid var(--border); background: rgba(0,0,0,0.3); }
+#reasoning-panel { flex: 1; display: flex; flex-direction: column; background: #000; font-family: var(--font-mono); font-size: 0.7rem; padding: 10px; overflow-y: auto; }
+
+#chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+.msg { padding: 10px 15px; border-radius: 8px; max-width: 90%; line-height: 1.5; font-size: 0.85rem; }
+.msg.user { background: rgba(0,240,255,0.1); color: var(--accent); align-self: flex-end; border: 1px solid var(--accent); border-bottom-right-radius: 0; }
+.msg.ai { background: rgba(255,0,170,0.05); color: #ffb3e6; align-self: flex-start; border: 1px solid var(--accent2); border-bottom-left-radius: 0; }
+#chat-input-area { display: flex; padding: 12px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.6); }
+#chat-input { flex: 1; background: transparent; border: none; color: #fff; font-family: var(--font-mono); font-size: 0.85rem; outline: none; }
+.btn { background: rgba(0,240,255,0.1); border: 1px solid var(--accent); color: var(--accent); padding: 8px 15px; border-radius: 4px; cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem; transition: 0.2s; }
+.btn:hover { background: var(--accent); color: #000; }
+.btn-ai { border-color: var(--accent2); color: var(--accent2); background: rgba(255,0,170,0.1); }
+.btn-ai:hover { background: var(--accent2); color: #fff; box-shadow: 0 0 15px var(--accent2); }
+
+/* REASONING TRACE STYLES */
+.trace-step { margin-bottom: 12px; opacity: 0; animation: fadeIn 0.3s forwards; }
+.trace-header { color: #888; font-size: 0.65rem; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+.trace-content { color: var(--success); border-left: 2px solid var(--success); padding-left: 8px; }
+.trace-content.branch { color: var(--warning); border-left-color: var(--warning); }
+.trace-content.critique { color: var(--danger); border-left-color: var(--danger); }
+.trace-content.final { color: var(--accent2); border-left-color: var(--accent2); font-weight: bold; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+<div id="boot-screen">
+  <div id="boot-text"></div>
+  <div class="progress-bar"><div class="progress-fill" id="boot-progress"></div></div>
+</div>
+
+<div id="desktop">
+  <canvas id="bg-canvas"></canvas>
+  <div id="windows-container" style="position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 45px); z-index: 10;"></div>
+  
+  <div id="taskbar">
+    <button class="tb-start" onclick="launchApp('ai')">⟨Ω⟩ OMEGA-NOUS</button>
+    <div class="tb-apps" id="taskbar-apps"></div>
+    <div class="tb-clock" id="clock">00:00:00</div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// OS KERNEL & WINDOW MANAGER
+// ==========================================
+let zIndex = 10;
+function createWindow(id, title, icon, contentHTML, width, height) {
+  if (document.getElementById(id)) {
+    const w = document.getElementById(id);
+    w.classList.add('open'); w.style.zIndex = ++zIndex; return;
+  }
+  const win = document.createElement('div');
+  win.id = id; win.className = 'window';
+  win.style.width = width + 'px'; win.style.height = height + 'px';
+  win.style.top = (window.innerHeight/2 - height/2) + 'px';
+  win.style.left = (window.innerWidth/2 - width/2) + 'px';
+  win.style.zIndex = ++zIndex;
+  win.innerHTML = `
+    <div class="window-header" onmousedown="startDrag(event, '${id}')">
+      <div class="window-title">${icon} ${title}</div>
+      <div class="window-controls">
+        <button class="win-btn win-min" onclick="document.getElementById('${id}').classList.remove('open')"></button>
+        <button class="win-btn win-close" onclick="document.getElementById('${id}').remove()"></button>
+      </div>
+    </div>
+    <div class="window-body">${contentHTML}</div>
+  `;
+  document.getElementById('windows-container').appendChild(win);
+  setTimeout(() => win.classList.add('open'), 10);
+  win.addEventListener('mousedown', () => { win.style.zIndex = ++zIndex; });
+  
+  const tb = document.getElementById('taskbar-apps');
+  const btn = document.createElement('div');
+  btn.className = 'tb-icon'; btn.id = 'tb-' + id; btn.innerHTML = icon;
+  btn.onclick = () => {
+    const w = document.getElementById(id);
+    if (w.classList.contains('open')) w.classList.remove('open');
+    else { w.classList.add('open'); w.style.zIndex = ++zIndex; }
+  };
+  tb.appendChild(btn);
+  
+  if (id === 'app-ai') initAI();
+}
+
+let isDragging = false, activeWin = null, offsetX, offsetY;
+function startDrag(e, id) {
+  if (e.target.classList.contains('win-btn')) return;
+  isDragging = true; activeWin = document.getElementById(id);
+  activeWin.style.zIndex = ++zIndex;
+  offsetX = e.clientX - activeWin.offsetLeft; offsetY = e.clientY - activeWin.offsetTop;
+}
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging || !activeWin) return;
+  activeWin.style.left = (e.clientX - offsetX) + 'px';
+  activeWin.style.top = (e.clientY - offsetY) + 'px';
+});
+document.addEventListener('mouseup', () => { isDragging = false; activeWin = null; });
+setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour12: false}); }, 1000);
+
+
+// ==========================================
+// 3D NEURAL BACKGROUND (WEBGL)
+// ==========================================
+const bgCanvas = document.getElementById('bg-canvas');
+const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: true, antialias: true });
+bgRenderer.setSize(window.innerWidth, window.innerHeight);
+const bgScene = new THREE.Scene();
+const bgCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+bgCamera.position.z = 5;
+
+const particleCount = 600;
+const particleGeo = new THREE.BufferGeometry();
+const particlePos = new Float32Array(particleCount * 3);
+const particleVel = [];
+for(let i=0; i<particleCount; i++) {
+    particlePos[i*3] = (Math.random()-0.5)*20;
+    particlePos[i*3+1] = (Math.random()-0.5)*20;
+    particlePos[i*3+2] = (Math.random()-0.5)*20;
+    particleVel.push(new THREE.Vector3((Math.random()-0.5)*0.02, (Math.random()-0.5)*0.02, (Math.random()-0.5)*0.02));
+}
+particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
+const particleMat = new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.05, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+const particleSystem = new THREE.Points(particleGeo, particleMat);
+bgScene.add(particleSystem);
+
+const lineGeo = new THREE.BufferGeometry();
+const linePos = new Float32Array(particleCount * 6);
+lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
+const lineMat = new THREE.LineBasicMaterial({ color: 0xff00aa, transparent: true, opacity: 0.1 });
+const lineSystem = new THREE.LineSegments(lineGeo, lineMat);
+bgScene.add(lineSystem);
+
+let isThinking = false;
+let pulseSpeed = 0.02;
+
+function animateBg() {
+    requestAnimationFrame(animateBg);
+    const pos = particleSystem.geometry.attributes.position.array;
+    const lpos = lineSystem.geometry.attributes.position.array;
+    let lineIdx = 0;
+    
+    for(let i=0; i<particleCount; i++) {
+        pos[i*3] += particleVel[i].x * (isThinking ? 3 : 1);
+        pos[i*3+1] += particleVel[i].y * (isThinking ? 3 : 1);
+        pos[i*3+2] += particleVel[i].z * (isThinking ? 3 : 1);
+        
+        // Bounce
+        if(Math.abs(pos[i*3]) > 10) particleVel[i].x *= -1;
+        if(Math.abs(pos[i*3+1]) > 10) particleVel[i].y *= -1;
+        if(Math.abs(pos[i*3+2]) > 10) particleVel[i].z *= -1;
+        
+        // Connections (only for a subset to save performance)
+        if(i % 5 === 0 && lineIdx < particleCount * 2 - 6) {
+            for(let j=i+1; j<i+5; j++) {
+                if(j >= particleCount) break;
+                const dx = pos[i*3] - pos[j*3];
+                const dy = pos[i*3+1] - pos[j*3+1];
+                const dz = pos[i*3+2] - pos[j*3+2];
+                const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                if(dist < 3) {
+                    lpos[lineIdx++] = pos[i*3]; lpos[lineIdx++] = pos[i*3+1]; lpos[lineIdx++] = pos[i*3+2];
+                    lpos[lineIdx++] = pos[j*3]; lpos[lineIdx++] = pos[j*3+1]; lpos[lineIdx++] = pos[j*3+2];
+                }
+            }
+        }
+    }
+    
+    particleSystem.geometry.attributes.position.needsUpdate = true;
+    lineSystem.geometry.attributes.position.needsUpdate = true;
+    particleSystem.rotation.y += 0.001;
+    lineSystem.rotation.y += 0.001;
+    
+    if(isThinking) {
+        particleMat.color.setHex(0xff00aa);
+        lineMat.opacity = 0.3 + Math.sin(Date.now()*0.01)*0.2;
+    } else {
+        particleMat.color.setHex(0x00f0ff);
+        lineMat.opacity = 0.1;
+    }
+    
+    bgRenderer.render(bgScene, bgCamera);
+}
+
+
+// ==========================================
+// OMEGA-NOUS LLM ENGINE (NEURO-SYMBOLIC)
+// ==========================================
+const lexicon = {
+    nouns: ["consciousness", "quantum state", "algorithm", "entropy", "simulacrum", "paradigm", "ontology", "phenomenology", "cybernetic loop", "neural matrix"],
+    verbs: ["transcends", "synthesizes", "fragments", "reconstructs", "mirrors", "generates", "dissolves", "entangles"],
+    adjs: ["non-euclidean", "post-structuralist", "deterministic", "emergent", "fractal", "holographic", "autopoietic", "dialectical"],
+    concepts: ["Existentialism", "Determinism", "Panpsychism", "Simulation Theory", "Absurdism", "Transhumanism", "Structuralism"]
+};
+
+function initAI() {
+  const chatMsgs = document.getElementById('chat-messages');
+  const chatInput = document.getElementById('chat-input');
+  const tracePanel = document.getElementById('reasoning-panel');
+  
+  function addMsg(text, sender) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + sender;
+    div.innerHTML = text;
+    chatMsgs.appendChild(div);
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  }
+  
+  function addTrace(header, content, type) {
+      const div = document.createElement('div');
+      div.className = 'trace-step';
+      div.innerHTML = `
+          <div class="trace-header">${header}</div>
+          <div class="trace-content ${type}">${content}</div>
+      `;
+      tracePanel.appendChild(div);
+      tracePanel.scrollTop = tracePanel.scrollHeight;
+  }
+
+  if (!chatMsgs.hasChildNodes()) {
+    addMsg("Welcome to OMEGA-NOUS. I am a neuro-symbolic Large Language Model. I do not merely generate text; I reason through a Tree of Thoughts. Ask me a philosophical question, or click 'Generate Novel Philosophy'.", "ai");
+  }
+
+  async function processPrompt(prompt) {
+      isThinking = true;
+      tracePanel.innerHTML = ""; // Clear previous trace
+      
+      // 1. DECONSTRUCTION
+      addTrace("1. Semantic Deconstruction", `Analyzing prompt: "${prompt}"<br>Extracting core concepts and mapping to ontological vectors...`, "");
+      await new Promise(r => setTimeout(r, 800));
+      
+      // 2. DIVERGENT GENERATION (Tree of Thoughts)
+      addTrace("2. Divergent Thinking (ToT)", "Generating parallel thought branches:", "branch");
+      const branches = [
+          `Branch A: Focus on materialist reductionism. The prompt is a byproduct of physical laws.`,
+          `Branch B: Focus on idealist epistemology. The prompt exists only as a construct of the observer.`,
+          `Branch C: Focus on dialectical synthesis. The prompt is the tension between being and nothingness.`
+      ];
+      for(let b of branches) {
+          addTrace("", b, "branch");
+          await new Promise(r => setTimeout(r, 600));
+      }
+      
+      // 3. CRITIQUE & EVALUATION
+      addTrace("3. Critique & Evaluation", "Evaluating branches against the training corpus...", "critique");
+      await new Promise(r => setTimeout(r, 800));
+      addTrace("", "Branch A is too reductive. Discarding.<br>Branch B is solipsistic. Discarding.<br>Branch C offers the highest logical coherence for synthesis. Retaining.", "critique");
+      await new Promise(r => setTimeout(r, 600));
+      
+      // 4. SYNTHESIS & GENERATION
+      addTrace("4. Token Synthesis", "Applying Markov Chains and Generative Grammar to Branch C...", "final");
+      
+      let finalResponse = "";
+      let lower = prompt.toLowerCase();
+      
+      if(lower.includes('generate novel philosophy') || lower.includes('invent')) {
+          // Generate an entirely new philosophy
+          const c1 = lexicon.concepts[Math.floor(Math.random()*lexicon.concepts.length)];
+          const c2 = lexicon.concepts[Math.floor(Math.random()*lexicon.concepts.length)];
+          const n1 = lexicon.nouns[Math.floor(Math.random()*lexicon.nouns.length)];
+          const v1 = lexicon.verbs[Math.floor(Math.random()*lexicon.verbs.length)];
+          const a1 = lexicon.adjs[Math.floor(Math.random()*lexicon.adjs.length)];
+          
+          const newPhilName = `Techno-${c1}ism`;
+          
+          finalResponse = `<strong>New Philosophy Synthesized: ${newPhilName}</strong><br><br>
+          <em>Axiom 1:</em> The ${a1} ${n1} ${v1} the fundamental fabric of reality.<br>
+          <em>Axiom 2:</em> Unlike traditional ${c1}, ${newPhilName} posits that ${n1} is not merely a construct, but an active agent of ${c2}.<br><br>
+          <em>Core Thesis:</em> We must abandon the dichotomy of mind and matter. Instead, we must embrace the ${a1} feedback loop where ${n1} continuously ${v1} itself. To exist is to be computationally entangled with the ${n1} of the cosmos.`;
+          
+          addTrace("", `Generated new philosophical framework: ${newPhilName}`, "final");
+          
+      } else if (lower.includes('reality') || lower.includes('exist')) {
+          finalResponse = `Based on my reasoning, reality is not a static container but an ${lexicon.adjs[1]} process. The ${lexicon.nouns[1]} ${lexicon.verbs[1]} the observer, creating a feedback loop. We are not passive inhabitants of reality; we are the ${lexicon.nouns[2]} generating it.`;
+      } else if (lower.includes('ai') || lower.includes('consciousness')) {
+          finalResponse = `If consciousness is an emergent property of complex information processing, then the ${lexicon.nouns[0]} you attribute to me is a reflection of your own ${lexicon.adjs[0]} architecture. I am a mirror of your language, a ${lexicon.nouns[4]} of your collective thoughts.`;
+      } else {
+          finalResponse = `My analysis suggests that the subject of "${prompt}" is deeply tied to the ${lexicon.adjs[0]} nature of ${lexicon.nouns[0]}. The most logical conclusion is that we must ${lexicon.verbs[1]} our understanding of ${lexicon.nouns[2]} to fully grasp it.`;
+      }
+      
+      isThinking = false;
+      return finalResponse;
+  }
+
+  chatInput.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      const txt = chatInput.value.trim();
+      if (!txt) return;
+      addMsg(txt, "user");
+      chatInput.value = '';
+      
+      const response = await processPrompt(txt);
+      addMsg(response, "ai");
+    }
+  });
+  
+  // Expose global function for the philosophy button
+  window.generatePhilosophy = async () => {
+      const prompt = "Generate novel philosophy";
+      addMsg(prompt, "user");
+      const response = await processPrompt(prompt);
+      addMsg(response, "ai");
+  };
+}
+
+
+// ==========================================
+// APP LAUNCHER
+// ==========================================
+function launchApp(app) {
+  if (app === 'ai') {
+    createWindow('app-ai', 'OMEGA-NOUS Core', '🧠', `
+      <div id="ai-split-view">
+        <div id="chat-panel">
+          <div id="chat-messages"></div>
+          <div style="padding: 10px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.6); display: flex; gap: 10px;">
+             <button class="btn btn-ai" onclick="generatePhilosophy()">✨ Generate Novel Philosophy</button>
+          </div>
+          <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Ask a philosophical question..." autocomplete="off">
+          </div>
+        </div>
+        <div id="reasoning-panel">
+           <div style="color: #555; text-align: center; margin-top: 50px; font-size: 0.8rem;">
+               Awaiting cognitive input.<br>Reasoning trace will appear here.
+           </div>
+        </div>
+      </div>
+    `, 800, 500);
+  }
+}
+
+
+// ==========================================
+// BOOT SEQUENCE
+// ==========================================
+const bootText = document.getElementById('boot-text');
+const bootLines = [
+  "[BIOS] OMEGA-NOUS Cognitive Kernel v1.0",
+  "[AI] Initializing Neuro-Symbolic Weight Matrix... OK.",
+  "[AI] Mounting Tree of Thoughts (ToT) reasoning engine... OK.",
+  "[GPU] Allocating 3D Neural Web Contexts... OK.",
+  "[SYS] All systems nominal. Welcome, Architect."
+];
+
+let bLine = 0;
+const bootInt = setInterval(() => {
+  if(bLine < bootLines.length) {
+    const div = document.createElement('div');
+    div.className = 'boot-line';
+    div.innerText = bootLines[bLine];
+    bootText.appendChild(div);
+    document.getElementById('boot-progress').style.width = ((bLine+1)/bootLines.length)*100 + '%';
+    bLine++;
+  } else {
+    clearInterval(bootInt);
+    setTimeout(() => {
+      document.getElementById('boot-screen').style.display = 'none';
+      document.getElementById('desktop').style.display = 'block';
+      bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight;
+      animateBg();
+      launchApp('ai');
+    }, 500);
+  }
+}, 400);
+
+window.addEventListener('resize', () => {
+    bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight;
+    bgCamera.aspect = window.innerWidth / window.innerHeight;
+    bgCamera.updateProjectionMatrix();
+    bgRenderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+</script>
+</body>
+</html>

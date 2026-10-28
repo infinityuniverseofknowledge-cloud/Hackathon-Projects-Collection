@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NexusAI Memory — Visualizador</title>
+<style>
+:root{--bg:#0a0e1a;--c:#8b5cf6;--card:#111827;--bd:#1f2937;--txt:#e5e7eb;--mut:#6b7280}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:16px;max-width:1000px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2rem;color:var(--c);flex:1}
+.logo .ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);display:grid;place-items:center;font-size:20px}
+header .stat{background:var(--card);border:1px solid var(--bd);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;font-family:ui-monospace,monospace}
+header .stat b{color:var(--c)}
+header button{background:transparent;border:1px solid var(--bd);color:var(--txt);padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;font-size:12px;transition:.15s}
+header button:hover{border-color:var(--c);color:var(--c)}
+.search{width:100%;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:13px 16px;color:var(--txt);font-size:14px;font-family:inherit;outline:0;margin-bottom:14px;transition:.15s}
+.search:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(139,92,246,.2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.mem{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;position:relative;overflow:hidden;transition:.15s}
+.mem:hover{border-color:var(--c);transform:translateY(-2px)}
+.mem .text{font-size:13px;line-height:1.5;margin-bottom:8px;color:#c9d1d9;word-break:break-word}
+.mem .meta{font-size:10px;color:var(--mut);display:flex;gap:10px;font-family:ui-monospace,monospace}
+.mem .score{margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:11px;color:var(--c);font-family:ui-monospace,monospace;font-weight:700}
+.mem .matrix{display:flex;gap:1px;flex-wrap:wrap;margin-top:8px;height:20px;overflow:hidden}
+.mem .matrix span{width:3px;height:3px;border-radius:50%;background:var(--c)}
+.empty{text-align:center;padding:60px 20px;color:var(--mut)}
+.empty .ic{font-size:64px;opacity:.5;margin-bottom:16px}
+.empty h2{color:var(--txt);font-size:1.2rem;margin-bottom:8px}
+.empty p{font-size:13px;line-height:1.6;max-width:400px;margin:0 auto}
+.info{background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--c);line-height:1.6}
+.info b{color:#fff}
+</style></head><body>
+<header><div class="logo"><div class="ic">🧠</div>NexusAI Memory</div><span class="stat">Memórias: <b id="cnt">0</b></span><button id="export">⬇ Exportar</button><button id="clear">🗑 Limpar</button></header>
+<div class="info">Visualizador da <b>memória matricial</b> da NexusAI. Cada memória é um vetor de <b>64 dimensões</b> (embedding hash-based + normalização L2). Busca por similaridade cosseno.</div>
+<input class="search" id="q" placeholder="🔍 Buscar por similaridade semântica...">
+<div class="grid" id="grid"></div>
+<script>
+
+class Mem {
+  constructor(d=64){this.d=d;this.m=[];this.load()}
+  tok(t){return t.toLowerCase().replace(/[^\wáàâãéêíóôõúçñ\s]/g,"").split(/\s+/).filter(w=>w.length>2)}
+  emb(t){
+    const v=new Float32Array(this.d);
+    const ts=this.tok(t);
+    if(!ts.length)return v;
+    ts.forEach(w=>{
+      let h=0;
+      for(let i=0;i<w.length;i++)h=(h*31+w.charCodeAt(i))>>>0;
+      v[h%this.d]+=1;
+      v[(h*7+13)%this.d]+=0.5;
+    });
+    let n=0;for(let i=0;i<this.d;i++)n+=v[i]*v[i];
+    n=Math.sqrt(n)||1;
+    for(let i=0;i<this.d;i++)v[i]/=n;
+    return v;
+  }
+  cos(a,b){let s=0;for(let i=0;i<this.d;i++)s+=a[i]*b[i];return s}
+  add(text,meta={}){
+    const v=this.emb(text);
+    this.m.push({id:Date.now()+Math.random(),t:text,v,meta,ts:Date.now()});
+    if(this.m.length>500)this.m.shift();
+    this.save();
+    return this.m[this.m.length-1];
+  }
+  find(q,k=5){
+    if(!this.m.length)return [];
+    const qv=this.emb(q);
+    return this.m.map(m=>({...m,score:this.cos(qv,m.v)}))
+      .sort((a,b)=>b.score-a.score).slice(0,k);
+  }
+  save(){try{localStorage.setItem("nexus.mem",JSON.stringify(this.m.map(m=>({id:m.id,t:m.t,meta:m.meta,ts:m.ts,v:Array.from(m.v)}))))}catch(e){}}
+  load(){try{const d=JSON.parse(localStorage.getItem("nexus.mem")||"[]");this.m=d.map(x=>({...x,v:Float32Array.from(x.v||[])}))}catch(e){this.m=[]}}
+  clear(){this.m=[];localStorage.removeItem("nexus.mem")}
+}
+const engine=new Mem();
+function respond(query){
+  const found=engine.find(query,3).filter(x=>x.score>0.15);
+  if(found.length){
+    const best=found[0];
+    return {answer:`Com base no que aprendi (score ${(best.score*100).toFixed(0)}%): "${best.t.slice(0,200)}"${found[1]?` E também: "${found[1].t.slice(0,120)}"`:""}`,memories:found};
+  }
+  return {answer:null,memories:[]};
+}
+
+const $=s=>document.querySelector(s);
+function paint(){
+  $('#cnt').textContent=engine.m.length;
+  const grid=$('#grid');
+  const q=$('#q').value.trim();
+  let list=engine.m.slice().reverse();
+  let scores={};
+  if(q){
+    const found=engine.find(q,50);
+    list=found;
+    found.forEach(f=>scores[f.id]=f.score);
+  }
+  if(!list.length){
+    grid.innerHTML='<div class="empty"><div class="ic">🧠</div><h2>'+(engine.m.length?'Nada encontrado':'Memória vazia')+'</h2><p>'+(engine.m.length?'Tente outros termos.':'Use o NexusAI Chat para ensinar coisas. Tudo fica salvo aqui em vetores de 64 dimensões.')+'</p></div>';
+    return;
+  }
+  grid.innerHTML=list.map(m=>{
+    const dots=Array.from({length:16},()=>'<span style="opacity:'+(0.2+Math.random()*0.8)+'"></span>').join('');
+    return '<div class="mem"><div class="text">'+m.t.slice(0,200).replace(/</g,'&lt;')+(m.t.length>200?'…':'')+'</div><div class="meta"><span>'+new Date(m.ts).toLocaleString('pt-BR')+'</span>'+(scores[m.id]!==undefined?'<span>score: '+(scores[m.id]*100).toFixed(0)+'%</span>':'')+'</div><div class="matrix">'+dots+'</div></div>';
+  }).join('');
+}
+$('#q').addEventListener('input',paint);
+$('#clear').onclick=()=>{if(confirm('Apagar toda a memória?')){engine.clear();paint()}};
+$('#export').onclick=()=>{
+  const blob=new Blob([JSON.stringify(engine.m.map(m=>({text:m.t,ts:m.ts,meta:m.meta})),null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='nexus-memory-'+Date.now()+'.json';a.click();
+};
+paint();
+</script></body></html>

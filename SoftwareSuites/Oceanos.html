@@ -1,0 +1,133 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OCEANOS · Suite de Oceanografia</title>
+<style>
+:root{--bg:#020610;--pn:#060c18;--ink:#a8c8e8;--ink2:#6a8cb8;--ink3:#3a5070;--acc:#00d4ff;--ok:#00ff9d;--mo:'JetBrains Mono',monospace;--di:'Orbitron',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--mo);display:grid;grid-template-columns:260px 1fr;grid-template-rows:52px 1fr;grid-template-areas:"h h" "n m";height:100vh;overflow:hidden}
+header{grid-area:h;background:linear-gradient(180deg,#0a1424,#060c18);border-bottom:1px solid var(--ink3);display:flex;align-items:center;padding:0 20px;gap:14px}
+.logo{font-family:var(--di);font-weight:900;letter-spacing:5px;color:var(--acc);text-shadow:0 0 20px var(--acc)}
+.tag{font-size:9px;color:var(--ink3);border:1px solid var(--ink3);padding:3px 8px;border-radius:2px;letter-spacing:2px}
+nav{grid-area:n;background:var(--pn);border-right:1px solid var(--ink3);overflow-y:auto;padding:8px 0}
+.cat{font-family:var(--di);font-size:9px;letter-spacing:2.5px;color:var(--acc);padding:10px 16px 6px;text-transform:uppercase;border-bottom:1px solid var(--ink3);margin-bottom:4px;display:flex;justify-content:space-between}
+.item{padding:7px 16px;font-size:11px;color:var(--ink2);cursor:pointer;border-left:2px solid transparent;transition:.15s}
+.item:hover{background:rgba(0,212,255,.05);color:var(--ink)}
+.item.on{background:rgba(0,212,255,.1);color:var(--acc);border-left-color:var(--acc)}
+main{grid-area:m;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#0a1424,#020610)}
+canvas{display:block;width:100%;height:100%}
+.boot{position:fixed;inset:0;background:#020610;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:.5s;font-family:var(--mo)}
+.boot.d{opacity:0;pointer-events:none}
+.bl{font-family:var(--di);font-size:2.2rem;letter-spacing:12px;color:var(--acc);text-shadow:0 0 40px var(--acc);margin-bottom:8px}
+.bs{font-size:10px;letter-spacing:4px;color:var(--ink3);margin-bottom:40px}
+.bb{width:min(420px,70vw);height:2px;background:var(--ink3);overflow:hidden;margin-bottom:16px}
+.bf{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--ok));transition:.2s}
+.bm{font-size:10px;color:var(--ink2);letter-spacing:1.5px}
+@media(max-width:800px){body{grid-template-columns:1fr;grid-template-areas:"h" "m"}nav{display:none}}
+</style></head><body>
+<div class="boot" id="boot"><div class="bl">OCEANOS</div><div class="bs">SUITE DE OCEANOGRAFIA · v1.0</div>
+<div class="bb"><div class="bf" id="bf"></div></div><div class="bm" id="bm">inicializando…</div></div>
+<header><div class="logo">OCEANOS</div><div class="tag" id="tag">—</div></header>
+<nav id="nav"></nav><main><canvas id="cv"></canvas></main>
+<script>
+"use strict";
+var S={cv:null,ctx:null,W:0,H:0,dpr:1,module:'tp'};
+var R={};var MODULES=[];
+function $q(i){return document.getElementById(i)}
+function el(t,o){o=o||{};var e=document.createElement(t);if(o.c)e.className=o.c;if(o.h)e.innerHTML=o.h;return e}
+function clearC(){S.ctx.setTransform(1,0,0,1,0,0);S.ctx.scale(S.dpr,S.dpr);var g=S.ctx.createRadialGradient(S.W/2,0,0,S.W/2,0,S.H);g.addColorStop(0,'#0a1424');g.addColorStop(1,'#020610');S.ctx.fillStyle=g;S.ctx.fillRect(0,0,S.W,S.H)}
+function headC(t,s){S.ctx.fillStyle='rgba(0,212,255,.04)';S.ctx.fillRect(0,0,S.W,80);S.ctx.fillStyle='#00d4ff';S.ctx.fillRect(0,78,S.W,2);S.ctx.font='900 20px "Orbitron",monospace';S.ctx.fillText(t.toUpperCase(),60,42);S.ctx.fillStyle='#6a8cb8';S.ctx.font='11px "JetBrains Mono",monospace';S.ctx.fillText(s,60,62)}
+function axesC(x,y,w,h,xl,yl){S.ctx.strokeStyle='rgba(58,80,112,.4)';S.ctx.lineWidth=1;for(var i=0;i<=5;i++){var yy=y+(i/5)*h;S.ctx.beginPath();S.ctx.moveTo(x,yy);S.ctx.lineTo(x+w,yy);S.ctx.stroke();var xx=x+(i/5)*w;S.ctx.beginPath();S.ctx.moveTo(xx,y);S.ctx.lineTo(xx,y+h);S.ctx.stroke()}S.ctx.strokeStyle='#3a5070';S.ctx.lineWidth=2;S.ctx.beginPath();S.ctx.moveTo(x,y);S.ctx.lineTo(x,y+h);S.ctx.stroke();S.ctx.beginPath();S.ctx.moveTo(x,y+h);S.ctx.lineTo(x+w,y+h);S.ctx.stroke();S.ctx.fillStyle='#6a8cb8';S.ctx.font='10px "JetBrains Mono",monospace';S.ctx.textAlign='center';S.ctx.fillText(xl,x+w/2,y+h+25);S.ctx.save();S.ctx.translate(x-40,y+h/2);S.ctx.rotate(-Math.PI/2);S.ctx.fillText(yl,0,0);S.ctx.restore();S.ctx.textAlign='left'}
+
+function swDens(T,S_,p){p=p||0;var rw=999.842594+6.793952e-2*T-9.095290e-3*T*T+1.001685e-4*Math.pow(T,3)-1.120083e-6*Math.pow(T,4)+6.536332e-9*Math.pow(T,5);var A=8.24493e-1-4.0899e-3*T+7.6438e-5*T*T-8.2467e-7*Math.pow(T,3)+5.3875e-9*Math.pow(T,4);var B=-5.72466e-3+1.0227e-4*T-1.6546e-6*T*T;var C=4.8314e-4;var r0=rw+A*S_+B*Math.pow(S_,1.5)+C*S_*S_;var K=19652.21+148.4206*T-2.327105*T*T+1.360477e-2*Math.pow(T,3)-5.155288e-5*Math.pow(T,4);return r0/(1-p*1e4/K)}
+function swSound(T,S_,D){var Cw=1402.388+5.03711*T-5.80852e-2*T*T+3.3420e-4*Math.pow(T,3)-1.47800e-6*Math.pow(T,4)+3.1464e-9*Math.pow(T,5)+(0.153563+6.8982e-4*T-8.1788e-6*T*T+1.3621e-7*Math.pow(T,3)-6.1185e-10*Math.pow(T,4))*D;var A=1.389-1.262e-2*T+7.166e-5*T*T+2.008e-6*Math.pow(T,3)-3.21e-8*Math.pow(T,4)+(9.4742e-5-1.2580e-5*T-6.4885e-8*T*T+1.0507e-8*Math.pow(T,3)-2.0122e-10*Math.pow(T,4))*D;var B=-1.922e-2-4.42e-5*T+(7.3637e-5+1.7950e-7*T)*D;var Dd=1.727e-3-7.9836e-6*D;return Cw+A*S_+B*Math.pow(S_,1.5)+Dd*S_*S_}
+function coriolis(lat){return 2*7.292115e-5*Math.sin(lat*Math.PI/180)}
+
+var TEMP_PROFILES={
+eq:{n:'Equatorial',s:28,m:60,t:120,d:2.5,c:'#ff4d6d'},
+tr:{n:'Tropical',s:26,m:80,t:150,d:3.5,c:'#ffb800'},
+sub:{n:'Subtropical',s:22,m:100,t:400,d:4.5,c:'#00d4ff'},
+tem:{n:'Temperada',s:15,m:120,t:600,d:4,c:'#00ff9d'},
+sp:{n:'Subpolar',s:8,m:150,t:800,d:3,c:'#a855f7'},
+pol:{n:'Polar',s:2,m:40,t:200,d:0.5,c:'#ffffff'}
+};
+var CURRENTS=[
+{n:'Gulf Stream',o:'Atlântico',v:30,t:'Q'},
+{n:'Kuroshio',o:'Pacífico',v:42,t:'Q'},
+{n:'Circumpolar Antártica',o:'Antártico',v:130,t:'F'},
+{n:'Corrente do Brasil',o:'Atlântico',v:10,t:'Q'},
+{n:'Malvinas',o:'Atlântico',v:8,t:'F'},
+{n:'Humboldt',o:'Pacífico',v:15,t:'F'},
+{n:'Benguela',o:'Atlântico',v:12,t:'F'},
+{n:'Canárias',o:'Atlântico',v:10,t:'F'},
+{n:'Agulhas',o:'Índico',v:70,t:'Q'},
+{n:'Labrador',o:'Atlântico',v:7,t:'F'},
+{n:'Oyashio',o:'Pacífico',v:10,t:'F'},
+{n:'Somália',o:'Índico',v:20,t:'F'}
+];
+var CONSTITUENTS=[
+{n:'M2 semidiurna lunar',p:12.42,a:1.0,o:'Lua'},
+{n:'S2 semidiurna solar',p:12.00,a:0.466,o:'Sol'},
+{n:'N2 lunar elíptica',p:12.66,a:0.191,o:'Lua'},
+{n:'K1 diurna',p:23.93,a:0.584,o:'Lua+Sol'},
+{n:'O1 lunar diurna',p:25.82,a:0.415,o:'Lua'},
+{n:'P1 solar diurna',p:24.07,a:0.193,o:'Sol'}
+];
+var TRENCHES=[
+{n:'Marianas',o:'Pacífico',d:11034,lat:11.35,lon:142.2},
+{n:'Tonga',o:'Pacífico',d:10882,lat:-23.25,lon:-174.8},
+{n:'Filipinas',o:'Pacífico',d:10540,lat:10.4,lon:126.7},
+{n:'Kermadec',o:'Pacífico',d:10047,lat:-30.0,lon:-177.0},
+{n:'Japão',o:'Pacífico',d:9000,lat:40.0,lon:144.0},
+{n:'Porto Rico',o:'Atlântico',d:8648,lat:19.8,lon:-66.5},
+{n:'Java',o:'Índico',d:7725,lat:-10.3,lon:110.0},
+{n:'Peru-Chile',o:'Pacífico',d:8065,lat:-23.0,lon:-71.0},
+{n:'Aleutas',o:'Pacífico',d:7679,lat:51.0,lon:-175.0},
+{n:'Atlântico Sul',o:'Atlântico',d:8264,lat:-55.0,lon:-25.0}
+];
+var ZONES=[
+{n:'Epipelágica',min:0,max:200,luz:'Fótica total',c:'#00d4ff',life:'Fitoplâncton · peixes · mamíferos'},
+{n:'Mesopelágica',min:200,max:1000,luz:'Penumbra',c:'#0088cc',life:'Lulas · peixes bioluminescentes'},
+{n:'Batipelágica',min:1000,max:4000,luz:'Escuridão total',c:'#004488',life:'Peixes abissais'},
+{n:'Abissopelágica',min:4000,max:6000,luz:'Escuridão total',c:'#002244',life:'Detritívoros'},
+{n:'Hadopelágica',min:6000,max:11000,luz:'Escuridão total',c:'#001122',life:'Xenofióforos'}
+];
+var SPECIES=[
+{n:'Baleia-azul',sci:'Balaenoptera musculus',m:30,kg:150000,d:'Krill',st:'Em perigo'},
+{n:'Cachalote',sci:'Physeter macrocephalus',m:20,kg:57000,d:'Lulas',st:'Vulnerável'},
+{n:'Orca',sci:'Orcinus orca',m:9,kg:6000,d:'Peixes+mamíferos',st:'Dados insuf.'},
+{n:'Tubarão-branco',sci:'Carcharodon carcharias',m:6,kg:2000,d:'Peixes',st:'Vulnerável'},
+{n:'Tubarão-baleia',sci:'Rhincodon typus',m:12,kg:20000,d:'Plâncton',st:'Em perigo'},
+{n:'Atum-azul',sci:'Thunnus thynnus',m:3,kg:680,d:'Peixes',st:'Pouco preocupante'},
+{n:'Golfinho-comum',sci:'Delphinus delphis',m:2.4,kg:100,d:'Peixes',st:'Pouco preocupante'},
+{n:'Polvo',sci:'Octopus vulgaris',m:1,kg:3,d:'Crustáceos',st:'Pouco preocupante'},
+{n:'Coral-cérebro',sci:'Diploria labyrinthiformis',m:2,kg:200,d:'Simbiontes',st:'Pouco preocupante'},
+{n:'Lula-gigante',sci:'Architeuthis dux',m:13,kg:500,d:'Peixes',st:'Pouco preocupante'}
+];
+var TRENCHES2=[];
+var RE_FOSSAS=TRENCHES;
+
+R.tp=function(){clearC();headC('Perfil de Temperatura','Termoclina');var pl=80,pt=140,pr=60,pb=80;var pw=S.W-pl-pr,ph=S.H-pt-pb;axesC(pl,pt,pw,ph,'temperatura (°C)','profundidade (m)');Object.keys(TEMP_PROFILES).forEach(function(k){var p=TEMP_PROFILES[k];S.ctx.strokeStyle=p.c;S.ctx.lineWidth=2;S.ctx.beginPath();for(var i=0;i<=100;i++){var d=i/100*1500;var T;if(d<p.m)T=p.s;else if(d<p.t+200)T=p.s+(p.d-p.s)*Math.pow((d-p.m)/(p.t+200-p.m),0.6);else T=p.d;var x=pl+(T/30)*pw;var y=pt+(d/1500)*ph;if(i===0)S.ctx.moveTo(x,y);else S.ctx.lineTo(x,y)}S.ctx.stroke()});var ly=100;Object.keys(TEMP_PROFILES).forEach(function(k,i){var p=TEMP_PROFILES[k];S.ctx.fillStyle=p.c;S.ctx.fillRect(S.W-240,100+i*16,12,10);S.ctx.fillStyle='#a8c8e8';S.ctx.font='10px "JetBrains Mono",monospace';S.ctx.fillText(p.n,S.W-224,109+i*16)})};
+
+R.sal=function(){clearC();headC('Salinidade','Distribuição global');var pl=60,pt=140,pr=60,pb=80;var pw=S.W-pl-pr,ph=S.H-pt-pb;var cx=24,cy=12;var cw=pw/cx,ch=ph/cy;for(var i=0;i<cx;i++)for(var j=0;j<cy;j++){var lat=90-(j+0.5)*180/cy;var sAbs=Math.abs(lat);var sal;if(sAbs<25)sal=34.5;else if(sAbs<40)sal=36.5;else if(sAbs<60)sal=34.8;else sal=33.5;var t=(sal-33)/4.5;var r=Math.floor(255*(1-t));var b=Math.floor(255*t);S.ctx.fillStyle='rgba('+r+',100,'+b+',0.7)';S.ctx.fillRect(pl+i*cw,pt+j*ch,cw+1,ch+1)}S.ctx.fillStyle='#00d4ff';S.ctx.font='700 11px "Orbitron",monospace';S.ctx.textAlign='left';S.ctx.fillText('Média 34.7 PSU · máxima ~38 (Mar Vermelho) · mínima ~28 (Báltico)',60,S.H-40)};
+
+R.cor=function(){clearC();headC('Correntes','Circulação global');var cx=S.W/2,cy=S.H/2;S.ctx.fillStyle='rgba(0,50,100,.3)';[[cx-250,cy-60,130,100],[cx-200,cy+100,90,130],[cx-20,cy-80,100,80],[cx+30,cy+50,110,130],[cx+200,cy-60,150,110],[cx+250,cy+140,80,60]].forEach(function(a){S.ctx.beginPath();S.ctx.ellipse(a[0],a[1],a[2],a[3],0,0,Math.PI*2);S.ctx.fill()});CURRENTS.forEach(function(c,i){var x=cx+(i%4-1.5)*150;var y=cy+Math.floor(i/4-1)*100;S.ctx.strokeStyle=c.t==='Q'?'rgba(255,77,109,.7)':'rgba(0,212,255,.7)';S.ctx.lineWidth=Math.max(1,c.v/15);S.ctx.beginPath();S.ctx.moveTo(x-30,y);S.ctx.lineTo(x+30,y);S.ctx.stroke();S.ctx.fillStyle=c.t==='Q'?'#ff4d6d':'#00d4ff';S.ctx.beginPath();S.ctx.moveTo(x+30,y);S.ctx.lineTo(x+22,y-5);S.ctx.lineTo(x+22,y+5);S.ctx.closePath();S.ctx.fill();S.ctx.fillStyle='#a8c8e8';S.ctx.font='9px "JetBrains Mono",monospace';S.ctx.textAlign='left';S.ctx.fillText(c.n,x-30,y-8);S.ctx.fillStyle=c.t==='Q'?'#ff4d6d':'#00d4ff';S.ctx.fillText(c.v+' Sv',x-30,y+14)})};
+
+R.mar=function(){clearC();headC('Marés','Constituintes harmônicas');var pl=80,pt=140,pr=60,pb=80;var pw=S.W-pl-pr,ph=S.H-pt-pb;axesC(pl,pt,pw,ph,'tempo (h)','altura (m)');var y0=pt+ph/2;S.ctx.strokeStyle='rgba(58,80,112,.5)';S.ctx.setLineDash([4,4]);S.ctx.beginPath();S.ctx.moveTo(pl,y0);S.ctx.lineTo(pl+pw,y0);S.ctx.stroke();S.ctx.setLineDash([]);S.ctx.strokeStyle='#00d4ff';S.ctx.lineWidth=2.5;S.ctx.beginPath();for(var i=0;i<=200;i++){var t=i/200*48;var h=0;for(var k=0;k<4;k++){var c=CONSTITUENTS[k];h+=c.a*Math.cos(2*Math.PI/c.p*t)}var x=pl+(i/200)*pw;var y=y0-(h/2)*(ph/2);if(i===0)S.ctx.moveTo(x,y);else S.ctx.lineTo(x,y)}S.ctx.stroke();var colors=['#ff4d6d','#ffb800','#00ff9d','#a855f7'];for(var k=0;k<4;k++){S.ctx.strokeStyle=colors[k]+'80';S.ctx.lineWidth=1;S.ctx.beginPath();for(var i=0;i<=200;i++){var t=i/200*48;var c=CONSTITUENTS[k];var h=c.a*Math.cos(2*Math.PI/c.p*t);var x=pl+(i/200)*pw;var y=y0-(h/2)*(ph/2);if(i===0)S.ctx.moveTo(x,y);else S.ctx.lineTo(x,y)}S.ctx.stroke()}};
+
+R.fos=function(){clearC();headC('Fossas Oceânicas','As 10 mais profundas');var y0=120;S.ctx.fillStyle='#00d4ff';S.ctx.font='700 10px "JetBrains Mono",monospace';S.ctx.textAlign='left';S.ctx.fillText('FOSSA',60,y0-5);S.ctx.fillText('OCEANO',300,y0-5);S.ctx.fillText('PROF (m)',440,y0-5);S.ctx.fillText('LAT',560,y0-5);S.ctx.fillText('LON',660,y0-5);S.ctx.fillText('BARRA',760,y0-5);TRENCHES.forEach(function(t,i){var y=y0+i*32;S.ctx.fillStyle=i%2===0?'rgba(0,212,255,.03)':'transparent';S.ctx.fillRect(60,y-18,S.W-120,26);S.ctx.fillStyle='#00d4ff';S.ctx.font='700 12px "Orbitron",monospace';S.ctx.fillText(t.n,60,y);S.ctx.fillStyle='#6a8cb8';S.ctx.font='11px "JetBrains Mono",monospace';S.ctx.fillText(t.o,300,y);S.ctx.fillStyle='#ffb800';S.ctx.font='700 12px "Orbitron",monospace';S.ctx.fillText(t.d.toLocaleString(),440,y);S.ctx.fillStyle='#a8c8e8';S.ctx.font='11px "JetBrains Mono",monospace';S.ctx.fillText(t.lat.toFixed(1),560,y);S.ctx.fillText(t.lon.toFixed(1),660,y);var barW=(t.d/11034)*250;S.ctx.fillStyle='rgba(255,77,109,.5)';S.ctx.fillRect(760,y-8,barW,14)})};
+
+R.zon=function(){clearC();headC('Zonas de Vida','Estratificação vertical');var sY=140;var eY=S.H-80;var tH=eY-sY;ZONES.forEach(function(z,i){var h=((z.max-z.min)/11000)*tH;var y=sY+(z.min/11000)*tH;S.ctx.fillStyle=z.c;S.ctx.globalAlpha=0.4;S.ctx.fillRect(60,y,S.W-120,h);S.ctx.globalAlpha=1;S.ctx.strokeStyle=z.c;S.ctx.lineWidth=1;S.ctx.strokeRect(60,y,S.W-120,h);S.ctx.fillStyle=z.c;S.ctx.font='700 13px "Orbitron",monospace';S.ctx.textAlign='left';S.ctx.fillText(z.n,80,y+20);S.ctx.fillStyle='#a8c8e8';S.ctx.font='10px "JetBrains Mono",monospace';S.ctx.fillText(z.min+'–'+z.max+' m · '+z.luz,80,y+36);S.ctx.fillText(z.life,80,y+52)})};
+
+R.esp=function(){clearC();headC('Espécies Marinhas','Catálogo');var y0=120;S.ctx.fillStyle='#00d4ff';S.ctx.font='700 10px "JetBrains Mono",monospace';S.ctx.textAlign='left';S.ctx.fillText('NOME',60,y0-5);S.ctx.fillText('ESPÉCIE',260,y0-5);S.ctx.fillText('TAM (m)',460,y0-5);S.ctx.fillText('MASSA (kg)',540,y0-5);S.ctx.fillText('DIETA',680,y0-5);S.ctx.fillText('STATUS',820,y0-5);SPECIES.forEach(function(s,i){var y=y0+i*32;S.ctx.fillStyle=i%2===0?'rgba(0,212,255,.03)':'transparent';S.ctx.fillRect(60,y-18,S.W-120,26);S.ctx.fillStyle='#00d4ff';S.ctx.font='700 12px "Orbitron",monospace';S.ctx.fillText(s.n,60,y);S.ctx.fillStyle='#6a8cb8';S.ctx.font='italic 10px "JetBrains Mono",monospace';S.ctx.fillText(s.sci,260,y);S.ctx.fillStyle='#ffb800';S.ctx.font='11px "JetBrains Mono",monospace';S.ctx.fillText(String(s.m),460,y);S.ctx.fillStyle='#a8c8e8';S.ctx.fillText(s.kg.toLocaleString(),540,y);S.ctx.fillStyle='#00ff9d';S.ctx.fillText(s.d,680,y);var c=s.st.indexOf('perigo')>=0?'#ff4d6d':(s.st.indexOf('Vulner')>=0?'#ffb800':'#00ff9d');S.ctx.fillStyle=c;S.ctx.font='700 11px "Orbitron",monospace';S.ctx.fillText(s.st,820,y)})};
+
+R.som=function(){clearC();headC('Velocidade do Som','Chen-Millero 1977');var pl=80,pt=140,pr=60,pb=80;var pw=S.W-pl-pr,ph=S.H-pt-pb;axesC(pl,pt,pw,ph,'velocidade (m/s)','profundidade (m)');var temps=[0,10,20,30];var colors=['#00d4ff','#00ff9d','#ffb800','#ff4d6d'];temps.forEach(function(T,idx){S.ctx.strokeStyle=colors[idx];S.ctx.lineWidth=2;S.ctx.beginPath();for(var i=0;i<=100;i++){var d=i/100*2000;var c=swSound(T,35,d);var x=pl+((c-1400)/200)*pw;var y=pt+(d/2000)*ph;if(i===0)S.ctx.moveTo(x,y);else S.ctx.lineTo(x,y)}S.ctx.stroke();var ly=100+idx*18;S.ctx.fillStyle=colors[idx];S.ctx.fillRect(S.W-200,ly,12,12);S.ctx.fillStyle='#a8c8e8';S.ctx.font='11px "JetBrains Mono",monospace';S.ctx.fillText(T+'°C · S=35',S.W-184,ly+10)});S.ctx.strokeStyle='rgba(255,184,0,.4)';S.ctx.setLineDash([4,4]);S.ctx.beginPath();S.ctx.moveTo(pl,pt+(1000/2000)*ph);S.ctx.lineTo(pl+pw,pt+(1000/2000)*ph);S.ctx.stroke();S.ctx.setLineDash([]);S.ctx.fillStyle='#ffb800';S.ctx.font='700 11px "Orbitron",monospace';S.ctx.textAlign='left';S.ctx.fillText('Canal SOFAR ~1000 m',60,S.H-40)};
+
+function buildNav(){var n=$q('nav');n.innerHTML='';var cats={'Física':[['tp','Temp. Perfil','🌡'],['sal','Salinidade','🧂'],['som','Som','🔊'],['mar','Marés','🌗']],'Circulação':[['cor','Correntes','🌊']],'Geologia':[['fos','Fossas','⬇']],'Biologia':[['zon','Zonas','🌊'],['esp','Espécies','🐋']]};Object.keys(cats).forEach(function(c){var g=el('div',{c:'cat'});g.innerHTML='<span>'+c+'</span><span>'+cats[c].length+'</span>';n.appendChild(g);cats[c].forEach(function(m){var it=el('div',{c:'item'+(m[0]===S.module?' on':'')});it.setAttribute('data-id',m[0]);it.innerHTML='<span style="margin-right:8px">'+m[2]+'</span>'+m[1];it.onclick=function(){switchMod(m[0])};n.appendChild(it)})})}
+function switchMod(id){S.module=id;var m=MODULES.find(function(x){return x.id===id});if(m)$q('tag').textContent=m.cat+' · '+m.name;document.querySelectorAll('.item').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-id')===id)});if(typeof R[id]==='function')R[id]()}
+MODULES=[{id:'tp',name:'Temp. Perfil',cat:'Física'},{id:'sal',name:'Salinidade',cat:'Física'},{id:'som',name:'Som',cat:'Física'},{id:'mar',name:'Marés',cat:'Física'},{id:'cor',name:'Correntes',cat:'Circulação'},{id:'fos',name:'Fossas',cat:'Geologia'},{id:'zon',name:'Zonas',cat:'Biologia'},{id:'esp',name:'Espécies',cat:'Biologia'}];
+function resize(){S.dpr=Math.min(window.devicePixelRatio||1,2);S.W=S.cv.clientWidth;S.H=S.cv.clientHeight;S.cv.width=S.W*S.dpr;S.cv.height=S.H*S.dpr;S.ctx.setTransform(1,0,0,1,0,0);S.ctx.scale(S.dpr,S.dpr);if(typeof R[S.module]==='function')R[S.module]()}
+function loop(){requestAnimationFrame(loop);if(typeof R[S.module]==='function')R[S.module]()}
+function boot(){var st=[['inicializando…',10],['flutuadores ARGO…',30],['EOS-80 UNESCO…',50],['satélites Jason…',70],['indexando…',90],['pronto',100]];var i=0;function nx(){if(i>=st.length){setTimeout(function(){$q('boot').classList.add('d')},300);return}$q('bm').textContent=st[i][0];$q('bf').style.width=st[i][1]+'%';i++;setTimeout(nx,150)}nx()}
+function init(){S.cv=$q('cv');S.ctx=S.cv.getContext('2d');resize();buildNav();window.addEventListener('resize',resize);switchMod('tp');boot();loop();document.addEventListener('keydown',function(e){var n=parseInt(e.key,10);if(n>=1&&n<=8){var m=MODULES[n-1];if(m)switchMod(m.id)}})}
+window.addEventListener('DOMContentLoaded',init);
+</script></body></html>

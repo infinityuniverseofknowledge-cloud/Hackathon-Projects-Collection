@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Academia — Pesquisa Científica</title>
+<style>
+:root{
+  --bg:#0a0f1a;--panel:#111827;--panel2:#1a2233;--panel3:#232d42;
+  --txt:#e5e7eb;--txt2:#c9d1d9;--mut:#6b7280;--acc:#8b5cf6;--acc2:#a78bfa;
+  --ok:#10b981;--warn:#f59e0b;--err:#ef4444;--bd:#1f2937;--bd2:#2d3748
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+
+/* ═══ TOPBAR ═══ */
+.topbar{height:56px;background:var(--panel);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:14px;padding:0 18px;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.3px}
+.brand .ic{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);display:grid;place-items:center;font-size:18px}
+.brand .tx{font-size:15px;background:linear-gradient(135deg,#a78bfa,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand .tx small{display:block;font-size:9px;color:var(--mut);font-weight:500;-webkit-text-fill-color:var(--mut);letter-spacing:.5px;margin-top:1px}
+.searchbar{flex:1;display:flex;gap:8px;max-width:720px}
+.searchbar input{flex:1;background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:9px 14px;color:var(--txt);font-size:13px;outline:none;font-family:inherit;transition:.15s}
+.searchbar input:focus{border-color:var(--acc);box-shadow:0 0 0 3px #8b5cf633}
+.searchbar select{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:0 10px;color:var(--txt);font-size:12px;font-family:inherit;outline:none;cursor:pointer;min-width:130px}
+.searchbar button{background:var(--acc);border:0;color:#fff;padding:0 20px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit;transition:.15s;white-space:nowrap}
+.searchbar button:hover{filter:brightness(1.15)}
+.searchbar button:disabled{opacity:.5;cursor:not-allowed}
+.topnav{display:flex;gap:4px;margin-left:auto}
+.topnav button{background:transparent;border:1px solid transparent;color:var(--mut);padding:7px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:.15s;white-space:nowrap}
+.topnav button:hover{color:var(--txt);border-color:var(--bd)}
+.topnav button.on{background:var(--panel2);color:var(--acc);border-color:var(--bd)}
+.topnav .badge{display:inline-block;background:var(--acc);color:#fff;font-size:9px;font-weight:800;padding:1px 6px;border-radius:8px;margin-left:5px;min-width:16px;text-align:center}
+
+/* ═══ MAIN ═══ */
+.main{flex:1;display:flex;min-height:0}
+.sidebar{width:260px;background:var(--panel);border-right:1px solid var(--bd);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
+.side-section{border-bottom:1px solid var(--bd);padding:14px 16px}
+.side-section h3{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;font-weight:800;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.side-section h3 span{color:var(--acc);font-weight:700}
+.filter-item{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--txt2);transition:.15s;font-weight:500}
+.filter-item:hover{background:var(--panel2);color:var(--txt)}
+.filter-item.on{background:var(--panel2);color:var(--acc);font-weight:700}
+.filter-item .ic{font-size:14px;width:18px;text-align:center}
+.filter-item .n{margin-left:auto;font-size:10px;color:var(--mut);font-weight:700;background:var(--panel3);padding:1px 7px;border-radius:10px;font-family:ui-monospace,monospace}
+.filter-item.on .n{background:var(--acc);color:#fff}
+.stats-bar{margin-top:auto;padding:14px 16px;border-top:1px solid var(--bd);font-size:11px;color:var(--mut);line-height:1.7}
+.stats-bar b{color:var(--txt);font-family:ui-monospace,monospace}
+
+.content{flex:1;overflow-y:auto;padding:22px}
+.content.viewer{padding:0}
+
+/* ═══ RESULTS ═══ */
+.results-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap}
+.results-head h2{font-size:16px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
+.results-head h2 .n{font-size:11px;color:var(--mut);font-weight:600;font-family:ui-monospace,monospace}
+.results-head .sources{font-size:11px;color:var(--mut);display:flex;gap:10px;flex-wrap:wrap}
+.results-head .sources .src{background:var(--panel2);padding:3px 9px;border-radius:10px;font-weight:700;color:var(--acc2)}
+
+.paper{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin-bottom:10px;transition:.15s;position:relative}
+.paper:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:0 8px 24px #8b5cf622}
+.paper .head{display:flex;gap:14px;align-items:flex-start}
+.paper .score{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,#1e1b4b,#312e81);border:1px solid #4c1d95;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.paper .score .n{font-size:15px;font-weight:800;color:var(--acc2);font-family:ui-monospace,monospace;line-height:1}
+.paper .score .l{font-size:7px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:2px}
+.paper .body{flex:1;min-width:0}
+.paper h3{font-size:15px;font-weight:700;line-height:1.35;margin-bottom:6px;color:var(--txt)}
+.paper h3 a{color:inherit;text-decoration:none}
+.paper h3 a:hover{color:var(--acc2)}
+.paper .authors{font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.paper .authors b{color:var(--txt);font-weight:700}
+.paper .meta{font-size:11px;color:var(--mut);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.paper .meta .m{display:flex;align-items:center;gap:4px}
+.paper .abstract{font-size:12.5px;color:var(--txt2);line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.paper .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.paper .tag{background:var(--panel2);color:var(--acc2);font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
+.paper .tag.oa{background:#064e3b33;color:#6ee7b7}
+.paper .tag.rank{background:#78350f33;color:#fcd34d}
+.paper .actions{display:flex;gap:6px;margin-top:11px;padding-top:11px;border-top:1px solid var(--bd);flex-wrap:wrap}
+.paper .actions button{background:var(--panel2);border:1px solid var(--bd);color:var(--txt2);padding:6px 11px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;transition:.15s;display:inline-flex;align-items:center;gap:4px}
+.paper .actions button:hover{border-color:var(--acc);color:var(--acc2)}
+.paper .actions button.saved{background:var(--acc);border-color:var(--acc);color:#fff}
+.paper .actions button.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+.paper .actions a{background:var(--panel2);border:1px solid var(--bd);color:var(--txt2);padding:6px 11px;border-radius:7px;font-size:11px;font-weight:600;text-decoration:none;transition:.15s;display:inline-flex;align-items:center;gap:4px}
+.paper .actions a:hover{border-color:var(--acc);color:var(--acc2)}
+.paper .actions a.pdf{background:#064e3b33;border-color:#10b98155;color:#6ee7b7}
+.paper .actions a.pdf:hover{background:#10b981;border-color:#10b981;color:#fff}
+
+/* ═══ EMPTY / LOADING ═══ */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 30px;text-align:center;color:var(--mut);height:100%}
+.empty .ic{font-size:64px;margin-bottom:16px;opacity:.5}
+.empty h2{font-size:18px;color:var(--txt);font-weight:800;margin-bottom:8px}
+.empty p{font-size:13px;line-height:1.7;max-width:520px}
+.empty .kbd{display:inline-block;background:var(--panel2);border:1px solid var(--bd2);border-bottom-width:2px;border-radius:5px;padding:2px 7px;font-family:ui-monospace,monospace;font-size:11px;color:var(--txt2);margin:0 2px;font-weight:700}
+.empty .sources-mini{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+.empty .sources-mini span{background:var(--panel2);border:1px solid var(--bd);padding:5px 12px;border-radius:10px;font-size:11px;font-weight:700;color:var(--acc2)}
+.spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--bd);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;flex-direction:column;align-items:center;gap:14px;padding:80px 20px;color:var(--mut);font-size:13px}
+
+/* ═══ MODAL ═══ */
+.modal{position:fixed;inset:0;background:#000000cc;backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100;overflow-y:auto}
+.modal.on{display:flex;animation:fade .25s}
+@keyframes fade{from{opacity:0}}
+.mbox{background:var(--panel);border:1px solid var(--bd);border-radius:16px;max-width:800px;width:100%;max-height:92vh;overflow-y:auto;position:relative;animation:up .3s}
+@keyframes up{from{transform:translateY(20px);opacity:0}}
+.mhead{padding:22px 26px;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--panel);z-index:2;border-radius:16px 16px 0 0}
+.mhead h2{font-size:16px;font-weight:800;line-height:1.35;padding-right:44px}
+.mhead .aut{font-size:12.5px;color:var(--mut);margin-top:6px;line-height:1.5}
+.close{position:absolute;top:14px;right:14px;background:var(--panel2);border:1px solid var(--bd);color:var(--txt);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:15px;display:grid;place-items:center;transition:.15s}
+.close:hover{background:var(--err);border-color:var(--err);color:#fff}
+.mbody{padding:22px 26px}
+.mbody h3{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1.5px;font-weight:800;margin:20px 0 10px}
+.mbody h3:first-child{margin-top:0}
+.info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(max-width:600px){.info-grid{grid-template-columns:1fr}}
+.info-item{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:10px 12px}
+.info-item .k{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px}
+.info-item .v{font-size:13px;color:var(--txt);word-break:break-word;line-height:1.5;font-family:ui-monospace,monospace}
+.info-item .v.text{font-family:inherit}
+.abstract-full{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:14px;font-size:13px;line-height:1.75;color:var(--txt2);white-space:pre-wrap}
+.citation-box{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:14px;font-size:12.5px;line-height:1.7;color:var(--txt2);font-family:ui-monospace,monospace;position:relative;white-space:pre-wrap;word-break:break-word}
+.citation-box button{position:absolute;top:8px;right:8px;background:var(--panel3);border:1px solid var(--bd2);color:var(--txt2);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:10px;font-weight:700;font-family:inherit}
+.citation-box button:hover{background:var(--acc);color:#fff;border-color:var(--acc)}
+.style-tabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.style-tabs button{background:var(--panel2);border:1px solid var(--bd);color:var(--mut);padding:6px 12px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;transition:.15s}
+.style-tabs button:hover{color:var(--txt);border-color:var(--acc)}
+.style-tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.notes-area{width:100%;background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:12px;color:var(--txt);font-size:13px;font-family:inherit;line-height:1.6;resize:vertical;min-height:100px;outline:none}
+.notes-area:focus{border-color:var(--acc);box-shadow:0 0 0 3px #8b5cf633}
+.mfoot{padding:16px 26px 22px;display:flex;gap:8px;flex-wrap:wrap}
+.mfoot button,.mfoot a{background:var(--panel2);border:1px solid var(--bd);color:var(--txt);padding:10px 18px;border-radius:9px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:.15s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.mfoot button:hover,.mfoot a:hover{border-color:var(--acc)}
+.mfoot button.primary,.mfoot a.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+.mfoot button.primary:hover,.mfoot a.primary:hover{filter:brightness(1.15)}
+
+/* ═══ TOAST ═══ */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e1b4b;border:1px solid var(--acc);color:#fff;padding:12px 22px;border-radius:30px;font-size:13px;font-weight:600;transition:.3s;z-index:200;box-shadow:0 10px 30px #00000088;pointer-events:none;opacity:0}
+.toast.on{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* ═══ BIBLIOGRAPHY ═══ */
+.bib-view{max-width:900px;margin:0 auto;padding:30px 24px}
+.bib-view h1{font-size:24px;font-weight:800;margin-bottom:6px;letter-spacing:-.5px}
+.bib-view .sub{font-size:12px;color:var(--mut);margin-bottom:22px}
+.bib-view .toolbar{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.bib-view .toolbar button,.bib-view .toolbar select{background:var(--panel2);border:1px solid var(--bd);color:var(--txt2);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:.15s}
+.bib-view .toolbar button:hover{border-color:var(--acc);color:var(--acc2)}
+.bib-view .toolbar button.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+.bib-entry{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:14px 18px;margin-bottom:8px;font-size:13px;line-height:1.7;color:var(--txt2)}
+.bib-entry .num{color:var(--acc);font-weight:800;font-family:ui-monospace,monospace;margin-right:8px}
+.bib-entry b{color:var(--txt)}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:820px){
+  .sidebar{width:200px}
+  .searchbar select{min-width:100px;font-size:11px}
+  .searchbar button{padding:0 14px;font-size:12px}
+}
+@media(max-width:640px){
+  .topbar{flex-wrap:wrap;height:auto;padding:10px 14px;gap:8px}
+  .searchbar{flex:1 1 100%;order:3}
+  .topnav{order:2}
+  .sidebar{position:absolute;left:0;top:0;bottom:0;z-index:50;transform:translateX(-100%);transition:.25s;width:240px}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 24px #00000088}
+  .menu-btn{display:flex !important}
+  .content{padding:14px}
+}
+.menu-btn{display:none;background:var(--panel2);border:1px solid var(--bd);color:var(--txt);width:36px;height:36px;border-radius:9px;cursor:pointer;font-size:15px;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <div class="brand">
+      <div class="ic">🎓</div>
+      <div class="tx">Academia<small>Pesquisa científica</small></div>
+    </div>
+    <div class="searchbar">
+      <input id="q" placeholder="Buscar artigos, autores, DOI..." autocomplete="off">
+      <select id="source" title="Fonte de dados">
+        <option value="all">🔍 Todas as fontes</option>
+        <option value="crossref">Crossref</option>
+        <option value="openalex">OpenAlex</option>
+        <option value="semantic">Semantic Scholar</option>
+        <option value="doaj">DOAJ (Open Access)</option>
+      </select>
+      <button id="search">Buscar</button>
+    </div>
+    <div class="topnav">
+      <button data-view="search" class="on">🔎 Buscar</button>
+      <button data-view="library">📚 Biblioteca<span class="badge" id="libCount">0</span></button>
+      <button data-view="bib">📝 Bibliografia</button>
+      <button data-view="doi">🔗 DOI</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-section">
+        <h3>Coleções <span id="collectionCount">0</span></h3>
+        <div id="collectionList"></div>
+      </div>
+      <div class="side-section">
+        <h3>Status de leitura</h3>
+        <div class="filter-item on" data-status="all"><span class="ic">📋</span>Todos<span class="n" id="nAll">0</span></div>
+        <div class="filter-item" data-status="unread"><span class="ic">📥</span>Para ler<span class="n" id="nUnread">0</span></div>
+        <div class="filter-item" data-status="reading"><span class="ic">📖</span>Lendo<span class="n" id="nReading">0</span></div>
+        <div class="filter-item" data-status="read"><span class="ic">✅</span>Lidos<span class="n" id="nRead">0</span></div>
+        <div class="filter-item" data-status="starred"><span class="ic">⭐</span>Favoritos<span class="n" id="nStar">0</span></div>
+      </div>
+      <div class="side-section">
+        <h3>Ordenação</h3>
+        <div class="filter-item on" data-sort="relevance"><span class="ic">🎯</span>Relevância</div>
+        <div class="filter-item" data-sort="year"><span class="ic">📅</span>Mais recentes</div>
+        <div class="filter-item" data-sort="citations"><span class="ic">📊</span>Mais citados</div>
+        <div class="filter-item" data-sort="title"><span class="ic">🔤</span>Título A-Z</div>
+      </div>
+      <div class="side-section">
+        <h3>Operações</h3>
+        <div class="filter-item" id="btnExportBib"><span class="ic">⬇️</span>Exportar BibTeX</div>
+        <div class="filter-item" id="btnExportRis"><span class="ic">⬇️</span>Exportar RIS</div>
+        <div class="filter-item" id="btnImport"><span class="ic">📥</span>Importar arquivo</div>
+        <div class="filter-item" id="btnClear"><span class="ic">🗑️</span>Limpar biblioteca</div>
+      </div>
+      <div class="stats-bar" id="statsBar">
+        <div>Biblioteca: <b id="statTotal">0</b> referências</div>
+        <div>Fontes: <b>Crossref · OpenAlex · Semantic Scholar · DOAJ</b></div>
+      </div>
+    </aside>
+
+    <main class="content" id="content">
+      <div class="empty">
+        <div class="ic">🎓</div>
+        <h2>Academia — Pesquisa Científica</h2>
+        <p>
+          Pesquise em milhões de artigos acadêmicos em bases científicas reais.
+          Salve referências, gere citações em <b>6 estilos</b> (incluindo <b>ABNT</b>),
+          exporte em BibTeX/RIS e organize sua pesquisa.
+        </p>
+        <div class="sources-mini">
+          <span>Crossref</span>
+          <span>OpenAlex</span>
+          <span>Semantic Scholar</span>
+          <span>DOAJ</span>
+          <span>Unpaywall</span>
+        </div>
+        <p style="margin-top:24px;font-size:12px">
+          Dicas: cole um <b>DOI</b> direto na busca, use <span class="kbd">/</span> para focar,
+          <span class="kbd">Enter</span> para buscar
+        </p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   ACADEMIA — Sistema de pesquisa acadêmica
+   APIs: Crossref · OpenAlex · Semantic Scholar · DOAJ · Unpaywall
+   ══════════════════════════════════════════════════════════════ */
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+const LIB_KEY = 'academia.lib.v1';
+const NOTES_KEY = 'academia.notes.v1';
+const COLL_KEY = 'academia.collections.v1';
+
+let library = [];
+let notes = {};
+let collections = [];
+let currentResults = [];
+let currentView = 'search';
+let currentStatus = 'all';
+let currentSort = 'relevance';
+let currentCollection = null;
+
+/* ─── STORAGE ─── */
+function loadStorage(){
+  try { library = JSON.parse(localStorage.getItem(LIB_KEY) || '[]'); } catch { library = []; }
+  try { notes = JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); } catch { notes = {}; }
+  try { collections = JSON.parse(localStorage.getItem(COLL_KEY) || '[]'); } catch { collections = []; }
+}
+function saveLibrary(){ localStorage.setItem(LIB_KEY, JSON.stringify(library)); }
+function saveNotes(){ localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); }
+function saveCollections(){ localStorage.setItem(COLL_KEY, JSON.stringify(collections)); }
+
+/* ─── UI HELPERS ─── */
+function toast(msg, ms = 2200){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('on'), ms);
+}
+function esc(s){
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function stripTags(s){ return String(s || '').replace(/<[^>]*>/g, ''); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+/* ─── NORMALIZAÇÃO DE AUTORES ─── */
+function parseAuthors(list){
+  if (!list) return [];
+  if (typeof list === 'string') list = list.split(/\s*;\s*|\s+and\s+/);
+  return list.map(a => {
+    if (typeof a === 'string') return { family: a, given: '' };
+    const family = a.family || a.name || a.last || '';
+    const given = a.given || a.first || '';
+    return { family, given };
+  }).filter(a => a.family || a.given);
+}
+function authorsShort(authors, max = 3){
+  if (!authors.length) return 'Autor desconhecido';
+  const names = authors.slice(0, max).map(a => a.family || a.given);
+  if (authors.length > max) return names.join(', ') + ' et al.';
+  return names.join(', ');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUSCA NAS APIs
+   ══════════════════════════════════════════════════════════════ */
+async function searchCrossref(query, limit = 25){
+  const url = `https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=${limit}&select=DOI,title,author,abstract,container-title,issued,type,publisher,volume,issue,page,URL,is-referenced-by-count,subject,ISSN,language`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Crossref HTTP ' + r.status);
+  const d = await r.json();
+  return (d.message?.items || []).map(it => ({
+    id: 'crossref:' + it.DOI,
+    doi: it.DOI,
+    title: Array.isArray(it.title) ? it.title[0] : (it.title || ''),
+    authors: parseAuthors(it.author),
+    abstract: stripTags(it.abstract || ''),
+    venue: Array.isArray(it['container-title']) ? it['container-title'][0] : (it['container-title'] || ''),
+    year: it.issued?.['date-parts']?.[0]?.[0] || null,
+    type: it.type || '',
+    publisher: it.publisher || '',
+    volume: it.volume || '',
+    issue: it.issue || '',
+    pages: it.page || '',
+    issn: (it.ISSN || []).join(', '),
+    language: it.language || '',
+    url: it.URL || '',
+    citations: it['is-referenced-by-count'] || 0,
+    source: 'Crossref',
+    keywords: it.subject || []
+  }));
+}
+
+async function searchOpenAlex(query, limit = 25){
+  const url = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=${limit}&mailto=academia@example.org`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('OpenAlex HTTP ' + r.status);
+  const d = await r.json();
+  return (d.results || []).map(it => {
+    const auths = (it.authorships || []).map(a => ({
+      family: a.author?.display_name?.split(' ').slice(-1)[0] || '',
+      given: a.author?.display_name?.split(' ').slice(0, -1).join(' ') || '',
+      full: a.author?.display_name || ''
+    }));
+    return {
+      id: 'openalex:' + (it.id || '').split('/').pop(),
+      doi: (it.doi || '').replace('https://doi.org/', ''),
+      title: it.title || it.display_name || '',
+      authors: auths,
+      abstract: it.abstract_inverted_index ? reconstructAbstract(it.abstract_inverted_index) : '',
+      venue: it.primary_location?.source?.display_name || '',
+      year: it.publication_year || null,
+      type: (it.type || '').replace(/-/g, ' '),
+      publisher: it.primary_location?.source?.host_organization_name || '',
+      volume: it.biblio?.volume || '',
+      issue: it.biblio?.issue || '',
+      pages: `${it.biblio?.first_page || ''}${it.biblio?.last_page ? '-' + it.biblio.last_page : ''}`,
+      url: it.primary_location?.landing_page_url || it.id || '',
+      pdf: it.best_oa_location?.pdf_url || it.primary_location?.pdf_url || '',
+      citations: it.cited_by_count || 0,
+      isOA: it.open_access?.is_oa || false,
+      source: 'OpenAlex',
+      concepts: (it.concepts || []).slice(0, 5).map(c => c.display_name)
+    };
+  });
+}
+
+async function searchSemantic(query, limit = 25){
+  const fields = 'title,abstract,year,authors,venue,externalIds,citationCount,openAccessPdf,publicationTypes';
+  const url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(query)}&limit=${limit}&fields=${fields}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Semantic Scholar HTTP ' + r.status);
+  const d = await r.json();
+  return (d.data || []).map(it => ({
+    id: 'semantic:' + it.paperId,
+    doi: it.externalIds?.DOI || '',
+    title: it.title || '',
+    authors: (it.authors || []).map(a => {
+      const parts = (a.name || '').split(' ');
+      return { family: parts.slice(-1)[0] || '', given: parts.slice(0, -1).join(' ') || '' };
+    }),
+    abstract: it.abstract || '',
+    venue: it.venue || '',
+    year: it.year || null,
+    type: (it.publicationTypes || [])[0] || '',
+    url: it.externalIds?.DOI ? `https://doi.org/${it.externalIds.DOI}` : `https://www.semanticscholar.org/paper/${it.paperId}`,
+    pdf: it.openAccessPdf?.url || '',
+    citations: it.citationCount || 0,
+    isOA: !!it.openAccessPdf,
+    source: 'Semantic Scholar'
+  }));
+}
+
+async function searchDOAJ(query, limit = 25){
+  const url = `https://doaj.org/api/v2/search/articles/${encodeURIComponent(query)}?pageSize=${limit}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('DOAJ HTTP ' + r.status);
+  const d = await r.json();
+  return (d.results || []).map(it => {
+    const b = it.bibjson || {};
+    return {
+      id: 'doaj:' + (it.id || ''),
+      doi: (b.identifier || []).find(i => i.type === 'doi')?.id || '',
+      title: b.title || '',
+      authors: (b.author || []).map(a => {
+        const parts = (a.name || '').split(' ');
+        return { family: parts.slice(-1)[0] || '', given: parts.slice(0, -1).join(' ') || '' };
+      }),
+      abstract: b.abstract || '',
+      venue: b.journal?.title || '',
+      year: parseInt(b.year) || null,
+      type: 'article',
+      publisher: b.journal?.publisher || '',
+      volume: b.journal?.volume || '',
+      issue: b.journal?.number || '',
+      pages: b.start_page ? `${b.start_page}${b.end_page ? '-' + b.end_page : ''}` : '',
+      issn: (b.journal?.issns || []).join(', '),
+      url: (b.link || [])[0]?.url || `https://doaj.org/article/${it.id}`,
+      citations: 0,
+      isOA: true,
+      source: 'DOAJ',
+      keywords: (b.keywords || [])
+    };
+  });
+}
+
+/* Reconstrói abstract do OpenAlex (inverted index) */
+function reconstructAbstract(inv){
+  const words = [];
+  for (const [word, positions] of Object.entries(inv || {})){
+    positions.forEach(p => { words[p] = word; });
+  }
+  return words.filter(Boolean).join(' ').slice(0, 2000);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUSCA UNIFICADA
+   ══════════════════════════════════════════════════════════════ */
+async function searchAll(query, source = 'all'){
+  const results = [];
+  const errors = [];
+  const tasks = [];
+  const LIMIT = 20;
+
+  if (source === 'all' || source === 'crossref'){
+    tasks.push(searchCrossref(query, LIMIT).then(r => results.push(...r)).catch(e => errors.push('Crossref: ' + e.message)));
+  }
+  if (source === 'all' || source === 'openalex'){
+    tasks.push(searchOpenAlex(query, LIMIT).then(r => results.push(...r)).catch(e => errors.push('OpenAlex: ' + e.message)));
+  }
+  if (source === 'all' || source === 'semantic'){
+    tasks.push(searchSemantic(query, LIMIT).then(r => results.push(...r)).catch(e => errors.push('Semantic: ' + e.message)));
+  }
+  if (source === 'all' || source === 'doaj'){
+    tasks.push(searchDOAJ(query, LIMIT).then(r => results.push(...r)).catch(e => errors.push('DOAJ: ' + e.message)));
+  }
+
+  await Promise.all(tasks);
+  if (errors.length && results.length === 0) throw new Error(errors.join(' · '));
+  return dedupe(results);
+}
+
+/* Remove duplicatas por DOI / título normalizado */
+function dedupe(list){
+  const seen = new Map();
+  for (const p of list){
+    const key = (p.doi || p.title || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 80);
+    if (!key) continue;
+    if (!seen.has(key)){
+      seen.set(key, p);
+    } else {
+      // Mescla informações
+      const prev = seen.get(key);
+      if (!prev.abstract && p.abstract) prev.abstract = p.abstract;
+      if (!prev.pdf && p.pdf) prev.pdf = p.pdf;
+      if (!prev.doi && p.doi) prev.doi = p.doi;
+      if (p.citations > (prev.citations || 0)) prev.citations = p.citations;
+      prev.source = prev.source.includes(p.source) ? prev.source : prev.source + ' + ' + p.source;
+    }
+  }
+  return Array.from(seen.values());
+}
+
+/* Busca por DOI (Crossref + fallback OpenAlex) */
+async function fetchByDOI(doi){
+  doi = doi.trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i, '');
+  if (!/^10\.\d{4,}\//.test(doi)) throw new Error('DOI inválido');
+
+  // Crossref primeiro (mais completo)
+  try {
+    const r = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}`);
+    if (r.ok){
+      const d = await r.json();
+      const it = d.message;
+      return {
+        id: 'crossref:' + it.DOI,
+        doi: it.DOI,
+        title: Array.isArray(it.title) ? it.title[0] : it.title,
+        authors: parseAuthors(it.author),
+        abstract: stripTags(it.abstract || ''),
+        venue: Array.isArray(it['container-title']) ? it['container-title'][0] : it['container-title'],
+        year: it.issued?.['date-parts']?.[0]?.[0],
+        type: it.type,
+        publisher: it.publisher,
+        volume: it.volume,
+        issue: it.issue,
+        pages: it.page,
+        issn: (it.ISSN || []).join(', '),
+        language: it.language,
+        url: it.URL,
+        citations: it['is-referenced-by-count'] || 0,
+        source: 'Crossref',
+        keywords: it.subject || []
+      };
+    }
+  } catch(e){ /* fallback */ }
+
+  // OpenAlex
+  const r2 = await fetch(`https://api.openalex.org/works/https://doi.org/${encodeURIComponent(doi)}?mailto=academia@example.org`);
+  if (r2.ok){
+    const it = await r2.json();
+    const auths = (it.authorships || []).map(a => ({
+      family: a.author?.display_name?.split(' ').slice(-1)[0] || '',
+      given: a.author?.display_name?.split(' ').slice(0, -1).join(' ') || ''
+    }));
+    return {
+      id: 'openalex:' + (it.id || '').split('/').pop(),
+      doi: doi,
+      title: it.title,
+      authors: auths,
+      abstract: it.abstract_inverted_index ? reconstructAbstract(it.abstract_inverted_index) : '',
+      venue: it.primary_location?.source?.display_name || '',
+      year: it.publication_year,
+      type: it.type,
+      publisher: it.primary_location?.source?.host_organization_name || '',
+      volume: it.biblio?.volume,
+      issue: it.biblio?.issue,
+      pages: `${it.biblio?.first_page || ''}${it.biblio?.last_page ? '-' + it.biblio.last_page : ''}`,
+      url: it.primary_location?.landing_page_url || it.id,
+      pdf: it.best_oa_location?.pdf_url || '',
+      citations: it.cited_by_count || 0,
+      isOA: it.open_access?.is_oa || false,
+      source: 'OpenAlex'
+    };
+  }
+  throw new Error('DOI não encontrado');
+}
+
+/* Unpaywall — busca PDF em acesso aberto */
+async function findOpenAccess(doi){
+  if (!doi) return null;
+  try {
+    const r = await fetch(`https://api.unpaywall.org/v2/${encodeURIComponent(doi)}?email=academia@example.org`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    return d.best_oa_location?.url_for_pdf || d.best_oa_location?.url || null;
+  } catch { return null; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RENDERIZAÇÃO
+   ══════════════════════════════════════════════════════════════ */
+function renderSearchResults(results, query){
+  currentResults = results;
+  if (!results.length){
+    $('#content').innerHTML = `<div class="empty">
+      <div class="ic">🔍</div>
+      <h2>Nenhum resultado</h2>
+      <p>Nada encontrado para "<b>${esc(query)}</b>". Tente outros termos ou uma fonte específica.</p>
+    </div>`;
+    return;
+  }
+
+  const sources = [...new Set(results.map(r => r.source))];
+  $('#content').innerHTML = `
+    <div class="results-head">
+      <h2>Resultados <span class="n">${results.length}</span></h2>
+      <div class="sources">
+        ${sources.map(s => `<span class="src">${esc(s)}</span>`).join('')}
+      </div>
+    </div>
+    <div id="paperList">
+      ${results.map((p, i) => renderPaperCard(p, i)).join('')}
+    </div>`;
+  bindPaperActions();
+}
+
+function renderPaperCard(p, idx){
+  const saved = library.some(l => samePaper(l, p));
+  const hasPdf = p.pdf || p.url;
+  const authors = authorsShort(p.authors, 3);
+  const abstract = (p.abstract || '').slice(0, 340);
+  const tags = [
+    p.isOA ? '<span class="tag oa">🟢 Open Access</span>' : '',
+    p.type ? `<span class="tag">${esc(p.type)}</span>` : '',
+    p.source ? `<span class="tag">${esc(p.source)}</span>` : ''
+  ].filter(Boolean).join('');
+
+  const score = Math.min(99, Math.round((p.citations || 0) / 10 + 40));
+
+  return `
+    <div class="paper" data-idx="${idx}">
+      <div class="head">
+        <div class="score">
+          <div class="n">${score}</div>
+          <div class="l">score</div>
+        </div>
+        <div class="body">
+          <h3><a href="#" data-act="detail" data-idx="${idx}">${esc(p.title || 'Sem título')}</a></h3>
+          <div class="authors">${esc(authors)}</div>
+          <div class="meta">
+            ${p.venue ? `<span class="m">📖 ${esc(p.venue)}</span>` : ''}
+            ${p.year ? `<span class="m">📅 ${p.year}</span>` : ''}
+            ${p.citations ? `<span class="m">📊 ${p.citations} citações</span>` : ''}
+            ${p.doi ? `<span class="m">🔗 ${esc(p.doi)}</span>` : ''}
+          </div>
+          ${abstract ? `<div class="abstract">${esc(abstract)}${p.abstract.length > 340 ? '…' : ''}</div>` : ''}
+          ${tags ? `<div class="tags">${tags}</div>` : ''}
+        </div>
+      </div>
+      <div class="actions">
+        <button class="${saved ? 'saved' : ''}" data-act="save" data-idx="${idx}">
+          ${saved ? '✓ Salvo' : '＋ Salvar'}
+        </button>
+        <button data-act="detail" data-idx="${idx}">👁 Detalhes</button>
+        <button data-act="cite" data-idx="${idx}">📝 Citar</button>
+        ${p.doi ? `<a href="https://doi.org/${esc(p.doi)}" target="_blank" rel="noopener">🔗 DOI</a>` : ''}
+        ${hasPdf ? `<a class="pdf" href="${esc(p.pdf || p.url)}" target="_blank" rel="noopener">📄 PDF</a>` : ''}
+      </div>
+    </div>`;
+}
+
+function samePaper(a, b){
+  if (a.doi && b.doi) return a.doi.toLowerCase() === b.doi.toLowerCase();
+  return (a.title || '').toLowerCase() === (b.title || '').toLowerCase();
+}
+
+function bindPaperActions(){
+  $$('.paper [data-act]').forEach(el => {
+    el.onclick = e => {
+      e.preventDefault();
+      const act = el.dataset.act;
+      const idx = +el.dataset.idx;
+      const paper = currentResults[idx];
+      if (!paper) return;
+      if (act === 'save') savePaper(paper);
+      else if (act === 'detail') openDetail(paper);
+      else if (act === 'cite') openDetail(paper, 'cite');
+    };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BIBLIOTECA
+   ══════════════════════════════════════════════════════════════ */
+function savePaper(p){
+  if (library.some(l => samePaper(l, p))){
+    toast('Já está na biblioteca');
+    return;
+  }
+  library.push({
+    ...p,
+    addedAt: Date.now(),
+    status: 'unread',
+    starred: false,
+    collection: currentCollection
+  });
+  saveLibrary();
+  updateCounts();
+  toast('✓ Adicionado à biblioteca');
+  refreshCurrentView();
+}
+
+function renderLibrary(){
+  let list = library.slice();
+
+  // Filtra por status
+  if (currentStatus === 'starred') list = list.filter(p => p.starred);
+  else if (currentStatus !== 'all') list = list.filter(p => (p.status || 'unread') === currentStatus);
+
+  // Filtra por coleção
+  if (currentCollection) list = list.filter(p => p.collection === currentCollection);
+
+  // Ordena
+  if (currentSort === 'year') list.sort((a, b) => (b.year || 0) - (a.year || 0));
+  else if (currentSort === 'citations') list.sort((a, b) => (b.citations || 0) - (a.citations || 0));
+  else if (currentSort === 'title') list.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'pt-BR'));
+  else list.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+
+  if (!list.length){
+    $('#content').innerHTML = `<div class="empty">
+      <div class="ic">📚</div>
+      <h2>Biblioteca ${currentStatus === 'all' ? 'vazia' : 'sem itens'}</h2>
+      <p>${currentStatus === 'all'
+        ? 'Busque artigos e clique em <b>＋ Salvar</b> para adicioná-los aqui.'
+        : 'Nenhuma referência com este status.'}</p>
+    </div>`;
+    return;
+  }
+
+  $('#content').innerHTML = `
+    <div class="results-head">
+      <h2>Biblioteca <span class="n">${list.length}</span></h2>
+      <div class="sources">
+        ${currentCollection ? `<span class="src">📁 ${esc(currentCollection)}</span>` : ''}
+      </div>
+    </div>
+    <div id="paperList">
+      ${list.map((p, i) => renderLibraryCard(p, i)).join('')}
+    </div>`;
+
+  bindLibraryActions(list);
+}
+
+function renderLibraryCard(p, i){
+  const statusIcons = { unread: '📥', reading: '📖', read: '✅' };
+  const statusLabels = { unread: 'Para ler', reading: 'Lendo', read: 'Lido' };
+  const status = p.status || 'unread';
+  const authors = authorsShort(p.authors, 3);
+  const note = notes[p.id] || '';
+
+  return `
+    <div class="paper" data-i="${i}">
+      <div class="head">
+        <div class="score" style="background:${status === 'read' ? '#064e3b' : status === 'reading' ? '#78350f' : '#1e1b4b'};border-color:${status === 'read' ? '#10b981' : status === 'reading' ? '#f59e0b' : '#4c1d95'}">
+          <div class="n">${statusIcons[status]}</div>
+          <div class="l">${statusLabels[status]}</div>
+        </div>
+        <div class="body">
+          <h3><a href="#" data-act="detail" data-i="${i}">${esc(p.title || 'Sem título')}</a></h3>
+          <div class="authors">${esc(authors)}</div>
+          <div class="meta">
+            ${p.venue ? `<span class="m">📖 ${esc(p.venue)}</span>` : ''}
+            ${p.year ? `<span class="m">📅 ${p.year}</span>` : ''}
+            ${p.citations ? `<span class="m">📊 ${p.citations}</span>` : ''}
+          </div>
+          ${note ? `<div style="font-size:12px;color:var(--mut);font-style:italic;margin-top:6px">📝 ${esc(note.slice(0, 100))}${note.length > 100 ? '…' : ''}</div>` : ''}
+        </div>
+      </div>
+      <div class="actions">
+        <button data-lib-act="status" data-i="${i}">🔄 ${statusLabels[status]}</button>
+        <button data-lib-act="star" data-i="${i}" class="${p.starred ? 'saved' : ''}">${p.starred ? '⭐' : '☆'} Favorito</button>
+        <button data-lib-act="detail" data-i="${i}">👁 Detalhes</button>
+        <button data-lib-act="cite" data-i="${i}">📝 Citar</button>
+        ${p.doi ? `<a href="https://doi.org/${esc(p.doi)}" target="_blank" rel="noopener">🔗 DOI</a>` : ''}
+        ${p.pdf ? `<a class="pdf" href="${esc(p.pdf)}" target="_blank" rel="noopener">📄 PDF</a>` : ''}
+        <button data-lib-act="remove" data-i="${i}" style="color:var(--err)">🗑 Remover</button>
+      </div>
+    </div>`;
+}
+
+function bindLibraryActions(list){
+  $$('[data-lib-act]').forEach(el => {
+    el.onclick = e => {
+      e.preventDefault();
+      const act = el.dataset.libAct;
+      const i = +el.dataset.i;
+      const p = list[i];
+      if (!p) return;
+      if (act === 'detail') openDetail(p);
+      else if (act === 'cite') openDetail(p, 'cite');
+      else if (act === 'status'){
+        const order = ['unread', 'reading', 'read'];
+        const cur = order.indexOf(p.status || 'unread');
+        p.status = order[(cur + 1) % 3];
+        saveLibrary();
+        updateCounts();
+        renderLibrary();
+      }
+      else if (act === 'star'){
+        p.starred = !p.starred;
+        saveLibrary();
+        updateCounts();
+        renderLibrary();
+      }
+      else if (act === 'remove'){
+        if (confirm('Remover esta referência?')){
+          library = library.filter(x => x !== p);
+          delete notes[p.id];
+          saveLibrary(); saveNotes();
+          updateCounts();
+          renderLibrary();
+          toast('Removida');
+        }
+      }
+    };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CITAÇÕES — 6 ESTILOS
+   ══════════════════════════════════════════════════════════════ */
+function formatAuthors_APA(authors){
+  if (!authors.length) return 'Autor desconhecido.';
+  const names = authors.map(a => {
+    const given = (a.given || '').split(/\s+/).map(n => n[0] ? n[0].toUpperCase() + '.' : '').join(' ');
+    return `${a.family || ''}${given ? ', ' + given : ''}`.trim();
+  });
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]}, & ${names[1]}`;
+  if (names.length <= 20) return names.slice(0, -1).join(', ') + ', & ' + names.slice(-1)[0];
+  return names.slice(0, 19).join(', ') + ', ... ' + names.slice(-1)[0];
+}
+function formatAuthors_ABNT(authors){
+  if (!authors.length) return 'AUTOR DESCONHECIDO.';
+  return authors.map(a => {
+    const fam = (a.family || '').toUpperCase();
+    const giv = a.given || '';
+    return `${fam}${giv ? ', ' + giv : ''}`;
+  }).join('; ');
+}
+function formatAuthors_MLA(authors){
+  if (!authors.length) return 'Autor desconhecido';
+  if (authors.length === 1) return `${a.family || ''}, ${a.given || ''}`;
+  if (authors.length === 2) return `${authors[0].family || ''}, ${authors[0].given || ''}, and ${authors[1].given || ''} ${authors[1].family || ''}`;
+  return `${authors[0].family || ''}, ${authors[0].given || ''}, et al`;
+}
+function formatAuthors_Chicago(authors){
+  if (!authors.length) return 'Autor desconhecido';
+  if (authors.length === 1) return `${a.family || ''}, ${a.given || ''}`;
+  return authors.map((a, i) => i === 0 ? `${a.family || ''}, ${a.given || ''}` : `${a.given || ''} ${a.family || ''}`).join(', ');
+}
+function formatAuthors_Vancouver(authors){
+  if (!authors.length) return 'Autor desconhecido';
+  return authors.slice(0, 6).map(a => {
+    const fam = a.family || '';
+    const ini = (a.given || '').split(/\s+/).map(n => n[0] || '').join('');
+    return `${fam} ${ini}`.trim();
+  }).join(', ') + (authors.length > 6 ? ', et al' : '');
+}
+function formatAuthors_IEEE(authors){
+  if (!authors.length) return 'Autor desconhecido';
+  return authors.slice(0, 3).map(a => {
+    const ini = (a.given || '').split(/\s+/).map(n => n[0] ? n[0] + '.' : '').join(' ');
+    return `${ini} ${a.family || ''}`.trim();
+  }).join(', ') + (authors.length > 3 ? ', et al.' : '');
+}
+
+const CITATION_STYLES = {
+  abnt: {
+    name: 'ABNT NBR 6023',
+    format(p){
+      const a = formatAuthors_ABNT(p.authors);
+      const t = (p.title || '').trim();
+      let s = `${a}. <b>${t}</b>.`;
+      if (p.venue) s += ` ${p.venue},`;
+      if (p.volume) s += ` v. ${p.volume},`;
+      if (p.issue) s += ` n. ${p.issue},`;
+      if (p.pages) s += ` p. ${p.pages},`;
+      if (p.year) s += ` ${p.year}.`;
+      if (p.doi) s += ` DOI: ${p.doi}.`;
+      else if (p.url) s += ` Disponível em: ${p.url}.`;
+      return s;
+    }
+  },
+  apa: {
+    name: 'APA 7ª ed.',
+    format(p){
+      const a = formatAuthors_APA(p.authors);
+      const y = p.year || 's.d.';
+      const t = p.title || '';
+      let s = `${a} (${y}). ${t}.`;
+      if (p.venue) s += ` <i>${p.venue}</i>`;
+      if (p.volume) s += `, ${p.volume}`;
+      if (p.issue) s += `(${p.issue})`;
+      if (p.pages) s += `, ${p.pages}`;
+      if (p.venue) s += '.';
+      if (p.doi) s += ` https://doi.org/${p.doi}`;
+      else if (p.url) s += ` ${p.url}`;
+      return s;
+    }
+  },
+  mla: {
+    name: 'MLA 9ª ed.',
+    format(p){
+      const a = formatAuthors_MLA(p.authors);
+      const t = p.title || '';
+      let s = `${a}. "${t}."`;
+      if (p.venue) s += ` <i>${p.venue}</i>,`;
+      if (p.volume) s += ` vol. ${p.volume},`;
+      if (p.issue) s += ` no. ${p.issue},`;
+      if (p.year) s += ` ${p.year},`;
+      if (p.pages) s += ` pp. ${p.pages},`;
+      if (p.doi) s += ` DOI:${p.doi}.`;
+      return s.replace(/,\./g, '.');
+    }
+  },
+  chicago: {
+    name: 'Chicago 17ª ed.',
+    format(p){
+      const a = formatAuthors_Chicago(p.authors);
+      const t = p.title || '';
+      let s = `${a}. "${t}."`;
+      if (p.venue) s += ` <i>${p.venue}</i>`;
+      if (p.volume) s += ` ${p.volume}`;
+      if (p.issue) s += `, no. ${p.issue}`;
+      if (p.year) s += ` (${p.year})`;
+      if (p.pages) s += `: ${p.pages}`;
+      s += '.';
+      if (p.doi) s += ` https://doi.org/${p.doi}.`;
+      return s;
+    }
+  },
+  vancouver: {
+    name: 'Vancouver',
+    format(p){
+      const a = formatAuthors_Vancouver(p.authors);
+      const t = p.title || '';
+      let s = `${a}. ${t}.`;
+      if (p.venue) s += ` ${p.venue}.`;
+      if (p.year) s += ` ${p.year}`;
+      if (p.volume) s += `;${p.volume}`;
+      if (p.issue) s += `(${p.issue})`;
+      if (p.pages) s += `:${p.pages}`;
+      s += '.';
+      if (p.doi) s += ` doi:${p.doi}.`;
+      return s;
+    }
+  },
+  ieee: {
+    name: 'IEEE',
+    format(p){
+      const a = formatAuthors_IEEE(p.authors);
+      const t = p.title || '';
+      let s = `${a}, "${t},"`;
+      if (p.venue) s += ` <i>${p.venue}</i>,`;
+      if (p.volume) s += ` vol. ${p.volume},`;
+      if (p.issue) s += ` no. ${p.issue},`;
+      if (p.pages) s += ` pp. ${p.pages},`;
+      if (p.year) s += ` ${p.year}`;
+      s += '.';
+      if (p.doi) s += ` doi: ${p.doi}.`;
+      return s;
+    }
+  }
+};
+
+function formatBibTeX(p){
+  const key = ((p.authors?.[0]?.family || 'ref').toLowerCase().replace(/[^a-z]/g, '') + (p.year || '')) || 'ref';
+  const type = p.type?.includes('journal') || p.venue ? 'article' : 'misc';
+  const lines = [`@${type}{${key},`];
+  if (p.title) lines.push(`  title = {${p.title}},`);
+  if (p.authors?.length) lines.push(`  author = {${p.authors.map(a => a.family ? `${a.family}, ${a.given}` : a.given).join(' and ')}},`);
+  if (p.venue) lines.push(`  journal = {${p.venue}},`);
+  if (p.year) lines.push(`  year = {${p.year}},`);
+  if (p.volume) lines.push(`  volume = {${p.volume}},`);
+  if (p.issue) lines.push(`  number = {${p.issue}},`);
+  if (p.pages) lines.push(`  pages = {${p.pages}},`);
+  if (p.publisher) lines.push(`  publisher = {${p.publisher}},`);
+  if (p.doi) lines.push(`  doi = {${p.doi}},`);
+  if (p.url) lines.push(`  url = {${p.url}},`);
+  lines.push('}');
+  return lines.join('\n');
+}
+
+function formatRIS(p){
+  const lines = ['TY  - JOUR'];
+  if (p.authors?.length) p.authors.forEach(a => lines.push(`AU  - ${a.family}${a.given ? ', ' + a.given : ''}`));
+  if (p.title) lines.push(`TI  - ${p.title}`);
+  if (p.venue) lines.push(`JO  - ${p.venue}`);
+  if (p.year) lines.push(`PY  - ${p.year}`);
+  if (p.volume) lines.push(`VL  - ${p.volume}`);
+  if (p.issue) lines.push(`IS  - ${p.issue}`);
+  if (p.pages) lines.push(`SP  - ${p.pages.split('-')[0] || ''}`);
+  if (p.pages?.includes('-')) lines.push(`EP  - ${p.pages.split('-')[1]}`);
+  if (p.publisher) lines.push(`PB  - ${p.publisher}`);
+  if (p.doi) lines.push(`DO  - ${p.doi}`);
+  if (p.url) lines.push(`UR  - ${p.url}`);
+  if (p.abstract) lines.push(`AB  - ${p.abstract}`);
+  lines.push('ER  -');
+  return lines.join('\n');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL DE DETALHES
+   ══════════════════════════════════════════════════════════════ */
+function openDetail(p, tab = 'info'){
+  const saved = library.some(l => samePaper(l, p));
+  const pdfLink = p.pdf || p.url;
+  const authorsFull = p.authors?.length
+    ? p.authors.map(a => `${a.family}${a.given ? ', ' + a.given : ''}`).join('; ')
+    : 'Autor desconhecido';
+
+  const styleKeys = Object.keys(CITATION_STYLES);
+
+  $('#mbox').innerHTML = `
+    <div class="mhead">
+      <button class="close" id="closeModal">✕</button>
+      <h2>${esc(p.title || 'Sem título')}</h2>
+      <div class="aut">${esc(authorsFull)}</div>
+    </div>
+    <div class="mbody">
+      <h3>Informações</h3>
+      <div class="info-grid">
+        ${p.doi ? `<div class="info-item"><div class="k">DOI</div><div class="v">${esc(p.doi)}</div></div>` : ''}
+        ${p.year ? `<div class="info-item"><div class="k">Ano</div><div class="v">${p.year}</div></div>` : ''}
+        ${p.venue ? `<div class="info-item"><div class="k">Periódico / Veículo</div><div class="v text">${esc(p.venue)}</div></div>` : ''}
+        ${p.publisher ? `<div class="info-item"><div class="k">Editora</div><div class="v text">${esc(p.publisher)}</div></div>` : ''}
+        ${p.volume ? `<div class="info-item"><div class="k">Volume</div><div class="v">${esc(p.volume)}</div></div>` : ''}
+        ${p.issue ? `<div class="info-item"><div class="k">Edição</div><div class="v">${esc(p.issue)}</div></div>` : ''}
+        ${p.pages ? `<div class="info-item"><div class="k">Páginas</div><div class="v">${esc(p.pages)}</div></div>` : ''}
+        ${p.issn ? `<div class="info-item"><div class="k">ISSN</div><div class="v">${esc(p.issn)}</div></div>` : ''}
+        ${p.type ? `<div class="info-item"><div class="k">Tipo</div><div class="v text">${esc(p.type)}</div></div>` : ''}
+        ${p.citations ? `<div class="info-item"><div class="k">Citações</div><div class="v">${p.citations}</div></div>` : ''}
+        ${p.language ? `<div class="info-item"><div class="k">Idioma</div><div class="v">${esc(p.language)}</div></div>` : ''}
+        <div class="info-item"><div class="k">Fonte</div><div class="v text">${esc(p.source || '')}</div></div>
+      </div>
+
+      ${p.abstract ? `<h3>Resumo</h3><div class="abstract-full">${esc(p.abstract)}</div>` : ''}
+
+      <h3>Citação bibliográfica</h3>
+      <div class="style-tabs">
+        ${styleKeys.map(k => `<button data-style="${k}" class="${k === 'abnt' ? 'on' : ''}">${CITATION_STYLES[k].name}</button>`).join('')}
+      </div>
+      <div class="citation-box" id="citeBox">
+        <button data-copy-cite>📋 Copiar</button>
+        <span id="citeContent">${CITATION_STYLES.abnt.format(p)}</span>
+      </div>
+
+      <h3>Anotações</h3>
+      <textarea class="notes-area" id="notesArea" placeholder="Suas anotações sobre este artigo...">${esc(notes[p.id] || '')}</textarea>
+    </div>
+    <div class="mfoot">
+      <button class="primary" id="btnSavePaper">${saved ? '✓ Salvo na biblioteca' : '＋ Salvar na biblioteca'}</button>
+      <button id="btnBibtex">📄 BibTeX</button>
+      <button id="btnRis">📄 RIS</button>
+      ${pdfLink ? `<a href="${esc(pdfLink)}" target="_blank" rel="noopener">📄 Abrir PDF</a>` : ''}
+      ${p.doi ? `<a href="https://doi.org/${esc(p.doi)}" target="_blank" rel="noopener">🔗 Abrir DOI</a>` : ''}
+    </div>`;
+
+  $('#modal').classList.add('on');
+
+  // Binding
+  $('#closeModal').onclick = () => $('#modal').classList.remove('on');
+  $$('.style-tabs button').forEach(b => {
+    b.onclick = () => {
+      $$('.style-tabs button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      const styleKey = b.dataset.style;
+      $('#citeContent').innerHTML = CITATION_STYLES[styleKey].format(p);
+    };
+  });
+  $('[data-copy-cite]').onclick = async () => {
+    const text = $('#citeContent').textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('📋 Citação copiada');
+    } catch { toast('Não foi possível copiar'); }
+  };
+  $('#btnSavePaper').onclick = () => {
+    if (!library.some(l => samePaper(l, p))){
+      savePaper(p);
+      $('#btnSavePaper').textContent = '✓ Salvo na biblioteca';
+    }
+  };
+  $('#btnBibtex').onclick = () => {
+    const text = formatBibTeX(p);
+    navigator.clipboard.writeText(text).then(() => toast('📄 BibTeX copiado'));
+  };
+  $('#btnRis').onclick = () => {
+    const text = formatRIS(p);
+    navigator.clipboard.writeText(text).then(() => toast('📄 RIS copiado'));
+  };
+  $('#notesArea').oninput = e => {
+    notes[p.id] = e.target.value;
+    saveNotes();
+    clearTimeout(window._nt);
+    window._nt = setTimeout(() => toast('📝 Anotação salva', 1200), 500);
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BIBLIOGRAFIA
+   ══════════════════════════════════════════════════════════════ */
+function renderBibliography(){
+  if (!library.length){
+    $('#content').innerHTML = `<div class="empty">
+      <div class="ic">📝</div>
+      <h2>Bibliografia vazia</h2>
+      <p>Adicione referências à sua biblioteca para gerar a bibliografia.</p>
+    </div>`;
+    return;
+  }
+
+  const sorted = library.slice().sort((a, b) => (a.authors?.[0]?.family || '').localeCompare(b.authors?.[0]?.family || '', 'pt-BR'));
+  const styles = Object.keys(CITATION_STYLES);
+
+  $('#content').innerHTML = `
+    <div class="bib-view">
+      <h1>Bibliografia</h1>
+      <div class="sub">${sorted.length} referência${sorted.length !== 1 ? 's' : ''} · Ordenadas alfabeticamente por sobrenome</div>
+      <div class="toolbar">
+        <div class="style-tabs" id="bibStyles">
+          ${styles.map(k => `<button data-style="${k}" class="${k === 'abnt' ? 'on' : ''}">${CITATION_STYLES[k].name}</button>`).join('')}
+        </div>
+        <button class="primary" id="copyBib">📋 Copiar bibliografia</button>
+        <button id="dlBib">⬇ Baixar .txt</button>
+      </div>
+      <div id="bibList">
+        ${sorted.map((p, i) => `
+          <div class="bib-entry">
+            <span class="num">[${i + 1}]</span>${CITATION_STYLES.abnt.format(p)}
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  let currentStyle = 'abnt';
+  $$('#bibStyles button').forEach(b => {
+    b.onclick = () => {
+      $$('#bibStyles button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      currentStyle = b.dataset.style;
+      $('#bibList').innerHTML = sorted.map((p, i) =>
+        `<div class="bib-entry"><span class="num">[${i + 1}]</span>${CITATION_STYLES[currentStyle].format(p)}</div>`
+      ).join('');
+    };
+  });
+  $('#copyBib').onclick = async () => {
+    const text = sorted.map((p, i) => `[${i + 1}] ${CITATION_STYLES[currentStyle].format(p).replace(/<[^>]+>/g, '')}`).join('\n\n');
+    try { await navigator.clipboard.writeText(text); toast('📋 Bibliografia copiada'); }
+    catch { toast('Não foi possível copiar'); }
+  };
+  $('#dlBib').onclick = () => {
+    const text = sorted.map((p, i) => `[${i + 1}] ${CITATION_STYLES[currentStyle].format(p).replace(/<[^>]+>/g, '')}`).join('\n\n');
+    downloadFile('bibliografia-' + currentStyle + '.txt', text, 'text/plain');
+  };
+}
+
+function downloadFile(name, content, mime){
+  const blob = new Blob([content], { type: mime + ';charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VIEW: DOI
+   ══════════════════════════════════════════════════════════════ */
+function renderDOIView(){
+  $('#content').innerHTML = `
+    <div class="bib-view">
+      <h1>Buscar por DOI</h1>
+      <div class="sub">Cole um DOI para carregar os metadados completos de qualquer artigo científico</div>
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+        <input id="doiInput" placeholder="10.1038/nature12373 ou https://doi.org/..." style="flex:1;min-width:260px;background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:12px 14px;color:var(--txt);font-size:14px;outline:none;font-family:ui-monospace,monospace">
+        <button class="primary" id="doiGo" style="background:var(--acc);border:0;color:#fff;padding:12px 24px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit">🔗 Carregar</button>
+      </div>
+      <div id="doiResult"></div>
+    </div>`;
+  $('#doiGo').onclick = loadDOI;
+  $('#doiInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadDOI(); });
+  $('#doiInput').focus();
+}
+
+async function loadDOI(){
+  const doi = $('#doiInput').value.trim();
+  if (!doi) return;
+  $('#doiResult').innerHTML = '<div class="loading"><div class="spinner"></div>Buscando metadados...</div>';
+  try {
+    const paper = await fetchByDOI(doi);
+    // Busca em acesso aberto
+    const oaLink = await findOpenAccess(paper.doi);
+    if (oaLink && !paper.pdf) paper.pdf = oaLink;
+    currentResults = [paper];
+    $('#doiResult').innerHTML = renderPaperCard(paper, 0);
+    bindPaperActions();
+  } catch(e) {
+    $('#doiResult').innerHTML = `<div class="empty" style="padding:40px 20px">
+      <div class="ic">❌</div>
+      <h2>DOI não encontrado</h2>
+      <p>${esc(e.message)}</p>
+    </div>`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COUNT / STATS
+   ══════════════════════════════════════════════════════════════ */
+function updateCounts(){
+  const c = { all: library.length, unread: 0, reading: 0, read: 0, starred: 0 };
+  library.forEach(p => {
+    const s = p.status || 'unread';
+    if (c[s] !== undefined) c[s]++;
+    if (p.starred) c.starred++;
+  });
+  $('#nAll').textContent = c.all;
+  $('#nUnread').textContent = c.unread;
+  $('#nReading').textContent = c.reading;
+  $('#nRead').textContent = c.read;
+  $('#nStar').textContent = c.starred;
+  $('#libCount').textContent = c.all;
+  $('#statTotal').textContent = c.all;
+  $('#collectionCount').textContent = collections.length;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EXPORT / IMPORT
+   ══════════════════════════════════════════════════════════════ */
+function exportBibTeX(){
+  if (!library.length) return toast('Biblioteca vazia');
+  const text = library.map(p => formatBibTeX(p)).join('\n\n');
+  downloadFile('biblioteca.bib', text, 'application/x-bibtex');
+  toast('📄 BibTeX exportado');
+}
+function exportRIS(){
+  if (!library.length) return toast('Biblioteca vazia');
+  const text = library.map(p => formatRIS(p)).join('\n\n');
+  downloadFile('biblioteca.ris', text, 'application/x-research-info-systems');
+  toast('📄 RIS exportado');
+}
+function importFile(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.bib,.ris,.json,.txt';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const content = ev.target.result;
+      try {
+        if (file.name.endsWith('.json')){
+          const arr = JSON.parse(content);
+          if (Array.isArray(arr)){
+            arr.forEach(p => { if (!library.some(l => samePaper(l, p))) library.push({ ...p, addedAt: Date.now(), status: 'unread' }); });
+          }
+        } else if (file.name.endsWith('.bib')){
+          parseBibTeX(content).forEach(p => library.push({ ...p, addedAt: Date.now(), status: 'unread' }));
+        } else if (file.name.endsWith('.ris')){
+          parseRIS(content).forEach(p => library.push({ ...p, addedAt: Date.now(), status: 'unread' }));
+        } else {
+          // Tenta JSON
+          const arr = JSON.parse(content);
+          if (Array.isArray(arr)) arr.forEach(p => library.push({ ...p, addedAt: Date.now(), status: 'unread' }));
+        }
+        saveLibrary();
+        updateCounts();
+        toast('✓ Importado');
+      } catch (err) {
+        toast('Erro ao importar: ' + err.message, 3000);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function parseBibTeX(text){
+  const entries = [];
+  const re = /@(\w+)\{([^,]+),([\s\S]*?)\n\}/g;
+  let m;
+  while ((m = re.exec(text))){
+    const body = m[3];
+    const get = k => {
+      const r = new RegExp(k + '\\s*=\\s*\\{([^}]*)\\}', 'i');
+      const mm = body.match(r);
+      return mm ? mm[1].trim() : '';
+    };
+    const authorsRaw = get('author');
+    const authors = authorsRaw ? authorsRaw.split(/\s+and\s+/).map(a => {
+      const parts = a.trim().split(/\s*,\s*/);
+      return parts.length > 1 ? { family: parts[0], given: parts[1] } : { family: a.trim(), given: '' };
+    }) : [];
+    entries.push({
+      id: 'bib:' + m[2] + ':' + uid(),
+      doi: get('doi'),
+      title: get('title'),
+      authors,
+      venue: get('journal') || get('booktitle'),
+      year: parseInt(get('year')) || null,
+      volume: get('volume'),
+      issue: get('number'),
+      pages: get('pages'),
+      publisher: get('publisher'),
+      url: get('url'),
+      abstract: get('abstract'),
+      citations: 0,
+      source: 'Importado'
+    });
+  }
+  return entries;
+}
+
+function parseRIS(text){
+  const entries = [];
+  let cur = null;
+  text.split(/\r?\n/).forEach(line => {
+    if (line.startsWith('TY  -')){
+      cur = { id: 'ris:' + uid(), authors: [], title: '', venue: '', year: null, doi: '', url: '', abstract: '', citations: 0, source: 'Importado' };
+    } else if (line.startsWith('ER  -')){
+      if (cur) entries.push(cur);
+      cur = null;
+    } else if (cur){
+      const [tag, ...rest] = line.split('  - ');
+      const val = rest.join('  - ').trim();
+      if (tag === 'AU' || tag === 'A1'){
+        const parts = val.split(',').map(s => s.trim());
+        cur.authors.push(parts.length > 1 ? { family: parts[0], given: parts[1] } : { family: val, given: '' });
+      }
+      else if (tag === 'TI' || tag === 'T1') cur.title = val;
+      else if (tag === 'JO' || tag === 'JF' || tag === 'T2') cur.venue = val;
+      else if (tag === 'PY' || tag === 'Y1') cur.year = parseInt(val) || null;
+      else if (tag === 'DO') cur.doi = val;
+      else if (tag === 'UR') cur.url = val;
+      else if (tag === 'AB') cur.abstract = val;
+    }
+  });
+  return entries;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NAVEGAÇÃO
+   ══════════════════════════════════════════════════════════════ */
+function switchView(view){
+  currentView = view;
+  $$('.topnav button').forEach(b => b.classList.toggle('on', b.dataset.view === view));
+  refreshCurrentView();
+}
+function refreshCurrentView(){
+  if (currentView === 'library') renderLibrary();
+  else if (currentView === 'bib') renderBibliography();
+  else if (currentView === 'doi') renderDOIView();
+  else if (currentResults.length) renderSearchResults(currentResults, window._lastQuery || '');
+  // search: mantém como está
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EVENTOS
+   ══════════════════════════════════════════════════════════════ */
+async function doSearch(){
+  const q = $('#q').value.trim();
+  if (!q) return;
+
+  // Detecta DOI direto
+  if (/^(10\.\d{4,}\/|https?:\/\/(dx\.)?doi\.org\/10\.)/i.test(q)){
+    switchView('doi');
+    $('#doiInput').value = q;
+    loadDOI();
+    return;
+  }
+
+  const btn = $('#search');
+  btn.disabled = true;
+  btn.textContent = 'Buscando...';
+  $('#content').innerHTML = '<div class="loading"><div class="spinner"></div>Pesquisando em 4 bases científicas...</div>';
+
+  try {
+    const results = await searchAll(q, $('#source').value);
+    window._lastQuery = q;
+    currentView = 'search';
+    $$('.topnav button').forEach(b => b.classList.toggle('on', b.dataset.view === 'search'));
+    renderSearchResults(results, q);
+  } catch(e) {
+    $('#content').innerHTML = `<div class="empty">
+      <div class="ic">⚠️</div>
+      <h2>Erro na busca</h2>
+      <p>${esc(e.message)}</p>
+      <p style="margin-top:12px;font-size:12px">Verifique sua conexão ou tente outra fonte.</p>
+    </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Buscar';
+  }
+}
+
+$('#search').onclick = doSearch;
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+$$('.topnav button').forEach(b => {
+  b.onclick = () => switchView(b.dataset.view);
+});
+
+$$('[data-status]').forEach(el => {
+  el.onclick = () => {
+    $$('[data-status]').forEach(x => x.classList.remove('on'));
+    el.classList.add('on');
+    currentStatus = el.dataset.status;
+    if (currentView !== 'library') switchView('library');
+    else renderLibrary();
+  };
+});
+
+$$('[data-sort]').forEach(el => {
+  el.onclick = () => {
+    $$('[data-sort]').forEach(x => x.classList.remove('on'));
+    el.classList.add('on');
+    currentSort = el.dataset.sort;
+    if (currentView === 'library') renderLibrary();
+  };
+});
+
+$('#btnExportBib').onclick = exportBibTeX;
+$('#btnExportRis').onclick = exportRIS;
+$('#btnImport').onclick = importFile;
+$('#btnClear').onclick = () => {
+  if (!library.length) return toast('Biblioteca vazia');
+  if (confirm(`Remover todas as ${library.length} referências?`)){
+    library = [];
+    notes = {};
+    saveLibrary(); saveNotes();
+    updateCounts();
+    refreshCurrentView();
+    toast('Biblioteca limpa');
+  }
+};
+
+$('#menuBtn').onclick = () => $('#sidebar').classList.toggle('open');
+
+$('#modal').onclick = e => { if (e.target === $('#modal')) $('#modal').classList.remove('on'); };
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') $('#modal').classList.remove('on');
+  if (e.key === '/' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA'){
+    e.preventDefault();
+    $('#q').focus();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k'){
+    e.preventDefault();
+    $('#q').focus();
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════════════════════ */
+loadStorage();
+updateCounts();
+</script>
+</body>
+</html>

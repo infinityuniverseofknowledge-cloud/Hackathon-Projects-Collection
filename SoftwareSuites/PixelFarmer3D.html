@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Pixel Farmer 3D</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',system-ui,sans-serif;background:#000;color:#fff;user-select:none}
+canvas{display:block}
+#hud{position:fixed;top:12px;left:12px;background:rgba(10,8,20,.85);backdrop-filter:blur(12px);border:1px solid rgba(240,212,152,.4);border-radius:8px;padding:10px 14px;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#f0d498;pointer-events:none;line-height:1.6;max-width:240px}
+#hud b{color:#f8d8b0;font-weight:700}
+#hud kbd{background:rgba(240,212,152,.15);padding:1px 5px;border-radius:3px;border:1px solid rgba(240,212,152,.3);color:#fff;font-size:10px}
+#fps{position:fixed;top:12px;right:12px;background:rgba(10,8,20,.85);backdrop-filter:blur(12px);border:1px solid rgba(168,96,56,.5);border-radius:8px;padding:6px 12px;font-family:ui-monospace,monospace;font-size:11px;color:#a86838;pointer-events:none}
+#fps b{color:#f0d498;font-weight:700}
+#panel{position:fixed;bottom:12px;right:12px;background:rgba(10,8,20,.9);backdrop-filter:blur(12px);border:1px solid rgba(240,212,152,.4);border-radius:8px;padding:10px;font-family:ui-monospace,monospace;font-size:11px;color:#f0d498;width:200px;max-height:60vh;overflow-y:auto}
+#panel h3{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#a86838;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(240,212,152,.2)}
+#panel label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:10px;color:#c8a860}
+#panel input[type=range]{-webkit-appearance:none;width:100px;height:3px;background:#3a1e08;border-radius:2px;outline:none}
+#panel input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:#f0d498;border-radius:50%;cursor:pointer}
+#panel .btn{width:100%;padding:5px;background:rgba(240,212,152,.15);border:1px solid rgba(240,212,152,.3);color:#f0d498;border-radius:4px;cursor:pointer;font-family:inherit;font-size:10px;margin-top:5px;transition:.15s}
+#panel .btn:hover{background:rgba(240,212,152,.3);color:#fff}
+#panel select{background:#1a0f08;color:#f0d498;border:1px solid rgba(240,212,152,.3);border-radius:3px;padding:3px;font-size:10px;font-family:inherit}
+#touch{position:fixed;bottom:20px;left:20px;display:none;gap:10px}
+#touch .joy{width:110px;height:110px;border-radius:50%;background:rgba(240,212,152,.1);border:2px solid rgba(240,212,152,.3);position:relative;touch-action:none}
+#touch .knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin-left:-22px;margin-top:-22px;border-radius:50%;background:rgba(240,212,152,.4);pointer-events:none}
+#touch .jump{width:70px;height:70px;border-radius:50%;background:rgba(168,96,56,.3);border:2px solid rgba(240,212,152,.4);color:#f0d498;font-family:ui-monospace,monospace;font-size:12px;align-self:flex-end;touch-action:none}
+#err{position:fixed;inset:0;background:#0a0810;color:#f0d498;display:none;align-items:center;justify-content:center;padding:30px;text-align:center;font-family:ui-monospace,monospace;font-size:13px;line-height:1.8;z-index:9999}
+@media(max-width:700px){#hud{max-width:160px;font-size:10px}#panel{width:160px;font-size:10px}#touch{display:flex}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <b>🌾 PIXEL FARMER 3D</b><br>
+  <kbd>WASD</kbd> mover · <kbd>Shift</kbd> correr<br>
+  <kbd>Space</kbd> pular · <kbd>Mouse</kbd> orbitar<br>
+  <kbd>Scroll</kbd> zoom · <kbd>1</kbd>-<kbd>4</kbd> câmera<br>
+  <kbd>R</kbd> reset · <kbd>H</kbd> HUD
+</div>
+
+<div id="fps"><b id="fpsv">60</b> FPS · <span id="posv">0,0</span></div>
+
+<div id="panel">
+  <h3>⚙ Settings</h3>
+  <label>Walk speed <input type="range" id="ws" min="1" max="8" step="0.5" value="3"></label>
+  <label>Run speed <input type="range" id="rs" min="3" max="15" step="0.5" value="7"></label>
+  <label>Jump power <input type="range" id="jp" min="3" max="12" step="0.5" value="7"></label>
+  <label>Cam dist <input type="range" id="cd" min="3" max="20" step="0.5" value="8"></label>
+  <label>FOV <input type="range" id="fov" min="40" max="100" step="1" value="65"></label>
+  <label>Time of day <input type="range" id="tod" min="0" max="24" step="0.5" value="12"></label>
+  <label>Fog <input type="range" id="fog" min="0" max="1" step="0.05" value="0.5"></label>
+  <label>Weather <select id="wx">
+    <option value="clear">Clear</option>
+    <option value="rain">Rain</option>
+    <option value="snow">Snow</option>
+  </select></label>
+  <button class="btn" id="btnreset">↺ Resetar personagem</button>
+  <button class="btn" id="btncam">🎥 Alternar câmera</button>
+</div>
+
+<div id="touch">
+  <div class="joy" id="joy"><div class="knob" id="knob"></div></div>
+  <button class="jump" id="jumpbtn">JUMP</button>
+</div>
+
+<div id="err"></div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ══════════════════════════════════════════════════════════════
+//  1. PROCEDURAL SPRITE SHEET — pixel-art farmer drawn from code
+// ══════════════════════════════════════════════════════════════
+const SW = 32, SH = 40;        // sprite cell size
+const N_FRAMES = 4;            // frames per direction
+const N_DIRS = 4;              // S, E, N, W (front, right, back, left)
+
+// Palette matching the reference image (straw hat farmer)
+const PAL = {
+  '.': null,
+  H: '#f0d498', h: '#d8b870', G: '#a88848',   // straw hat (light/mid/dark)
+  K: '#5a3218', k: '#3a1e08',                 // hair brown
+  S: '#f8d8b0', s: '#d8a888',                 // skin
+  e: '#1a0a08', w: '#ffffff',                 // eyes
+  T: '#dcc888', t: '#b8a068',                 // shirt tan
+  O: '#a86838', o: '#784820',                 // overalls brown
+  L: '#583818',                               // strap dark
+  P: '#885828', p: '#684018',                 // backpack
+  B: '#4a2a10', b: '#2a1808'                  // boots
+};
+
+function P(ctx, ox, oy, x, y, w, h, c) {
+  ctx.fillStyle = PAL[c] || c;
+  ctx.fillRect(ox + x, oy + y, w, h);
+}
+
+// ───── FRONT (facing camera / south) ─────
+function drawS(ctx, ox, oy, frame) {
+  // frame: 0=idle, 1=step L, 2=passing, 3=step R
+  const legL = [0, 2, 0, -2][frame];
+  const legR = [0, -2, 0, 2][frame];
+  const armL = [0, 1, 0, -1][frame];
+  const armR = [0, -1, 0, 1][frame];
+  const bob  = [0, -1, 0, -1][frame];
+
+  // Backpack behind (peek)
+  P(ctx,ox,oy, 8, 22+bob, 3, 9, 'P');
+  P(ctx,ox,oy, 21,22+bob, 3, 9, 'P');
+
+  // Hat brim
+  P(ctx,ox,oy, 3, 4+bob, 26, 2, 'h');
+  P(ctx,ox,oy, 2, 5+bob, 28, 2, 'G');
+  P(ctx,ox,oy, 8, 4+bob, 16, 1, 'H');
+  // Hat crown
+  P(ctx,ox,oy, 9, 0+bob, 14, 4, 'H');
+  P(ctx,ox,oy, 10,0+bob, 12, 1, 'h');
+  P(ctx,ox,oy, 9, 3+bob, 14, 1, 'h');
+
+  // Hair under brim
+  P(ctx,ox,oy, 9, 6+bob, 14, 2, 'K');
+  P(ctx,ox,oy, 8, 7+bob, 2, 3, 'k');
+  P(ctx,ox,oy, 22,7+bob, 2, 3, 'k');
+
+  // Face
+  P(ctx,ox,oy, 10, 8+bob, 12, 11, 'S');
+  P(ctx,ox,oy, 10,17+bob, 12, 2, 's');
+  // Eyes
+  P(ctx,ox,oy, 12,12+bob, 2, 3, 'e');
+  P(ctx,ox,oy, 18,12+bob, 2, 3, 'e');
+  P(ctx,ox,oy, 12,12+bob, 1, 1, 'w');
+  P(ctx,ox,oy, 18,12+bob, 1, 1, 'w');
+  // Mouth
+  P(ctx,ox,oy, 15,16+bob, 2, 1, 's');
+  // Blush
+  P(ctx,ox,oy, 11,15+bob, 1, 1, 's');
+  P(ctx,ox,oy, 20,15+bob, 1, 1, 's');
+
+  // Neck
+  P(ctx,ox,oy, 14,19+bob, 4, 1, 's');
+
+  // Shirt
+  P(ctx,ox,oy, 9, 20+bob, 14, 5, 'T');
+  P(ctx,ox,oy, 9, 24+bob, 14, 1, 't');
+  // Straps (overalls)
+  P(ctx,ox,oy, 11,19+bob, 2, 6, 'L');
+  P(ctx,ox,oy, 19,19+bob, 2, 6, 'L');
+
+  // Overalls
+  P(ctx,ox,oy, 9, 24+bob, 14, 11, 'O');
+  P(ctx,ox,oy, 9, 24+bob, 14, 1, 'o');
+  // Pocket
+  P(ctx,ox,oy, 12,28+bob, 8, 1, 'o');
+  P(ctx,ox,oy, 12,28+bob, 8, 4, 'o');
+  P(ctx,ox,oy, 12,28+bob, 8, 1, 'O');
+
+  // Arms
+  P(ctx,ox,oy, 4, 20+bob, 5, 10, 'T');
+  P(ctx,ox,oy, 4, 20+bob, 5, 2,  't');
+  P(ctx,ox,oy, 4, 30+bob+armL, 5, 4, 'S');
+  P(ctx,ox,oy, 23,20+bob, 5, 10, 'T');
+  P(ctx,ox,oy, 23,20+bob, 5, 2,  't');
+  P(ctx,ox,oy, 23,30+bob+armR, 5, 4, 'S');
+
+  // Legs
+  P(ctx,ox,oy, 10,35+bob+legL, 5, 5, 'O');
+  P(ctx,ox,oy, 17,35+bob+legR, 5, 5, 'O');
+  // Boots
+  P(ctx,ox,oy, 9, 38+bob+legL, 7, 2, 'B');
+  P(ctx,ox,oy, 16,38+bob+legR, 7, 2, 'B');
+  P(ctx,ox,oy, 9, 39+bob+legL, 7, 1, 'b');
+  P(ctx,ox,oy, 16,39+bob+legR, 7, 1, 'b');
+}
+
+// ───── SIDE-EAST (facing right) ─────
+function drawE(ctx, ox, oy, frame) {
+  const legL = [0, 4, 0, -4][frame];
+  const legR = [0, -4, 0, 4][frame];
+  const arm  = [0, -1, 0, 1][frame];
+  const bob  = [0, -1, 0, -1][frame];
+
+  // Backpack (behind body, on left of sprite)
+  P(ctx,ox,oy, 2, 22+bob, 9, 13, 'P');
+  P(ctx,ox,oy, 2, 22+bob, 9, 2,  'p');
+  P(ctx,ox,oy, 3, 28+bob, 7, 1,  'p');
+  P(ctx,ox,oy, 3, 32+bob, 7, 1,  'p');
+  P(ctx,ox,oy, 10,26+bob, 1, 2,  'L'); // strap connecting
+  P(ctx,ox,oy, 10,30+bob, 1, 2,  'L');
+
+  // Hat (profile)
+  P(ctx,ox,oy, 6, 4+bob, 20, 2, 'h');
+  P(ctx,ox,oy, 7, 5+bob, 18, 1, 'G');
+  P(ctx,ox,oy, 8, 0+bob, 14, 4, 'H');
+  P(ctx,ox,oy, 9, 0+bob, 12, 1, 'h');
+  P(ctx,ox,oy, 8, 3+bob, 14, 1, 'h');
+
+  // Hair (with bangs at back of hat)
+  P(ctx,ox,oy, 10,6+bob, 12, 2, 'K');
+  P(ctx,ox,oy, 22,7+bob, 2, 3, 'k');
+  P(ctx,ox,oy, 21,6+bob, 3, 1, 'K');
+
+  // Face (profile facing right)
+  P(ctx,ox,oy, 12,8+bob, 12, 11, 'S');
+  P(ctx,ox,oy, 12,17+bob, 12, 2, 's');
+  // Nose
+  P(ctx,ox,oy, 23,13+bob, 2, 3, 'S');
+  P(ctx,ox,oy, 23,15+bob, 2, 1, 's');
+  // Eye (only one visible)
+  P(ctx,ox,oy, 19,12+bob, 2, 3, 'e');
+  P(ctx,ox,oy, 19,12+bob, 1, 1, 'w');
+  // Mouth
+  P(ctx,ox,oy, 20,17+bob, 2, 1, 's');
+
+  // Neck
+  P(ctx,ox,oy, 14,19+bob, 6, 1, 's');
+
+  // Shirt
+  P(ctx,ox,oy, 11,20+bob, 14, 5, 'T');
+  P(ctx,ox,oy, 11,24+bob, 14, 1, 't');
+  // Strap visible
+  P(ctx,ox,oy, 13,19+bob, 2, 6, 'L');
+
+  // Overalls
+  P(ctx,ox,oy, 10,25+bob, 14, 11, 'O');
+  P(ctx,ox,oy, 10,25+bob, 14, 1, 'o');
+
+  // Arm (side)
+  P(ctx,ox,oy, 12,22+bob, 4, 8, 'T');
+  P(ctx,ox,oy, 12,22+bob, 4, 1, 't');
+  P(ctx,ox,oy, 12,30+bob+arm, 4, 4, 'S');
+
+  // Legs (swing in X for walking)
+  P(ctx,ox,oy, 13+legL, 35+bob, 6, 5, 'O');
+  P(ctx,ox,oy, 11+legR, 35+bob, 6, 5, 'O');
+  // Boots
+  P(ctx,ox,oy, 11+legL, 38+bob, 8, 2, 'B');
+  P(ctx,ox,oy, 9+legR,  38+bob, 8, 2, 'B');
+  P(ctx,ox,oy, 11+legL, 39+bob, 8, 1, 'b');
+  P(ctx,ox,oy, 9+legR,  39+bob, 8, 1, 'b');
+}
+
+// ───── BACK (facing away / north) ─────
+function drawN(ctx, ox, oy, frame) {
+  const legL = [0, 2, 0, -2][frame];
+  const legR = [0, -2, 0, 2][frame];
+  const armL = [0, -1, 0, 1][frame];
+  const armR = [0, 1, 0, -1][frame];
+  const bob  = [0, -1, 0, -1][frame];
+
+  // Hat (same as front)
+  P(ctx,ox,oy, 3, 4+bob, 26, 2, 'h');
+  P(ctx,ox,oy, 2, 5+bob, 28, 2, 'G');
+  P(ctx,ox,oy, 8, 4+bob, 16, 1, 'H');
+  P(ctx,ox,oy, 9, 0+bob, 14, 4, 'H');
+  P(ctx,ox,oy, 10,0+bob, 12, 1, 'h');
+
+  // Hair (back of head — more hair visible)
+  P(ctx,ox,oy, 9, 6+bob, 14, 3, 'K');
+  P(ctx,ox,oy, 9, 8+bob, 14, 8, 'K');
+  // Hair shadow under hat
+  P(ctx,ox,oy, 10,8+bob, 12, 1, 'k');
+
+  // Neck (mostly hidden)
+  P(ctx,ox,oy, 14,16+bob, 4, 2, 's');
+
+  // Backpack (large, centered)
+  P(ctx,ox,oy, 7, 17+bob, 18, 15, 'P');
+  P(ctx,ox,oy, 7, 17+bob, 18, 2,  'p');
+  P(ctx,ox,oy, 8, 19+bob, 16, 1,  'P');
+  // Flap
+  P(ctx,ox,oy, 9, 24+bob, 14, 6, 'p');
+  P(ctx,ox,oy, 9, 24+bob, 14, 1, 'P');
+  // Buckles
+  P(ctx,ox,oy, 11,26+bob, 2, 2, 'B');
+  P(ctx,ox,oy, 19,26+bob, 2, 2, 'B');
+  P(ctx,ox,oy, 11,26+bob, 2, 1, 'b');
+  P(ctx,ox,oy, 19,26+bob, 2, 1, 'b');
+
+  // Shirt under pack
+  P(ctx,ox,oy, 9, 20+bob, 14, 2, 'T');
+
+  // Straps visible from behind
+  P(ctx,ox,oy, 11,19+bob, 2, 3, 'L');
+  P(ctx,ox,oy, 19,19+bob, 2, 3, 'L');
+
+  // Overalls below pack
+  P(ctx,ox,oy, 9, 31+bob, 14, 4, 'O');
+  P(ctx,ox,oy, 9, 31+bob, 14, 1, 'o');
+
+  // Arms
+  P(ctx,ox,oy, 4, 20+bob, 5, 10, 'T');
+  P(ctx,ox,oy, 4, 20+bob, 5, 2,  't');
+  P(ctx,ox,oy, 4, 30+bob+armL, 5, 4, 'S');
+  P(ctx,ox,oy, 23,20+bob, 5, 10, 'T');
+  P(ctx,ox,oy, 23,20+bob, 5, 2,  't');
+  P(ctx,ox,oy, 23,30+bob+armR, 5, 4, 'S');
+
+  // Legs
+  P(ctx,ox,oy, 10,35+bob+legL, 5, 5, 'O');
+  P(ctx,ox,oy, 17,35+bob+legR, 5, 5, 'O');
+  // Boots (backs)
+  P(ctx,ox,oy, 9, 38+bob+legL, 7, 2, 'B');
+  P(ctx,ox,oy, 16,38+bob+legR, 7, 2, 'B');
+}
+
+// ───── SIDE-WEST (facing left) — mirror of East ─────
+function drawW(ctx, ox, oy, frame) {
+  const legL = [0, -4, 0, 4][frame];
+  const legR = [0, 4, 0, -4][frame];
+  const arm  = [0, 1, 0, -1][frame];
+  const bob  = [0, -1, 0, -1][frame];
+
+  // Backpack (behind body, on RIGHT side now since we're facing left)
+  P(ctx,ox,oy, 21,22+bob, 9, 13, 'P');
+  P(ctx,ox,oy, 21,22+bob, 9, 2,  'p');
+  P(ctx,ox,oy, 22,28+bob, 7, 1,  'p');
+  P(ctx,ox,oy, 22,32+bob, 7, 1,  'p');
+  P(ctx,ox,oy, 21,26+bob, 1, 2,  'L');
+  P(ctx,ox,oy, 21,30+bob, 1, 2,  'L');
+
+  // Hat
+  P(ctx,ox,oy, 6, 4+bob, 20, 2, 'h');
+  P(ctx,ox,oy, 7, 5+bob, 18, 1, 'G');
+  P(ctx,ox,oy, 10,0+bob, 14, 4, 'H');
+  P(ctx,ox,oy, 11,0+bob, 12, 1, 'h');
+  P(ctx,ox,oy, 10,3+bob, 14, 1, 'h');
+
+  // Hair (bang at back)
+  P(ctx,ox,oy, 10,6+bob, 12, 2, 'K');
+  P(ctx,ox,oy, 8, 7+bob, 2, 3, 'k');
+  P(ctx,ox,oy, 8, 6+bob, 3, 1, 'K');
+
+  // Face (profile facing left)
+  P(ctx,ox,oy, 8, 8+bob, 12, 11, 'S');
+  P(ctx,ox,oy, 8, 17+bob, 12, 2, 's');
+  // Nose
+  P(ctx,ox,oy, 6, 13+bob, 2, 3, 'S');
+  P(ctx,ox,oy, 6, 15+bob, 2, 1, 's');
+  // Eye
+  P(ctx,ox,oy, 11,12+bob, 2, 3, 'e');
+  P(ctx,ox,oy, 12,12+bob, 1, 1, 'w');
+  // Mouth
+  P(ctx,ox,oy, 9, 17+bob, 2, 1, 's');
+
+  // Neck
+  P(ctx,ox,oy, 12,19+bob, 6, 1, 's');
+
+  // Shirt
+  P(ctx,ox,oy, 7, 20+bob, 14, 5, 'T');
+  P(ctx,ox,oy, 7, 24+bob, 14, 1, 't');
+  // Strap
+  P(ctx,ox,oy, 17,19+bob, 2, 6, 'L');
+
+  // Overalls
+  P(ctx,ox,oy, 8, 25+bob, 14, 11, 'O');
+  P(ctx,ox,oy, 8, 25+bob, 14, 1, 'o');
+
+  // Arm
+  P(ctx,ox,oy, 16,22+bob, 4, 8, 'T');
+  P(ctx,ox,oy, 16,22+bob, 4, 1, 't');
+  P(ctx,ox,oy, 16,30+bob+arm, 4, 4, 'S');
+
+  // Legs
+  P(ctx,ox,oy, 13+legL, 35+bob, 6, 5, 'O');
+  P(ctx,ox,oy, 15+legR, 35+bob, 6, 5, 'O');
+  // Boots
+  P(ctx,ox,oy, 12+legL, 38+bob, 8, 2, 'B');
+  P(ctx,ox,oy, 13+legR, 38+bob, 8, 2, 'B');
+  P(ctx,ox,oy, 12+legL, 39+bob, 8, 1, 'b');
+  P(ctx,ox,oy, 13+legR, 39+bob, 8, 1, 'b');
+}
+
+// Draw everything into a master sheet
+const sheet = document.createElement('canvas');
+sheet.width = SW * N_FRAMES;
+sheet.height = SH * N_DIRS;
+const sctx = sheet.getContext('2d');
+sctx.imageSmoothingEnabled = false;
+
+const DRAW = { S: drawS, E: drawE, N: drawN, W: drawW };
+const DIRS = ['S', 'E', 'N', 'W'];
+
+for (let r = 0; r < N_DIRS; r++) {
+  for (let c = 0; c < N_FRAMES; c++) {
+    DRAW[DIRS[r]](sctx, c * SW, r * SH, c);
+  }
+}
+
+// Extract each frame as a separate canvas texture
+const FRAME_TEX = [];
+for (let r = 0; r < N_DIRS; r++) {
+  FRAME_TEX.push([]);
+  for (let c = 0; c < N_FRAMES; c++) {
+    const cv = document.createElement('canvas');
+    cv.width = SW; cv.height = SH;
+    const cx = cv.getContext('2d');
+    cx.imageSmoothingEnabled = false;
+    cx.drawImage(sheet, c * SW, r * SH, SW, SH, 0, 0, SW, SH);
+    const t = new THREE.CanvasTexture(cv);
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = THREE.NearestFilter;
+    t.colorSpace = THREE.SRGBColorSpace;
+    FRAME_TEX[r].push(t);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  2. THREE.JS SCENE
+// ══════════════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 300);
+
+// Fog
+scene.fog = new THREE.FogExp2(0x88a8c8, 0.012);
+
+// Lights
+const sun = new THREE.DirectionalLight(0xfff0d0, 1.6);
+sun.position.set(20, 40, 15);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+sun.shadow.camera.left = -40;
+sun.shadow.camera.right = 40;
+sun.shadow.camera.top = 40;
+sun.shadow.camera.bottom = -40;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 100;
+sun.shadow.bias = -0.0005;
+scene.add(sun);
+
+const hemi = new THREE.HemisphereLight(0x88c8ff, 0x4a3820, 0.7);
+scene.add(hemi);
+
+const ambient = new THREE.AmbientLight(0xfff8f0, 0.3);
+scene.add(ambient);
+
+// ══════════════════════════════════════════════════════════════
+//  3. TERRAIN
+// ══════════════════════════════════════════════════════════════
+function terrainH(x, z) {
+  return Math.sin(x * 0.09) * Math.cos(z * 0.08) * 1.4
+       + Math.sin(x * 0.22 + z * 0.17) * 0.5
+       + Math.sin(x * 0.05 - z * 0.06) * 2.0
+       + Math.sin(z * 0.31 + x * 0.24) * 0.3;
+}
+
+const TERRAIN_SIZE = 120;
+const TERRAIN_SEG = 96;
+const groundGeo = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, TERRAIN_SEG, TERRAIN_SEG);
+groundGeo.rotateX(-Math.PI / 2);
+const gpos = groundGeo.attributes.position;
+const gcolor = [];
+const cGreen1 = new THREE.Color(0x4a8c3a);
+const cGreen2 = new THREE.Color(0x6ba858);
+const cDirt = new THREE.Color(0x8a6a3a);
+for (let i = 0; i < gpos.count; i++) {
+  const x = gpos.getX(i);
+  const z = gpos.getZ(i);
+  const h = terrainH(x, z);
+  gpos.setY(i, h);
+  // vertex color based on height + slope
+  const t = (h + 2) / 5;
+  const c = new THREE.Color().lerpColors(cGreen1, cGreen2, Math.max(0, Math.min(1, t)));
+  // Add dirt on high slopes
+  const slope = Math.abs(terrainH(x + 0.5, z) - h) + Math.abs(terrainH(x, z + 0.5) - h);
+  if (slope > 0.3) c.lerp(cDirt, Math.min(1, slope * 1.5));
+  // Random variation
+  c.multiplyScalar(0.92 + Math.random() * 0.16);
+  gcolor.push(c.r, c.g, c.b);
+}
+groundGeo.setAttribute('color', new THREE.Float32BufferAttribute(gcolor, 3));
+groundGeo.computeVertexNormals();
+
+const groundMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ══════════════════════════════════════════════════════════════
+//  4. VEGETATION & ROCKS
+// ══════════════════════════════════════════════════════════════
+function makeTree(x, z) {
+  const g = new THREE.Group();
+  const h = terrainH(x, z);
+  const scale = 0.8 + Math.random() * 0.7;
+  const trunkH = 2.5 * scale;
+
+  // Trunk
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18 * scale, 0.28 * scale, trunkH, 6),
+    new THREE.MeshLambertMaterial({ color: 0x5a3a1a })
+  );
+  trunk.position.y = trunkH / 2;
+  trunk.castShadow = true;
+  g.add(trunk);
+
+  // Foliage — stacked cones
+  const leafColor = [0x3a7a2a, 0x4a8a3a, 0x2a6a1a][Math.floor(Math.random() * 3)];
+  const leafMat = new THREE.MeshLambertMaterial({ color: leafColor, flatShading: true });
+  for (let i = 0; i < 3; i++) {
+    const cSize = (1.6 - i * 0.35) * scale;
+    const c = new THREE.Mesh(
+      new THREE.ConeGeometry(cSize, 1.6 * scale, 7),
+      leafMat
+    );
+    c.position.y = trunkH + i * 0.9 * scale;
+    c.rotation.y = Math.random() * Math.PI;
+    c.castShadow = true;
+    g.add(c);
+  }
+
+  g.position.set(x, h, z);
+  g.rotation.y = Math.random() * Math.PI * 2;
+  return g;
+}
+
+function makeRock(x, z) {
+  const h = terrainH(x, z);
+  const s = 0.4 + Math.random() * 1.2;
+  const geo = new THREE.IcosahedronGeometry(s, 0);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    pos.setX(i, pos.getX(i) * (0.8 + Math.random() * 0.4));
+    pos.setY(i, pos.getY(i) * (0.6 + Math.random() * 0.4));
+    pos.setZ(i, pos.getZ(i) * (0.8 + Math.random() * 0.4));
+  }
+  geo.computeVertexNormals();
+  const col = [0x808080, 0x909090, 0x6a6a6a][Math.floor(Math.random() * 3)];
+  const rock = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: col, flatShading: true }));
+  rock.position.set(x, h + s * 0.4, z);
+  rock.rotation.set(Math.random(), Math.random() * 6, Math.random());
+  rock.castShadow = true;
+  rock.receiveShadow = true;
+  return rock;
+}
+
+function makeGrass(x, z) {
+  const h = terrainH(x, z);
+  const geo = new THREE.PlaneGeometry(0.3, 0.4);
+  const col = [0x6a9a3a, 0x7aaa4a, 0x5a8a2a][Math.floor(Math.random() * 3)];
+  const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: col, side: THREE.DoubleSide }));
+  mesh.position.set(x, h + 0.2, z);
+  mesh.rotation.y = Math.random() * Math.PI;
+  return mesh;
+}
+
+// Place trees & rocks
+const scenery = new THREE.Group();
+scene.add(scenery);
+
+for (let i = 0; i < 40; i++) {
+  const ang = Math.random() * Math.PI * 2;
+  const r = 5 + Math.random() * 45;
+  const x = Math.cos(ang) * r;
+  const z = Math.sin(ang) * r;
+  scenery.add(makeTree(x, z));
+}
+for (let i = 0; i < 25; i++) {
+  const x = (Math.random() - 0.5) * 90;
+  const z = (Math.random() - 0.5) * 90;
+  scenery.add(makeRock(x, z));
+}
+for (let i = 0; i < 200; i++) {
+  const x = (Math.random() - 0.5) * 70;
+  const z = (Math.random() - 0.5) * 70;
+  scenery.add(makeGrass(x, z));
+}
+
+// ══════════════════════════════════════════════════════════════
+//  5. SKY
+// ══════════════════════════════════════════════════════════════
+const skyGeo = new THREE.SphereGeometry(150, 24, 16);
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  uniforms: {
+    topColor: { value: new THREE.Color(0x3a6cb8) },
+    bottomColor: { value: new THREE.Color(0xc8d8e8) },
+    offset: { value: 10 },
+    exponent: { value: 0.7 }
+  },
+  vertexShader: `
+    varying vec3 vWorldPosition;
+    void main() {
+      vec4 worldPos = modelMatrix * vec4(position, 1.0);
+      vWorldPosition = worldPos.xyz;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 topColor;
+    uniform vec3 bottomColor;
+    uniform float offset;
+    uniform float exponent;
+    varying vec3 vWorldPosition;
+    void main() {
+      float h = normalize(vWorldPosition + offset).y;
+      gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+    }
+  `
+});
+scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+// ══════════════════════════════════════════════════════════════
+//  6. CHARACTER (billboard sprite)
+// ══════════════════════════════════════════════════════════════
+const CHAR_W = 2.0;
+const CHAR_H = 2.5;
+
+const charMat = new THREE.MeshBasicMaterial({
+  map: FRAME_TEX[0][0],
+  transparent: true,
+  alphaTest: 0.3,
+  side: THREE.DoubleSide,
+  depthWrite: true
+});
+const charGeo = new THREE.PlaneGeometry(CHAR_W, CHAR_H);
+const char = new THREE.Mesh(charGeo, charMat);
+char.castShadow = true;
+scene.add(char);
+
+// Shadow blob under character (helps with grounding)
+const shadowBlob = new THREE.Mesh(
+  new THREE.CircleGeometry(0.7, 20),
+  new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false })
+);
+shadowBlob.rotation.x = -Math.PI / 2;
+scene.add(shadowBlob);
+
+// ══════════════════════════════════════════════════════════════
+//  7. CHARACTER PHYSICS & ANIMATION
+// ══════════════════════════════════════════════════════════════
+const CHAR = {
+  x: 0, z: 0, y: 0,
+  vy: 0,
+  yaw: 0,           // facing direction (radians)
+  speed: 0,         // current horizontal speed
+  frame: 0,         // animation frame index (0-3)
+  animTimer: 0,     // time accumulator
+  onGround: true,
+  state: 'idle'     // idle, walk, run, jump
+};
+
+// ══════════════════════════════════════════════════════════════
+//  8. CAMERA CONTROL
+// ══════════════════════════════════════════════════════════════
+const CAM = {
+  yaw: Math.PI,        // camera facing (from behind character by default)
+  pitch: 0.35,         // look-down angle
+  dist: 8,
+  mode: 0,             // 0=follow, 1=orbit-auto, 2=topdown, 3=first-person
+  smoothX: 0, smoothY: 0, smoothZ: 0
+};
+
+// ══════════════════════════════════════════════════════════════
+//  9. INPUT
+// ══════════════════════════════════════════════════════════════
+const keys = {};
+addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if (e.key === ' ') e.preventDefault();
+  if (e.key === 'r' || e.key === 'R') resetChar();
+  if (e.key === 'h' || e.key === 'H') {
+    const h = document.getElementById('hud');
+    h.style.display = h.style.display === 'none' ? 'block' : 'none';
+  }
+  if (e.key >= '1' && e.key <= '4') CAM.mode = parseInt(e.key) - 1;
+});
+addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+// Mouse drag for camera orbit
+let mouseDown = false, lastMX = 0, lastMY = 0;
+canvas.addEventListener('mousedown', e => { mouseDown = true; lastMX = e.clientX; lastMY = e.clientY; });
+addEventListener('mouseup', () => { mouseDown = false; });
+addEventListener('mousemove', e => {
+  if (!mouseDown) return;
+  const dx = e.clientX - lastMX;
+  const dy = e.clientY - lastMY;
+  CAM.yaw -= dx * 0.005;
+  CAM.pitch = Math.max(-0.3, Math.min(1.2, CAM.pitch + dy * 0.005));
+  lastMX = e.clientX;
+  lastMY = e.clientY;
+});
+addEventListener('wheel', e => {
+  CAM.dist = Math.max(3, Math.min(20, CAM.dist + e.deltaY * 0.01));
+}, { passive: true });
+
+// Touch joystick
+const joyEl = document.getElementById('joy');
+const knobEl = document.getElementById('knob');
+let joyActive = false, joyX = 0, joyY = 0;
+function joyStart(e) {
+  e.preventDefault();
+  joyActive = true;
+}
+function joyMove(e) {
+  if (!joyActive) return;
+  e.preventDefault();
+  const t = e.touches ? e.touches[0] : e;
+  const r = joyEl.getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const cy = r.top + r.height / 2;
+  let dx = t.clientX - cx;
+  let dy = t.clientY - cy;
+  const max = r.width / 2 - 22;
+  const d = Math.hypot(dx, dy);
+  if (d > max) { dx = dx / d * max; dy = dy / d * max; }
+  joyX = dx / max;
+  joyY = dy / max;
+  knobEl.style.transform = `translate(${dx}px, ${dy}px)`;
+}
+function joyEnd() {
+  joyActive = false;
+  joyX = 0; joyY = 0;
+  knobEl.style.transform = '';
+}
+joyEl.addEventListener('touchstart', joyStart, { passive: false });
+joyEl.addEventListener('touchmove', joyMove, { passive: false });
+joyEl.addEventListener('touchend', joyEnd);
+joyEl.addEventListener('mousedown', joyStart);
+addEventListener('mousemove', joyMove);
+addEventListener('mouseup', joyEnd);
+
+document.getElementById('jumpbtn').addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (CHAR.onGround) { CHAR.vy = parseFloat(document.getElementById('jp').value); CHAR.onGround = false; }
+}, { passive: false });
+document.getElementById('jumpbtn').addEventListener('mousedown', () => {
+  if (CHAR.onGround) { CHAR.vy = parseFloat(document.getElementById('jp').value); CHAR.onGround = false; }
+});
+
+function resetChar() {
+  CHAR.x = 0; CHAR.z = 0; CHAR.y = 0; CHAR.vy = 0; CHAR.yaw = 0;
+  CHAR.speed = 0; CHAR.state = 'idle'; CHAR.onGround = true;
+}
+
+document.getElementById('btnreset').onclick = resetChar;
+document.getElementById('btncam').onclick = () => { CAM.mode = (CAM.mode + 1) % 4; };
+
+// ══════════════════════════════════════════════════════════════
+// 10. WEATHER (particles)
+// ══════════════════════════════════════════════════════════════
+let weather = 'clear';
+document.getElementById('wx').onchange = e => { weather = e.target.value; setupWeather(); };
+
+const rainGroup = new THREE.Group();
+scene.add(rainGroup);
+function setupWeather() {
+  while (rainGroup.children.length) rainGroup.remove(rainGroup.children[0]);
+  if (weather === 'clear') return;
+  const count = weather === 'rain' ? 800 : 500;
+  const geo = weather === 'rain'
+    ? new THREE.PlaneGeometry(0.04, 0.6)
+    : new THREE.PlaneGeometry(0.15, 0.15);
+  const mat = new THREE.MeshBasicMaterial({
+    color: weather === 'rain' ? 0xaaccff : 0xffffff,
+    transparent: true, opacity: weather === 'rain' ? 0.6 : 0.9,
+    depthWrite: false
+  });
+  const inst = new THREE.InstancedMesh(geo, mat, count);
+  inst.userData.positions = [];
+  const dummy = new THREE.Object3D();
+  for (let i = 0; i < count; i++) {
+    const x = (Math.random() - 0.5) * 40;
+    const y = Math.random() * 25;
+    const z = (Math.random() - 0.5) * 40;
+    inst.userData.positions.push({ x, y, z, speed: weather === 'rain' ? 15 + Math.random() * 10 : 1 + Math.random() * 1.5 });
+    dummy.position.set(x, y, z);
+    if (weather === 'snow') dummy.rotation.set(Math.random(), Math.random(), Math.random());
+    dummy.updateMatrix();
+    inst.setMatrixAt(i, dummy.matrix);
+  }
+  inst.instanceMatrix.needsUpdate = true;
+  rainGroup.add(inst);
+}
+
+function updateWeather(dt) {
+  if (weather === 'clear' || !rainGroup.children.length) return;
+  const inst = rainGroup.children[0];
+  const dummy = new THREE.Object3D();
+  for (let i = 0; i < inst.userData.positions.length; i++) {
+    const p = inst.userData.positions[i];
+    p.y -= p.speed * dt;
+    if (weather === 'snow') {
+      p.x += Math.sin(p.y * 3 + i) * 0.3 * dt;
+      p.z += Math.cos(p.y * 2 + i) * 0.3 * dt;
+    }
+    if (p.y < 0) {
+      p.y = 25;
+      p.x = (Math.random() - 0.5) * 40;
+      p.z = (Math.random() - 0.5) * 40;
+    }
+    // follow character horizontally
+    const cx = CHAR.x + ((p.x - CHAR.x) % 40);
+    const cz = CHAR.z + ((p.z - CHAR.z) % 40);
+    dummy.position.set(p.x, p.y, p.z);
+    dummy.position.x += CHAR.x * 0.5;
+    dummy.position.z += CHAR.z * 0.5;
+    if (weather === 'snow') dummy.rotation.set(p.y * 0.1, p.y * 0.1, 0);
+    dummy.updateMatrix();
+    inst.setMatrixAt(i, dummy.matrix);
+  }
+  inst.instanceMatrix.needsUpdate = true;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 11. PARTICLES — footstep dust
+// ══════════════════════════════════════════════════════════════
+const dustParticles = [];
+function spawnDust(x, z) {
+  for (let i = 0; i < 3; i++) {
+    const geo = new THREE.PlaneGeometry(0.15, 0.15);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xccb890, transparent: true, opacity: 0.7, depthWrite: false });
+    const p = new THREE.Mesh(geo, mat);
+    p.position.set(x + (Math.random() - 0.5) * 0.3, terrainH(x, z) + 0.1, z + (Math.random() - 0.5) * 0.3);
+    p.rotation.x = -Math.PI / 2;
+    p.rotation.z = Math.random() * Math.PI;
+    scene.add(p);
+    dustParticles.push({ mesh: p, life: 0.7, vx: (Math.random() - 0.5) * 0.8, vz: (Math.random() - 0.5) * 0.8, vy: 0.5 + Math.random() * 0.5 });
+  }
+}
+function updateDust(dt) {
+  for (let i = dustParticles.length - 1; i >= 0; i--) {
+    const d = dustParticles[i];
+    d.life -= dt;
+    d.mesh.position.x += d.vx * dt;
+    d.mesh.position.y += d.vy * dt;
+    d.mesh.position.z += d.vz * dt;
+    d.mesh.material.opacity = d.life * 0.7;
+    d.mesh.scale.multiplyScalar(1 + dt * 1.5);
+    if (d.life <= 0) { scene.remove(d.mesh); d.mesh.geometry.dispose(); d.mesh.material.dispose(); dustParticles.splice(i, 1); }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// 12. TIME OF DAY
+// ══════════════════════════════════════════════════════════════
+function updateTimeOfDay() {
+  const t = parseFloat(document.getElementById('tod').value);  // 0..24
+  const angle = (t - 6) / 24 * Math.PI * 2;  // sun angle
+  sun.position.set(Math.cos(angle) * 40, Math.sin(angle) * 50, Math.sin(angle * 0.7) * 30 + 10);
+  // Sun color & intensity
+  const dayAmt = Math.max(0, Math.sin(angle));
+  sun.intensity = 0.15 + dayAmt * 1.7;
+  sun.color.setHSL(0.08 + dayAmt * 0.05, 0.6 - dayAmt * 0.4, 0.5 + dayAmt * 0.35);
+  // Sky colors
+  const skyT = dayAmt;
+  const topC = new THREE.Color().setHSL(0.6, 0.6, 0.15 + skyT * 0.35);
+  const botC = new THREE.Color().setHSL(0.08, 0.5, 0.15 + skyT * 0.65);
+  if (skyT < 0.1) { topC.setHSL(0.62, 0.5, 0.06); botC.setHSL(0.05, 0.4, 0.1); }
+  skyMat.uniforms.topColor.value.copy(topC);
+  skyMat.uniforms.bottomColor.value.copy(botC);
+  // Fog
+  const fogVal = parseFloat(document.getElementById('fog').value);
+  scene.fog.color.copy(botC);
+  scene.fog.density = 0.005 + fogVal * 0.02;
+  // Hemi
+  hemi.intensity = 0.15 + dayAmt * 0.7;
+}
+
+// Hook sliders
+document.getElementById('tod').oninput = updateTimeOfDay;
+document.getElementById('fog').oninput = updateTimeOfDay;
+document.getElementById('cd').oninput = e => { CAM.dist = parseFloat(e.target.value); };
+document.getElementById('fov').oninput = e => {
+  camera.fov = parseFloat(e.target.value);
+  camera.updateProjectionMatrix();
+};
+
+// ══════════════════════════════════════════════════════════════
+// 13. CHARACTER UPDATE
+// ══════════════════════════════════════════════════════════════
+const WALK_SPEED = () => parseFloat(document.getElementById('ws').value);
+const RUN_SPEED  = () => parseFloat(document.getElementById('rs').value);
+const JUMP_POW   = () => parseFloat(document.getElementById('jp').value);
+const GRAVITY = -20;
+
+function updateCharacter(dt) {
+  // Input direction
+  let ix = 0, iz = 0;
+  if (keys['w'] || keys['arrowup'])    iz -= 1;
+  if (keys['s'] || keys['arrowdown'])  iz += 1;
+  if (keys['a'] || keys['arrowleft'])  ix -= 1;
+  if (keys['d'] || keys['arrowright']) ix += 1;
+  // Touch joystick
+  if (joyActive || joyX !== 0 || joyY !== 0) {
+    ix += joyX;
+    iz += joyY;
+  }
+
+  // Camera-relative direction
+  const camForwardX = Math.sin(CAM.yaw);
+  const camForwardZ = Math.cos(CAM.yaw);
+  const camRightX = Math.cos(CAM.yaw);
+  const camRightZ = -Math.sin(CAM.yaw);
+
+  let wx = camForwardX * -iz + camRightX * ix;
+  let wz = camForwardZ * -iz + camRightZ * ix;
+
+  const mag = Math.hypot(wx, wz);
+  const running = keys['shift'];
+  let targetSpeed = 0;
+  if (mag > 0.05) {
+    wx /= mag; wz /= mag;
+    targetSpeed = running ? RUN_SPEED() : WALK_SPEED();
+    CHAR.yaw = Math.atan2(wx, wz);
+  }
+
+  // Smooth speed
+  CHAR.speed += (targetSpeed - CHAR.speed) * Math.min(1, dt * 10);
+
+  // Move
+  if (CHAR.speed > 0.1) {
+    const nx = CHAR.x + wx * CHAR.speed * dt;
+    const nz = CHAR.z + wz * CHAR.speed * dt;
+    // Slope limit
+    const dh = terrainH(nx, nz) - terrainH(CHAR.x, CHAR.z);
+    if (dh < 1.0) { CHAR.x = nx; CHAR.z = nz; }
+  }
+
+  // Ground & jump
+  const groundY = terrainH(CHAR.x, CHAR.z);
+  CHAR.y += CHAR.vy * dt;
+  if (CHAR.y <= groundY) {
+    CHAR.y = groundY;
+    CHAR.vy = 0;
+    CHAR.onGround = true;
+  } else {
+    CHAR.vy += GRAVITY * dt;
+    CHAR.onGround = false;
+  }
+  if (keys[' '] && CHAR.onGround) {
+    CHAR.vy = JUMP_POW();
+    CHAR.onGround = false;
+  }
+
+  // State
+  if (!CHAR.onGround) CHAR.state = 'jump';
+  else if (CHAR.speed > (WALK_SPEED() + 0.3)) CHAR.state = 'run';
+  else if (CHAR.speed > 0.3) CHAR.state = 'walk';
+  else CHAR.state = 'idle';
+
+  // Animation timing
+  const fps = CHAR.state === 'run' ? 10 : CHAR.state === 'walk' ? 6 : 2;
+  CHAR.animTimer += dt;
+  if (CHAR.animTimer >= 1 / fps) {
+    CHAR.animTimer = 0;
+    if (CHAR.state === 'idle') {
+      CHAR.frame = 0;
+    } else {
+      CHAR.frame = (CHAR.frame + 1) % 4;
+    }
+  }
+
+  // Footstep dust
+  if ((CHAR.state === 'walk' || CHAR.state === 'run') && CHAR.onGround) {
+    if (Math.random() < dt * 8) spawnDust(CHAR.x, CHAR.z);
+  }
+
+  // Position mesh
+  char.position.set(CHAR.x, CHAR.y + CHAR_H / 2, CHAR.z);
+
+  // Shadow blob
+  shadowBlob.position.set(CHAR.x, groundY + 0.02, CHAR.z);
+  const shadowScale = CHAR.onGround ? 1 : 0.7;
+  shadowBlob.scale.setScalar(shadowScale);
+
+  // Billboard: face camera
+  char.lookAt(camera.position.x, char.position.y, camera.position.z);
+
+  // Sprite row selection (which side of the character is facing the camera)
+  const camDirX = camera.position.x - CHAR.x;
+  const camDirZ = camera.position.z - CHAR.z;
+  const camAngle = Math.atan2(camDirX, camDirZ);
+  // Camera is at angle camAngle from character (in world)
+  // Character faces CHAR.yaw
+  // Rel angle: how far camera is from facing direction
+  let rel = camAngle - CHAR.yaw;
+  while (rel > Math.PI) rel -= Math.PI * 2;
+  while (rel < -Math.PI) rel += Math.PI * 2;
+  // rel = 0   -> camera in front of char (char looks at camera) -> FRONT (S)
+  // rel = π   -> camera behind char (char looks away) -> BACK (N)
+  // rel = π/2 -> camera to char's... let's see: char faces +yaw, camera at +π/2 means camera to char's right (from char POV, right = yaw-π/2... hmm)
+  // Simpler: convert to integer bucket 0-3
+  const idx = Math.round(rel / (Math.PI / 2));
+  // idx: 0→S, 1→?, 2→N, 3→?, -1→?
+  // Let's define: 0=S, +1=E, ±2=N, -1=W
+  let row;
+  const im = ((idx % 4) + 4) % 4;
+  if (im === 0) row = 0;        // front
+  else if (im === 1) row = 1;   // right side
+  else if (im === 2) row = 2;   // back
+  else row = 3;                 // left side
+
+  charMat.map = FRAME_TEX[row][CHAR.frame];
+}
+
+// ══════════════════════════════════════════════════════════════
+// 14. CAMERA UPDATE
+// ══════════════════════════════════════════════════════════════
+function updateCamera(dt) {
+  let targetX, targetY, targetZ;
+
+  if (CAM.mode === 2) {
+    // Top-down
+    targetX = CHAR.x;
+    targetY = CHAR.y + CAM.dist * 1.4;
+    targetZ = CHAR.z + 0.1;
+  } else if (CAM.mode === 3) {
+    // First-person-ish (just behind/above character head)
+    const offX = -Math.sin(CAM.yaw) * 0.3;
+    const offZ = -Math.cos(CAM.yaw) * 0.3;
+    targetX = CHAR.x + offX;
+    targetY = CHAR.y + 2.2;
+    targetZ = CHAR.z + offZ;
+  } else {
+    // Third-person follow
+    const offX = Math.sin(CAM.yaw) * Math.cos(CAM.pitch) * CAM.dist;
+    const offY = Math.sin(CAM.pitch) * CAM.dist + 1.5;
+    const offZ = Math.cos(CAM.yaw) * Math.cos(CAM.pitch) * CAM.dist;
+    targetX = CHAR.x + offX;
+    targetY = CHAR.y + offY;
+    targetZ = CHAR.z + offZ;
+  }
+
+  // Smooth lerp
+  const s = Math.min(1, dt * 8);
+  camera.position.x += (targetX - camera.position.x) * s;
+  camera.position.y += (targetY - camera.position.y) * s;
+  camera.position.z += (targetZ - camera.position.z) * s;
+
+  // Look at
+  const lx = CHAR.x + Math.sin(CAM.yaw) * 0.5;
+  const ly = CHAR.y + 1.4;
+  const lz = CHAR.z + Math.cos(CAM.yaw) * 0.5;
+  camera.lookAt(lx, ly, lz);
+
+  // Ground clamp
+  const minY = terrainH(camera.position.x, camera.position.z) + 0.5;
+  if (camera.position.y < minY) camera.position.y = minY;
+
+  // Auto-orbit mode
+  if (CAM.mode === 1) CAM.yaw += dt * 0.3;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 15. GAME LOOP
+// ══════════════════════════════════════════════════════════════
+let lastT = performance.now();
+let fpsAcc = 0, fpsCount = 0, fpsTimer = 0;
+
+function loop(t) {
+  const dt = Math.min((t - lastT) / 1000, 0.05);
+  lastT = t;
+
+  updateCharacter(dt);
+  updateCamera(dt);
+  updateWeather(dt);
+  updateDust(dt);
+  updateTimeOfDay();
+
+  renderer.render(scene, camera);
+
+  // FPS
+  fpsTimer += dt;
+  fpsCount++;
+  if (fpsTimer >= 0.5) {
+    document.getElementById('fpsv').textContent = Math.round(fpsCount / fpsTimer);
+    document.getElementById('posv').textContent = CHAR.x.toFixed(1) + ',' + CHAR.z.toFixed(1);
+    fpsTimer = 0;
+    fpsCount = 0;
+  }
+
+  requestAnimationFrame(loop);
+}
+
+// Handle resize
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ══════════════════════════════════════════════════════════════
+// 16. BOOT
+// ══════════════════════════════════════════════════════════════
+console.log('%c 🌾 PIXEL FARMER 3D ', 'background:linear-gradient(90deg,#f0d498,#a86838);color:#1a0f08;padding:8px 20px;border-radius:4px;font-weight:900;letter-spacing:3px');
+console.log('Procedural sprites: 4 directions × 4 frames = 16 sprites');
+console.log('Sprite cells:', SW, '×', SH, '— sheet:', sheet.width, '×', sheet.height);
+
+setupWeather();
+updateTimeOfDay();
+requestAnimationFrame(loop);
+
+// Attach sheet to window for debug (right-click → inspect)
+window.__sheet = sheet;
+window.__CHAR = CHAR;
+window.__CAM = CAM;
+
+// Error display
+window.addEventListener('error', e => {
+  const err = document.getElementById('err');
+  err.style.display = 'flex';
+  err.innerHTML = '⚠ Erro:<br><br>' + (e.message || 'unknown') + '<br><br>Verifique se há conexão com a internet (o Three.js vem de CDN).';
+});
+</script>
+</body>
+</html>

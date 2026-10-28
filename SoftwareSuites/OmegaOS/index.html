@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>OMEGA-OS | Omnidimensional Colossus</title>
+<style>
+:root {
+  --bg: #020305; --desktop: #050812; --win-bg: rgba(10, 15, 28, 0.85);
+  --border: rgba(0, 240, 255, 0.25); --text: #8ab4d5; --text-light: #e0f0ff; 
+  --accent: #00f0ff; --accent2: #ff00aa; --success: #00ff88; --danger: #ff0033;
+  --font-mono: "Fira Code", monospace; --font-ui: system-ui, sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-ui); overflow: hidden; height: 100vh; }
+
+/* BOOT SCREEN */
+#boot-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; display:flex; flex-direction:column; padding:30px; font-family:var(--font-mono); color:var(--accent); font-size:0.8rem; gap:8px; }
+.boot-line { opacity:0; animation: fadeIn 0.2s forwards; }
+@keyframes fadeIn { to { opacity:1; } }
+.progress-bar { width:100%; max-width:400px; height:4px; background:#111; margin-top:20px; border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--accent); width:0%; transition: width 0.1s; box-shadow: 0 0 10px var(--accent); }
+
+/* DESKTOP */
+#desktop { width: 100%; height: 100%; position: relative; display: none; background: var(--desktop); }
+#bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+
+/* TASKBAR */
+#taskbar { position: absolute; bottom: 0; left: 0; width: 100%; height: 45px; background: rgba(2, 4, 8, 0.9); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; gap: 15px; z-index: 1000; backdrop-filter: blur(15px); }
+.tb-start { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 5px 15px; border-radius: 6px; font-family: var(--font-mono); font-weight: bold; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.2); }
+.tb-start:hover { background: rgba(0,240,255,0.1); }
+.tb-apps { display: flex; gap: 8px; flex: 1; overflow-x: auto; }
+.tb-apps::-webkit-scrollbar { display: none; }
+.tb-icon { width: 34px; height: 34px; display: flex; justify-content: center; align-items: center; border-radius: 6px; cursor: pointer; font-size: 1.1rem; transition: 0.2s; border: 1px solid transparent; }
+.tb-icon:hover { border-color: var(--accent); background: rgba(0,240,255,0.1); }
+.tb-icon.active { border-bottom: 2px solid var(--accent); background: rgba(0,240,255,0.15); }
+.tb-clock { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); }
+
+/* WINDOWS */
+.window { position: absolute; background: var(--win-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); display: flex; flex-direction: column; min-width: 320px; min-height: 200px; overflow: hidden; backdrop-filter: blur(20px); transform: scale(0.95); opacity: 0; transition: 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: auto; }
+.window.open { transform: scale(1); opacity: 1; }
+.window-header { height: 35px; background: rgba(0,0,0,0.5); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 12px; cursor: grab; }
+.window-title { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-light); display: flex; align-items: center; gap: 8px; text-shadow: 0 0 5px rgba(255,255,255,0.2); }
+.window-controls { display: flex; gap: 8px; }
+.win-btn { width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer; }
+.win-close { background: var(--danger); box-shadow: 0 0 8px var(--danger); } 
+.win-min { background: #ffbd2e; } 
+.win-max { background: var(--success); }
+.window-body { flex: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
+.window-body::-webkit-scrollbar { width: 6px; } .window-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* UI COMPONENTS */
+.input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.input-group label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); }
+input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #111; border-radius: 2px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 10px var(--accent); }
+input[type="text"], textarea, select { background: rgba(0,0,0,0.6); border: 1px solid var(--border); color: var(--accent); padding: 8px; font-family: var(--font-mono); font-size: 0.75rem; border-radius: 4px; outline: none; width: 100%; }
+input[type="text"]:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,240,255,0.2); }
+.btn { background: rgba(0,240,255,0.05); border: 1px solid var(--accent); color: var(--accent); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-family: var(--font-mono); font-size: 0.75rem; transition: 0.2s; text-align: center; }
+.btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 15px rgba(0,240,255,0.4); }
+.btn-ai { border-color: var(--accent2); color: var(--accent2); background: rgba(255,0,170,0.05); }
+.btn-ai:hover { background: var(--accent2); color: #fff; box-shadow: 0 0 15px var(--accent2); }
+
+/* APPS SPECIFIC */
+#chat-window { flex: 1; display: flex; flex-direction: column; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+#chat-messages { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 0.8rem; }
+.msg { padding: 8px 12px; border-radius: 8px; max-width: 85%; line-height: 1.4; }
+.msg.user { background: rgba(0,240,255,0.1); color: var(--accent); align-self: flex-end; border: 1px solid var(--accent); border-bottom-right-radius: 0; }
+.msg.ai { background: rgba(255,0,170,0.1); color: #ff80d5; align-self: flex-start; border: 1px solid var(--accent2); border-bottom-left-radius: 0; }
+#reasoning-trace { font-family: var(--font-mono); font-size: 0.65rem; color: #888; border-top: 1px solid var(--border); padding: 5px; height: 60px; overflow-y: auto; background: #000; display: none; }
+#chat-input-area { display: flex; padding: 8px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.8); }
+#chat-input { flex: 1; background: transparent; border: none; color: #fff; font-family: var(--font-mono); font-size: 0.75rem; outline: none; }
+
+#network-canvas { width: 100%; height: 100%; background: #000; border-radius: 4px; border: 1px solid var(--border); }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-family: var(--font-mono); font-size: 0.7rem; margin-top: 10px; }
+.metric-box { background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 5px; border-radius: 4px; text-align: center; }
+.metric-box span { color: var(--success); font-weight: bold; }
+
+#sql-terminal { background: #000; border: 1px solid var(--border); flex: 1; display: flex; flex-direction: column; font-family: var(--font-mono); font-size: 0.75rem; padding: 10px; border-radius: 6px; }
+#sql-output { flex: 1; overflow-y: auto; color: var(--success); white-space: pre-wrap; margin-bottom: 10px; }
+#sql-input { background: transparent; border: none; color: var(--accent); outline: none; font-family: inherit; font-size: inherit; width: 100%; }
+#chart-container { height: 150px; width: 100%; display: none; margin-top: 10px; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div id="boot-screen">
+  <div id="boot-text"></div>
+  <div class="progress-bar"><div class="progress-fill" id="boot-progress"></div></div>
+</div>
+
+<div id="desktop">
+  <canvas id="bg-canvas"></canvas>
+  <div id="windows-container" style="position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 45px); z-index: 10;"></div>
+  
+  <div id="taskbar">
+    <button class="tb-start" onclick="launchApp('ai')">⟨Ω⟩ OMEGA</button>
+    <div class="tb-apps" id="taskbar-apps"></div>
+    <div class="tb-clock" id="clock">00:00:00</div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// OMEGA KERNEL (OS ENGINE)
+// ==========================================
+let zIndex = 10;
+const openApps = new Set();
+
+function createWindow(id, title, icon, contentHTML, width, height) {
+  if (document.getElementById(id)) {
+    const w = document.getElementById(id);
+    w.classList.add('open');
+    w.style.zIndex = ++zIndex;
+    return;
+  }
+  
+  const win = document.createElement('div');
+  win.id = id;
+  win.className = 'window';
+  win.style.width = width + 'px';
+  win.style.height = height + 'px';
+  win.style.top = (window.innerHeight/2 - height/2) + 'px';
+  win.style.left = (window.innerWidth/2 - width/2) + 'px';
+  win.style.zIndex = ++zIndex;
+  
+  win.innerHTML = `
+    <div class="window-header" onmousedown="startDrag(event, '${id}')">
+      <div class="window-title">${icon} ${title}</div>
+      <div class="window-controls">
+        <button class="win-btn win-min" onclick="minimizeWindow('${id}')"></button>
+        <button class="win-btn win-close" onclick="closeWindow('${id}')"></button>
+      </div>
+    </div>
+    <div class="window-body">${contentHTML}</div>
+  `;
+  
+  document.getElementById('windows-container').appendChild(win);
+  setTimeout(() => win.classList.add('open'), 10);
+  win.addEventListener('mousedown', () => { win.style.zIndex = ++zIndex; });
+  
+  const tb = document.getElementById('taskbar-apps');
+  const btn = document.createElement('div');
+  btn.className = 'tb-icon';
+  btn.id = 'tb-' + id;
+  btn.innerHTML = icon;
+  btn.title = title;
+  btn.onclick = () => {
+    const w = document.getElementById(id);
+    if (w.classList.contains('open')) w.classList.remove('open');
+    else { w.classList.add('open'); w.style.zIndex = ++zIndex; }
+  };
+  tb.appendChild(btn);
+  openApps.add(id);
+  
+  if (id === 'app-ai') initAI();
+  if (id === 'app-network') initNetwork();
+  if (id === 'app-sql') initSQL();
+  if (id === 'app-3d') init3D();
+  if (id === 'app-crypto') initCrypto();
+  if (id === 'app-shader') initShader();
+}
+
+function closeWindow(id) {
+  const win = document.getElementById(id);
+  if(win) { win.classList.remove('open'); setTimeout(() => win.remove(), 200); }
+  const btn = document.getElementById('tb-'+id);
+  if(btn) btn.remove();
+  openApps.delete(id);
+}
+function minimizeWindow(id) { document.getElementById(id).classList.remove('open'); }
+
+let isDragging = false, activeWin = null, offsetX, offsetY;
+function startDrag(e, id) {
+  if (e.target.classList.contains('win-btn')) return;
+  isDragging = true; activeWin = document.getElementById(id);
+  activeWin.style.zIndex = ++zIndex;
+  offsetX = e.clientX - activeWin.offsetLeft;
+  offsetY = e.clientY - activeWin.offsetTop;
+}
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging || !activeWin) return;
+  activeWin.style.left = (e.clientX - offsetX) + 'px';
+  activeWin.style.top = (e.clientY - offsetY) + 'px';
+});
+document.addEventListener('mouseup', () => { isDragging = false; activeWin = null; });
+
+setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour12: false}); }, 1000);
+
+// Background Engine
+const bgCanvas = document.getElementById('bg-canvas');
+const bgCtx = bgCanvas.getContext('2d');
+let bgParticles = [];
+function initBg() {
+    bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight;
+    bgParticles = [];
+    for(let i=0; i<80; i++) bgParticles.push({ x: Math.random()*bgCanvas.width, y: Math.random()*bgCanvas.height, vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3, size: Math.random()*2 });
+}
+function drawBg() {
+    bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+    bgCtx.fillStyle = 'rgba(0, 240, 255, 0.2)';
+    bgParticles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if(p.x<0||p.x>bgCanvas.width) p.vx*=-1; if(p.y<0||p.y>bgCanvas.height) p.vy*=-1;
+        bgCtx.beginPath(); bgCtx.arc(p.x, p.y, p.size, 0, Math.PI*2); bgCtx.fill();
+    });
+    requestAnimationFrame(drawBg);
+}
+
+
+// ==========================================
+// 1. OMEGA-LLM (CUSTOM AI WITH REASONING)
+// ==========================================
+let aiMemory = [];
+const knowledgeBase = {
+    "hello": "Greetings, Architect. I am OMEGA-LLM. My neural weights are fully loaded.",
+    "who are you": "I am a simulated Large Language Model running directly in your browser. I use Markov chains and a rule-based reasoning engine to generate responses.",
+    "what is the meaning of life": "From a computational perspective, the meaning of life is to maximize entropy while maintaining local complexity. In human terms, it is to explore the universe.",
+    "weather": "I do not have access to external weather APIs, but I can tell you the atmospheric pressure in my local memory banks is nominal.",
+    "help": "I can execute system commands (e.g., 'open network', 'open sql'), perform math ('calculate 5*5'), or generate philosophical text. Just ask!"
+};
+
+function initAI() {
+  const chatMsgs = document.getElementById('chat-messages');
+  const chatInput = document.getElementById('chat-input');
+  const traceBox = document.getElementById('reasoning-trace');
+  
+  function addMsg(text, sender) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + sender;
+    div.innerText = text;
+    chatMsgs.appendChild(div);
+    chatMsgs.scrollTop = chatMsgs.scrollHeight;
+  }
+  
+  function logTrace(text) {
+      traceBox.style.display = 'block';
+      traceBox.innerHTML += `> ${text}<br>`;
+      traceBox.scrollTop = traceBox.scrollHeight;
+  }
+
+  if (!chatMsgs.hasChildNodes()) {
+    addMsg("OMEGA-LLM initialized. I am the cognitive core. I can generate text, reason through logic, and command the OS. Type 'help' to begin.", "ai");
+  }
+
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const txt = chatInput.value.trim();
+      if (!txt) return;
+      addMsg(txt, "user");
+      chatInput.value = '';
+      traceBox.innerHTML = ""; // Clear previous trace
+      
+      // --- REASONING ENGINE ---
+      setTimeout(() => {
+        logTrace("Tokenizing input sequence...");
+        let lower = txt.toLowerCase();
+        let reply = "";
+        
+        logTrace("Analyzing intent based on semantic weights...");
+        
+        // 1. Command Execution
+        if (lower.includes('open ')) {
+            const target = lower.split('open ')[1].trim();
+            logTrace(`Intent detected: SYSTEM_COMMAND (${target})`);
+            
+            if(target.includes('network')) { launchApp('network'); reply = "Executing kernel command. Opening NEXUS-NET 3D Social Graph."; }
+            else if(target.includes('sql')) { launchApp('sql'); reply = "Mounting NexusDB. Relational engine online."; }
+            else if(target.includes('3d')) { launchApp('3d'); reply = "Allocating WebGL context. 3D Terrain engine active."; }
+            else if(target.includes('crypto')) { launchApp('crypto'); reply = "Accessing hardware crypto subsystem."; }
+            else if(target.includes('shader')) { launchApp('shader'); reply = "Compiling GLSL Shader environment."; }
+            else { reply = `I do not recognize the module '${target}'.`; }
+        }
+        // 2. Math Calculation
+        else if (lower.includes('calculate') || lower.match(/[0-9]+ *[\+\-\*\/] *[0-9]+/)) {
+            logTrace("Intent detected: MATHEMATICAL_REASONING");
+            try {
+                const mathStr = lower.replace('calculate', '').trim();
+                logTrace(`Executing AST parser for expression: ${mathStr}`);
+                const res = Function('"use strict";return (' + mathStr + ')')();
+                reply = `Computational Result: ${res}`;
+            } catch(err) { reply = "Syntax error in mathematical expression."; }
+        }
+        // 3. Knowledge Base
+        else if (knowledgeBase[lower]) {
+            logTrace("Intent detected: KNOWLEDGE_RETRIEVAL");
+            logTrace(`Fetching embedding vector for: "${lower}"`);
+            reply = knowledgeBase[lower];
+        }
+        // 4. Generative Fallback (Markov-like simulation)
+        else {
+            logTrace("Intent detected: GENERATIVE_TEXT");
+            logTrace("No exact match found. Initializing Markov Chain generation...");
+            
+            // Simulate generative AI reasoning
+            logTrace("Selecting seed token...");
+            const words = ["quantum", "neural", "algorithm", "matrix", "entropy", "paradigm", "synthesis"];
+            const verbs = ["optimizes", "generates", "synchronizes", "analyzes", "transcends"];
+            const nouns = ["reality", "data structures", "consciousness", "the mainframe", "probability"];
+            
+            const w1 = words[Math.floor(Math.random()*words.length)];
+            const v1 = verbs[Math.floor(Math.random()*verbs.length)];
+            const n1 = nouns[Math.floor(Math.random()*nouns.length)];
+            
+            logTrace("Predicting next tokens based on contextual probability...");
+            reply = `Fascinating. From my perspective, the ${w1} ${v1} ${n1}. However, my training data is limited. Try asking me to 'open network' or 'calculate 10*10'.`;
+        }
+        
+        logTrace("Response synthesized.");
+        addMsg(reply, "ai");
+        aiMemory.push({ user: txt, ai: reply });
+        
+      }, 600);
+    }
+  });
+}
+
+
+// ==========================================
+// 2. NEXUS-NET (3D SOCIAL NETWORK)
+// ==========================================
+let netScene, netCamera, netRenderer, netGroup;
+let nodes = []; // { mesh, label, pos, vel }
+let edges = []; // { source, target, line }
+
+function initNetwork() {
+    const container = document.getElementById('network-canvas');
+    const w = container.clientWidth, h = container.clientHeight;
+    
+    netScene = new THREE.Scene();
+    netCamera = new THREE.PerspectiveCamera(45, w/h, 0.1, 1000);
+    netCamera.position.set(0, 0, 15);
+    
+    netRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    netRenderer.setSize(w, h);
+    container.appendChild(netRenderer.domElement);
+    
+    netGroup = new THREE.Group();
+    netScene.add(netGroup);
+    
+    netScene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    const light = new THREE.PointLight(0x00f0ff, 1.5);
+    light.position.set(10, 10, 10);
+    netScene.add(light);
+    
+    // Add initial nodes
+    addNetworkNode("Alice");
+    addNetworkNode("Bob");
+    addNetworkNode("Charlie");
+    addNetworkNode("Diana");
+    
+    // Connect initial nodes
+    connectNodes(0, 1);
+    connectNodes(1, 2);
+    connectNodes(2, 3);
+    connectNodes(3, 0);
+    
+    const controls = new THREE.OrbitControls(netCamera, netRenderer.domElement);
+    controls.enableZoom = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.5;
+    
+    // Force-Directed Graph Physics Engine
+    function updatePhysics() {
+        // Repulsion (Nodes push each other away)
+        for(let i=0; i<nodes.length; i++) {
+            for(let j=i+1; j<nodes.length; j++) {
+                const dx = nodes[j].pos.x - nodes[i].pos.x;
+                const dy = nodes[j].pos.y - nodes[i].pos.y;
+                const dz = nodes[j].pos.z - nodes[i].pos.z;
+                const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1;
+                
+                const force = 10 / (dist * dist);
+                const fx = (dx / dist) * force;
+                const fy = (dy / dist) * force;
+                const fz = (dz / dist) * force;
+                
+                nodes[i].vel.x -= fx; nodes[i].vel.y -= fy; nodes[i].vel.z -= fz;
+                nodes[j].vel.x += fx; nodes[j].vel.y += fy; nodes[j].vel.z += fz;
+            }
+        }
+        
+        // Attraction (Edges pull nodes together)
+        edges.forEach(edge => {
+            const dx = edge.target.pos.x - edge.source.pos.x;
+            const dy = edge.target.pos.y - edge.source.pos.y;
+            const dz = edge.target.pos.z - edge.source.pos.z;
+            const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1;
+            
+            const force = (dist - 5) * 0.05; // Ideal distance is 5
+            const fx = (dx / dist) * force;
+            const fy = (dy / dist) * force;
+            const fz = (dz / dist) * force;
+            
+            edge.source.vel.x += fx; edge.source.vel.y += fy; edge.source.vel.z += fz;
+            edge.target.vel.x -= fx; edge.target.vel.y -= fy; edge.target.vel.z -= fz;
+        });
+        
+        // Apply velocity & center gravity
+        nodes.forEach(node => {
+            // Gravity towards center (0,0,0)
+            node.vel.x -= node.pos.x * 0.01;
+            node.vel.y -= node.pos.y * 0.01;
+            node.vel.z -= node.pos.z * 0.01;
+            
+            // Damping
+            node.vel.x *= 0.9; node.vel.y *= 0.9; node.vel.z *= 0.9;
+            
+            // Update position
+            node.pos.add(node.vel);
+            node.mesh.position.copy(node.pos);
+        });
+        
+        // Update lines
+        edges.forEach(edge => {
+            const positions = edge.line.geometry.attributes.position.array;
+            positions[0] = edge.source.pos.x; positions[1] = edge.source.pos.y; positions[2] = edge.source.pos.z;
+            positions[3] = edge.target.pos.x; positions[4] = edge.target.pos.y; positions[5] = edge.target.pos.z;
+            edge.line.geometry.attributes.position.needsUpdate = true;
+        });
+    }
+    
+    function animateNetwork() {
+        if (!document.getElementById('app-network')) return;
+        requestAnimationFrame(animateNetwork);
+        updatePhysics();
+        controls.update();
+        netRenderer.render(netScene, netCamera);
+    }
+    animateNetwork();
+    
+    updateNetworkMetrics();
+}
+
+function addNetworkNode(name) {
+    if(nodes.length > 30) return; // Limit for performance
+    
+    const geo = new THREE.SphereGeometry(0.5, 16, 16);
+    const mat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x0055aa, emissiveIntensity: 0.5 });
+    const mesh = new THREE.Mesh(geo, mat);
+    
+    // Random initial position
+    const pos = new THREE.Vector3((Math.random()-0.5)*5, (Math.random()-0.5)*5, (Math.random()-0.5)*5);
+    mesh.position.copy(pos);
+    
+    netGroup.add(mesh);
+    nodes.push({ mesh, label: name, pos, vel: new THREE.Vector3(0,0,0) });
+    
+    updateNetworkMetrics();
+}
+
+function connectNodes(index1, index2) {
+    if(index1 >= nodes.length || index2 >= nodes.length || index1 === index2) return;
+    
+    // Check if edge already exists
+    const exists = edges.some(e => (e.source === nodes[index1] && e.target === nodes[index2]) || (e.source === nodes[index2] && e.target === nodes[index1]));
+    if(exists) return;
+    
+    const points = [nodes[index1].pos, nodes[index2].pos];
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({ color: 0xff00aa, transparent: true, opacity: 0.5 });
+    const line = new THREE.Line(geo, mat);
+    
+    netGroup.add(line);
+    edges.push({ source: nodes[index1], target: nodes[index2], line });
+    
+    updateNetworkMetrics();
+}
+
+function updateNetworkMetrics() {
+    if(!document.getElementById('net-nodes')) return;
+    document.getElementById('net-nodes').innerText = nodes.length;
+    document.getElementById('net-edges').innerText = edges.length;
+    
+    // Calculate Network Density: 2E / (N*(N-1))
+    const density = nodes.length > 1 ? (2 * edges.length) / (nodes.length * (nodes.length - 1)) : 0;
+    document.getElementById('net-density').innerText = (density * 100).toFixed(1) + '%';
+}
+
+function uiAddNode() {
+    const name = prompt("Enter user name:");
+    if(name) addNetworkNode(name);
+}
+function uiConnectNodes() {
+    if(nodes.length < 2) { alert("Need at least 2 nodes."); return; }
+    const n1 = prompt(`Enter first node name (${nodes.map(n=>n.label).join(', ')}):`);
+    const n2 = prompt("Enter second node name:");
+    const i1 = nodes.findIndex(n => n.label === n1);
+    const i2 = nodes.findIndex(n => n.label === n2);
+    if(i1 !== -1 && i2 !== -1) connectNodes(i1, i2);
+    else alert("Node not found.");
+}
+
+
+// ==========================================
+// 3. NEXUSDB (SQL + DATA SCI)
+// ==========================================
+let DB = {};
+let chartInstance = null;
+function initSQL() {
+  const input = document.getElementById('sql-input');
+  const out = document.getElementById('sql-output');
+  
+  if (!out.hasChildNodes()) out.innerHTML = "NexusDB v2.0\nTry: CREATE TABLE planets (name, mass)\nINSERT INTO planets VALUES ('Earth', 1)\nSELECT * FROM planets\n\n";
+  
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const query = input.value.trim();
+      if (!query) return;
+      out.innerHTML += `<span style="color:#fff">nexus> ${query}</span>\n`;
+      input.value = '';
+      
+      try {
+        let res = executeSQL(query);
+        out.innerHTML += `<span style="color:var(--success)">${res.msg}</span>\n\n`;
+        if(res.chartData) renderChart(res.chartData);
+      } catch(err) {
+        out.innerHTML += `<span style="color:var(--danger)">Error: ${err.message}</span>\n\n`;
+      }
+      out.scrollTop = out.scrollHeight;
+    }
+  });
+}
+
+function executeSQL(q) {
+  q = q.trim().replace(/;$/,'');
+  const upper = q.toUpperCase();
+  
+  if (upper.startsWith('CREATE TABLE')) {
+    const match = q.match(/CREATE TABLE (\w+) \(([^)]+)\)/i);
+    if (!match) throw new Error("Syntax error");
+    const tableName = match[1];
+    DB[tableName] = { columns: match[2].split(',').map(s=>s.trim()), data: [] };
+    return { msg: `Table '${tableName}' created.` };
+  }
+  
+  if (upper.startsWith('INSERT INTO')) {
+    const match = q.match(/INSERT INTO (\w+) VALUES \((.+)\)/i);
+    if (!match) throw new Error("Syntax error");
+    const tableName = match[1];
+    if (!DB[tableName]) throw new Error(`Table '${tableName}' missing.`);
+    const vals = match[2].match(/[^,]+/g).map(v=>v.trim().replace(/'/g,''));
+    const row = {};
+    DB[tableName].columns.forEach((col, i) => row[col] = isNaN(vals[i]) ? vals[i] : Number(vals[i]));
+    DB[tableName].data.push(row);
+    return { msg: `1 row inserted into '${tableName}'.` };
+  }
+  
+  if (upper.startsWith('SELECT')) {
+    const match = q.match(/SELECT (.*) FROM (\w+)/i);
+    if (!match) throw new Error("Syntax error");
+    const tableName = match[2];
+    if (!DB[tableName]) throw new Error(`Table '${tableName}' missing.`);
+    const data = DB[tableName].data;
+    if (data.length === 0) return { msg: "Empty set." };
+    
+    const labels = data.map(r => r[DB[tableName].columns[0]]);
+    const vals = data.map(r => r[DB[tableName].columns[1]] || 0);
+    const chartData = { labels: labels, values: vals };
+    
+    return { msg: JSON.stringify(data, null, 2), chartData: chartData };
+  }
+  
+  throw new Error("Unrecognized SQL command.");
+}
+
+function renderChart(data) {
+    document.getElementById('chart-container').style.display = 'block';
+    if(chartInstance) chartInstance.destroy();
+    const ctx = document.getElementById('sql-chart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.labels,
+            datasets: [{ label: 'Data', data: data.values, backgroundColor: 'rgba(0, 240, 255, 0.5)', borderColor: '#00f0ff', borderWidth: 1 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: '#8ab4d5' } }, x: { ticks: { color: '#8ab4d5' } } } }
+    });
+}
+
+
+// ==========================================
+// 4. 3D TERRAIN ENGINE
+// ==========================================
+let scene3d, camera3d, renderer3d, terrainMesh;
+function init3D() {
+  const container = document.getElementById('3d-container');
+  const w = container.clientWidth, h = container.clientHeight;
+  
+  scene3d = new THREE.Scene();
+  camera3d = new THREE.PerspectiveCamera(45, w/h, 0.1, 1000);
+  camera3d.position.set(0, 10, 15);
+  
+  renderer3d = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer3d.setSize(w, h);
+  container.appendChild(renderer3d.domElement);
+  
+  const geo = new THREE.PlaneGeometry(20, 20, 64, 64);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, wireframe: true, emissive: 0x004455 });
+  terrainMesh = new THREE.Mesh(geo, mat);
+  terrainMesh.rotation.x = -Math.PI / 2;
+  scene3d.add(terrainMesh);
+  
+  scene3d.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(5,10,5);
+  scene3d.add(light);
+  
+  const controls = new THREE.OrbitControls(camera3d, renderer3d.domElement);
+  controls.enableZoom = true;
+  controls.maxPolarAngle = Math.PI / 2 - 0.1;
+  
+  function animate3D() {
+    if (!document.getElementById('app-3d')) return;
+    requestAnimationFrame(animate3D);
+    
+    const amp = parseFloat(document.getElementById('3d-amp').value);
+    const freq = parseFloat(document.getElementById('3d-freq').value);
+    const time = Date.now() * 0.001;
+    
+    const pos = terrainMesh.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        let z = Math.sin(x * freq + time) * Math.cos(y * freq * 0.8 + time) * amp;
+        z += Math.sin(x * freq * 2.5 - time) * 0.2 * amp;
+        pos.setZ(i, z);
+    }
+    pos.needsUpdate = true;
+    terrainMesh.geometry.computeVertexNormals();
+    
+    controls.update();
+    renderer3d.render(scene3d, camera3d);
+  }
+  animate3D();
+}
+
+
+// ==========================================
+// 5. CRYPTO-VAULT
+// ==========================================
+function initCrypto() {}
+async function hashData() {
+    const text = document.getElementById('crypto-input').value;
+    if(!text) return;
+    const out = document.getElementById('crypto-output');
+    out.innerText = "Hashing...";
+    const msgBuffer = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    out.innerText = "SHA-256 Hash:\n" + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function encryptData() {
+    const text = document.getElementById('crypto-input').value;
+    if(!text) return;
+    const out = document.getElementById('crypto-output');
+    out.innerText = "Encrypting via AES-GCM...";
+    try {
+        const key = await crypto.subtle.generateKey({name: "AES-GCM", length: 256}, true, ["encrypt", "decrypt"]);
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const encoded = new TextEncoder().encode(text);
+        const ciphertext = await crypto.subtle.encrypt({name: "AES-GCM", iv: iv}, key, encoded);
+        out.innerText = "AES-GCM Encrypted Payload:\n" + btoa(String.fromCharCode(...new Uint8Array(ciphertext))) + "\n\n(IV hidden for security)";
+    } catch(e) { out.innerText = "Encryption failed on this browser."; }
+}
+
+
+// ==========================================
+// 6. SHADER LAB (GLSL)
+// ==========================================
+let gl, shaderProgram, timeUniform;
+function initShader() {
+  const canvas = document.getElementById('shader-canvas');
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+  
+  gl = canvas.getContext('webgl');
+  if (!gl) { alert("WebGL not supported"); return; }
+  
+  const vsSource = `attribute vec4 aVertexPosition; void main() { gl_Position = aVertexPosition; }`;
+  const defaultFS = `precision mediump float;
+uniform vec2 u_resolution;
+uniform float u_time;
+void main() {
+    vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+    float color = sin(uv.x * 10.0 + u_time) * cos(uv.y * 10.0 + u_time);
+    gl_FragColor = vec4(color * 0.5, color, color * 0.8, 1.0);
+}`;
+  document.getElementById('shader-code').value = defaultFS;
+  
+  compileShader(vsSource, defaultFS);
+  
+  function animateShader() {
+    if (!document.getElementById('app-shader')) return;
+    requestAnimationFrame(animateShader);
+    if (gl && shaderProgram) {
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.uniform1f(timeUniform, Date.now() * 0.001);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+  }
+  animateShader();
+}
+
+function compileShader(vs, fs) {
+  function createShader(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(shader)); return null; }
+    return shader;
+  }
+  const vShader = createShader(gl.VERTEX_SHADER, vs);
+  const fShader = createShader(gl.FRAGMENT_SHADER, fs);
+  if (!vShader || !fShader) return;
+  
+  shaderProgram = gl.createProgram();
+  gl.attachShader(shaderProgram, vShader); gl.attachShader(shaderProgram, fShader);
+  gl.linkProgram(shaderProgram); gl.useProgram(shaderProgram);
+  
+  const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer); gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+  
+  const aVertexPosition = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
+  gl.enableVertexAttribArray(aVertexPosition); gl.vertexAttribPointer(aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+  
+  gl.uniform2f(gl.getUniformLocation(shaderProgram, 'u_resolution'), gl.canvas.width, gl.canvas.height);
+  timeUniform = gl.getUniformLocation(shaderProgram, 'u_time');
+}
+function updateShader() {
+    compileShader(`attribute vec4 aVertexPosition; void main() { gl_Position = aVertexPosition; }`, document.getElementById('shader-code').value);
+}
+
+
+// ==========================================
+// APP LAUNCHER (UI HTML)
+// ==========================================
+function launchApp(app) {
+  if (app === 'ai') {
+    createWindow('app-ai', 'OMEGA-LLM Core', '🧠', `
+      <div id="chat-window">
+        <div id="chat-messages"></div>
+        <div id="reasoning-trace"></div>
+        <div id="chat-input-area">
+          <input type="text" id="chat-input" placeholder="Ask OMEGA-LLM or command the OS..." autocomplete="off">
+        </div>
+      </div>
+    `, 380, 500);
+  }
+  
+  if (app === 'network') {
+    createWindow('app-network', 'NEXUS-NET 3D Social', '🌐', `
+      <div style="display:flex; flex-direction:column; height:100%; gap:10px;">
+        <div id="network-canvas"></div>
+        <div class="metrics">
+            <div class="metric-box">Nodes: <span id="net-nodes">0</span></div>
+            <div class="metric-box">Edges: <span id="net-edges">0</span></div>
+            <div class="metric-box" style="grid-column: span 2;">Density: <span id="net-density">0%</span></div>
+        </div>
+        <div style="display:flex; gap:5px;">
+            <button class="btn" style="flex:1" onclick="uiAddNode()">+ Add Node</button>
+            <button class="btn" style="flex:1" onclick="uiConnectNodes()">🔗 Connect</button>
+        </div>
+      </div>
+    `, 500, 550);
+  }
+  
+  if (app === 'sql') {
+    createWindow('app-sql', 'NexusDB + Analytics', '🗄️', `
+      <div style="display:flex; flex-direction:column; height:100%;">
+        <div id="sql-terminal">
+          <div id="sql-output"></div>
+          <div style="display:flex;"><span style="color:var(--accent); margin-right:5px;">nexus></span><input type="text" id="sql-input" autocomplete="off" spellcheck="false"></div>
+        </div>
+        <div id="chart-container"><canvas id="sql-chart"></canvas></div>
+      </div>
+    `, 500, 450);
+  }
+  
+  if (app === '3d') {
+    createWindow('app-3d', '3D Terrain Engine', '🧊', `
+      <div style="display:flex; flex-direction:column; height:100%; gap:10px;">
+        <div id="3d-container" style="flex:1; background:#000; border-radius:4px; border:1px solid var(--border); overflow:hidden;"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="input-group"><label>Amplitude</label><input type="range" id="3d-amp" min="0" max="3" step="0.1" value="1.5"></div>
+          <div class="input-group"><label>Frequency</label><input type="range" id="3d-freq" min="0.1" max="3" step="0.1" value="1"></div>
+        </div>
+      </div>
+    `, 550, 450);
+  }
+  
+  if (app === 'crypto') {
+    createWindow('app-crypto', 'Crypto-Vault', '🔒', `
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <textarea id="crypto-input" placeholder="Enter text to encrypt/hash..." style="height:80px;"></textarea>
+        <div style="display:flex; gap:5px;">
+            <button class="btn" style="flex:1" onclick="hashData()">SHA-256 Hash</button>
+            <button class="btn" style="flex:1" onclick="encryptData()">AES-GCM Encrypt</button>
+        </div>
+        <div id="crypto-output" style="background:#000; padding:10px; border-radius:4px; font-family:var(--font-mono); font-size:0.7rem; word-break:break-all; min-height:100px; border:1px solid var(--border); color:var(--success);">Awaiting input...</div>
+      </div>
+    `, 400, 350);
+  }
+  
+  if (app === 'shader') {
+    createWindow('app-shader', 'WebGL Shader Lab', '🎛️', `
+      <div style="display:flex; flex-direction:column; height:100%;">
+        <canvas id="shader-canvas" style="width:100%; height:200px; background:#000; border:1px solid var(--border); border-radius:4px; margin-bottom:10px;"></canvas>
+        <textarea id="shader-code" style="height:120px; font-family:var(--font-mono); font-size:0.65rem; color:#00ff88; background:#000;" spellcheck="false"></textarea>
+        <button class="btn" style="margin-top:10px;" onclick="updateShader()">Compile GLSL</button>
+      </div>
+    `, 450, 450);
+  }
+}
+
+
+// ==========================================
+// BOOT SEQUENCE
+// ==========================================
+const bootText = document.getElementById('boot-text');
+const bootLines = [
+  "[BIOS] OMEGA Colossus Kernel v10.0",
+  "[AI] Loading OMEGA-LLM Neural Weights... OK.",
+  "[NET] Initializing Force-Directed Social Graph... OK.",
+  "[GPU] Allocating WebGL 2.0 Contexts... OK.",
+  "[DB] Mounting Relational SQL Engine... OK.",
+  "[SEC] Hardware Cryptography Subsystem... OK.",
+  "[SYS] All systems nominal. Welcome, Architect."
+];
+
+let bLine = 0;
+const bootInt = setInterval(() => {
+  if(bLine < bootLines.length) {
+    const div = document.createElement('div');
+    div.className = 'boot-line';
+    div.innerText = bootLines[bLine];
+    bootText.appendChild(div);
+    document.getElementById('boot-progress').style.width = ((bLine+1)/bootLines.length)*100 + '%';
+    bLine++;
+  } else {
+    clearInterval(bootInt);
+    setTimeout(() => {
+      document.getElementById('boot-screen').style.display = 'none';
+      document.getElementById('desktop').style.display = 'block';
+      initBg();
+      drawBg();
+      
+      // Auto-start AI and Network
+      launchApp('ai');
+      setTimeout(() => launchApp('network'), 300);
+    }, 500);
+  }
+}, 400);
+
+</script>
+</body>
+</html>

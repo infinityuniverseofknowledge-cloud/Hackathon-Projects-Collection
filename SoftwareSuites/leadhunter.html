@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LeadHunter — CRM</title>
+<style>
+:root{--bg:#0a0e1a;--c:#f97316;--card:#111827;--bd:#1f2937;--txt:#e5e7eb;--mut:#6b7280}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding:16px;max-width:900px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.2rem;color:var(--c);flex:1}
+.logo .ic{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#f97316,#ea580c);display:grid;place-items:center;font-size:20px}
+.badge{background:rgba(249,115,22,.2);color:var(--c);padding:5px 12px;border-radius:10px;font-size:11px;font-weight:800;font-family:ui-monospace,monospace}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;margin-bottom:14px}
+.card h2{font-size:11px;color:var(--c);text-transform:uppercase;letter-spacing:2px;font-weight:800;margin-bottom:12px}
+label{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:800;margin-bottom:5px;display:block}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;color:var(--txt);font-size:13px;font-family:inherit;outline:0;margin-bottom:10px;transition:.15s}
+input:focus,textarea:focus,select:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(249,115,22,.15)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:600px){.row{grid-template-columns:1fr}}
+.btn{background:var(--c);color:#fff;border:0;padding:11px 20px;border-radius:9px;cursor:pointer;font-weight:800;font-family:inherit;font-size:13px;transition:.15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sec{background:transparent;color:var(--txt);border:1px solid var(--bd)}
+.btn.sec:hover{border-color:var(--c);color:var(--c)}
+.lead{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:8px;position:relative}
+.lead .name{font-weight:800;font-size:14px;color:var(--c)}
+.lead .data{font-size:12px;color:var(--mut);line-height:1.5;margin-top:4px}
+.lead .badge-st{position:absolute;top:10px;right:10px;background:rgba(249,115,22,.2);color:var(--c);padding:3px 9px;border-radius:8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.lead button{background:transparent;border:0;color:var(--mut);cursor:pointer;font-size:14px;padding:4px 6px;transition:.15s;position:absolute;bottom:10px;right:10px}
+.lead button:hover{color:#ef4444}
+.api-result{background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:10px;padding:12px;font-size:12px;margin-bottom:10px;line-height:1.6}
+.api-result b{color:var(--c)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px;text-align:center}
+.stat .k{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px}
+.stat .v{font-size:16px;font-weight:800;color:var(--c);font-family:ui-monospace,monospace}
+.empty{text-align:center;color:var(--mut);padding:30px;font-size:12px;font-style:italic}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--bd);border-top-color:var(--c);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style></head><body>
+<header><div class="logo"><div class="ic">🎯</div>LeadHunter</div><span class="badge" id="cnt">0 leads</span></header>
+<div class="card">
+<h2>🔍 Buscar empresa por CNPJ</h2>
+<label>CNPJ (14 dígitos)</label>
+<input id="cnpj" placeholder="00.000.000/0000-00" maxlength="18">
+<button class="btn" id="btnSearch">🔍 Buscar e adicionar lead</button>
+<div id="apiRes"></div>
+</div>
+<div class="card">
+<h2>📋 Leads</h2>
+<div class="stats">
+<div class="stat"><div class="k">Total</div><div class="v" id="s1">0</div></div>
+<div class="stat"><div class="k">Novo</div><div class="v" id="s2">0</div></div>
+<div class="stat"><div class="k">Ganho</div><div class="v" id="s3">0</div></div>
+</div>
+<div id="list"></div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const KEY='leadhunter.v1';
+let leads=JSON.parse(localStorage.getItem(KEY)||'[]');
+function save(){localStorage.setItem(KEY,JSON.stringify(leads))}
+function fmtCNPJ(v){
+  v=v.replace(/\D/g,'').slice(0,14);
+  return v.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');
+}
+function paint(){
+  $('#cnt').textContent=leads.length+' leads';
+  $('#s1').textContent=leads.length;
+  $('#s2').textContent=leads.filter(l=>l.status==='novo').length;
+  $('#s3').textContent=leads.filter(l=>l.status==='ganho').length;
+  const el=$('#list');
+  el.innerHTML=leads.length?leads.slice().reverse().map(l=>
+    '<div class="lead"><span class="badge-st">'+l.status+'</span><div class="name">'+l.name+'</div><div class="data">'+(l.cnpj?'CNPJ: '+l.cnpj+'<br>':'')+(l.email?'📧 '+l.email+'<br>':'')+(l.phone?'📱 '+l.phone+'<br>':'')+(l.address?'📍 '+l.address.slice(0,80):'')+'</div><button data-del="'+l.id+'">✕</button></div>'
+  ).join(''):'<div class="empty">Nenhum lead. Busque um CNPJ acima.</div>';
+  document.querySelectorAll('[data-del]').forEach(b=>{
+    b.onclick=()=>{if(confirm('Excluir lead?')){leads=leads.filter(x=>x.id!==+b.dataset.del);save();paint()}};
+  });
+}
+$('#cnpj').addEventListener('input',e=>{e.target.value=fmtCNPJ(e.target.value)});
+$('#btnSearch').onclick=async()=>{
+  const cnpj=$('#cnpj').value.replace(/\D/g,'');
+  if(cnpj.length!==14){alert('CNPJ deve ter 14 dígitos');return}
+  $('#btnSearch').disabled=true;$('#btnSearch').innerHTML='<span class="spin"></span>Buscando...';
+  $('#apiRes').innerHTML='';
+  try{
+    const r=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+cnpj);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    const address=[d.logradouro,d.numero,d.bairro,d.municipio,d.uf].filter(Boolean).join(', ');
+    $('#apiRes').innerHTML='<div class="api-result">✅ <b>'+d.razao_social+'</b><br>'+(d.nome_fantasia?'Fantasia: '+d.nome_fantasia+'<br>':'')+'Situação: <b>'+d.descricao_situacao_cadastral+'</b><br>'+(d.email?'Email: '+d.email+'<br>':'')+(d.ddd_telefone_1?'Tel: '+d.ddd_telefone_1+'<br>':'')+'📍 '+address+'</div>';
+    const lead={id:Date.now(),cnpj:cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5'),name:d.razao_social||d.nome_fantasia,email:d.email||'',phone:d.ddd_telefone_1||'',address,status:'novo'};
+    leads.push(lead);save();paint();
+    $('#cnpj').value='';
+  }catch(e){
+    $('#apiRes').innerHTML='<div class="api-result" style="color:#ef4444">❌ Erro: '+e.message+'</div>';
+  }
+  $('#btnSearch').disabled=false;$('#btnSearch').textContent='🔍 Buscar e adicionar lead';
+};
+paint();
+</script></body></html>

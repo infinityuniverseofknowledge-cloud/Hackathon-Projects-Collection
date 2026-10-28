@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NexusAI Chat</title>
+<style>
+:root{--bg:#0a0e1a;--c:#a855f7;--card:#111827;--bd:#1f2937;--txt:#e5e7eb;--mut:#6b7280}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt);height:100vh;display:flex;flex-direction:column;max-width:760px;margin:0 auto}
+header{background:var(--card);border-bottom:1px solid var(--bd);padding:12px 16px;display:flex;gap:10px;align-items:center}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.1rem;color:var(--c);flex:1}
+.logo .ic{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#a855f7,#7c3aed);display:grid;place-items:center;font-size:18px}
+.badge{font-size:10px;background:rgba(168,85,247,.2);color:var(--c);padding:3px 8px;border-radius:10px;font-weight:800;font-family:ui-monospace,monospace}
+header button{background:transparent;border:1px solid var(--bd);color:var(--txt);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-family:inherit;font-weight:700;transition:.15s}
+header button:hover{border-color:var(--c);color:var(--c)}
+.chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:80%;padding:11px 15px;border-radius:14px;font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word;animation:in .2s}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:var(--card);border:1px solid var(--bd);border-bottom-left-radius:4px}
+.msg.bot .meta{font-size:10px;color:var(--mut);margin-top:6px;font-family:ui-monospace,monospace}
+.msg.bot .memories{margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:11px;color:var(--mut)}
+.msg.bot .memories div{padding:3px 0;display:flex;gap:6px}
+.msg.bot .memories .s{color:var(--c);font-family:ui-monospace,monospace;font-weight:700}
+.composer{background:var(--card);border-top:1px solid var(--bd);padding:12px;display:flex;gap:8px}
+.composer input{flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:22px;padding:12px 18px;color:var(--txt);font-size:14px;font-family:inherit;outline:0;transition:.15s}
+.composer input:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(168,85,247,.15)}
+.composer button{background:var(--c);color:#fff;border:0;width:44px;height:44px;border-radius:50%;cursor:pointer;font-size:18px;transition:.15s}
+.composer button:hover{filter:brightness(1.15);transform:scale(1.05)}
+.welcome{text-align:center;padding:40px 20px;color:var(--mut)}
+.welcome .big{font-size:56px;margin-bottom:14px;opacity:.7}
+.welcome h2{font-size:1.4rem;color:var(--txt);margin-bottom:8px}
+.welcome p{font-size:13px;line-height:1.6;max-width:400px;margin:0 auto 20px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:500px;margin:0 auto}
+.chips button{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.3);color:var(--c);padding:8px 14px;border-radius:18px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:600;transition:.15s}
+.chips button:hover{background:var(--c);color:#fff}
+</style></head><body>
+<header><div class="logo"><div class="ic">🤖</div>NexusAI</div><span class="badge" id="memBadge">0 memórias</span><button id="clear">Limpar</button></header>
+<div class="chat" id="chat"></div>
+<div class="composer"><input id="inp" placeholder="Pergunte ou ensine algo..." autocomplete="off"><button id="send">➤</button></div>
+<script>
+
+class Mem {
+  constructor(d=64){this.d=d;this.m=[];this.load()}
+  tok(t){return t.toLowerCase().replace(/[^\wáàâãéêíóôõúçñ\s]/g,"").split(/\s+/).filter(w=>w.length>2)}
+  emb(t){
+    const v=new Float32Array(this.d);
+    const ts=this.tok(t);
+    if(!ts.length)return v;
+    ts.forEach(w=>{
+      let h=0;
+      for(let i=0;i<w.length;i++)h=(h*31+w.charCodeAt(i))>>>0;
+      v[h%this.d]+=1;
+      v[(h*7+13)%this.d]+=0.5;
+    });
+    let n=0;for(let i=0;i<this.d;i++)n+=v[i]*v[i];
+    n=Math.sqrt(n)||1;
+    for(let i=0;i<this.d;i++)v[i]/=n;
+    return v;
+  }
+  cos(a,b){let s=0;for(let i=0;i<this.d;i++)s+=a[i]*b[i];return s}
+  add(text,meta={}){
+    const v=this.emb(text);
+    this.m.push({id:Date.now()+Math.random(),t:text,v,meta,ts:Date.now()});
+    if(this.m.length>500)this.m.shift();
+    this.save();
+    return this.m[this.m.length-1];
+  }
+  find(q,k=5){
+    if(!this.m.length)return [];
+    const qv=this.emb(q);
+    return this.m.map(m=>({...m,score:this.cos(qv,m.v)}))
+      .sort((a,b)=>b.score-a.score).slice(0,k);
+  }
+  save(){try{localStorage.setItem("nexus.mem",JSON.stringify(this.m.map(m=>({id:m.id,t:m.t,meta:m.meta,ts:m.ts,v:Array.from(m.v)}))))}catch(e){}}
+  load(){try{const d=JSON.parse(localStorage.getItem("nexus.mem")||"[]");this.m=d.map(x=>({...x,v:Float32Array.from(x.v||[])}))}catch(e){this.m=[]}}
+  clear(){this.m=[];localStorage.removeItem("nexus.mem")}
+}
+const engine=new Mem();
+function respond(query){
+  const found=engine.find(query,3).filter(x=>x.score>0.15);
+  if(found.length){
+    const best=found[0];
+    return {answer:`Com base no que aprendi (score ${(best.score*100).toFixed(0)}%): "${best.t.slice(0,200)}"${found[1]?` E também: "${found[1].t.slice(0,120)}"`:""}`,memories:found};
+  }
+  return {answer:null,memories:[]};
+}
+
+const $=s=>document.querySelector(s);
+const chat=$('#chat');
+function paintBadge(){$('#memBadge').textContent=engine.m.length+' memórias'}
+function addMsg(text,who,extra){
+  const d=document.createElement('div');
+  d.className='msg '+who;
+  let html=text.replace(/</g,'&lt;');
+  if(extra&&extra.memories&&extra.memories.length){
+    html+='<div class="memories"><strong style="color:#a855f7">Memórias consultadas:</strong>';
+    extra.memories.forEach(m=>{html+='<div><span class="s">'+(m.score*100).toFixed(0)+'%</span> '+m.t.slice(0,70).replace(/</g,'&lt;')+'</div>'});
+    html+='</div>';
+  }
+  d.innerHTML=html;
+  if(who==='bot'&&extra){}else if(who==='bot'){}
+  chat.appendChild(d);
+  chat.scrollTop=chat.scrollHeight;
+  return d;
+}
+function handle(){
+  const q=$('#inp').value.trim();
+  if(!q)return;
+  addMsg(q,'user');
+  $('#inp').value='';
+  const r=respond(q);
+  if(r.answer){
+    addMsg(r.answer,'bot',{memories:r.memories});
+  }else{
+    engine.add(q,{type:'user-question'});
+    const templates=[
+      'Interessante! Vou salvar "'+q.slice(0,50)+'" na minha memória. Ainda estou aprendendo sobre isso. Pode me ensinar mais?',
+      'Não conheço ainda esse tópico, mas registrei na memória. Quando você me contar mais, vou conseguir correlacionar.',
+      'Registrado! Armazenei em matriz de 64 dimensões. Conte mais detalhes para eu enriquecer o embedding.',
+    ];
+    addMsg(templates[Math.floor(Math.random()*templates.length)]+'\n\n_(aprendido: '+engine.m.length+' memórias)_','bot');
+  }
+  paintBadge();
+}
+$('#send').onclick=handle;
+$('#inp').addEventListener('keydown',e=>{if(e.key==='Enter')handle()});
+$('#clear').onclick=()=>{if(confirm('Limpar toda a memória da IA?')){engine.clear();chat.innerHTML='';welcome();paintBadge()}};
+function welcome(){
+  chat.innerHTML='<div class="welcome"><div class="big">🤖</div><h2>NexusAI</h2><p>Sua IA com memória matricial. Quanto mais você conversa e ensina, mais inteligente ela fica. Aprendizado vetorial em 64 dimensões.</p><div class="chips"><button data-q="O que é machine learning?">O que é ML?</button><button data-q="Ensine: PIX é um sistema de pagamento instantâneo do Brasil">Ensine sobre PIX</button><button data-q="Como funciona criptografia?">Criptografia</button><button data-q="Ensine: Python é uma linguagem de programação">Python</button></div></div>';
+  chat.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{$('#inp').value=b.dataset.q;handle()});
+}
+welcome();paintBadge();
+</script></body></html>

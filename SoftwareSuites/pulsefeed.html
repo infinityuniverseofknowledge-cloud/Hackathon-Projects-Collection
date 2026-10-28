@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PulseFeed</title>
+<style>
+:root{--bg:#0a0e1a;--c:#ef4444;--card:#111827;--bd:#1f2937;--txt:#e5e7eb;--mut:#6b7280}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;max-width:640px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:10px;margin-bottom:20px;border-bottom:1px solid var(--bd);padding-bottom:16px}
+.logo{font-weight:800;font-size:1.4rem;color:var(--c);display:flex;align-items:center;gap:8px}
+.logo .ic{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#dc2626);display:grid;place-items:center;font-size:18px}
+.compose{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:16px}
+.compose textarea{width:100%;background:transparent;border:0;color:var(--txt);font-size:16px;font-family:inherit;resize:none;outline:0;min-height:60px;line-height:1.5}
+.compose textarea::placeholder{color:var(--mut)}
+.compose .foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--bd);padding-top:10px;margin-top:8px}
+.compose .cnt{font-size:12px;color:var(--mut);font-family:ui-monospace,monospace}
+.compose .cnt.warn{color:#f59e0b}
+.compose .cnt.err{color:#ef4444}
+.compose button{background:var(--c);color:#fff;border:0;padding:9px 20px;border-radius:20px;cursor:pointer;font-weight:800;font-size:13px;font-family:inherit;transition:.15s}
+.compose button:disabled{opacity:.4;cursor:not-allowed}
+.pulse{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:10px;transition:.15s}
+.pulse:hover{border-color:var(--c)}
+.pulse .head{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.pulse .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--c),#dc2626);display:grid;place-items:center;font-weight:800;color:#fff;flex-shrink:0;font-size:13px}
+.pulse .name{font-weight:700;font-size:14px}
+.pulse .time{font-size:11px;color:var(--mut);font-family:ui-monospace,monospace}
+.pulse .body{font-size:15px;line-height:1.5;margin-bottom:10px;white-space:pre-wrap;word-break:break-word}
+.pulse .body .tag{color:var(--c);font-weight:700}
+.pulse .actions{display:flex;gap:4px;border-top:1px solid var(--bd);padding-top:10px}
+.pulse .actions button{background:transparent;border:0;color:var(--mut);padding:6px 10px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;transition:.15s}
+.pulse .actions button:hover{background:rgba(239,68,68,.1);color:var(--c)}
+.pulse .actions button.liked{color:var(--c)}
+.mut{text-align:center;color:var(--mut);padding:40px 20px;font-size:13px}
+</style></head><body>
+<header><div class="logo"><div class="ic">⚡</div>PulseFeed</div></header>
+<div class="compose">
+<textarea id="txt" placeholder="O que está pulsando agora? (use #tags)" maxlength="280"></textarea>
+<div class="foot"><span class="cnt" id="cnt">0/280</span><button id="post" disabled>Pulsar</button></div>
+</div>
+<div id="feed"></div>
+<script>
+const $=s=>document.querySelector(s);
+const KEY='pulsefeed.v1';
+let pulses=JSON.parse(localStorage.getItem(KEY)||'[]');
+const users=['Ana','Bruno','Carla','Diego','Eva','Felipe','Gabi','Hugo'];
+const msgs=['Bom dia! ☀️','Nova ideia surgindo...','#tech é o futuro','Alguém mais viciado em café? ☕','Sexta chegou! 🎉','Trabalhando duro 💪','#IA transformando tudo','Pensando fora da caixa'];
+function seed(){if(pulses.length)return;for(let i=0;i<5;i++)pulses.push({id:Date.now()+i,u:users[i],t:msgs[i],ts:Date.now()-i*600000,likes:Math.floor(Math.random()*30),liked:false});save()}
+function save(){localStorage.setItem(KEY,JSON.stringify(pulses))}
+function fmt(t){return t.replace(/#(\w+)/g,'<span class="tag">#$1</span>').replace(/</g,'&lt;').replace(/&lt;span/g,'<span').replace(/&lt;\/span>/g,'</span>')}
+function ago(ts){const m=Math.floor((Date.now()-ts)/60000);if(m<1)return 'agora';if(m<60)return m+'m';const h=Math.floor(m/60);if(h<24)return h+'h';return Math.floor(h/24)+'d'}
+function render(){
+  const feed=$('#feed');
+  if(!pulses.length){feed.innerHTML='<div class="mut">Nenhum pulse ainda.</div>';return}
+  feed.innerHTML=pulses.slice().sort((a,b)=>b.ts-a.ts).map(p=>`
+    <div class="pulse">
+      <div class="head">
+        <div class="av">${p.u.slice(0,2).toUpperCase()}</div>
+        <div><div class="name">${p.u}</div><div class="time">${ago(p.ts)}</div></div>
+      </div>
+      <div class="body">${fmt(p.t)}</div>
+      <div class="actions">
+        <button class="${p.liked?'liked':''}" data-id="${p.id}">${p.liked?'❤️':'🤍'} ${p.likes}</button>
+        <button data-share="${p.id}">🔗</button>
+        <button data-del="${p.id}">🗑</button>
+      </div>
+    </div>`).join('');
+  feed.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{const p=pulses.find(x=>x.id==b.dataset.id);p.liked=!p.liked;p.likes+=(p.liked?1:-1);save();render()});
+  feed.querySelectorAll('[data-share]').forEach(b=>b.onclick=()=>{navigator.clipboard?.writeText(location.href+'#p'+b.dataset.share).then(()=>alert('Link copiado!'))});
+  feed.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Excluir?')){pulses=pulses.filter(x=>x.id!=b.dataset.del);save();render()}});
+}
+$('#txt').addEventListener('input',e=>{
+  const n=e.target.value.length;
+  const c=$('#cnt');
+  c.textContent=n+'/280';
+  c.className='cnt'+(n>250?' err':n>200?' warn':'');
+  $('#post').disabled=n===0||n>280;
+});
+$('#post').onclick=()=>{
+  const t=$('#txt').value.trim();if(!t)return;
+  pulses.push({id:Date.now(),u:'Você',t,ts:Date.now(),likes:0,liked:false});
+  save();$('#txt').value='';$('#cnt').textContent='0/280';$('#post').disabled=true;render();
+};
+seed();render();
+</script></body></html>
