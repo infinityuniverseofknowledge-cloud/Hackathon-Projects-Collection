@@ -1,0 +1,3812 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="crt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000">
+<title>OncoHope AI · CRT Terminal</title>
+<style>
+:root{
+  --bg:#000;
+  --bg-2:#0a0f0a;
+  --panel:#0d140d;
+  --panel-2:#111a11;
+  --panel-3:#162016;
+  --border:#1f3a1f;
+  --border-hi:#2e5a2e;
+  --green:#4ade80;
+  --green-2:#22c55e;
+  --green-dim:#16a34a;
+  --green-soft:rgba(74,222,128,.12);
+  --green-glow:rgba(74,222,128,.5);
+  --amber:#fbbf24;
+  --amber-soft:rgba(251,191,36,.12);
+  --red:#f87171;
+  --red-soft:rgba(248,113,113,.12);
+  --cyan:#22d3ee;
+  --cyan-soft:rgba(34,211,238,.12);
+  --magenta:#e879f9;
+  --magenta-soft:rgba(232,121,249,.12);
+  --text:#4ade80;
+  --text-dim:#22c55e;
+  --text-mute:#15803d;
+  --text-faint:#0d5528;
+  --r:4px;
+  --r-sm:2px;
+  --mono:'JetBrains Mono','Fira Code','SF Mono','Consolas','Courier New',monospace;
+  --t:120ms linear;
+}
+[data-theme="light"]{
+  --bg:#f0f5f0;
+  --bg-2:#e8f0e8;
+  --panel:#fff;
+  --panel-2:#f5faf5;
+  --panel-3:#e8f0e8;
+  --border:#c5d5c5;
+  --border-hi:#9bc09b;
+  --green:#15803d;
+  --green-2:#166534;
+  --green-dim:#22c55e;
+  --green-soft:rgba(21,128,61,.1);
+  --text:#0a2410;
+  --text-dim:#166534;
+  --text-mute:#65a365;
+  --text-faint:#a0c5a0;
+  --amber:#b45309;
+  --red:#b91c1c;
+  --cyan:#0891b2;
+  --magenta:#a21caf;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  font-family:var(--mono);
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.5;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  text-shadow:0 0 4px var(--green-glow);
+  letter-spacing:.02em;
+}
+[data-theme="light"] body{text-shadow:none}
+
+/* CRT scanlines overlay */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    rgba(74,222,128,.03) 0,
+    rgba(74,222,128,.03) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events:none;
+  z-index:9998;
+  animation:scanlines 8s linear infinite;
+}
+/* CRT vignette + flicker */
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  background:radial-gradient(
+    ellipse at center,
+    transparent 30%,
+    rgba(0,0,0,.5) 100%
+  );
+  pointer-events:none;
+  z-index:9997;
+  animation:flicker 0.15s infinite;
+}
+[data-theme="light"] body::before{opacity:.3}
+[data-theme="light"] body::after{opacity:.15}
+@keyframes scanlines{to{background-position:0 60px}}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:.985}}
+@media (prefers-reduced-motion:reduce){
+  body::before,body::after{animation:none!important}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+*{transition:color var(--t),background var(--t),border-color var(--t),box-shadow var(--t)}
+
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit;font-family:inherit}
+input,textarea,select{font:inherit;color:inherit;font-family:inherit}
+a{color:var(--cyan);text-decoration:none;text-shadow:0 0 4px var(--cyan)}
+a:hover{text-decoration:underline;filter:brightness(1.3)}
+:focus-visible{outline:2px solid var(--green);outline-offset:1px;border-radius:2px}
+::selection{background:var(--green);color:#000;text-shadow:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ──── Layout ──── */
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:220px;flex-shrink:0;
+  background:var(--panel);
+  border-right:1px solid var(--border);
+  position:fixed;top:0;bottom:0;left:0;
+  display:flex;flex-direction:column;
+  z-index:60;
+  transition:transform var(--t);
+}
+.sidebar-head{
+  padding:14px 14px;
+  border-bottom:1px solid var(--border);
+  background:var(--panel-2);
+}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-mark{
+  width:38px;height:38px;flex-shrink:0;
+  border:1.5px solid var(--green);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:800;
+  color:var(--green);
+  box-shadow:0 0 12px var(--green-glow),inset 0 0 8px var(--green-soft);
+  animation:markPulse 2s ease-in-out infinite;
+  position:relative;
+}
+.brand-mark::before,.brand-mark::after{
+  content:'';
+  position:absolute;
+  width:4px;height:4px;
+  border:1px solid var(--green);
+}
+.brand-mark::before{top:-3px;left:-3px;border-right:none;border-bottom:none}
+.brand-mark::after{bottom:-3px;right:-3px;border-left:none;border-top:none}
+@keyframes markPulse{0%,100%{opacity:1}50%{opacity:.75}}
+.brand-name{
+  font-size:.85rem;font-weight:800;line-height:1.2;
+  letter-spacing:.05em;text-transform:uppercase;
+}
+.brand-name em{color:var(--cyan);font-style:normal;text-shadow:0 0 6px var(--cyan)}
+.brand-tag{
+  font-size:.55rem;color:var(--text-mute);
+  letter-spacing:.15em;text-transform:uppercase;margin-top:2px;
+}
+.brand-tag::before{content:'▌ ';color:var(--green);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:0}}
+
+.sidebar-nav{flex:1;overflow-y:auto;padding:8px 6px}
+.sidebar-nav::-webkit-scrollbar{width:4px}
+.sidebar-nav::-webkit-scrollbar-track{background:var(--panel)}
+.sidebar-nav::-webkit-scrollbar-thumb{background:var(--border-hi)}
+
+.nav-group{
+  font-size:.55rem;font-weight:700;color:var(--text-mute);
+  text-transform:uppercase;letter-spacing:.2em;
+  padding:10px 8px 4px;
+  border-left:2px solid var(--border);
+  margin:4px 4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 9px;
+  font-size:.78rem;font-weight:500;
+  color:var(--text-dim);
+  cursor:pointer;
+  border-left:2px solid transparent;
+  transition:all var(--t);
+  margin:1px 0;
+}
+.nav-item:hover{
+  background:var(--green-soft);
+  color:var(--text);
+  border-left-color:var(--green-dim);
+}
+.nav-item.active{
+  background:var(--green-soft);
+  color:var(--green);
+  border-left-color:var(--green);
+  text-shadow:0 0 6px var(--green-glow);
+}
+.nav-item.active::after{
+  content:'◀';
+  margin-left:auto;
+  font-size:.6rem;
+  animation:blink 1.5s infinite;
+}
+.nav-item .ic{
+  width:14px;height:14px;
+  font-size:.75rem;
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.nav-item .cnt{
+  margin-left:auto;
+  font-size:.6rem;
+  padding:0 4px;
+  border:1px solid var(--border-hi);
+  color:var(--text-mute);
+}
+
+.sidebar-foot{padding:8px 6px;border-top:1px solid var(--border)}
+.foot-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 8px;
+  font-size:.72rem;
+  color:var(--text-dim);
+  text-align:left;
+  width:100%;
+  border-left:2px solid transparent;
+  transition:all var(--t);
+}
+.foot-btn:hover{
+  background:var(--green-soft);
+  color:var(--text);
+  border-left-color:var(--green-dim);
+}
+
+.main{
+  flex:1;margin-left:220px;
+  display:flex;flex-direction:column;
+  min-height:100vh;
+}
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:var(--panel-2);
+  border-bottom:1px solid var(--border);
+  padding:8px 16px;
+  display:flex;align-items:center;gap:10px;
+  flex-wrap:wrap;
+}
+.topbar::after{
+  content:'';
+  position:absolute;
+  bottom:-1px;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--green),transparent);
+  animation:topbarGlow 3s ease-in-out infinite;
+}
+@keyframes topbarGlow{0%,100%{opacity:.4}50%{opacity:1}}
+.menu-btn{
+  display:none;
+  width:32px;height:32px;
+  border:1px solid var(--border);
+  color:var(--text-dim);
+  align-items:center;justify-content:center;
+  flex-shrink:0;
+  font-size:.9rem;
+}
+.menu-btn:hover{color:var(--green);border-color:var(--green)}
+.page-info{min-width:0;flex:1}
+.page-eyebrow{
+  font-size:.58rem;color:var(--text-mute);
+  text-transform:uppercase;letter-spacing:.15em;
+}
+.page-eyebrow::before{content:'> ';color:var(--green);animation:blink 1s infinite}
+.page-title{
+  font-size:.9rem;font-weight:800;
+  color:var(--green);
+  letter-spacing:.03em;text-transform:uppercase;
+  text-shadow:0 0 6px var(--green-glow);
+}
+.top-actions{
+  margin-left:auto;display:flex;gap:4px;align-items:center;
+  flex-wrap:wrap;
+}
+.icon-btn{
+  width:32px;height:32px;
+  border:1px solid var(--border);
+  color:var(--text-dim);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.78rem;
+  transition:all var(--t);
+  flex-shrink:0;
+}
+.icon-btn:hover{
+  color:var(--green);border-color:var(--green);
+  box-shadow:0 0 8px var(--green-glow);
+}
+
+main{flex:1;max-width:1200px;width:100%;margin:0 auto;padding:16px 14px 60px}
+.section{display:none}
+.section.active{display:block;animation:secIn .2s linear}
+@keyframes secIn{from{opacity:0}to{opacity:1}}
+
+.sec-head{
+  margin-bottom:14px;
+  padding:10px 12px;
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  border-left:3px solid var(--green);
+  position:relative;
+}
+.sec-head::before{
+  content:'▌';
+  position:absolute;left:-3px;top:50%;transform:translateY(-50%);
+  color:var(--green);
+  animation:blink 1s infinite;
+  font-size:.7rem;
+}
+.sec-eyebrow{
+  font-size:.58rem;color:var(--cyan);
+  text-transform:uppercase;letter-spacing:.2em;
+  margin-bottom:3px;font-weight:700;
+}
+.sec-title{
+  font-size:clamp(1rem,2.4vw,1.3rem);
+  font-weight:800;letter-spacing:.05em;
+  color:var(--green);
+  text-transform:uppercase;
+  text-shadow:0 0 10px var(--green-glow);
+  line-height:1.2;
+  margin-bottom:3px;
+}
+.sec-desc{
+  color:var(--text-mute);
+  font-size:.72rem;
+  letter-spacing:.03em;
+}
+
+/* ──── Buttons ──── */
+.btn{
+  padding:6px 12px;
+  border:1px solid var(--green-dim);
+  color:var(--green);
+  font-size:.74rem;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  transition:all var(--t);
+  background:var(--green-soft);
+  position:relative;
+  white-space:nowrap;
+}
+.btn::before{content:'[';color:var(--green-dim);margin-right:-2px}
+.btn::after{content:']';color:var(--green-dim);margin-left:-2px}
+.btn:hover{
+  background:var(--green);
+  color:#000;
+  box-shadow:0 0 12px var(--green-glow);
+  text-shadow:none;
+}
+.btn:hover::before,.btn:hover::after{color:#000}
+.btn-primary{
+  border-color:var(--green);
+  color:var(--green);
+  font-weight:800;
+}
+.btn-primary:hover{background:var(--green);color:#000;text-shadow:none}
+.btn-secondary{border-color:var(--border-hi);color:var(--text-dim)}
+.btn-secondary:hover{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+.btn-ghost{border-color:transparent;color:var(--text-mute)}
+.btn-ghost:hover{border-color:var(--border-hi);color:var(--green);background:var(--green-soft)}
+.btn-danger{
+  border-color:var(--red);color:var(--red);background:var(--red-soft);
+}
+.btn-danger:hover{background:var(--red);color:#000;text-shadow:none}
+.btn-sm{padding:3px 8px;font-size:.66rem}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+
+/* ──── Cards ──── */
+.card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:12px;
+  margin-bottom:10px;
+  position:relative;
+}
+.card::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--green),transparent 40%);
+}
+.card-title{
+  font-size:.62rem;font-weight:800;color:var(--text-mute);
+  letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:10px;
+  padding-bottom:6px;
+  border-bottom:1px dashed var(--border);
+  display:flex;align-items:center;gap:6px;
+}
+.card-title::before{content:'▸';color:var(--green);animation:blink 1.5s infinite}
+
+.grid{display:grid;gap:10px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.grid-3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.grid-4{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+
+.stat{
+  padding:10px;
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  position:relative;
+}
+.stat::before{
+  content:'';
+  position:absolute;top:0;left:0;width:8px;height:8px;
+  border-top:1px solid var(--green);border-left:1px solid var(--green);
+}
+.stat::after{
+  content:'';
+  position:absolute;bottom:0;right:0;width:8px;height:8px;
+  border-bottom:1px solid var(--green);border-right:1px solid var(--green);
+}
+.stat-label{
+  font-size:.55rem;color:var(--text-mute);
+  letter-spacing:.15em;text-transform:uppercase;
+  margin-bottom:4px;
+}
+.stat-value{
+  font-size:1.4rem;font-weight:800;
+  color:var(--green);
+  text-shadow:0 0 8px var(--green-glow);
+  font-variant-numeric:tabular-nums;
+  line-height:1;
+}
+.stat-desc{
+  font-size:.6rem;color:var(--text-mute);
+  margin-top:3px;
+}
+
+.chip{
+  display:inline-flex;align-items:center;
+  padding:1px 6px;
+  font-size:.6rem;font-weight:700;
+  border:1px solid var(--border-hi);
+  color:var(--text-dim);
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.chip.green{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.chip.amber{background:var(--amber-soft);border-color:var(--amber);color:var(--amber)}
+.chip.red{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+.chip.cyan{background:var(--cyan-soft);border-color:var(--cyan);color:var(--cyan)}
+.chip.magenta{background:var(--magenta-soft);border-color:var(--magenta);color:var(--magenta)}
+
+/* ──── Alerts ──── */
+.alert{
+  padding:8px 11px;
+  border-left:3px solid var(--green);
+  background:var(--green-soft);
+  color:var(--green);
+  font-size:.72rem;
+  margin-bottom:10px;
+  line-height:1.5;
+  letter-spacing:.02em;
+  position:relative;
+}
+.alert::before{
+  content:'>';
+  position:absolute;left:4px;top:8px;
+  color:var(--green);
+  animation:blink 1s infinite;
+  font-weight:900;
+}
+.alert{padding-left:20px}
+.alert.info{
+  border-color:var(--cyan);background:var(--cyan-soft);color:var(--cyan);
+}
+.alert.info::before{color:var(--cyan)}
+.alert.warn{
+  border-color:var(--amber);background:var(--amber-soft);color:var(--amber);
+}
+.alert.warn::before{color:var(--amber)}
+.alert.danger{
+  border-color:var(--red);background:var(--red-soft);color:var(--red);
+}
+.alert.danger::before{color:var(--red)}
+
+/* ──── Forms ──── */
+.field{
+  display:flex;flex-direction:column;
+  gap:3px;
+  margin-bottom:9px;
+}
+.field label{
+  font-size:.62rem;font-weight:600;
+  color:var(--text-mute);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.field label .req{color:var(--red);font-weight:900}
+.field .hint{font-size:.58rem;color:var(--text-faint);margin-top:1px}
+.field input,.field textarea,.field select{
+  padding:6px 9px;
+  border:1px solid var(--border-hi);
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:.78rem;
+  transition:all var(--t);
+  width:100%;
+  border-radius:0;
+}
+.field input:focus,.field textarea:focus,.field select:focus{
+  outline:none;
+  border-color:var(--green);
+  box-shadow:0 0 8px var(--green-glow),inset 0 0 4px var(--green-soft);
+  background:var(--panel);
+}
+.field input.invalid,.field textarea.invalid{
+  border-color:var(--red);
+  box-shadow:0 0 4px rgba(248,113,113,.4);
+}
+.field textarea{resize:vertical;min-height:56px;font-family:var(--mono)}
+.field .err{
+  font-size:.62rem;color:var(--red);
+  display:none;margin-top:1px;font-weight:600;
+}
+.field .err.show{display:block}
+.field .err::before{content:'! '}
+.form-row{
+  display:grid;gap:8px;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+}
+
+/* ──── Lists ──── */
+.item{
+  padding:8px 10px;
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  border-left:2px solid var(--border-hi);
+  margin-bottom:5px;
+  display:flex;gap:9px;align-items:flex-start;
+  transition:all var(--t);
+}
+.item:hover{
+  border-left-color:var(--green);
+  background:var(--panel-3);
+}
+.item-icon{
+  width:26px;height:26px;
+  border:1px solid var(--border-hi);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:800;
+  color:var(--green);
+  flex-shrink:0;
+}
+.item-icon.green{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+.item-icon.amber{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.item-icon.red{border-color:var(--red);color:var(--red);background:var(--red-soft)}
+.item-icon.cyan{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-soft)}
+.item-body{flex:1;min-width:0}
+.item-title{
+  font-weight:700;font-size:.78rem;
+  color:var(--green);
+  margin-bottom:1px;
+  letter-spacing:.02em;
+  word-wrap:break-word;
+}
+.item-sub{
+  font-size:.62rem;color:var(--text-mute);
+  letter-spacing:.05em;
+}
+.item-text{
+  font-size:.72rem;color:var(--text-dim);
+  margin-top:4px;
+  line-height:1.5;
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+}
+.item-actions{
+  display:flex;gap:3px;flex-shrink:0;
+  flex-wrap:wrap;
+}
+
+/* ──── Tables ──── */
+table.data{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.72rem;
+  margin:8px 0;
+}
+table.data th{
+  text-align:left;
+  padding:5px 7px;
+  font-size:.58rem;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.1em;
+  color:var(--green);
+  border-bottom:1px solid var(--green-dim);
+  background:var(--panel-3);
+}
+table.data td{
+  padding:5px 7px;
+  border-bottom:1px solid var(--border);
+  color:var(--text-dim);
+}
+table.data .num{text-align:right;font-variant-numeric:tabular-nums}
+table.data tr:hover td{background:var(--green-soft)}
+
+/* ──── Search ──── */
+.search-box{position:relative;margin-bottom:10px}
+.search-box input{
+  width:100%;
+  padding:6px 10px 6px 30px;
+  border:1px solid var(--border-hi);
+  background:var(--panel-2);
+  color:var(--text);
+  font-size:.76rem;
+  font-family:var(--mono);
+}
+.search-box input:focus{
+  outline:none;border-color:var(--green);
+  box-shadow:0 0 8px var(--green-glow);
+}
+.search-box .search-icon{
+  position:absolute;left:9px;top:50%;transform:translateY(-50%);
+  color:var(--green-dim);font-size:.78rem;pointer-events:none;
+}
+
+/* ──── Pills ──── */
+.pills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.pill{
+  padding:3px 9px;
+  font-size:.64rem;font-weight:700;
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  color:var(--text-mute);
+  cursor:pointer;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  transition:all var(--t);
+}
+.pill:hover{color:var(--green);border-color:var(--green-dim)}
+.pill.active{background:var(--green);color:#000;border-color:var(--green);text-shadow:none}
+
+/* ──── Empty state ──── */
+.empty{
+  text-align:center;
+  padding:24px 14px;
+  color:var(--text-mute);
+  font-size:.76rem;
+}
+.empty .ico{
+  font-size:1.6rem;
+  margin-bottom:6px;
+  opacity:.4;
+}
+.empty h3{
+  font-size:.82rem;
+  color:var(--text-dim);
+  margin-bottom:3px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.empty p{font-size:.66rem;max-width:300px;margin:0 auto;line-height:1.5}
+
+/* ──── Toast ──── */
+#toast{
+  position:fixed;
+  bottom:20px;left:50%;
+  transform:translateX(-50%) translateY(120px);
+  background:var(--panel-3);
+  border:1px solid var(--green);
+  color:var(--green);
+  padding:8px 16px;
+  font-size:.72rem;
+  font-weight:700;
+  z-index:400;
+  box-shadow:0 0 20px var(--green-glow);
+  opacity:0;
+  transition:all .3s ease;
+  pointer-events:none;
+  max-width:90vw;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.success{border-color:var(--green);color:var(--green)}
+#toast.error{border-color:var(--red);color:var(--red);box-shadow:0 0 20px rgba(248,113,113,.5)}
+
+/* ──── Modal ──── */
+.modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.85);
+  z-index:350;
+  display:none;
+  align-items:center;justify-content:center;
+  padding:14px;
+  backdrop-filter:blur(2px);
+}
+.modal.show{display:flex}
+.modal-content{
+  background:var(--panel);
+  border:2px solid var(--green);
+  padding:16px;
+  max-width:560px;
+  width:100%;
+  max-height:86vh;
+  overflow-y:auto;
+  box-shadow:0 0 30px var(--green-glow);
+  position:relative;
+}
+.modal-content::before{
+  content:'╔══ SYSTEM MESSAGE ══╗';
+  position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+  background:var(--panel);padding:0 8px;
+  color:var(--green);font-size:.62rem;font-weight:800;
+  letter-spacing:.1em;
+}
+.modal-content h2{
+  font-size:1rem;
+  font-weight:800;
+  margin-bottom:10px;
+  color:var(--green);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.modal-content p{
+  font-size:.76rem;
+  color:var(--text-dim);
+  margin-bottom:10px;
+  line-height:1.6;
+}
+.modal-content ul{
+  padding-left:16px;
+  margin-bottom:10px;
+  font-size:.72rem;
+  color:var(--text-dim);
+  line-height:1.8;
+}
+.modal-actions{
+  display:flex;gap:6px;justify-content:flex-end;
+  margin-top:12px;flex-wrap:wrap;
+}
+
+/* ──── Scale ──── */
+.scale{display:flex;gap:3px;flex-wrap:wrap}
+.scale-btn{
+  padding:4px 9px;
+  min-width:32px;
+  text-align:center;
+  border:1px solid var(--border-hi);
+  background:var(--panel-2);
+  color:var(--text-mute);
+  font-weight:700;
+  font-size:.68rem;
+  cursor:pointer;
+  font-family:var(--mono);
+}
+.scale-btn:hover{border-color:var(--green);color:var(--green)}
+.scale-btn.on{
+  background:var(--green);color:#000;border-color:var(--green);
+  text-shadow:none;box-shadow:0 0 8px var(--green-glow);
+}
+.scale-labels{
+  display:flex;justify-content:space-between;
+  font-size:.58rem;color:var(--text-faint);
+  margin-top:2px;
+}
+
+/* ──── Progress bar ──── */
+.progress-track{
+  height:5px;
+  background:var(--panel-3);
+  border:1px solid var(--border);
+  overflow:hidden;
+  margin:4px 0;
+}
+.progress-fill{
+  height:100%;
+  background:var(--green);
+  box-shadow:0 0 8px var(--green-glow);
+  transition:width .5s ease;
+}
+
+/* ──── Body map ──── */
+.body-map{
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  padding:10px;
+  display:flex;justify-content:center;
+  margin-bottom:10px;
+}
+.body-map svg{max-width:260px;width:100%;height:auto}
+.body-region{
+  cursor:pointer;
+  fill:var(--panel-3);
+  stroke:var(--border-hi);
+  stroke-width:1;
+  transition:all var(--t);
+}
+.body-region:hover{
+  fill:var(--green-soft);
+  stroke:var(--green);
+}
+.body-region.selected{
+  fill:var(--amber-soft);
+  stroke:var(--amber);
+  stroke-width:1.5;
+  filter:drop-shadow(0 0 4px var(--amber));
+}
+
+/* ──── Charts ──── */
+.chart-box{
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  padding:10px;
+  margin-bottom:10px;
+}
+.chart-box svg{width:100%;height:auto;display:block}
+
+/* ──── Command palette ──── */
+.palette-overlay{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.9);
+  z-index:300;
+  display:none;
+  align-items:flex-start;justify-content:center;
+  padding:60px 14px 14px;
+}
+.palette-overlay.show{display:flex}
+.palette{
+  background:var(--panel);
+  border:2px solid var(--green);
+  max-width:520px;
+  width:100%;
+  box-shadow:0 0 30px var(--green-glow);
+  max-height:70vh;
+  display:flex;flex-direction:column;
+}
+.palette-input{
+  width:100%;
+  padding:10px 14px;
+  background:var(--panel-2);
+  border:none;border-bottom:1px solid var(--green-dim);
+  color:var(--green);
+  font-size:.86rem;
+  font-family:var(--mono);
+  letter-spacing:.05em;
+}
+.palette-input:focus{outline:none;background:var(--panel-3)}
+.palette-input::placeholder{color:var(--text-faint)}
+.palette-list{
+  max-height:380px;
+  overflow-y:auto;
+  padding:4px;
+}
+.palette-item{
+  padding:6px 10px;
+  font-size:.76rem;
+  cursor:pointer;
+  color:var(--text-dim);
+  display:flex;align-items:center;gap:8px;
+  border-left:2px solid transparent;
+}
+.palette-item:hover,.palette-item.selected{
+  background:var(--green-soft);
+  color:var(--green);
+  border-left-color:var(--green);
+}
+.palette-item .ico{color:var(--green);font-size:.72rem}
+.palette-item .kbd{
+  margin-left:auto;
+  font-size:.6rem;
+  padding:1px 5px;
+  border:1px solid var(--border);
+  color:var(--text-mute);
+}
+
+/* ──── Utility ──── */
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mt-2{margin-top:8px}.mt-3{margin-top:14px}.mb-2{margin-bottom:8px}
+.text-muted{color:var(--text-mute)}
+.mono{font-family:var(--mono)}
+pre{
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  padding:8px;
+  font-size:.66rem;
+  font-family:var(--mono);
+  color:var(--green);
+  overflow-x:auto;
+  line-height:1.5;
+  white-space:pre-wrap;
+  word-break:break-word;
+  max-height:300px;
+}
+code{
+  background:var(--panel-3);
+  color:var(--cyan);
+  padding:0 3px;
+  font-family:var(--mono);
+  font-size:.85em;
+}
+
+/* ──── Footer ──── */
+footer{
+  background:var(--panel-2);
+  border-top:1px solid var(--border);
+  padding:8px 14px;
+  font-size:.62rem;
+  color:var(--text-mute);
+  text-align:center;
+  letter-spacing:.05em;
+  position:relative;z-index:5;
+}
+footer::before{
+  content:'▌ ';
+  color:var(--green);
+  animation:blink 1s infinite;
+}
+footer::after{
+  content:' ▌';
+  color:var(--green);
+  animation:blink 1s infinite 0.5s;
+}
+
+/* ──── Test results ──── */
+.test-pass{color:var(--green);font-weight:700}
+.test-fail{color:var(--red);font-weight:700}
+.test-line{
+  padding:4px 0;
+  font-size:.7rem;
+  border-bottom:1px dashed var(--border);
+  font-family:var(--mono);
+}
+.test-line:last-child{border-bottom:none}
+
+/* ──── Backdrop ──── */
+.backdrop{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.6);
+  z-index:55;
+  display:none;
+}
+.backdrop.show{display:block}
+
+/* ──── Print ──── */
+@media print{
+  .sidebar,.topbar,.sidebar-foot,.btn,.backdrop,#toast,.modal,
+  .search-box,.pills,.item-actions,.scale,.palette-overlay,
+  .sec-head,footer,.icon-btn,.nav-item{display:none!important}
+  .main{margin-left:0}
+  main{padding:0;max-width:100%}
+  body{background:#fff;color:#000;text-shadow:none}
+  body::before,body::after{display:none}
+  .card,.item,.sec-title,.item-title,.stat{
+    border:1px solid #999!important;
+    color:#000!important;
+    background:#fff!important;
+    text-shadow:none!important;
+  }
+  .sec-title::before{display:none}
+  .section{display:block!important}
+  .section:not(.print-target){display:none!important}
+  .section.print-target{display:block!important}
+  .print-title{display:block!important;margin-bottom:10px;font-size:1rem;font-weight:800;border-bottom:2px solid #000;padding-bottom:4px}
+}
+.print-title{display:none}
+
+/* ──── Responsive ──── */
+@media (max-width:900px){
+  .sidebar{transform:translateX(-100%);box-shadow:4px 0 20px rgba(0,0,0,.8)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .menu-btn{display:flex}
+  main{padding:12px 10px 50px}
+  .sec-title{font-size:1.1rem}
+  .stat-value{font-size:1.2rem}
+}
+@media (max-width:520px){
+  .page-title{font-size:.82rem}
+  .card{padding:10px}
+  .sec-head{padding:8px 10px}
+  .modal-content{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <div class="brand">
+      <div class="brand-mark">OH</div>
+      <div>
+        <div class="brand-name">Onco<em>Hope</em></div>
+        <div class="brand-tag">CRT v3.0</div>
+      </div>
+    </div>
+  </div>
+  <nav class="sidebar-nav" id="sidebar-nav" aria-label="Main navigation"></nav>
+  <div class="sidebar-foot">
+    <button class="foot-btn" id="foot-help">❓ Help</button>
+    <button class="foot-btn" id="foot-reset">↺ Reset all data</button>
+  </div>
+</aside>
+
+<div class="main">
+<header class="topbar">
+  <button class="menu-btn" id="menu-btn" aria-label="Menu">☰</button>
+  <div class="page-info">
+    <div class="page-eyebrow" id="page-eyebrow">SYSTEM</div>
+    <div class="page-title" id="page-title">DASHBOARD</div>
+  </div>
+  <div class="top-actions">
+    <button class="icon-btn" id="top-search" title="Search (Ctrl+K)">⌕</button>
+    <button class="icon-btn" id="top-theme" title="Toggle theme">◐</button>
+    <button class="icon-btn" id="top-help" title="Help">?</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ═════ DASHBOARD ═════ -->
+<section class="section active" id="s-dashboard">
+  <div class="sec-head">
+    <div class="sec-eyebrow">SYSTEM · OVERVIEW</div>
+    <h1 class="sec-title">Dashboard</h1>
+    <p class="sec-desc">Real metrics from your local data · No fabricated numbers</p>
+  </div>
+
+  <div class="alert warn">
+    ⚠ EDUCATIONAL TOOL ONLY — This application provides organization and general education. It does NOT diagnose, prescribe, or replace your care team. For severe symptoms, contact emergency services immediately.
+  </div>
+
+  <div class="grid grid-4" id="dash-stats" style="margin-bottom:10px"></div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Quick Actions</div>
+      <div class="row">
+        <button class="btn btn-secondary btn-sm" onclick="Onco.go('symptoms')">Symptoms</button>
+        <button class="btn btn-secondary btn-sm" onclick="Onco.go('painmap')">Pain Map</button>
+        <button class="btn btn-secondary btn-sm" onclick="Onco.go('vitals')">Vitals</button>
+        <button class="btn btn-secondary btn-sm" onclick="Onco.go('journal')">Journal</button>
+        <button class="btn btn-secondary btn-sm" onclick="Onco.go('appointments')">Appointments</button>
+        <button class="btn btn-secondary btn-sm" onclick="Onco.go('reports')">Reports</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">System Status</div>
+      <div id="dash-status"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Daily Check-in Streak</div>
+    <div id="dash-streak"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Last 7 Days Activity</div>
+    <div id="dash-activity"></div>
+  </div>
+</section>
+
+<!-- ═════ SYMPTOMS ═════ -->
+<section class="section" id="s-symptoms">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · SYMPTOMS</div>
+    <h1 class="sec-title">Symptom Tracker</h1>
+    <p class="sec-desc">Record symptoms with severity · View trends over time</p>
+  </div>
+
+  <div class="alert info">
+    ℹ Severity scores here are informal self-observations, not validated clinical scales. Share with your care team for interpretation.
+  </div>
+
+  <div class="grid grid-2" style="margin-bottom:10px">
+    <div class="card">
+      <div class="card-title">New Entry</div>
+      <div class="form-row">
+        <div class="field">
+          <label>Symptom type <span class="req">*</span></label>
+          <select id="sym-type">
+            <option value="fatigue">Fatigue</option>
+            <option value="pain">Pain</option>
+            <option value="nausea">Nausea</option>
+            <option value="breath">Shortness of breath</option>
+            <option value="fever">Fever</option>
+            <option value="appetite">Loss of appetite</option>
+            <option value="sleep">Sleep problems</option>
+            <option value="neuropathy">Tingling / neuropathy</option>
+            <option value="mouth">Mouth sores</option>
+            <option value="diarrhea">Diarrhea</option>
+            <option value="constipation">Constipation</option>
+            <option value="anxiety">Anxiety</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Severity (0-10)</label>
+          <input type="number" id="sym-severity" min="0" max="10" value="5">
+        </div>
+      </div>
+      <div class="field">
+        <label>Date &amp; time</label>
+        <input type="datetime-local" id="sym-date">
+      </div>
+      <div class="field">
+        <label>Notes (optional)</label>
+        <textarea id="sym-notes" rows="2" maxlength="500" placeholder="Trigger, duration, what helps..."></textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="Onco.Symptoms.add()">+ Save</button>
+      <div class="err" id="sym-err"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Severity Trend (30 days)</div>
+      <div id="sym-chart"></div>
+    </div>
+  </div>
+
+  <div class="pills" id="sym-filters">
+    <button class="pill active" data-symfilter="all">All</button>
+    <button class="pill" data-symfilter="recent">Last 7 days</button>
+    <button class="pill" data-symfilter="severe">Severe (7+)</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">History</div>
+    <div id="sym-list"></div>
+  </div>
+</section>
+
+<!-- ═════ PAIN MAP ═════ -->
+<section class="section" id="s-painmap">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · PAIN MAP</div>
+    <h1 class="sec-title">Pain Localization</h1>
+    <p class="sec-desc">Tap a body region to record pain in that area</p>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Select Region</div>
+      <div class="body-map">
+        <svg viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="body-region" data-region="head" cx="100" cy="35" rx="24" ry="28"/>
+          <rect class="body-region" data-region="neck" x="88" y="62" width="24" height="18" rx="4"/>
+          <rect class="body-region" data-region="chest" x="70" y="80" width="60" height="55" rx="8"/>
+          <rect class="body-region" data-region="abdomen" x="70" y="135" width="60" height="55" rx="8"/>
+          <ellipse class="body-region" data-region="arm-right" cx="50" cy="110" rx="14" ry="35"/>
+          <ellipse class="body-region" data-region="arm-left" cx="150" cy="110" rx="14" ry="35"/>
+          <ellipse class="body-region" data-region="hand-right" cx="45" cy="160" rx="10" ry="15"/>
+          <ellipse class="body-region" data-region="hand-left" cx="155" cy="160" rx="10" ry="15"/>
+          <rect class="body-region" data-region="hips" x="72" y="190" width="56" height="28" rx="6"/>
+          <rect class="body-region" data-region="leg-right" x="72" y="218" width="24" height="80" rx="8"/>
+          <rect class="body-region" data-region="leg-left" x="104" y="218" width="24" height="80" rx="8"/>
+          <ellipse class="body-region" data-region="foot-right" cx="82" cy="310" rx="12" ry="14"/>
+          <ellipse class="body-region" data-region="foot-left" cx="118" cy="310" rx="12" ry="14"/>
+        </svg>
+      </div>
+      <p style="text-align:center;font-size:.66rem;color:var(--text-mute)">Tap a region to select</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Record Pain</div>
+      <div class="field">
+        <label>Selected region</label>
+        <div id="pain-region-display" style="padding:6px 9px;background:var(--panel-3);border:1px solid var(--border-hi);font-size:.78rem;color:var(--text-mute)">-- none selected --</div>
+      </div>
+      <div class="field">
+        <label>Intensity (0-10)</label>
+        <input type="number" id="pain-intensity" min="0" max="10" value="5">
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="pain-date">
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="pain-notes" rows="2" maxlength="300"></textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="Onco.PainMap.save()">+ Save</button>
+      <div class="err" id="pain-err"></div>
+    </div>
+  </div>
+
+  <div class="card mt-2">
+    <div class="card-title">Pain Records</div>
+    <div id="pain-list"></div>
+  </div>
+</section>
+
+<!-- ═════ MEDICATIONS ═════ -->
+<section class="section" id="s-medications">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · MEDICATIONS</div>
+    <h1 class="sec-title">Medication Log</h1>
+    <p class="sec-desc">User-entered notes · Not clinically verified</p>
+  </div>
+
+  <div class="alert warn">
+    ⚠ This app stores your notes about medications. It does NOT verify doses, calculate schedules, or recommend changes. Always follow your care team's instructions.
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">New Medication</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Name <span class="req">*</span></label>
+        <input type="text" id="med-name" maxlength="80">
+      </div>
+      <div class="field">
+        <label>Dose / instruction</label>
+        <input type="text" id="med-dose" maxlength="80" placeholder="e.g. 500mg 2x/day">
+      </div>
+    </div>
+    <div class="field">
+      <label>Prescriber / origin</label>
+      <input type="text" id="med-source" maxlength="100" placeholder="e.g. Dr. Smith - 2025-03-15">
+    </div>
+    <div class="field">
+      <label>Notes to verify with professional</label>
+      <textarea id="med-notes" rows="2" maxlength="300"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="Onco.Meds.add()">+ Save Medication</button>
+    <div class="err" id="med-err"></div>
+  </div>
+
+  <div id="med-list"></div>
+</section>
+
+<!-- ═════ APPOINTMENTS ═════ -->
+<section class="section" id="s-appointments">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · APPOINTMENTS</div>
+    <h1 class="sec-title">Appointments</h1>
+    <p class="sec-desc">Prepare questions, concerns, symptoms for your visits</p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">New Appointment</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Date &amp; time <span class="req">*</span></label>
+        <input type="datetime-local" id="apt-date">
+      </div>
+      <div class="field">
+        <label>Doctor / clinic</label>
+        <input type="text" id="apt-doctor" maxlength="100">
+      </div>
+    </div>
+    <div class="field">
+      <label>Purpose</label>
+      <input type="text" id="apt-purpose" maxlength="120">
+    </div>
+    <div class="field">
+      <label>Questions (one per line)</label>
+      <textarea id="apt-questions" rows="3" maxlength="1000"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="Onco.Apts.add()">+ Save Appointment</button>
+    <div class="err" id="apt-err"></div>
+  </div>
+
+  <div class="pills" id="apt-filters">
+    <button class="pill active" data-aptfilter="upcoming">Upcoming</button>
+    <button class="pill" data-aptfilter="past">Past</button>
+    <button class="pill" data-aptfilter="all">All</button>
+  </div>
+
+  <div id="apt-list"></div>
+</section>
+
+<!-- ═════ QUESTIONS ═════ -->
+<section class="section" id="s-questions">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · QUESTIONS</div>
+    <h1 class="sec-title">Question Bank</h1>
+    <p class="sec-desc">Questions to ask at appointments · Track which you've asked</p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">Add Question</div>
+    <div class="field">
+      <label>Question <span class="req">*</span></label>
+      <input type="text" id="q-text" maxlength="200">
+    </div>
+    <div class="row">
+      <button class="btn btn-primary btn-sm" onclick="Onco.Questions.add()">+ Add</button>
+      <button class="btn btn-secondary btn-sm" onclick="Onco.Questions.showLibrary()">📚 Suggestion Library</button>
+    </div>
+    <div class="err" id="q-err"></div>
+  </div>
+
+  <div class="pills" id="q-filters">
+    <button class="pill active" data-qfilter="all">All</button>
+    <button class="pill" data-qfilter="pending">Pending</button>
+    <button class="pill" data-qfilter="asked">Asked</button>
+  </div>
+
+  <div id="q-list"></div>
+</section>
+
+<!-- ═════ CARE TEAM ═════ -->
+<section class="section" id="s-careteam">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · CARE TEAM</div>
+    <h1 class="sec-title">Care Team Contacts</h1>
+    <p class="sec-desc">Quick reference for your medical team</p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">Add Contact</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Name <span class="req">*</span></label>
+        <input type="text" id="ct-name" maxlength="80">
+      </div>
+      <div class="field">
+        <label>Role</label>
+        <input type="text" id="ct-role" maxlength="80" placeholder="e.g. Oncologist">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="ct-phone" maxlength="40">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="ct-email" maxlength="100">
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="ct-notes" rows="2" maxlength="200"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="Onco.CareTeam.add()">+ Save Contact</button>
+    <div class="err" id="ct-err"></div>
+  </div>
+
+  <div id="ct-list"></div>
+</section>
+
+<!-- ═════ KNOWLEDGE ═════ -->
+<section class="section" id="s-knowledge">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · KNOWLEDGE</div>
+    <h1 class="sec-title">Knowledge Center</h1>
+    <p class="sec-desc">Educational articles with sources · Not individual medical advice</p>
+  </div>
+
+  <div class="search-box">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="kn-search" placeholder="Search topics...">
+  </div>
+  <div class="pills" id="kn-categories"></div>
+  <div id="kn-list"></div>
+  <div id="kn-detail" style="display:none"></div>
+</section>
+
+<!-- ═════ GLOSSARY ═════ -->
+<section class="section" id="s-glossary">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · GLOSSARY</div>
+    <h1 class="sec-title">Medical Glossary</h1>
+    <p class="sec-desc">Common oncology terms in plain language</p>
+  </div>
+
+  <div class="search-box">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="gl-search" placeholder="Search terms...">
+  </div>
+  <div id="gl-list"></div>
+</section>
+
+<!-- ═════ JOURNAL ═════ -->
+<section class="section" id="s-journal">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · JOURNAL</div>
+    <h1 class="sec-title">Well-being Journal</h1>
+    <p class="sec-desc">Personal diary · Not a clinical assessment · All fields optional</p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">New Entry</div>
+    <div class="field">
+      <label>Date &amp; time</label>
+      <input type="datetime-local" id="jr-date">
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Mood</label>
+        <div class="scale" id="jr-mood"></div>
+        <div class="scale-labels"><span>1 low</span><span>5 high</span></div>
+      </div>
+      <div class="field">
+        <label>Energy</label>
+        <div class="scale" id="jr-energy"></div>
+        <div class="scale-labels"><span>1 low</span><span>5 high</span></div>
+      </div>
+      <div class="field">
+        <label>Sleep</label>
+        <div class="scale" id="jr-sleep"></div>
+        <div class="scale-labels"><span>1 poor</span><span>5 great</span></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Reflections (optional)</label>
+      <textarea id="jr-notes" rows="3" maxlength="1000"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="Onco.Journal.add()">+ Save Entry</button>
+    <div class="err" id="jr-err"></div>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">Mood Trend (14 days)</div>
+    <div id="jr-chart"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Mood Heatmap (last 90 days)</div>
+    <div id="jr-heatmap"></div>
+  </div>
+
+  <div id="jr-list"></div>
+</section>
+
+<!-- ═════ VITALS ═════ -->
+<section class="section" id="s-vitals">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · VITALS</div>
+    <h1 class="sec-title">Vital Signs</h1>
+    <p class="sec-desc">Record measurements to discuss with your care team</p>
+  </div>
+
+  <div class="alert info">
+    ℹ These are your own measurements. Interpretation requires your care team — this app does not evaluate what is normal or abnormal for you.
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">New Measurement</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Date &amp; time</label>
+        <input type="datetime-local" id="vt-date">
+      </div>
+      <div class="field">
+        <label>Temperature (°C)</label>
+        <input type="number" id="vt-temp" step="0.1" placeholder="36.5">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Systolic (mmHg)</label>
+        <input type="number" id="vt-sys" placeholder="120">
+      </div>
+      <div class="field">
+        <label>Diastolic (mmHg)</label>
+        <input type="number" id="vt-dia" placeholder="80">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Heart rate (bpm)</label>
+        <input type="number" id="vt-hr" placeholder="72">
+      </div>
+      <div class="field">
+        <label>Weight (kg)</label>
+        <input type="number" id="vt-weight" step="0.1" placeholder="70">
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="vt-notes" rows="2" maxlength="300"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="Onco.Vitals.add()">+ Save Measurement</button>
+    <div class="err" id="vt-err"></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Weight Trend</div>
+      <div id="vt-chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Recent Measurements</div>
+      <div id="vt-list"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════ TIMELINE ═════ -->
+<section class="section" id="s-timeline">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · TIMELINE</div>
+    <h1 class="sec-title">Care Timeline</h1>
+    <p class="sec-desc">Milestones you've entered · Nothing imported automatically</p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">Add Event</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="tl-date">
+      </div>
+      <div class="field">
+        <label>Type</label>
+        <select id="tl-type">
+          <option value="diagnosis">Diagnosis</option>
+          <option value="appointment">Appointment</option>
+          <option value="test">Test / result</option>
+          <option value="treatment">Treatment session</option>
+          <option value="surgery">Surgery</option>
+          <option value="milestone">Personal milestone</option>
+          <option value="note">Note</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Title <span class="req">*</span></label>
+      <input type="text" id="tl-title" maxlength="120">
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="tl-notes" rows="2" maxlength="500"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="Onco.Timeline.add()">+ Add Event</button>
+    <div class="err" id="tl-err"></div>
+  </div>
+
+  <div id="tl-list"></div>
+</section>
+
+<!-- ═════ NUTRITION ═════ -->
+<section class="section" id="s-nutrition">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · NUTRITION</div>
+    <h1 class="sec-title">Nutrition &amp; Hydration</h1>
+    <p class="sec-desc">Track water intake, appetite, and meals for care-team discussions</p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">Daily Log</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="nt-date">
+      </div>
+      <div class="field">
+        <label>Water (glasses, ~250ml)</label>
+        <input type="number" id="nt-water" min="0" max="30" value="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Meals eaten</label>
+        <input type="number" id="nt-meals" min="0" max="10" value="0">
+      </div>
+      <div class="field">
+        <label>Appetite (1-5)</label>
+        <select id="nt-appetite">
+          <option value="1">1 — Very poor</option>
+          <option value="2">2 — Poor</option>
+          <option value="3" selected>3 — OK</option>
+          <option value="4">4 — Good</option>
+          <option value="5">5 — Very good</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes (e.g. foods that worked)</label>
+      <textarea id="nt-notes" rows="2" maxlength="300"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="Onco.Nutrition.add()">+ Save Day</button>
+    <div class="err" id="nt-err"></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Water Intake (7 days)</div>
+      <div id="nt-chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Recent Days</div>
+      <div id="nt-list"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════ SLEEP ═════ -->
+<section class="section" id="s-sleep">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · SLEEP</div>
+    <h1 class="sec-title">Sleep Tracker</h1>
+    <p class="sec-desc">Log sleep hours and quality to discuss with your care team</p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">Log Sleep</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Night of</label>
+        <input type="date" id="sl-date">
+      </div>
+      <div class="field">
+        <label>Hours (0-24)</label>
+        <input type="number" id="sl-hours" min="0" max="24" step="0.5" value="7">
+      </div>
+    </div>
+    <div class="field">
+      <label>Quality (1-5)</label>
+      <select id="sl-quality">
+        <option value="1">1 — Very poor</option>
+        <option value="2">2 — Poor</option>
+        <option value="3" selected>3 — OK</option>
+        <option value="4">4 — Good</option>
+        <option value="5">5 — Excellent</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Notes (interruptions, dreams, aids)</label>
+      <textarea id="sl-notes" rows="2" maxlength="300"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="Onco.Sleep.add()">+ Save Night</button>
+    <div class="err" id="sl-err"></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">Hours Trend (14 nights)</div>
+      <div id="sl-chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Recent Nights</div>
+      <div id="sl-list"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════ COMMUNICATION ═════ -->
+<section class="section" id="s-communication">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · COMMUNICATION</div>
+    <h1 class="sec-title">Communication Log</h1>
+    <p class="sec-desc">What was discussed at appointments and phone calls</p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">New Communication</div>
+    <div class="form-row">
+      <div class="field">
+        <label>Date &amp; time</label>
+        <input type="datetime-local" id="cm-date">
+      </div>
+      <div class="field">
+        <label>With whom</label>
+        <input type="text" id="cm-with" maxlength="100" placeholder="e.g. Dr. Smith, nurse">
+      </div>
+    </div>
+    <div class="field">
+      <label>Type</label>
+      <select id="cm-type">
+        <option value="in-person">In-person visit</option>
+        <option value="phone">Phone call</option>
+        <option value="telehealth">Telehealth</option>
+        <option value="email">Email / portal message</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>What was discussed</label>
+      <textarea id="cm-notes" rows="3" maxlength="1000"></textarea>
+    </div>
+    <div class="field">
+      <label>Follow-up items</label>
+      <textarea id="cm-followup" rows="2" maxlength="400"></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="Onco.Communication.add()">+ Save</button>
+    <div class="err" id="cm-err"></div>
+  </div>
+
+  <div id="cm-list"></div>
+</section>
+
+<!-- ═════ REPORTS ═════ -->
+<section class="section" id="s-reports">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · REPORTS</div>
+    <h1 class="sec-title">Printable Reports</h1>
+    <p class="sec-desc">Summary sheets for your medical team</p>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-title">Symptoms Report</div>
+      <p style="font-size:.72rem;color:var(--text-mute);margin-bottom:8px">Recent symptoms with severity and dates.</p>
+      <button class="btn btn-primary btn-sm" onclick="Onco.Reports.symptoms()">🖨 Generate</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Journal Report</div>
+      <p style="font-size:.72rem;color:var(--text-mute);margin-bottom:8px">Well-being entries formatted for sharing.</p>
+      <button class="btn btn-primary btn-sm" onclick="Onco.Reports.journal()">🖨 Generate</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Appointment Prep</div>
+      <p style="font-size:.72rem;color:var(--text-mute);margin-bottom:8px">Questions and recent context for next visit.</p>
+      <button class="btn btn-primary btn-sm" onclick="Onco.Reports.appointments()">🖨 Generate</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Full Summary</div>
+      <p style="font-size:.72rem;color:var(--text-mute);margin-bottom:8px">All modules condensed into one page.</p>
+      <button class="btn btn-primary btn-sm" onclick="Onco.Reports.full()">🖨 Generate</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Vitals Report</div>
+      <p style="font-size:.72rem;color:var(--text-mute);margin-bottom:8px">Blood pressure, weight, temperature, heart rate.</p>
+      <button class="btn btn-primary btn-sm" onclick="Onco.Reports.vitals()">🖨 Generate</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Export CSV</div>
+      <p style="font-size:.72rem;color:var(--text-mute);margin-bottom:8px">All data as spreadsheet-compatible CSV.</p>
+      <button class="btn btn-primary btn-sm" onclick="Onco.Reports.csv()">↓ Download</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═════ RESOURCES ═════ -->
+<section class="section" id="s-resources">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · RESOURCES</div>
+    <h1 class="sec-title">Trusted Resources</h1>
+    <p class="sec-desc">Links to established public organizations · Always verify current info on official sites</p>
+  </div>
+
+  <div class="alert info">
+    ℹ These are external links. OncoHope AI does not control their content. Verify all information on the official sites.
+  </div>
+
+  <div id="res-list"></div>
+</section>
+
+<!-- ═════ DATA ═════ -->
+<section class="section" id="s-data">
+  <div class="sec-head">
+    <div class="sec-eyebrow">MODULE · DATA</div>
+    <h1 class="sec-title">Privacy &amp; Data</h1>
+    <p class="sec-desc">Understand what we store, where, and how to remove it</p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">Storage</div>
+    <p style="font-size:.76rem;color:var(--text-dim);line-height:1.7">
+      All data is stored in your browser's localStorage. It never leaves your device.
+      No account, no cloud sync, no server.
+    </p>
+    <p style="font-size:.72rem;color:var(--amber);margin-top:6px">
+      ⚠ localStorage is NOT encrypted. Clearing browser data erases everything. Export backups regularly.
+    </p>
+  </div>
+
+  <div class="card mb-2">
+    <div class="card-title">Preferences</div>
+    <div class="row" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div><strong style="font-size:.76rem">Theme</strong><br><span style="font-size:.66rem;color:var(--text-mute)">CRT dark or light terminal</span></div>
+      <div class="row">
+        <button class="btn btn-sm" id="pr-theme-crt" onclick="Onco.setTheme('crt')">CRT</button>
+        <button class="btn btn-sm" id="pr-theme-light" onclick="Onco.setTheme('light')">Light</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Data Actions</div>
+    <div class="row" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div><strong style="font-size:.76rem">Export all</strong><br><span style="font-size:.66rem;color:var(--text-mute)">JSON backup of all data</span></div>
+      <button class="btn btn-secondary btn-sm" onclick="Onco.exportAll()">↓ Export</button>
+    </div>
+    <div class="row" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div><strong style="font-size:.76rem">Import</strong><br><span style="font-size:.66rem;color:var(--text-mute)">Restore from backup</span></div>
+      <input type="file" id="imp-file" accept=".json" style="display:none" onchange="Onco.importAll(this)">
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('imp-file').click()">↑ Import</button>
+    </div>
+    <div class="row" style="justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div><strong style="font-size:.76rem">Load demo</strong><br><span style="font-size:.66rem;color:var(--text-mute)">Fictional sample data</span></div>
+      <button class="btn btn-secondary btn-sm" onclick="Onco.loadDemo()">Load Demo</button>
+    </div>
+    <div class="row" style="justify-content:space-between;padding:8px 0">
+      <div><strong style="font-size:.76rem;color:var(--red)">Clear all</strong><br><span style="font-size:.66rem;color:var(--text-mute)">Permanently remove all data</span></div>
+      <button class="btn btn-danger btn-sm" onclick="Onco.clearAll()">Clear</button>
+    </div>
+  </div>
+
+  <div class="card mt-2">
+    <div class="card-title">About</div>
+    <p style="font-size:.74rem;color:var(--text-dim);line-height:1.7">
+      <strong>OncoHope AI CRT v3.0</strong><br>
+      Single-file HTML application · Zero dependencies · Fully offline · No AI model connected<br><br>
+      <strong>Limitations:</strong> All content is educational. No diagnosis, prescription, or individual medical advice. localStorage is not encrypted. No formal clinical review.
+    </p>
+  </div>
+</section>
+
+<!-- ═════ TESTS ═════ -->
+<section class="section" id="s-tests">
+  <div class="sec-head">
+    <div class="sec-eyebrow">QUALITY</div>
+    <h1 class="sec-title">Test Suite</h1>
+    <p class="sec-desc">Real assertions against the actual implementation</p>
+  </div>
+  <div class="card mb-2">
+    <button class="btn btn-primary" onclick="Onco.Tests.runAll()">▶ Run All Tests</button>
+    <span class="chip" id="test-summary" style="margin-left:8px">not run</span>
+  </div>
+  <div class="card">
+    <div class="card-title">Results</div>
+    <div id="test-output">
+      <div class="empty">
+        <div class="ico">✓</div>
+        <h3>Ready to Verify</h3>
+        <p>Click "Run All Tests" to verify application logic</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+<footer>
+  <span id="footer-text">OncoHope AI · CRT v3.0 · Local only · No telemetry</span>
+</footer>
+</div>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div class="modal" id="modal"><div class="modal-content" id="modal-content"></div></div>
+<div class="palette-overlay" id="palette-overlay">
+  <div class="palette">
+    <input type="text" class="palette-input" id="palette-input" placeholder="Type a command..." autocomplete="off">
+    <div class="palette-list" id="palette-list"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function $(id) { return document.getElementById(id); }
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+function uid(p) { return (p||'x')+'_'+Date.now()+'_'+Math.floor(Math.random()*10000); }
+function nowISO() { return new Date().toISOString(); }
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-US', {year:'numeric', month:'short', day:'numeric'});
+  } catch(e) { return iso; }
+}
+function fmtDateTime(iso) {
+  if (!iso) return '—';
+  try {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleString('en-US', {year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+  } catch(e) { return iso; }
+}
+function fmtNum(n, d) {
+  if (n == null || !isFinite(n)) return '—';
+  d = typeof d === 'number' ? d : 1;
+  return Number(n).toFixed(d);
+}
+function validDate(str) {
+  if (!str) return false;
+  var d = new Date(str);
+  return !isNaN(d.getTime());
+}
+function toast(msg, type) {
+  var t = $('toast');
+  t.textContent = msg;
+  t.className = type || '';
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+}
+function download(content, filename, mime) {
+  try {
+    var safe = filename.replace(/[^a-z0-9_.\-]/gi, '_');
+    var blob = new Blob([content], { type: mime + ';charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = safe;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 100);
+  } catch(e) { toast('Download failed', 'error'); }
+}
+function daysBetween(d1, d2) {
+  var ms = Math.abs(new Date(d2) - new Date(d1));
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+var STORAGE_KEY = 'oncohope_crt_v3';
+var SCHEMA_VERSION = 3;
+
+var State = {
+  version: SCHEMA_VERSION,
+  theme: 'crt',
+  symptoms: [],
+  painLogs: [],
+  medications: [],
+  appointments: [],
+  questions: [],
+  careTeam: [],
+  journal: [],
+  journalScores: { mood: 0, energy: 0, sleep: 0 },
+  vitals: [],
+  timeline: [],
+  nutrition: [],
+  sleep: [],
+  communication: [],
+  selectedPainRegion: null,
+  symFilter: 'all',
+  aptFilter: 'upcoming',
+  qFilter: 'all'
+};
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(State)); }
+  catch(e) {
+    if (!save._w) { save._w = 1; toast('Storage unavailable', 'error'); }
+  }
+}
+function load() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    var d = JSON.parse(raw);
+    if (!d || typeof d !== 'object') return;
+    Object.keys(State).forEach(function(k) {
+      if (d[k] !== undefined) State[k] = d[k];
+    });
+  } catch(e) { console.warn('load failed:', e); }
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+var NAV = [
+  { id: 'dashboard', label: 'Dashboard', group: 'Main', icon: '▣' },
+  { id: 'symptoms', label: 'Symptoms', group: 'Record', icon: '◉', count: 'symptoms' },
+  { id: 'painmap', label: 'Pain Map', group: 'Record', icon: '◈', count: 'painLogs' },
+  { id: 'vitals', label: 'Vitals', group: 'Record', icon: '◐', count: 'vitals' },
+  { id: 'medications', label: 'Medications', group: 'Record', icon: '◫', count: 'medications' },
+  { id: 'nutrition', label: 'Nutrition', group: 'Record', icon: '◍', count: 'nutrition' },
+  { id: 'sleep', label: 'Sleep', group: 'Record', icon: '☾', count: 'sleep' },
+  { id: 'appointments', label: 'Appointments', group: 'Prepare', icon: '◪', count: 'appointments' },
+  { id: 'questions', label: 'Questions', group: 'Prepare', icon: '?', count: 'questions' },
+  { id: 'careteam', label: 'Care Team', group: 'Prepare', icon: '◉', count: 'careTeam' },
+  { id: 'communication', label: 'Comm Log', group: 'Prepare', icon: '✉', count: 'communication' },
+  { id: 'knowledge', label: 'Knowledge', group: 'Learn', icon: '◬' },
+  { id: 'glossary', label: 'Glossary', group: 'Learn', icon: '◭' },
+  { id: 'journal', label: 'Journal', group: 'Well-being', icon: '◑', count: 'journal' },
+  { id: 'timeline', label: 'Timeline', group: 'Well-being', icon: '⊟', count: 'timeline' },
+  { id: 'reports', label: 'Reports', group: 'Well-being', icon: '◧' },
+  { id: 'resources', label: 'Resources', group: 'Support', icon: '◮' },
+  { id: 'data', label: 'Data', group: 'System', icon: '◰' },
+  { id: 'tests', label: 'Tests', group: 'System', icon: '✓' }
+];
+
+function buildNav() {
+  var html = '';
+  var lastGroup = '';
+  NAV.forEach(function(item) {
+    if (item.group !== lastGroup) {
+      html += '<div class="nav-group">' + esc(item.group) + '</div>';
+      lastGroup = item.group;
+    }
+    var cnt = '';
+    if (item.count && State[item.count] && State[item.count].length > 0) {
+      cnt = '<span class="cnt">' + State[item.count].length + '</span>';
+    }
+    html += '<div class="nav-item" data-nav="' + item.id + '">' +
+      '<span class="ic">' + esc(item.icon) + '</span>' +
+      '<span>' + esc(item.label) + '</span>' + cnt + '</div>';
+  });
+  var el = $('sidebar-nav');
+  el.innerHTML = html;
+  el.querySelectorAll('[data-nav]').forEach(function(item) {
+    item.addEventListener('click', function() { go(item.getAttribute('data-nav')); });
+  });
+}
+
+function go(section) {
+  document.querySelectorAll('.section').forEach(function(s) {
+    s.classList.toggle('active', s.id === 's-' + section);
+  });
+  document.querySelectorAll('.nav-item').forEach(function(n) {
+    n.classList.toggle('active', n.getAttribute('data-nav') === section);
+  });
+  var item = NAV.find(function(i) { return i.id === section; });
+  if (item) {
+    $('page-eyebrow').textContent = item.group.toUpperCase() + ' · ' + section.toUpperCase();
+    $('page-title').textContent = item.label.toUpperCase();
+  }
+  $('sidebar').classList.remove('open');
+  $('backdrop').classList.remove('show');
+  var renders = {
+    dashboard: renderDashboard,
+    symptoms: renderSymptoms,
+    painmap: renderPainMap,
+    vitals: renderVitals,
+    medications: renderMeds,
+    nutrition: renderNutrition,
+    sleep: renderSleep,
+    appointments: renderApts,
+    questions: renderQuestions,
+    careteam: renderCareTeam,
+    communication: renderCommunication,
+    knowledge: renderKnowledge,
+    glossary: renderGlossary,
+    journal: renderJournal,
+    timeline: renderTimeline,
+    reports: function() {},
+    resources: renderResources,
+    data: renderData,
+    tests: function() {}
+  };
+  if (renders[section]) renders[section]();
+  window.scrollTo({top: 0, behavior: 'instant'});
+}
+
+// ═══════════════════════════════════════════════════════
+// ARTICLE & GLOSSARY DATA
+// ═══════════════════════════════════════════════════════
+var ARTICLES = [
+  { id: 'a1', cat: 'basics', title: 'Understanding Cancer',
+    summary: 'Overview of cancer, terminology, and how diagnoses are described.',
+    body: 'Cancer is a broad term for diseases where abnormal cells divide without normal controls and may spread to other tissues. Cancers are classified by origin — carcinoma (epithelial), sarcoma (connective), lymphoma (lymphatic), leukemia (blood-forming). Common concepts: benign vs malignant (invasion ability), stage (spread), grade (cell abnormality). Diagnosis typically involves clinical exam, imaging, lab tests, and tissue biopsy. Each case is unique — only your care team can interpret your specific findings.',
+    tags: ['cancer','basics','diagnosis'],
+    source: 'Original educational summary. Not clinically reviewed.' },
+  { id: 'a2', cat: 'basics', title: 'Common Medical Terms',
+    summary: 'Plain-language glossary of frequently used oncology terms.',
+    body: 'Biopsy: tissue sample for lab analysis. Pathology report: lab analysis of tissue. Histology: study of tissue structure under microscope. Metastasis: spread from original site. Adjuvant: treatment after primary to reduce recurrence. Neoadjuvant: treatment before primary. Palliative: focus on symptom relief and quality of life at any stage. Protocol: defined treatment plan with schedules.',
+    tags: ['terms','glossary'],
+    source: 'Original educational summary.' },
+  { id: 'a3', cat: 'diagnosis', title: 'Diagnostic Procedures',
+    summary: 'Overview of imaging, blood tests, and biopsies.',
+    body: 'Imaging studies: X-ray (basic structure), CT (cross-sections), MRI (soft tissue detail, no radiation), ultrasound (real-time, guides biopsies), PET (metabolic activity). Lab tests: CBC (blood cells), tumor markers (not diagnostic alone), genetic tests (may guide treatment). Biopsy: definitive diagnosis — types include needle, core, surgical. Your care team will explain what fits your situation.',
+    tags: ['diagnosis','imaging'],
+    source: 'Original educational summary.' },
+  { id: 'a4', cat: 'diagnosis', title: 'Reading Pathology Reports',
+    summary: 'Structure of pathology reports and why context matters.',
+    body: 'Typical sections: specimen (what was sampled), clinical history, gross description (naked eye), microscopic description, diagnosis (pathologist conclusion), grading/staging elements, margins (edges of surgical specimens). Same findings can mean different things depending on cancer type and history. Always review reports with your care team — do not self-interpret.',
+    tags: ['pathology','reports'],
+    source: 'Original educational summary.' },
+  { id: 'a5', cat: 'treatment', title: 'Treatment Categories',
+    summary: 'Common treatment approaches in oncology.',
+    body: 'Surgery: removal of tumor or affected tissue. Radiation: high-energy beams targeting cancer cells. Chemotherapy: medications affecting dividing cells. Immunotherapy: helps immune system recognize cancer. Targeted therapy: drugs hitting specific molecular features. Hormone therapy: for hormone-sensitive cancers. Stem cell transplant: certain blood cancers. Many plans combine modalities — sequence depends on type, stage, and individual factors.',
+    tags: ['treatment','options'],
+    source: 'Original educational summary.' },
+  { id: 'a6', cat: 'treatment', title: 'Side Effects — When to Call',
+    summary: 'Symptoms that often warrant prompt contact with your team.',
+    body: 'Thresholds vary by treatment and person — ask your care team for YOUR specific guidance. Situations that often warrant prompt contact: fever (especially above your team-set threshold), unusual bleeding/bruising, difficulty breathing, severe uncontrolled pain, persistent vomiting, new confusion, severe weakness. Record what you observe — details help your team respond.',
+    tags: ['side-effects','safety'],
+    source: 'Educational summary. Individual guidance from your care team.' },
+  { id: 'a7', cat: 'wellbeing', title: 'Nutrition During Treatment',
+    summary: 'General principles of nutrition support.',
+    body: 'Prioritize adequate calories and protein, especially with reduced appetite. Small frequent meals if large ones are difficult. Maintain hydration. Food safety matters (wash produce, cook meats, refrigerate promptly). Discuss supplements with your team — some interact with treatments. Ask for referral to an oncology dietitian for personalized guidance.',
+    tags: ['nutrition','wellbeing'],
+    source: 'Original educational summary.' },
+  { id: 'a8', cat: 'wellbeing', title: 'Emotional Well-being',
+    summary: 'Common emotional experiences and when to seek support.',
+    body: 'Common experiences: anxiety before appointments, sadness or grief, fatigue, difficulty concentrating, concerns about future/relationships/work. Many hospitals offer psycho-oncology, social work, and support groups. Persistent low mood or anxiety warrants discussion with your care team. Seeking help is a sign of strength. Positive feelings do not cure cancer; difficult feelings do not cause worse outcomes.',
+    tags: ['emotional','wellbeing'],
+    source: 'Original educational summary.' },
+  { id: 'a9', cat: 'caregiving', title: 'For Caregivers',
+    summary: 'Supporting someone with cancer while caring for yourself.',
+    body: 'Practical: organize appointments, offer specific help (meals, rides), respect privacy. Emotional: listen without rushing to reassure, ask what is helpful, follow the patient\'s lead on disclosure. Your self-care matters — rest, meals, help from others, caregiver support groups. Speak with your own professional if signs of burnout appear.',
+    tags: ['caregiving','support'],
+    source: 'Original educational summary.' },
+  { id: 'a10', cat: 'practical', title: 'Preparing for Appointments',
+    summary: 'Getting the most from medical visits.',
+    body: 'Before: write top 3-5 questions, note symptoms, list medications, bring relevant reports, consider a support person and notes tool. During: ask for clarification, request written summaries, confirm next steps and contacts. It is always acceptable to ask "Can you explain this in simpler terms?" After: review notes, record the visit in a timeline, note pending tests.',
+    tags: ['practical','appointments'],
+    source: 'Original educational summary.' },
+  { id: 'a11', cat: 'basics', title: 'Understanding Clinical Trials',
+    summary: 'What clinical trials are and questions to ask.',
+    body: 'Clinical trials are research studies evaluating new treatments. Phases: Phase I (safety), Phase II (effectiveness), Phase III (comparison to standard), Phase IV (post-approval monitoring). Eligibility criteria define who can participate. Ask your care team: Are there relevant trials for me? What are the potential benefits and risks? How does participation affect my standard care? Where can I find trial listings?',
+    tags: ['trials','research'],
+    source: 'Original educational summary.' },
+  { id: 'a12', cat: 'treatment', title: 'Managing Treatment Schedules',
+    summary: 'Organization tips for complex treatment regimens.',
+    body: 'Keep a master calendar of appointments, treatments, and tests. Note cycle patterns (e.g., treatment day, rest days). Track pre-medications and post-treatment instructions. Record side effects between visits. Ask your team about expected patterns for YOUR specific regimen. Keep a single contact list for after-hours questions.',
+    tags: ['practical','treatment'],
+    source: 'Original educational summary.' }
+];
+
+var GLOSSARY = [
+  { term: 'Adenocarcinoma', def: 'Cancer originating in glandular cells (e.g., breast, lung, colon).' },
+  { term: 'Adjuvant', def: 'Treatment after primary treatment to reduce recurrence risk.' },
+  { term: 'Alopecia', def: 'Hair loss, common with some chemotherapies.' },
+  { term: 'Anemia', def: 'Reduced red blood cells — can cause fatigue, shortness of breath.' },
+  { term: 'Antiemetic', def: 'Medication to control nausea and vomiting.' },
+  { term: 'Benign', def: 'Not cancerous. Grows locally without invading other tissues.' },
+  { term: 'Biopsy', def: 'Removal of a small tissue sample for lab analysis.' },
+  { term: 'Carcinoma', def: 'Cancer originating in epithelial tissue (skin, linings, organs).' },
+  { term: 'Catheter', def: 'Thin tube inserted to deliver medications or draw blood.' },
+  { term: 'CBC', def: 'Complete Blood Count — measures blood cell types and counts.' },
+  { term: 'Chemotherapy', def: 'Medications that affect dividing cells, including cancer cells.' },
+  { term: 'Cycle', def: 'Treatment period between doses, with defined rest intervals.' },
+  { term: 'Dosage', def: 'Amount and frequency of a medication, defined by your care team.' },
+  { term: 'Edema', def: 'Swelling caused by fluid retention in tissues.' },
+  { term: 'Efficacy', def: 'How well a treatment works for its intended purpose.' },
+  { term: 'Fatigue', def: 'Persistent tiredness, common in cancer and treatment.' },
+  { term: 'Febrile', def: 'Related to fever.' },
+  { term: 'Grade', def: 'How abnormal cells appear under microscope (higher = more aggressive).' },
+  { term: 'Hemoglobin', def: 'Protein in red blood cells that carries oxygen.' },
+  { term: 'Histology', def: 'Microscopic study of tissue structure.' },
+  { term: 'Hormone therapy', def: 'Treatment blocking hormones that feed certain cancers.' },
+  { term: 'Immunotherapy', def: 'Helps immune system recognize and attack cancer cells.' },
+  { term: 'Infusion', def: 'Delivering medication intravenously over time.' },
+  { term: 'Lymphoma', def: 'Cancer of the lymphatic system.' },
+  { term: 'Malignant', def: 'Cancerous. Can invade nearby tissues and spread.' },
+  { term: 'Margin', def: 'Edge of surgically removed tissue. "Clear" margin = no tumor cells.' },
+  { term: 'Metastasis', def: 'Spread of cancer cells from original site to another location.' },
+  { term: 'Mucositis', def: 'Inflammation of mucous membranes (mouth, gut) — common side effect.' },
+  { term: 'Neoadjuvant', def: 'Treatment given before primary treatment (e.g., before surgery).' },
+  { term: 'Neutropenia', def: 'Low neutrophils (white blood cells) — increases infection risk.' },
+  { term: 'Oncologist', def: 'Physician specializing in cancer treatment.' },
+  { term: 'Palliative', def: 'Care focused on symptom relief and quality of life at any stage.' },
+  { term: 'Pathology', def: 'Study of tissues and cells for diagnosis.' },
+  { term: 'PET-CT', def: 'Combined imaging showing metabolic activity and structure.' },
+  { term: 'Placebo', def: 'Inactive substance used in clinical trials.' },
+  { term: 'Platelets', def: 'Blood cells involved in clotting.' },
+  { term: 'Protocol', def: 'Specific defined treatment plan with schedules.' },
+  { term: 'Radiation therapy', def: 'High-energy radiation to destroy cancer cells.' },
+  { term: 'Recurrence', def: 'Return of cancer after a period of remission.' },
+  { term: 'Remission', def: 'Reduction or disappearance of cancer signs after treatment.' },
+  { term: 'Sarcoma', def: 'Cancer originating in connective tissue (bone, muscle, fat).' },
+  { term: 'Staging', def: 'Classification of how far cancer has spread. Systems vary by type.' },
+  { term: 'Stomatitis', def: 'Inflammation of mouth lining — can cause sores.' },
+  { term: 'Targeted therapy', def: 'Drugs attacking specific features of cancer cells.' },
+  { term: 'Toxicity', def: 'Adverse effect of a medication on normal tissues.' },
+  { term: 'Tumor', def: 'Abnormal mass of tissue. May be benign or malignant.' },
+  { term: 'Ultrasound', def: 'Imaging using sound waves; useful for guided biopsies.' },
+  { term: 'White blood cells', def: 'Immune cells that fight infection.' },
+  { term: 'Xerostomia', def: 'Dry mouth, common with certain treatments.' }
+];
+
+var RESOURCES = [
+  { name: 'National Cancer Institute (NCI)', url: 'https://www.cancer.gov', desc: 'US government cancer research and education.' },
+  { name: 'World Health Organization — Cancer', url: 'https://www.who.int/health-topics/cancer', desc: 'Global public health information on cancer.' },
+  { name: 'American Cancer Society', url: 'https://www.cancer.org', desc: 'Patient education and support resources.' },
+  { name: 'Cancer.Net (ASCO)', url: 'https://www.cancer.net', desc: 'Oncologist-reviewed patient information.' },
+  { name: 'Macmillan Cancer Support', url: 'https://www.macmillan.org.uk', desc: 'UK-based support and information.' },
+  { name: 'Cancer Research UK', url: 'https://www.cancerresearchuk.org', desc: 'Research and patient information.' },
+  { name: 'INCA — Instituto Nacional de Câncer (Brazil)', url: 'https://www.gov.br/inca', desc: 'Brazilian national cancer institute.' },
+  { name: 'Ministério da Saúde — Câncer (Brazil)', url: 'https://www.gov.br/saude/pt-br/assuntos/saude-de-a-a-z/c/cancer', desc: 'Brazilian Ministry of Health cancer portal.' }
+];
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderDashboard() {
+  var stats = [
+    { label: 'Symptoms', value: State.symptoms.length },
+    { label: 'Vitals', value: State.vitals.length },
+    { label: 'Appointments', value: State.appointments.length },
+    { label: 'Journal', value: State.journal.length }
+  ];
+  $('dash-stats').innerHTML = stats.map(function(s) {
+    return '<div class="stat"><div class="stat-label">' + esc(s.label) + '</div>' +
+      '<div class="stat-value">' + s.value + '</div></div>';
+  }).join('');
+
+  var status = [
+    { k: 'Storage', v: (function(){ try { localStorage.setItem('t','1'); localStorage.removeItem('t'); return '✓ OK'; } catch(e) { return '✗ Fail'; }})() },
+    { k: 'Schema', v: 'v' + SCHEMA_VERSION },
+    { k: 'Records', v: (State.symptoms.length + State.vitals.length + State.journal.length + State.appointments.length) + ' total' },
+    { k: 'Mode', v: 'Local only' }
+  ];
+  $('dash-status').innerHTML = status.map(function(s) {
+    return '<div style="padding:4px 0;border-bottom:1px dashed var(--border);font-size:.72rem;display:flex;justify-content:space-between">' +
+      '<span style="color:var(--text-mute)">' + esc(s.k) + '</span>' +
+      '<span style="color:var(--green)">' + esc(s.v) + '</span></div>';
+  }).join('');
+
+  // Streak
+  var dates = new Set();
+  State.symptoms.forEach(function(s) { dates.add(s.date.slice(0,10)); });
+  State.journal.forEach(function(j) { dates.add(j.date.slice(0,10)); });
+  State.vitals.forEach(function(v) { dates.add(v.date.slice(0,10)); });
+  var streak = 0;
+  var d = new Date();
+  while (dates.has(d.toISOString().slice(0,10))) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+    if (streak > 999) break;
+  }
+  $('dash-streak').innerHTML =
+    '<div style="font-size:.76rem;color:var(--text-dim);margin-bottom:6px">' +
+    'Consecutive days with any log entry</div>' +
+    '<div style="font-size:2rem;font-weight:800;color:var(--green);text-shadow:0 0 12px var(--green-glow)">' +
+    streak + ' <span style="font-size:.7rem;color:var(--text-mute)">day' + (streak === 1 ? '' : 's') + '</span></div>';
+
+  // Activity last 7 days
+  var activity = {};
+  for (var i = 0; i < 7; i++) {
+    var dd = new Date();
+    dd.setDate(dd.getDate() - i);
+    activity[dd.toISOString().slice(0,10)] = 0;
+  }
+  State.symptoms.forEach(function(s) { if (activity[s.date.slice(0,10)] !== undefined) activity[s.date.slice(0,10)]++; });
+  State.journal.forEach(function(j) { if (activity[j.date.slice(0,10)] !== undefined) activity[j.date.slice(0,10)]++; });
+  State.vitals.forEach(function(v) { if (activity[v.date.slice(0,10)] !== undefined) activity[v.date.slice(0,10)]++; });
+
+  var days = Object.keys(activity).sort();
+  var max = Math.max.apply(null, Object.values(activity).concat([1]));
+  var W = 320, H = 80, pad = 10;
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+  svg += '<line x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) + '" stroke="var(--border)" stroke-dasharray="2 2"/>';
+  days.forEach(function(day, i) {
+    var x = pad + i * ((W - 2 * pad) / days.length);
+    var barW = (W - 2 * pad) / days.length - 4;
+    var barH = (activity[day] / max) * (H - 2 * pad);
+    svg += '<rect x="' + x + '" y="' + (H - pad - barH) + '" width="' + barW + '" height="' + barH + '" fill="var(--green)" opacity="0.8"/>';
+    svg += '<text x="' + (x + barW/2) + '" y="' + (H - pad + 10) + '" font-size="7" text-anchor="middle" fill="var(--text-mute)" font-family="monospace">' + day.slice(5) + '</text>';
+  });
+  svg += '</svg>';
+  $('dash-activity').innerHTML = svg;
+}
+
+// ═══════════════════════════════════════════════════════
+// SYMPTOMS
+// ═══════════════════════════════════════════════════════
+var Symptoms = {
+  add: function() {
+    var type = $('sym-type').value;
+    var severity = parseInt($('sym-severity').value, 10);
+    var date = $('sym-date').value || nowISO();
+    var err = $('sym-err');
+    err.classList.remove('show');
+    if (!isFinite(severity) || severity < 0 || severity > 10) {
+      err.textContent = 'Severity must be 0-10';
+      err.classList.add('show');
+      return;
+    }
+    if (!validDate(date)) {
+      err.textContent = 'Invalid date';
+      err.classList.add('show');
+      return;
+    }
+    State.symptoms.unshift({
+      id: uid('s'), type: type, severity: severity, date: date,
+      notes: $('sym-notes').value.trim(), createdAt: nowISO()
+    });
+    save();
+    $('sym-notes').value = '';
+    toast('Symptom saved');
+    buildNav();
+    renderSymptoms();
+    renderDashboard();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this entry?')) return;
+    State.symptoms = State.symptoms.filter(function(s) { return s.id !== id; });
+    save();
+    buildNav();
+    renderSymptoms();
+    renderDashboard();
+  },
+  setFilter: function(f) {
+    State.symFilter = f;
+    save();
+    renderSymptoms();
+  }
+};
+
+function renderSymptoms() {
+  if (!$('sym-date').value) {
+    var d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    $('sym-date').value = d.toISOString().slice(0, 16);
+  }
+
+  // Chart
+  var cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  var recent = State.symptoms.filter(function(s) { return new Date(s.date) >= cutoff; });
+
+  if (recent.length < 2) {
+    $('sym-chart').innerHTML = '<div class="empty" style="padding:16px"><p style="font-size:.7rem">Log at least 2 symptoms to see trends</p></div>';
+  } else {
+    var byDate = {};
+    recent.forEach(function(s) {
+      var day = s.date.slice(0, 10);
+      if (!byDate[day]) byDate[day] = [];
+      byDate[day].push(s.severity);
+    });
+    var dates = Object.keys(byDate).sort();
+    var values = dates.map(function(d) {
+      var arr = byDate[d];
+      return arr.reduce(function(a,b) { return a+b; }, 0) / arr.length;
+    });
+
+    var W = 400, H = 100, pad = 20;
+    var maxV = 10;
+    var points = values.map(function(v, i) {
+      var x = pad + (dates.length === 1 ? 0 : (i / (dates.length - 1)) * (W - 2 * pad));
+      var y = H - pad - (v / maxV) * (H - 2 * pad);
+      return [x, y, v];
+    });
+    var path = points.map(function(p, i) { return (i === 0 ? 'M' : 'L') + p[0] + ' ' + p[1]; }).join(' ');
+
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+    svg += '<line x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) + '" stroke="var(--border)" stroke-dasharray="2 2"/>';
+    svg += '<path d="' + path + '" fill="none" stroke="var(--green)" stroke-width="2"/>';
+    points.forEach(function(p) {
+      svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3" fill="var(--green)"/>';
+    });
+    svg += '</svg>';
+    $('sym-chart').innerHTML = svg;
+  }
+
+  // Filters
+  document.querySelectorAll('[data-symfilter]').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-symfilter') === State.symFilter);
+    btn.onclick = function() { Symptoms.setFilter(btn.getAttribute('data-symfilter')); };
+  });
+
+  // List
+  var list = State.symptoms;
+  if (State.symFilter === 'recent') {
+    var wk = new Date();
+    wk.setDate(wk.getDate() - 7);
+    list = list.filter(function(s) { return new Date(s.date) >= wk; });
+  } else if (State.symFilter === 'severe') {
+    list = list.filter(function(s) { return s.severity >= 7; });
+  }
+
+  if (!list.length) {
+    $('sym-list').innerHTML = '<div class="empty"><div class="ico">◉</div><h3>No symptoms</h3><p>Add your first entry above</p></div>';
+    return;
+  }
+  var labels = {
+    fatigue:'Fatigue', pain:'Pain', nausea:'Nausea', breath:'Shortness of breath',
+    fever:'Fever', appetite:'Loss of appetite', sleep:'Sleep problems',
+    neuropathy:'Neuropathy', mouth:'Mouth sores', diarrhea:'Diarrhea',
+    constipation:'Constipation', anxiety:'Anxiety', other:'Other'
+  };
+  $('sym-list').innerHTML = list.slice(0, 30).map(function(s) {
+    var color = s.severity >= 7 ? 'red' : s.severity >= 4 ? 'amber' : 'green';
+    return '<div class="item">' +
+      '<div class="item-icon ' + color + '">' + s.severity + '</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(labels[s.type] || s.type) + '</div>' +
+      '<div class="item-sub">' + esc(fmtDateTime(s.date)) + '</div>' +
+      (s.notes ? '<div class="item-text">' + esc(s.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions">' +
+      '<button class="btn btn-danger btn-sm" onclick="Onco.Symptoms.delete(\'' + s.id + '\')">✕</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// PAIN MAP
+// ═══════════════════════════════════════════════════════
+var PainMap = {
+  save: function() {
+    if (!State.selectedPainRegion) {
+      $('pain-err').textContent = 'Select a body region';
+      $('pain-err').classList.add('show');
+      return;
+    }
+    var intensity = parseInt($('pain-intensity').value, 10);
+    if (!isFinite(intensity) || intensity < 0 || intensity > 10) {
+      $('pain-err').textContent = 'Intensity must be 0-10';
+      $('pain-err').classList.add('show');
+      return;
+    }
+    var date = $('pain-date').value || todayISO();
+    if (!validDate(date)) {
+      $('pain-err').textContent = 'Invalid date';
+      $('pain-err').classList.add('show');
+      return;
+    }
+    State.painLogs.unshift({
+      id: uid('pm'), region: State.selectedPainRegion,
+      intensity: intensity, date: date,
+      notes: $('pain-notes').value.trim(), createdAt: nowISO()
+    });
+    save();
+    $('pain-notes').value = '';
+    $('pain-err').classList.remove('show');
+    toast('Pain record saved');
+    buildNav();
+    renderPainMap();
+    renderDashboard();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this record?')) return;
+    State.painLogs = State.painLogs.filter(function(p) { return p.id !== id; });
+    save();
+    buildNav();
+    renderPainMap();
+    renderDashboard();
+  }
+};
+
+function renderPainMap() {
+  if (!$('pain-date').value) $('pain-date').value = todayISO();
+
+  document.querySelectorAll('.body-region').forEach(function(region) {
+    var r = region.getAttribute('data-region');
+    region.classList.toggle('selected', State.selectedPainRegion === r);
+    region.onclick = function() {
+      State.selectedPainRegion = r;
+      $('pain-region-display').textContent = r;
+      $('pain-region-display').style.color = 'var(--green)';
+      document.querySelectorAll('.body-region').forEach(function(el) {
+        el.classList.toggle('selected', el.getAttribute('data-region') === r);
+      });
+    };
+  });
+
+  if (State.selectedPainRegion) {
+    $('pain-region-display').textContent = State.selectedPainRegion;
+    $('pain-region-display').style.color = 'var(--green)';
+  }
+
+  if (!State.painLogs.length) {
+    $('pain-list').innerHTML = '<div class="empty"><div class="ico">◈</div><h3>No pain records</h3></div>';
+    return;
+  }
+  $('pain-list').innerHTML = State.painLogs.slice(0, 20).map(function(p) {
+    var color = p.intensity >= 7 ? 'red' : p.intensity >= 4 ? 'amber' : 'green';
+    return '<div class="item">' +
+      '<div class="item-icon ' + color + '">' + p.intensity + '</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(p.region) + '</div>' +
+      '<div class="item-sub">' + esc(fmtDate(p.date)) + '</div>' +
+      (p.notes ? '<div class="item-text">' + esc(p.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions">' +
+      '<button class="btn btn-danger btn-sm" onclick="Onco.PainMap.delete(\'' + p.id + '\')">✕</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// VITALS
+// ═══════════════════════════════════════════════════════
+var Vitals = {
+  add: function() {
+    var date = $('vt-date').value || nowISO();
+    if (!validDate(date)) {
+      $('vt-err').textContent = 'Invalid date';
+      $('vt-err').classList.add('show');
+      return;
+    }
+    var temp = parseFloat($('vt-temp').value) || null;
+    var sys = parseInt($('vt-sys').value, 10) || null;
+    var dia = parseInt($('vt-dia').value, 10) || null;
+    var hr = parseInt($('vt-hr').value, 10) || null;
+    var weight = parseFloat($('vt-weight').value) || null;
+    if (!temp && !sys && !hr && !weight) {
+      $('vt-err').textContent = 'Enter at least one measurement';
+      $('vt-err').classList.add('show');
+      return;
+    }
+    State.vitals.unshift({
+      id: uid('vt'), date: date, temp: temp, sys: sys, dia: dia,
+      hr: hr, weight: weight,
+      notes: $('vt-notes').value.trim(), createdAt: nowISO()
+    });
+    save();
+    ['vt-temp','vt-sys','vt-dia','vt-hr','vt-weight','vt-notes'].forEach(function(id){ $(id).value = ''; });
+    $('vt-err').classList.remove('show');
+    toast('Vitals saved');
+    buildNav();
+    renderVitals();
+    renderDashboard();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this record?')) return;
+    State.vitals = State.vitals.filter(function(v) { return v.id !== id; });
+    save();
+    buildNav();
+    renderVitals();
+    renderDashboard();
+  }
+};
+
+function renderVitals() {
+  if (!$('vt-date').value) {
+    var d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    $('vt-date').value = d.toISOString().slice(0, 16);
+  }
+
+  var withWeight = State.vitals.filter(function(v) { return v.weight; }).slice(0, 14).reverse();
+  if (withWeight.length < 2) {
+    $('vt-chart').innerHTML = '<div class="empty" style="padding:16px"><p style="font-size:.7rem">Log at least 2 weights to see trend</p></div>';
+  } else {
+    var W = 320, H = 100, pad = 20;
+    var weights = withWeight.map(function(v) { return v.weight; });
+    var minW = Math.min.apply(null, weights) - 1;
+    var maxW = Math.max.apply(null, weights) + 1;
+    var range = maxW - minW || 1;
+    var points = withWeight.map(function(v, i) {
+      var x = pad + (i / (withWeight.length - 1)) * (W - 2 * pad);
+      var y = H - pad - ((v.weight - minW) / range) * (H - 2 * pad);
+      return [x, y, v.weight];
+    });
+    var path = points.map(function(p, i) { return (i === 0 ? 'M' : 'L') + p[0] + ' ' + p[1]; }).join(' ');
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+    svg += '<line x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) + '" stroke="var(--border)" stroke-dasharray="2 2"/>';
+    svg += '<path d="' + path + '" fill="none" stroke="var(--green)" stroke-width="2"/>';
+    points.forEach(function(p) {
+      svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3" fill="var(--green)"/>';
+    });
+    svg += '</svg>';
+    $('vt-chart').innerHTML = svg;
+  }
+
+  if (!State.vitals.length) {
+    $('vt-list').innerHTML = '<div class="empty"><div class="ico">◐</div><h3>No vitals</h3></div>';
+    return;
+  }
+  $('vt-list').innerHTML = State.vitals.slice(0, 15).map(function(v) {
+    var parts = [];
+    if (v.temp) parts.push('T ' + fmtNum(v.temp, 1) + '°C');
+    if (v.sys && v.dia) parts.push('BP ' + v.sys + '/' + v.dia);
+    if (v.hr) parts.push('HR ' + v.hr + 'bpm');
+    if (v.weight) parts.push('W ' + fmtNum(v.weight, 1) + 'kg');
+    return '<div class="item">' +
+      '<div class="item-icon cyan">◐</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(parts.join(' · ')) + '</div>' +
+      '<div class="item-sub">' + esc(fmtDateTime(v.date)) + '</div>' +
+      (v.notes ? '<div class="item-text">' + esc(v.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions">' +
+      '<button class="btn btn-danger btn-sm" onclick="Onco.Vitals.delete(\'' + v.id + '\')">✕</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// MEDICATIONS
+// ═══════════════════════════════════════════════════════
+var Meds = {
+  add: function() {
+    var name = $('med-name').value.trim();
+    var err = $('med-err');
+    err.classList.remove('show');
+    if (!name) {
+      err.textContent = 'Name required';
+      err.classList.add('show');
+      return;
+    }
+    State.medications.unshift({
+      id: uid('m'), name: name,
+      dose: $('med-dose').value.trim(),
+      source: $('med-source').value.trim(),
+      notes: $('med-notes').value.trim(),
+      createdAt: nowISO()
+    });
+    save();
+    ['med-name','med-dose','med-source','med-notes'].forEach(function(id){ $(id).value = ''; });
+    toast('Medication saved');
+    buildNav();
+    renderMeds();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this medication?')) return;
+    State.medications = State.medications.filter(function(m) { return m.id !== id; });
+    save();
+    buildNav();
+    renderMeds();
+  }
+};
+
+function renderMeds() {
+  if (!State.medications.length) {
+    $('med-list').innerHTML = '<div class="empty"><div class="ico">◫</div><h3>No medications</h3><p>Record what your team prescribed</p></div>';
+    return;
+  }
+  $('med-list').innerHTML = State.medications.map(function(m) {
+    return '<div class="item">' +
+      '<div class="item-icon cyan">◫</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(m.name) + '</div>' +
+      (m.dose ? '<div class="item-sub">' + esc(m.dose) + '</div>' : '') +
+      (m.source ? '<div class="item-sub">📝 ' + esc(m.source) + '</div>' : '') +
+      (m.notes ? '<div class="item-text">⚠ ' + esc(m.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions">' +
+      '<button class="btn btn-danger btn-sm" onclick="Onco.Meds.delete(\'' + m.id + '\')">✕</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// APPOINTMENTS
+// ═══════════════════════════════════════════════════════
+var Apts = {
+  add: function() {
+    var date = $('apt-date').value;
+    var err = $('apt-err');
+    err.classList.remove('show');
+    if (!date || !validDate(date)) {
+      err.textContent = 'Date & time required';
+      err.classList.add('show');
+      return;
+    }
+    var questions = $('apt-questions').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    State.appointments.push({
+      id: uid('a'), date: date,
+      doctor: $('apt-doctor').value.trim(),
+      purpose: $('apt-purpose').value.trim(),
+      questions: questions,
+      checklist: questions.map(function(q) { return { text: q, done: false }; }),
+      createdAt: nowISO()
+    });
+    save();
+    ['apt-date','apt-doctor','apt-purpose','apt-questions'].forEach(function(id){ $(id).value = ''; });
+    toast('Appointment saved');
+    buildNav();
+    renderApts();
+  },
+  toggleCheck: function(id, idx) {
+    var apt = State.appointments.find(function(a) { return a.id === id; });
+    if (!apt || !apt.checklist[idx]) return;
+    apt.checklist[idx].done = !apt.checklist[idx].done;
+    save();
+    renderApts();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this appointment?')) return;
+    State.appointments = State.appointments.filter(function(a) { return a.id !== id; });
+    save();
+    buildNav();
+    renderApts();
+  },
+  setFilter: function(f) {
+    State.aptFilter = f;
+    save();
+    renderApts();
+  }
+};
+
+function renderApts() {
+  document.querySelectorAll('[data-aptfilter]').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-aptfilter') === State.aptFilter);
+    btn.onclick = function() { Apts.setFilter(btn.getAttribute('data-aptfilter')); };
+  });
+
+  var list = State.appointments.slice();
+  var now = nowISO();
+  if (State.aptFilter === 'upcoming') list = list.filter(function(a){ return a.date >= now; }).sort(function(a,b){ return a.date > b.date ? 1 : -1; });
+  else if (State.aptFilter === 'past') list = list.filter(function(a){ return a.date < now; }).sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+  else list = list.sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+
+  if (!list.length) {
+    $('apt-list').innerHTML = '<div class="empty"><div class="ico">◪</div><h3>No appointments</h3></div>';
+    return;
+  }
+  $('apt-list').innerHTML = list.map(function(a) {
+    var isPast = a.date < now;
+    var done = (a.checklist||[]).filter(function(c){ return c.done; }).length;
+    var total = (a.checklist||[]).length;
+    var html = '<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">';
+    html += '<div><div style="font-weight:700;color:var(--green);font-size:.82rem">' + esc(fmtDateTime(a.date)) + '</div>';
+    if (a.doctor) html += '<div style="font-size:.7rem;color:var(--text-mute)">' + esc(a.doctor) + '</div>';
+    if (a.purpose) html += '<div style="font-size:.7rem;color:var(--text-dim)">' + esc(a.purpose) + '</div></div>';
+    html += '<div class="row">';
+    if (isPast) html += '<span class="chip">past</span>';
+    html += '<button class="btn btn-danger btn-sm" onclick="Onco.Apts.delete(\'' + a.id + '\')">✕</button>';
+    html += '</div></div>';
+    if (total) {
+      html += '<div style="margin-top:6px;font-size:.66rem;color:var(--text-mute)">Checklist: ' + done + '/' + total + '</div>';
+      html += (a.checklist||[]).map(function(c, i) {
+        return '<label style="display:flex;gap:5px;align-items:flex-start;padding:2px 0;font-size:.72rem;cursor:pointer">' +
+          '<input type="checkbox" ' + (c.done ? 'checked' : '') + ' onchange="Onco.Apts.toggleCheck(\'' + a.id + '\',' + i + ')" style="margin-top:2px">' +
+          '<span' + (c.done ? ' style="text-decoration:line-through;color:var(--text-mute)"' : '') + '>' + esc(c.text) + '</span></label>';
+      }).join('');
+    }
+    html += '</div>';
+    return html;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// QUESTIONS
+// ═══════════════════════════════════════════════════════
+var Questions = {
+  add: function() {
+    var text = $('q-text').value.trim();
+    var err = $('q-err');
+    err.classList.remove('show');
+    if (!text) { err.textContent = 'Question required'; err.classList.add('show'); return; }
+    State.questions.unshift({ id: uid('q'), text: text, asked: false, createdAt: nowISO() });
+    save();
+    $('q-text').value = '';
+    toast('Question saved');
+    buildNav();
+    renderQuestions();
+  },
+  toggle: function(id) {
+    var q = State.questions.find(function(x) { return x.id === id; });
+    if (!q) return;
+    q.asked = !q.asked;
+    save();
+    renderQuestions();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this question?')) return;
+    State.questions = State.questions.filter(function(q) { return q.id !== id; });
+    save();
+    buildNav();
+    renderQuestions();
+  },
+  showLibrary: function() {
+    var lib = [
+      'What is the purpose of this test?',
+      'What do the results explain, and what remains uncertain?',
+      'What are my treatment options?',
+      'What side effects should I watch for?',
+      'Which symptoms need immediate contact?',
+      'Who do I contact between appointments?',
+      'Are there supportive-care services available?',
+      'Is there an oncology dietitian on the team?',
+      'Can I get a written summary of the plan?',
+      'How will this affect my daily life?',
+      'Are there clinical trials relevant to my case?',
+      'What adaptations are possible if side effects are hard?'
+    ];
+    var html = '<h2>Question Library</h2><p>Click a question to add it.</p><ul>';
+    lib.forEach(function(q, i) {
+      html += '<li style="margin-bottom:4px"><button class="btn btn-ghost btn-sm" style="width:100%;text-align:left;justify-content:flex-start" data-lib-q="' + i + '">+ ' + esc(q) + '</button></li>';
+    });
+    html += '</ul><div class="modal-actions"><button class="btn btn-secondary" onclick="Onco.closeModal()">Close</button></div>';
+    showModal(html);
+    setTimeout(function() {
+      document.querySelectorAll('[data-lib-q]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          $('q-text').value = lib[parseInt(btn.getAttribute('data-lib-q'), 10)];
+          closeModal();
+          $('q-text').focus();
+        });
+      });
+    }, 50);
+  },
+  setFilter: function(f) { State.qFilter = f; save(); renderQuestions(); }
+};
+
+function renderQuestions() {
+  document.querySelectorAll('[data-qfilter]').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-qfilter') === State.qFilter);
+    btn.onclick = function() { Questions.setFilter(btn.getAttribute('data-qfilter')); };
+  });
+  var list = State.questions;
+  if (State.qFilter === 'pending') list = list.filter(function(q) { return !q.asked; });
+  if (State.qFilter === 'asked') list = list.filter(function(q) { return q.asked; });
+  if (!list.length) {
+    $('q-list').innerHTML = '<div class="empty"><div class="ico">?</div><h3>No questions</h3></div>';
+    return;
+  }
+  $('q-list').innerHTML = list.map(function(q) {
+    return '<div class="item">' +
+      '<div class="item-icon ' + (q.asked ? 'green' : 'amber') + '" style="cursor:pointer" onclick="Onco.Questions.toggle(\'' + q.id + '\')">' + (q.asked ? '✓' : '○') + '</div>' +
+      '<div class="item-body"><div class="item-title"' + (q.asked ? ' style="text-decoration:line-through;color:var(--text-mute)"' : '') + '>' + esc(q.text) + '</div>' +
+      '<div class="item-sub">' + (q.asked ? 'asked' : 'pending') + '</div></div>' +
+      '<div class="item-actions"><button class="btn btn-danger btn-sm" onclick="Onco.Questions.delete(\'' + q.id + '\')">✕</button></div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// CARE TEAM
+// ═══════════════════════════════════════════════════════
+var CareTeam = {
+  add: function() {
+    var name = $('ct-name').value.trim();
+    var err = $('ct-err');
+    err.classList.remove('show');
+    if (!name) { err.textContent = 'Name required'; err.classList.add('show'); return; }
+    State.careTeam.unshift({
+      id: uid('c'), name: name,
+      role: $('ct-role').value.trim(),
+      phone: $('ct-phone').value.trim(),
+      email: $('ct-email').value.trim(),
+      notes: $('ct-notes').value.trim(),
+      createdAt: nowISO()
+    });
+    save();
+    ['ct-name','ct-role','ct-phone','ct-email','ct-notes'].forEach(function(id){ $(id).value = ''; });
+    toast('Contact saved');
+    buildNav();
+    renderCareTeam();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this contact?')) return;
+    State.careTeam = State.careTeam.filter(function(c) { return c.id !== id; });
+    save();
+    buildNav();
+    renderCareTeam();
+  }
+};
+
+function renderCareTeam() {
+  if (!State.careTeam.length) {
+    $('ct-list').innerHTML = '<div class="empty"><div class="ico">◉</div><h3>No contacts</h3></div>';
+    return;
+  }
+  $('ct-list').innerHTML = State.careTeam.map(function(c) {
+    return '<div class="item">' +
+      '<div class="item-icon green">◉</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(c.name) + (c.role ? ' <span class="chip">' + esc(c.role) + '</span>' : '') + '</div>' +
+      (c.phone ? '<div class="item-sub">☎ ' + esc(c.phone) + '</div>' : '') +
+      (c.email ? '<div class="item-sub">✉ ' + esc(c.email) + '</div>' : '') +
+      (c.notes ? '<div class="item-text">' + esc(c.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions"><button class="btn btn-danger btn-sm" onclick="Onco.CareTeam.delete(\'' + c.id + '\')">✕</button></div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// KNOWLEDGE
+// ═══════════════════════════════════════════════════════
+var kState = { cat: 'all', query: '', openId: null };
+
+function renderKnowledge() {
+  var cats = [
+    { id: 'all', label: 'All' },
+    { id: 'basics', label: 'Basics' },
+    { id: 'diagnosis', label: 'Diagnosis' },
+    { id: 'treatment', label: 'Treatment' },
+    { id: 'wellbeing', label: 'Well-being' },
+    { id: 'practical', label: 'Practical' },
+    { id: 'caregiving', label: 'Caregiver' }
+  ];
+  $('kn-categories').innerHTML = cats.map(function(c) {
+    return '<button class="pill' + (kState.cat === c.id ? ' active' : '') + '" data-kcat="' + c.id + '">' + esc(c.label) + '</button>';
+  }).join('');
+  document.querySelectorAll('[data-kcat]').forEach(function(btn) {
+    btn.onclick = function() { kState.cat = btn.getAttribute('data-kcat'); renderKnowledge(); };
+  });
+
+  if (kState.openId) {
+    var a = ARTICLES.find(function(x) { return x.id === kState.openId; });
+    if (a) {
+      $('kn-detail').innerHTML =
+        '<button class="btn btn-ghost btn-sm mb-2" onclick="Onco.Knowledge.close()">← Back</button>' +
+        '<div class="card"><h2 style="font-size:1rem;font-weight:800;color:var(--green);margin-bottom:4px">' + esc(a.title) + '</h2>' +
+        '<div style="margin-bottom:8px"><span class="chip cyan">' + esc(a.cat) + '</span></div>' +
+        '<div class="alert warn" style="margin-bottom:8px">⚠ Educational content. Not a substitute for professional evaluation.</div>' +
+        '<p style="font-size:.78rem;line-height:1.7;color:var(--text-dim);margin-bottom:8px">' + esc(a.body) + '</p>' +
+        '<div style="background:var(--panel-3);padding:8px;border-left:2px solid var(--cyan);font-size:.68rem;color:var(--text-mute);margin-top:8px">' +
+        '<strong style="color:var(--cyan)">Source:</strong> ' + esc(a.source) + '</div>' +
+        '</div>';
+      $('kn-detail').style.display = 'block';
+      $('kn-list').style.display = 'none';
+      return;
+    }
+  }
+  $('kn-detail').style.display = 'none';
+  $('kn-list').style.display = 'block';
+
+  var q = kState.query.toLowerCase().trim();
+  var list = ARTICLES.filter(function(a) {
+    if (kState.cat !== 'all' && a.cat !== kState.cat) return false;
+    if (!q) return true;
+    return (a.title + ' ' + a.summary + ' ' + a.body + ' ' + a.tags.join(' ')).toLowerCase().indexOf(q) >= 0;
+  });
+  if (!list.length) {
+    $('kn-list').innerHTML = '<div class="empty"><div class="ico">◬</div><h3>No articles found</h3></div>';
+    return;
+  }
+  $('kn-list').innerHTML = list.map(function(a) {
+    return '<div class="item" onclick="Onco.Knowledge.open(\'' + a.id + '\')" style="cursor:pointer">' +
+      '<div class="item-icon cyan">◬</div>' +
+      '<div class="item-body"><div class="item-title">' + esc(a.title) + '</div>' +
+      '<div class="item-sub">' + esc(a.cat) + '</div>' +
+      '<div class="item-text">' + esc(a.summary) + '</div></div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// GLOSSARY
+// ═══════════════════════════════════════════════════════
+function renderGlossary() {
+  var q = ($('gl-search').value || '').toLowerCase().trim();
+  var list = GLOSSARY.filter(function(g) {
+    if (!q) return true;
+    return (g.term + ' ' + g.def).toLowerCase().indexOf(q) >= 0;
+  });
+  if (!list.length) {
+    $('gl-list').innerHTML = '<div class="empty"><div class="ico">◭</div><h3>No terms found</h3></div>';
+    return;
+  }
+  $('gl-list').innerHTML = list.map(function(g) {
+    return '<div class="item">' +
+      '<div class="item-icon cyan">◭</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(g.term) + '</div>' +
+      '<div class="item-text">' + esc(g.def) + '</div></div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// JOURNAL
+// ═══════════════════════════════════════════════════════
+var Journal = {
+  initScales: function() {
+    ['mood','energy','sleep'].forEach(function(key) {
+      var el = $('jr-' + key);
+      if (!el) return;
+      var html = '';
+      for (var i = 1; i <= 5; i++) {
+        html += '<button class="scale-btn' + (State.journalScores[key] === i ? ' on' : '') + '" data-jscale="' + key + '" data-jval="' + i + '">' + i + '</button>';
+      }
+      el.innerHTML = html;
+    });
+    document.querySelectorAll('[data-jscale]').forEach(function(btn) {
+      btn.onclick = function() {
+        var key = btn.getAttribute('data-jscale');
+        var val = parseInt(btn.getAttribute('data-jval'), 10);
+        State.journalScores[key] = State.journalScores[key] === val ? 0 : val;
+        Journal.initScales();
+      };
+    });
+  },
+  add: function() {
+    var date = $('jr-date').value || nowISO();
+    if (!validDate(date)) {
+      $('jr-err').textContent = 'Invalid date';
+      $('jr-err').classList.add('show');
+      return;
+    }
+    $('jr-err').classList.remove('show');
+    State.journal.unshift({
+      id: uid('j'), date: date,
+      scores: JSON.parse(JSON.stringify(State.journalScores)),
+      notes: $('jr-notes').value.trim(),
+      createdAt: nowISO()
+    });
+    save();
+    State.journalScores = { mood: 0, energy: 0, sleep: 0 };
+    $('jr-notes').value = '';
+    Journal.initScales();
+    toast('Entry saved');
+    buildNav();
+    renderJournal();
+    renderDashboard();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this entry?')) return;
+    State.journal = State.journal.filter(function(j) { return j.id !== id; });
+    save();
+    buildNav();
+    renderJournal();
+    renderDashboard();
+  }
+};
+
+function renderJournal() {
+  Journal.initScales();
+  if (!$('jr-date').value) {
+    var d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    $('jr-date').value = d.toISOString().slice(0, 16);
+  }
+
+  // Bar chart of mood
+  var recent = State.journal.filter(function(j) { return j.scores.mood > 0; }).slice(0, 14).reverse();
+  if (recent.length < 2) {
+    $('jr-chart').innerHTML = '<div class="empty" style="padding:14px"><p style="font-size:.7rem">Log at least 2 mood entries</p></div>';
+  } else {
+    var W = 320, H = 80, pad = 15;
+    var barW = (W - 2 * pad) / recent.length - 3;
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+    svg += '<line x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) + '" stroke="var(--border)" stroke-dasharray="2 2"/>';
+    recent.forEach(function(j, i) {
+      var x = pad + i * ((W - 2 * pad) / recent.length);
+      var h = (j.scores.mood / 5) * (H - 2 * pad);
+      var y = H - pad - h;
+      svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + h + '" fill="var(--green)" opacity="0.8"/>';
+    });
+    svg += '</svg>';
+    $('jr-chart').innerHTML = svg;
+  }
+
+  // Heatmap - 90 days
+  var days = 90;
+  var counts = {};
+  State.journal.forEach(function(j) {
+    var day = j.date.slice(0, 10);
+    counts[day] = (counts[day] || 0) + (j.scores.mood || 1);
+  });
+  var cells = [];
+  for (var i = days - 1; i >= 0; i--) {
+    var dd = new Date();
+    dd.setDate(dd.getDate() - i);
+    var key = dd.toISOString().slice(0, 10);
+    var val = counts[key] || 0;
+    var lvl = val === 0 ? 0 : val <= 2 ? 1 : val <= 4 ? 2 : 3;
+    cells.push('<div style="width:12px;height:12px;background:' + (lvl === 0 ? 'var(--panel-3)' : lvl === 1 ? 'rgba(74,222,128,.25)' : lvl === 2 ? 'rgba(74,222,128,.6)' : 'var(--green)') + ';border:1px solid var(--border)" title="' + key + '"></div>');
+  }
+  $('jr-heatmap').innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:2px">' + cells.join('') + '</div>';
+
+  if (!State.journal.length) {
+    $('jr-list').innerHTML = '<div class="empty"><div class="ico">◑</div><h3>No entries</h3></div>';
+    return;
+  }
+  $('jr-list').innerHTML = State.journal.slice(0, 20).map(function(j) {
+    var chips = '';
+    ['mood','energy','sleep'].forEach(function(k) {
+      if (j.scores[k]) chips += '<span class="chip green">' + k + ' ' + j.scores[k] + '/5</span> ';
+    });
+    return '<div class="item">' +
+      '<div class="item-icon green">◑</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(fmtDateTime(j.date)) + '</div>' +
+      (chips ? '<div class="item-sub">' + chips + '</div>' : '') +
+      (j.notes ? '<div class="item-text">' + esc(j.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions"><button class="btn btn-danger btn-sm" onclick="Onco.Journal.delete(\'' + j.id + '\')">✕</button></div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// TIMELINE
+// ═══════════════════════════════════════════════════════
+var Timeline = {
+  add: function() {
+    var date = $('tl-date').value;
+    var title = $('tl-title').value.trim();
+    var err = $('tl-err');
+    err.classList.remove('show');
+    if (!date || !validDate(date)) { err.textContent = 'Valid date required'; err.classList.add('show'); return; }
+    if (!title) { err.textContent = 'Title required'; err.classList.add('show'); return; }
+    State.timeline.push({
+      id: uid('tl'), date: date, type: $('tl-type').value,
+      title: title, notes: $('tl-notes').value.trim(), createdAt: nowISO()
+    });
+    save();
+    ['tl-date','tl-title','tl-notes'].forEach(function(id){ $(id).value = ''; });
+    toast('Event added');
+    buildNav();
+    renderTimeline();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this event?')) return;
+    State.timeline = State.timeline.filter(function(t) { return t.id !== id; });
+    save();
+    buildNav();
+    renderTimeline();
+  }
+};
+
+function renderTimeline() {
+  if (!$('tl-date').value) $('tl-date').value = todayISO();
+  if (!State.timeline.length) {
+    $('tl-list').innerHTML = '<div class="empty"><div class="ico">⊟</div><h3>No events</h3><p>Add milestones from your journey</p></div>';
+    return;
+  }
+  var typeLabels = {
+    diagnosis:'Diagnosis', appointment:'Appointment', test:'Test',
+    treatment:'Treatment', surgery:'Surgery', milestone:'Milestone', note:'Note'
+  };
+  var sorted = State.timeline.slice().sort(function(a, b) { return a.date < b.date ? 1 : -1; });
+  $('tl-list').innerHTML = sorted.map(function(t) {
+    return '<div class="item" style="border-left-color:var(--cyan)">' +
+      '<div class="item-icon cyan">⊟</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(t.title) + '</div>' +
+      '<div class="item-sub">' + esc(fmtDate(t.date)) + ' · ' + esc(typeLabels[t.type] || t.type) + '</div>' +
+      (t.notes ? '<div class="item-text">' + esc(t.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions"><button class="btn btn-danger btn-sm" onclick="Onco.Timeline.delete(\'' + t.id + '\')">✕</button></div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// NUTRITION
+// ═══════════════════════════════════════════════════════
+var Nutrition = {
+  add: function() {
+    var date = $('nt-date').value || todayISO();
+    if (!validDate(date)) { $('nt-err').textContent = 'Invalid date'; $('nt-err').classList.add('show'); return; }
+    State.nutrition.unshift({
+      id: uid('nt'), date: date,
+      water: parseInt($('nt-water').value, 10) || 0,
+      meals: parseInt($('nt-meals').value, 10) || 0,
+      appetite: parseInt($('nt-appetite').value, 10) || 3,
+      notes: $('nt-notes').value.trim(),
+      createdAt: nowISO()
+    });
+    save();
+    $('nt-notes').value = '';
+    toast('Nutrition saved');
+    buildNav();
+    renderNutrition();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this entry?')) return;
+    State.nutrition = State.nutrition.filter(function(n) { return n.id !== id; });
+    save();
+    buildNav();
+    renderNutrition();
+  }
+};
+
+function renderNutrition() {
+  if (!$('nt-date').value) $('nt-date').value = todayISO();
+  var recent = State.nutrition.slice(0, 7).reverse();
+  if (recent.length < 2) {
+    $('nt-chart').innerHTML = '<div class="empty" style="padding:14px"><p style="font-size:.7rem">Log at least 2 days</p></div>';
+  } else {
+    var W = 320, H = 80, pad = 15;
+    var barW = (W - 2 * pad) / recent.length - 3;
+    var maxW = Math.max.apply(null, recent.map(function(r){ return r.water; }).concat([8]));
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+    svg += '<line x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) + '" stroke="var(--border)" stroke-dasharray="2 2"/>';
+    recent.forEach(function(r, i) {
+      var x = pad + i * ((W - 2 * pad) / recent.length);
+      var h = (r.water / maxW) * (H - 2 * pad);
+      var y = H - pad - h;
+      svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + h + '" fill="var(--cyan)" opacity="0.7"/>';
+    });
+    svg += '</svg>';
+    $('nt-chart').innerHTML = svg;
+  }
+
+  if (!State.nutrition.length) {
+    $('nt-list').innerHTML = '<div class="empty"><div class="ico">◍</div><h3>No entries</h3></div>';
+    return;
+  }
+  $('nt-list').innerHTML = State.nutrition.slice(0, 15).map(function(n) {
+    return '<div class="item">' +
+      '<div class="item-icon cyan">◍</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(fmtDate(n.date)) + '</div>' +
+      '<div class="item-sub">💧 ' + n.water + ' glasses · 🍽 ' + n.meals + ' meals · 🍴 appetite ' + n.appetite + '/5</div>' +
+      (n.notes ? '<div class="item-text">' + esc(n.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions"><button class="btn btn-danger btn-sm" onclick="Onco.Nutrition.delete(\'' + n.id + '\')">✕</button></div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// SLEEP
+// ═══════════════════════════════════════════════════════
+var Sleep = {
+  add: function() {
+    var date = $('sl-date').value || todayISO();
+    if (!validDate(date)) { $('sl-err').textContent = 'Invalid date'; $('sl-err').classList.add('show'); return; }
+    var hours = parseFloat($('sl-hours').value) || 0;
+    if (hours < 0 || hours > 24) { $('sl-err').textContent = 'Hours must be 0-24'; $('sl-err').classList.add('show'); return; }
+    State.sleep.unshift({
+      id: uid('sl'), date: date, hours: hours,
+      quality: parseInt($('sl-quality').value, 10) || 3,
+      notes: $('sl-notes').value.trim(), createdAt: nowISO()
+    });
+    save();
+    $('sl-notes').value = '';
+    toast('Sleep saved');
+    buildNav();
+    renderSleep();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this entry?')) return;
+    State.sleep = State.sleep.filter(function(s) { return s.id !== id; });
+    save();
+    buildNav();
+    renderSleep();
+  }
+};
+
+function renderSleep() {
+  if (!$('sl-date').value) $('sl-date').value = todayISO();
+  var recent = State.sleep.slice(0, 14).reverse();
+  if (recent.length < 2) {
+    $('sl-chart').innerHTML = '<div class="empty" style="padding:14px"><p style="font-size:.7rem">Log at least 2 nights</p></div>';
+  } else {
+    var W = 320, H = 80, pad = 15;
+    var barW = (W - 2 * pad) / recent.length - 3;
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">';
+    svg += '<line x1="' + pad + '" y1="' + (H - pad) + '" x2="' + (W - pad) + '" y2="' + (H - pad) + '" stroke="var(--border)" stroke-dasharray="2 2"/>';
+    recent.forEach(function(r, i) {
+      var x = pad + i * ((W - 2 * pad) / recent.length);
+      var h = (r.hours / 12) * (H - 2 * pad);
+      var y = H - pad - h;
+      svg += '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + h + '" fill="var(--magenta)" opacity="0.6"/>';
+    });
+    svg += '</svg>';
+    $('sl-chart').innerHTML = svg;
+  }
+
+  if (!State.sleep.length) {
+    $('sl-list').innerHTML = '<div class="empty"><div class="ico">☾</div><h3>No sleep logs</h3></div>';
+    return;
+  }
+  $('sl-list').innerHTML = State.sleep.slice(0, 15).map(function(s) {
+    return '<div class="item">' +
+      '<div class="item-icon cyan">☾</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(fmtDate(s.date)) + '</div>' +
+      '<div class="item-sub">' + s.hours + 'h · quality ' + s.quality + '/5</div>' +
+      (s.notes ? '<div class="item-text">' + esc(s.notes) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions"><button class="btn btn-danger btn-sm" onclick="Onco.Sleep.delete(\'' + s.id + '\')">✕</button></div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// COMMUNICATION
+// ═══════════════════════════════════════════════════════
+var Communication = {
+  add: function() {
+    var date = $('cm-date').value || nowISO();
+    if (!validDate(date)) { $('cm-err').textContent = 'Invalid date'; $('cm-err').classList.add('show'); return; }
+    var notes = $('cm-notes').value.trim();
+    if (!notes) { $('cm-err').textContent = 'Discussion notes required'; $('cm-err').classList.add('show'); return; }
+    State.communication.unshift({
+      id: uid('cm'), date: date,
+      with: $('cm-with').value.trim(),
+      type: $('cm-type').value,
+      notes: notes,
+      followup: $('cm-followup').value.trim(),
+      createdAt: nowISO()
+    });
+    save();
+    ['cm-with','cm-notes','cm-followup'].forEach(function(id){ $(id).value = ''; });
+    toast('Communication saved');
+    buildNav();
+    renderCommunication();
+  },
+  delete: function(id) {
+    if (!confirm('Delete this record?')) return;
+    State.communication = State.communication.filter(function(c) { return c.id !== id; });
+    save();
+    buildNav();
+    renderCommunication();
+  }
+};
+
+function renderCommunication() {
+  if (!$('cm-date').value) {
+    var d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    $('cm-date').value = d.toISOString().slice(0, 16);
+  }
+  if (!State.communication.length) {
+    $('cm-list').innerHTML = '<div class="empty"><div class="ico">✉</div><h3>No communication logs</h3></div>';
+    return;
+  }
+  var typeLabels = {
+    'in-person':'In-person', phone:'Phone', telehealth:'Telehealth',
+    email:'Email', other:'Other'
+  };
+  $('cm-list').innerHTML = State.communication.slice(0, 20).map(function(c) {
+    return '<div class="item">' +
+      '<div class="item-icon cyan">✉</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(fmtDateTime(c.date)) + (c.with ? ' · ' + esc(c.with) : '') + '</div>' +
+      '<div class="item-sub">' + esc(typeLabels[c.type] || c.type) + '</div>' +
+      '<div class="item-text"><strong>Discussion:</strong> ' + esc(c.notes) + '</div>' +
+      (c.followup ? '<div class="item-text"><strong style="color:var(--amber)">Follow-up:</strong> ' + esc(c.followup) + '</div>' : '') +
+      '</div>' +
+      '<div class="item-actions"><button class="btn btn-danger btn-sm" onclick="Onco.Communication.delete(\'' + c.id + '\')">✕</button></div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// REPORTS
+// ═══════════════════════════════════════════════════════
+var Reports = {
+  _open: function(html, title) {
+    var win = window.open('', '_blank');
+    if (!win) { toast('Popup blocked', 'error'); return; }
+    win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title>' +
+      '<style>body{font-family:system-ui,sans-serif;max-width:750px;margin:30px auto;padding:20px;line-height:1.6;color:#0a2410}' +
+      'h1{border-bottom:2px solid #0d9488;padding-bottom:8px;margin-bottom:16px;font-size:1.3rem}' +
+      'h2{font-size:1rem;margin-top:18px;color:#0d9488}' +
+      'table{width:100%;border-collapse:collapse;margin:12px 0}' +
+      'th,td{border:1px solid #ddd;padding:6px;text-align:left;font-size:.85rem}' +
+      'th{background:#f1f5f9;font-weight:700}' +
+      '.note{background:#fef3c7;padding:10px;border-radius:6px;font-size:.82rem;border-left:3px solid #f59e0b;margin:14px 0}' +
+      '</style></head><body>' + html +
+      '<p style="margin-top:30px;font-size:.7rem;color:#64748b;text-align:center">OncoHope AI · Generated locally · No data left the browser</p>' +
+      '</body></html>');
+    win.document.close();
+    setTimeout(function() { win.print(); }, 400);
+  },
+  symptoms: function() {
+    if (!State.symptoms.length) { toast('No symptoms recorded', 'error'); return; }
+    var html = '<h1>Symptom Report</h1>' +
+      '<p><strong>Generated:</strong> ' + new Date().toLocaleString() + '</p>' +
+      '<div class="note"><strong>⚠</strong> Informal self-observations. Not clinical assessment.</div>' +
+      '<table><thead><tr><th>Date</th><th>Type</th><th>Severity</th><th>Notes</th></tr></thead><tbody>';
+    var labels = { fatigue:'Fatigue', pain:'Pain', nausea:'Nausea', breath:'Shortness of breath', fever:'Fever', appetite:'Loss of appetite', sleep:'Sleep problems', neuropathy:'Neuropathy', mouth:'Mouth sores', diarrhea:'Diarrhea', constipation:'Constipation', anxiety:'Anxiety', other:'Other' };
+    State.symptoms.slice(0, 50).forEach(function(s) {
+      html += '<tr><td>' + esc(fmtDateTime(s.date)) + '</td><td>' + esc(labels[s.type] || s.type) + '</td><td>' + s.severity + '/10</td><td>' + esc(s.notes || '') + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    Reports._open(html, 'Symptom Report');
+  },
+  journal: function() {
+    if (!State.journal.length) { toast('No journal entries', 'error'); return; }
+    var html = '<h1>Journal Report</h1>' +
+      '<p><strong>Generated:</strong> ' + new Date().toLocaleString() + '</p>' +
+      '<div class="note"><strong>⚠</strong> Informal self-observations. Not clinical assessment.</div>';
+    State.journal.slice(0, 30).forEach(function(j) {
+      html += '<h2>' + esc(fmtDateTime(j.date)) + '</h2>';
+      var scores = [];
+      ['mood','energy','sleep'].forEach(function(k){ if (j.scores[k]) scores.push(k + ': ' + j.scores[k] + '/5'); });
+      if (scores.length) html += '<p><strong>Scores:</strong> ' + scores.join(' · ') + '</p>';
+      if (j.notes) html += '<p>' + esc(j.notes) + '</p>';
+    });
+    Reports._open(html, 'Journal Report');
+  },
+  appointments: function() {
+    var next = State.appointments.filter(function(a) { return new Date(a.date) >= new Date(); }).sort(function(a, b) { return a.date > b.date ? 1 : -1; })[0];
+    if (!next) { toast('No upcoming appointments', 'error'); return; }
+    var html = '<h1>Appointment Preparation</h1>' +
+      '<p><strong>Date:</strong> ' + esc(fmtDateTime(next.date)) + '</p>';
+    if (next.doctor) html += '<p><strong>Doctor:</strong> ' + esc(next.doctor) + '</p>';
+    if (next.purpose) html += '<p><strong>Purpose:</strong> ' + esc(next.purpose) + '</p>';
+    if (next.questions && next.questions.length) {
+      html += '<h2>Questions to Ask</h2><ul>';
+      next.questions.forEach(function(q){ html += '<li>' + esc(q) + '</li>'; });
+      html += '</ul>';
+    }
+    if (State.symptoms.length) {
+      html += '<h2>Recent Symptoms</h2><ul>';
+      var labels = { fatigue:'Fatigue', pain:'Pain', nausea:'Nausea', breath:'Shortness of breath', fever:'Fever', appetite:'Loss of appetite', sleep:'Sleep problems', neuropathy:'Neuropathy', mouth:'Mouth sores', diarrhea:'Diarrhea', constipation:'Constipation', anxiety:'Anxiety', other:'Other' };
+      State.symptoms.slice(0, 5).forEach(function(s) {
+        html += '<li>' + esc(fmtDate(s.date)) + ' — ' + esc(labels[s.type] || s.type) + ' (' + s.severity + '/10)' + (s.notes ? ' — ' + esc(s.notes) : '') + '</li>';
+      });
+      html += '</ul>';
+    }
+    html += '<div class="note"><strong>⚠</strong> Informal observations. Discuss with your care team.</div>';
+    Reports._open(html, 'Appointment Prep');
+  },
+  vitals: function() {
+    if (!State.vitals.length) { toast('No vitals recorded', 'error'); return; }
+    var html = '<h1>Vitals Report</h1>' +
+      '<p><strong>Generated:</strong> ' + new Date().toLocaleString() + '</p>' +
+      '<table><thead><tr><th>Date</th><th>Temp</th><th>BP</th><th>HR</th><th>Weight</th></tr></thead><tbody>';
+    State.vitals.slice(0, 50).forEach(function(v) {
+      html += '<tr><td>' + esc(fmtDateTime(v.date)) + '</td>' +
+        '<td>' + (v.temp ? fmtNum(v.temp, 1) + '°C' : '—') + '</td>' +
+        '<td>' + (v.sys && v.dia ? v.sys + '/' + v.dia : '—') + '</td>' +
+        '<td>' + (v.hr ? v.hr + 'bpm' : '—') + '</td>' +
+        '<td>' + (v.weight ? fmtNum(v.weight, 1) + 'kg' : '—') + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    Reports._open(html, 'Vitals Report');
+  },
+  full: function() {
+    var html = '<h1>Full Summary</h1>' +
+      '<p><strong>Generated:</strong> ' + new Date().toLocaleString() + '</p>' +
+      '<div class="note"><strong>⚠</strong> All data below is user-entered. Not clinically verified.</div>';
+    html += '<h2>Symptoms (' + State.symptoms.length + ')</h2>';
+    if (State.symptoms.length) {
+      html += '<ul>';
+      State.symptoms.slice(0, 10).forEach(function(s) {
+        html += '<li>' + esc(fmtDate(s.date)) + ' — ' + esc(s.type) + ' (' + s.severity + '/10)</li>';
+      });
+      html += '</ul>';
+    } else html += '<p>None recorded.</p>';
+    html += '<h2>Vitals (' + State.vitals.length + ')</h2>';
+    if (State.vitals.length) {
+      html += '<ul>';
+      State.vitals.slice(0, 10).forEach(function(v) {
+        var parts = [];
+        if (v.temp) parts.push('T ' + fmtNum(v.temp,1) + '°C');
+        if (v.sys) parts.push('BP ' + v.sys + '/' + v.dia);
+        if (v.hr) parts.push('HR ' + v.hr);
+        if (v.weight) parts.push('W ' + fmtNum(v.weight,1) + 'kg');
+        html += '<li>' + esc(fmtDate(v.date)) + ' — ' + esc(parts.join(', ')) + '</li>';
+      });
+      html += '</ul>';
+    } else html += '<p>None recorded.</p>';
+    html += '<h2>Journal (' + State.journal.length + ')</h2>';
+    if (State.journal.length) {
+      html += '<ul>';
+      State.journal.slice(0, 10).forEach(function(j) {
+        html += '<li>' + esc(fmtDate(j.date)) + ' — mood ' + (j.scores.mood || '—') + '/5</li>';
+      });
+      html += '</ul>';
+    } else html += '<p>None recorded.</p>';
+    html += '<h2>Appointments (' + State.appointments.length + ')</h2>';
+    if (State.appointments.length) {
+      html += '<ul>';
+      State.appointments.slice(0, 10).forEach(function(a) {
+        html += '<li>' + esc(fmtDateTime(a.date)) + (a.doctor ? ' — ' + esc(a.doctor) : '') + '</li>';
+      });
+      html += '</ul>';
+    } else html += '<p>None recorded.</p>';
+    html += '<h2>Medications (' + State.medications.length + ')</h2>';
+    if (State.medications.length) {
+      html += '<ul>';
+      State.medications.forEach(function(m){ html += '<li>' + esc(m.name) + (m.dose ? ' — ' + esc(m.dose) : '') + '</li>'; });
+      html += '</ul>';
+    } else html += '<p>None recorded.</p>';
+    Reports._open(html, 'Full Summary');
+  },
+  csv: function() {
+    var rows = [['module','date','key','value','notes']];
+    State.symptoms.forEach(function(s){ rows.push(['symptom', s.date, s.type, s.severity, s.notes || '']); });
+    State.vitals.forEach(function(v){
+      if (v.temp) rows.push(['vitals', v.date, 'temp', v.temp, '']);
+      if (v.sys) rows.push(['vitals', v.date, 'systolic', v.sys, '']);
+      if (v.dia) rows.push(['vitals', v.date, 'diastolic', v.dia, '']);
+      if (v.hr) rows.push(['vitals', v.date, 'heart_rate', v.hr, '']);
+      if (v.weight) rows.push(['vitals', v.date, 'weight', v.weight, '']);
+    });
+    State.journal.forEach(function(j){
+      if (j.scores.mood) rows.push(['journal', j.date, 'mood', j.scores.mood, j.notes || '']);
+    });
+    State.painLogs.forEach(function(p){ rows.push(['pain', p.date, p.region, p.intensity, p.notes || '']); });
+    function escCell(v) {
+      v = String(v == null ? '' : v);
+      if (/[,"\n\r]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
+      return v;
+    }
+    var csv = rows.map(function(r){ return r.map(escCell).join(','); }).join('\n');
+    download(csv, 'oncohope-export-' + todayISO() + '.csv', 'text/csv');
+    toast('CSV exported');
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// RESOURCES
+// ═══════════════════════════════════════════════════════
+function renderResources() {
+  $('res-list').innerHTML = RESOURCES.map(function(r) {
+    return '<div class="item">' +
+      '<div class="item-icon cyan">◮</div>' +
+      '<div class="item-body">' +
+      '<div class="item-title">' + esc(r.name) + '</div>' +
+      '<div class="item-text">' + esc(r.desc) + '</div>' +
+      '<div style="margin-top:4px"><a href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer" style="font-size:.72rem">' + esc(r.url) + '</a></div>' +
+      '<div style="font-size:.64rem;color:var(--text-faint);margin-top:2px">⚠ Verify current info on the official site</div>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════
+function renderData() {
+  updateThemeButtons();
+}
+function updateThemeButtons() {
+  ['pr-theme-crt','pr-theme-light'].forEach(function(id) {
+    var el = $(id); if (!el) return;
+    var active = (id === 'pr-theme-crt' && State.theme === 'crt') || (id === 'pr-theme-light' && State.theme === 'light');
+    el.className = 'btn btn-sm ' + (active ? 'btn-primary' : 'btn-secondary');
+  });
+}
+function setTheme(theme) {
+  State.theme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  save();
+  renderData();
+}
+
+function exportAll() {
+  var data = { app: 'OncoHope AI', version: SCHEMA_VERSION, exportedAt: nowISO(), state: State };
+  download(JSON.stringify(data, null, 2), 'oncohope-backup-' + todayISO() + '.json', 'application/json');
+  toast('Exported');
+}
+function importAll(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('File too large', 'error'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var d = JSON.parse(e.target.result);
+      if (!d || typeof d !== 'object') throw new Error('Invalid structure');
+      if (d.version && d.version > SCHEMA_VERSION) throw new Error('Unsupported version');
+      var s = d.state || d;
+      if (!s || typeof s !== 'object') throw new Error('No data');
+      var safeKeys = ['theme','symptoms','painLogs','vitals','medications','appointments','questions','careTeam','journal','timeline','nutrition','sleep','communication'];
+      safeKeys.forEach(function(k) {
+        if (Array.isArray(State[k]) && Array.isArray(s[k])) State[k] = s[k];
+        else if (typeof State[k] === typeof s[k] && !Array.isArray(State[k])) State[k] = s[k];
+      });
+      save();
+      document.documentElement.setAttribute('data-theme', State.theme || 'crt');
+      buildNav();
+      go('dashboard');
+      renderData();
+      toast('Data imported');
+    } catch(err) {
+      toast('Import failed: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+function loadDemo() {
+  if ((State.symptoms.length || State.appointments.length) && !confirm('Demo will replace current data. Continue?')) return;
+  var today = new Date();
+  State.symptoms = [
+    { id: uid('s'), type: 'fatigue', severity: 6, date: today.toISOString(), notes: 'After lunch', createdAt: nowISO() },
+    { id: uid('s'), type: 'nausea', severity: 4, date: new Date(today - 86400000).toISOString(), notes: 'Better with antiemetic', createdAt: nowISO() }
+  ];
+  State.painLogs = [{ id: uid('pm'), region: 'leg-right', intensity: 5, date: todayISO(), notes: 'Aching when walking', createdAt: nowISO() }];
+  State.vitals = [{ id: uid('vt'), date: today.toISOString(), temp: 36.8, sys: 120, dia: 80, hr: 76, weight: 70.5, notes: 'Morning reading', createdAt: nowISO() }];
+  State.medications = [{ id: uid('m'), name: 'Sample Medication', dose: '500mg 2x/day', source: 'Demo example', notes: 'Verify with pharmacist', createdAt: nowISO() }];
+  State.appointments = [{ id: uid('a'), date: new Date(today.getTime() + 7 * 86400000).toISOString().slice(0, 16), doctor: 'Demo Clinic', purpose: 'Follow-up', questions: ['How are my tests?', 'Next steps'], checklist: [{text:'How are my tests?',done:false},{text:'Next steps',done:false}], createdAt: nowISO() }];
+  State.questions = [{ id: uid('q'), text: 'Which side effects should I watch for?', asked: false, createdAt: nowISO() }];
+  State.careTeam = [{ id: uid('c'), name: 'Dr. Sample', role: 'Oncologist', phone: '(555) 000-0000', email: '', notes: 'Demo', createdAt: nowISO() }];
+  State.journal = [{ id: uid('j'), date: today.toISOString(), scores: { mood: 3, energy: 2, sleep: 4 }, notes: 'Tiring day but slept well', createdAt: nowISO() }];
+  State.timeline = [{ id: uid('tl'), date: todayISO(), type: 'milestone', title: 'Started logging', notes: 'Demo entry', createdAt: nowISO() }];
+  State.nutrition = [{ id: uid('nt'), date: todayISO(), water: 6, meals: 3, appetite: 4, notes: 'Good day', createdAt: nowISO() }];
+  State.sleep = [{ id: uid('sl'), date: todayISO(), hours: 7.5, quality: 4, notes: 'Woke once', createdAt: nowISO() }];
+  State.communication = [{ id: uid('cm'), date: today.toISOString(), 'with': 'Dr. Sample', type: 'phone', notes: 'Discussed medication adjustment', followup: 'Get new prescription', createdAt: nowISO() }];
+  save();
+  buildNav();
+  go('dashboard');
+  toast('Demo data loaded');
+}
+function clearAll() {
+  if (!confirm('Delete ALL data? Cannot be undone.')) return;
+  if (!confirm('Are you absolutely sure?')) return;
+  State = {
+    version: SCHEMA_VERSION, theme: State.theme,
+    symptoms: [], painLogs: [], medications: [], appointments: [],
+    questions: [], careTeam: [], journal: [], journalScores: { mood: 0, energy: 0, sleep: 0 },
+    vitals: [], timeline: [], nutrition: [], sleep: [], communication: [],
+    selectedPainRegion: null, symFilter: 'all', aptFilter: 'upcoming', qFilter: 'all'
+  };
+  try { localStorage.removeItem(STORAGE_KEY); save(); } catch(e) {}
+  buildNav();
+  go('dashboard');
+  toast('All data cleared');
+}
+
+// ═══════════════════════════════════════════════════════
+// TESTS
+// ═══════════════════════════════════════════════════════
+var Tests = {
+  results: [],
+  assert: function(name, cond) { this.results.push({ name: name, pass: !!cond }); },
+  eq: function(name, a, b) { this.results.push({ name: name, pass: a === b }); },
+  runAll: function() {
+    this.results = [];
+    var T = this;
+
+    // Escaping
+    T.eq('esc: <', esc('<'), '&lt;');
+    T.eq('esc: >', esc('>'), '&gt;');
+    T.eq('esc: &', esc('&'), '&amp;');
+    T.eq('esc: "', esc('"'), '&quot;');
+    T.eq('esc: null', esc(null), '');
+    T.eq('esc: number', esc(5), '5');
+
+    // Dates
+    T.assert('date: valid ISO', validDate('2025-03-15T10:30'));
+    T.assert('date: reject garbage', !validDate('not-a-date'));
+    T.assert('date: reject empty', !validDate(''));
+
+    // UID
+    var ids = [uid('a'), uid('a'), uid('a')];
+    T.assert('uid: unique', new Set(ids).size === 3);
+
+    // State
+    T.assert('state: symptoms array', Array.isArray(State.symptoms));
+    T.assert('state: vitals array', Array.isArray(State.vitals));
+    T.eq('state: version', State.version, SCHEMA_VERSION);
+
+    // JSON roundtrip
+    var rt = JSON.parse(JSON.stringify({ a: 1, b: [2,3] }));
+    T.eq('json: number', rt.a, 1);
+    T.eq('json: array', rt.b.length, 2);
+
+    // Safety
+    var dangerous = '<img src=x onerror=alert(1)>';
+    var safe = esc(dangerous);
+    T.assert('safety: <img escaped', safe.indexOf('<img') < 0);
+    T.assert('safety: &lt;img present', safe.indexOf('&lt;img') >= 0);
+
+    // Data integrity
+    T.assert('articles: have ids', ARTICLES.every(function(a){ return a.id && a.title && a.body; }));
+    T.assert('glossary: at least 40', GLOSSARY.length >= 40);
+    T.assert('resources: https only', RESOURCES.every(function(r){ return r.url.indexOf('https://') === 0; }));
+
+    // No dangerous content in state
+    var stateStr = JSON.stringify(State);
+    T.assert('safety: no <script in state', stateStr.indexOf('<script') < 0);
+    T.assert('safety: no eval( in state', stateStr.indexOf('eval(') < 0);
+
+    // Chart helpers (basic)
+    T.assert('nav: has items', NAV.length > 15);
+
+    // Render
+    var passed = this.results.filter(function(r) { return r.pass; }).length;
+    var total = this.results.length;
+    var pct = Math.round(passed / total * 100);
+    var html = '<div style="margin-bottom:10px"><span class="chip ' + (passed === total ? 'green' : 'red') + '">' + passed + ' / ' + total + ' (' + pct + '%)</span></div>';
+    this.results.forEach(function(r) {
+      html += '<div class="test-line"><span class="' + (r.pass ? 'test-pass' : 'test-fail') + '">' + (r.pass ? '✓ PASS' : '✗ FAIL') + '</span> ' + esc(r.name) + '</div>';
+    });
+    $('test-output').innerHTML = html;
+    $('test-summary').textContent = passed + '/' + total;
+    $('test-summary').className = 'chip ' + (passed === total ? 'green' : 'red');
+    toast(passed + '/' + total + ' tests passed', passed === total ? 'success' : 'error');
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// PALETTE
+// ═══════════════════════════════════════════════════════
+var PaletteCommands = [
+  { label: 'Dashboard', fn: function() { go('dashboard'); } },
+  { label: 'Symptoms', fn: function() { go('symptoms'); } },
+  { label: 'Pain Map', fn: function() { go('painmap'); } },
+  { label: 'Vitals', fn: function() { go('vitals'); } },
+  { label: 'Medications', fn: function() { go('medications'); } },
+  { label: 'Nutrition', fn: function() { go('nutrition'); } },
+  { label: 'Sleep', fn: function() { go('sleep'); } },
+  { label: 'Appointments', fn: function() { go('appointments'); } },
+  { label: 'Questions', fn: function() { go('questions'); } },
+  { label: 'Care Team', fn: function() { go('careteam'); } },
+  { label: 'Communication Log', fn: function() { go('communication'); } },
+  { label: 'Knowledge Center', fn: function() { go('knowledge'); } },
+  { label: 'Glossary', fn: function() { go('glossary'); } },
+  { label: 'Journal', fn: function() { go('journal'); } },
+  { label: 'Timeline', fn: function() { go('timeline'); } },
+  { label: 'Reports', fn: function() { go('reports'); } },
+  { label: 'Resources', fn: function() { go('resources'); } },
+  { label: 'Data', fn: function() { go('data'); } },
+  { label: 'Tests', fn: function() { go('tests'); setTimeout(function(){ Tests.runAll(); }, 100); } },
+  { label: 'Load demo data', fn: loadDemo },
+  { label: 'Export all', fn: exportAll },
+  { label: 'Export CSV', fn: Reports.csv },
+  { label: 'Toggle theme', fn: function() { setTheme(State.theme === 'crt' ? 'light' : 'crt'); } }
+];
+var paletteSel = 0, paletteFiltered = PaletteCommands;
+function openPalette() {
+  $('palette-overlay').classList.add('show');
+  $('palette-input').value = '';
+  $('palette-input').focus();
+  renderPalette('');
+}
+function closePalette() { $('palette-overlay').classList.remove('show'); }
+function renderPalette(q) {
+  q = (q||'').toLowerCase();
+  paletteFiltered = PaletteCommands.filter(function(c) { return c.label.toLowerCase().indexOf(q) >= 0; });
+  paletteSel = 0;
+  var el = $('palette-list');
+  if (!paletteFiltered.length) { el.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-mute);font-size:.72rem">No matches</div>'; return; }
+  el.innerHTML = paletteFiltered.map(function(c, i) {
+    return '<div class="palette-item ' + (i === 0 ? 'selected' : '') + '" data-i="' + i + '"><span class="ico">▸</span><span>' + esc(c.label) + '</span></div>';
+  }).join('');
+  el.querySelectorAll('.palette-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      var i = parseInt(item.getAttribute('data-i'), 10);
+      closePalette();
+      setTimeout(paletteFiltered[i].fn, 50);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// MODAL & INIT
+// ═══════════════════════════════════════════════════════
+function showModal(html) {
+  $('modal-content').innerHTML = html;
+  $('modal').classList.add('show');
+}
+function closeModal() { $('modal').classList.remove('show'); }
+
+function wireUp() {
+  $('menu-btn').addEventListener('click', function() {
+    $('sidebar').classList.toggle('open');
+    $('backdrop').classList.toggle('show');
+  });
+  $('backdrop').addEventListener('click', function() {
+    $('sidebar').classList.remove('open');
+    $('backdrop').classList.remove('show');
+  });
+  $('top-search').addEventListener('click', openPalette);
+  $('top-theme').addEventListener('click', function() {
+    setTheme(State.theme === 'crt' ? 'light' : 'crt');
+  });
+  $('top-help').addEventListener('click', function() {
+    showModal('<h2>OncoHope AI v3.0 CRT</h2>' +
+      '<p>Local-first educational health organizer. All data stays in your browser.</p>' +
+      '<ul>' +
+      '<li><strong>Ctrl+K</strong> · Command palette</li>' +
+      '<li><strong>Esc</strong> · Close dialogs</li>' +
+      '<li>All modules work offline</li>' +
+      '<li>No AI model is connected</li>' +
+      '<li>Educational content only — not clinical advice</li>' +
+      '<li>localStorage is not encrypted</li>' +
+      '</ul>' +
+      '<div class="modal-actions"><button class="btn btn-primary" onclick="Onco.closeModal()">Got it</button></div>');
+  });
+  $('foot-help').addEventListener('click', function() { $('top-help').click(); });
+  $('foot-reset').addEventListener('click', clearAll);
+  $('modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+  $('palette-input').addEventListener('input', function() { renderPalette(this.value); });
+  $('palette-overlay').addEventListener('click', function(e) { if (e.target === this) closePalette(); });
+  $('kn-search').addEventListener('input', function() { kState.query = this.value; renderKnowledge(); });
+  $('gl-search').addEventListener('input', function() { renderGlossary(); });
+
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openPalette(); }
+    if (e.key === 'Escape') { closePalette(); closeModal(); }
+    if ($('palette-overlay').classList.contains('show')) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        paletteSel = Math.min(paletteSel + 1, paletteFiltered.length - 1);
+        document.querySelectorAll('.palette-item').forEach(function(el, i) {
+          el.classList.toggle('selected', i === paletteSel);
+        });
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        paletteSel = Math.max(0, paletteSel - 1);
+        document.querySelectorAll('.palette-item').forEach(function(el, i) {
+          el.classList.toggle('selected', i === paletteSel);
+        });
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var c = paletteFiltered[paletteSel];
+        if (c) { closePalette(); setTimeout(c.fn, 50); }
+      }
+    }
+  });
+}
+
+function init() {
+  load();
+  document.documentElement.setAttribute('data-theme', State.theme || 'crt');
+  buildNav();
+  wireUp();
+  go('dashboard');
+  renderData();
+}
+
+// ═══════════════════════════════════════════════════════
+// PUBLIC API
+// ═══════════════════════════════════════════════════════
+window.Onco = {
+  go: go,
+  closeModal: closeModal,
+  setTheme: setTheme,
+  exportAll: exportAll,
+  importAll: importAll,
+  loadDemo: loadDemo,
+  clearAll: clearAll,
+  Symptoms: Symptoms,
+  PainMap: PainMap,
+  Vitals: Vitals,
+  Meds: Meds,
+  Apts: Apts,
+  Questions: Questions,
+  CareTeam: CareTeam,
+  Communication: Communication,
+  Journal: Journal,
+  Timeline: Timeline,
+  Nutrition: Nutrition,
+  Sleep: Sleep,
+  Reports: Reports,
+  Knowledge: {
+    open: function(id) { kState.openId = id; renderKnowledge(); },
+    close: function() { kState.openId = null; renderKnowledge(); }
+  },
+  Tests: Tests
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+})();
+</script>
+</body>
+</html>
