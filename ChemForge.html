@@ -882,143 +882,66 @@ function lipinskiCheck(parsed,counts){
    REACTION BALANCER
    Uses Gaussian elimination over rational numbers
    ================================================================ */
+// Neutral formulas only. Nested parentheses and square brackets are supported.
+// Unknown symbols, charges, hydrates, zero counts and malformed syntax are rejected.
 function parseFormula(formula){
-  /* Parse "H2O" or "Ca(OH)2" into element counts */
-  var counts={};
-  var i=0;
-  var stack=[{mult:1}];
-  while(i<formula.length){
-    var c=formula[i];
-    if(c==='('){
-      stack.push({mult:1});
-      i++;
-    } else if(c===')'){
-      var top=stack.pop();
-      i++;
-      /* Multiplier after ) */
-      var num='';
-      while(i<formula.length&&/\d/.test(formula[i])){num+=formula[i];i++;}
-      var m=num?parseInt(num):1;
-      var counts2={};
-      Object.keys(top).forEach(function(k){
-        if(k==='mult')return;
-        counts2[k]=(counts2[k]||0)+top[k];
-      });
-      stack[stack.length-1].mult*=0; /* suppress */
-      Object.keys(counts2).forEach(function(k){
-        counts[k]=(counts[k]||0)+counts2[k]*m;
-      });
-    } else if(/[A-Z]/.test(c)){
-      var sym=c;
-      i++;
-      if(i<formula.length&&/[a-z]/.test(formula[i])){sym+=formula[i];i++;}
-      var num2='';
-      while(i<formula.length&&/\d/.test(formula[i])){num2+=formula[i];i++;}
-      var cnt=num2?parseInt(num2):1;
-      counts[sym]=(counts[sym]||0)+cnt;
-    } else {
-      i++;
+  if(typeof formula!=='string'||!formula||formula.length>200)throw Error('Formula must contain 1–200 characters');
+  var pos=0, known=new Set(ELEMENTS.map(function(e){return e[0]}));
+  function number(){var start=pos;while(/\d/.test(formula[pos]||''))pos++;if(start===pos)return 1;var n=Number(formula.slice(start,pos));if(!Number.isSafeInteger(n)||n<1||n>10000)throw Error('Invalid or excessive subscript');return n}
+  function group(end,depth){
+    if(depth>12)throw Error('Formula nesting is too deep');
+    var out={}, terms=0;
+    while(pos<formula.length&&formula[pos]!==end){
+      var c=formula[pos], part;
+      if(c==='('||c==='['){pos++;part=group(c==='('?')':']',depth+1);if(formula[pos]!== (c==='('?')':']'))throw Error('Unclosed group');pos++;}
+      else if(/[A-Z]/.test(c)){var sym=c;pos++;if(/[a-z]/.test(formula[pos]||''))sym+=formula[pos++];if(!known.has(sym))throw Error('Unknown element: '+sym);part={};part[sym]=1;}
+      else throw Error('Unsupported character at position '+(pos+1)+': '+c);
+      var m=number();Object.keys(part).forEach(function(k){out[k]=(out[k]||0)+part[k]*m;if(out[k]>1000000)throw Error('Atom count too large')});terms++;
     }
+    if(!terms)throw Error('Empty formula or group');return out;
   }
-  return counts;
+  var result=group('',0);if(pos!==formula.length)throw Error('Unexpected closing bracket');return result;
 }
-
 function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){var t=b;b=a%b;a=t;}return a;}
-
+// Exact rational elimination. We deliberately reject non-unique systems instead
+// of guessing a solution, and verify every integer coefficient before returning.
 function balanceEquation(reactants,products){
-  /* Build matrix: rows=elements, cols=reactants (positive) + products (negative) */
-  var elements={};
-  var rCounts=reactants.map(function(r){return parseFormula(r);});
-  var pCounts=products.map(function(p){return parseFormula(p);});
-  rCounts.concat(pCounts).forEach(function(c){
-    Object.keys(c).forEach(function(e){elements[e]=true;});
-  });
-  var elemList=Object.keys(elements);
-  var nR=reactants.length,nP=products.length;
-  var cols=nR+nP;
-  var A=[];
-  elemList.forEach(function(e){
-    var row=[];
-    rCounts.forEach(function(c){row.push(c[e]||0);});
-    pCounts.forEach(function(c){row.push(-(c[e]||0));});
-    A.push(row);
-  });
-  /* Solve via row reduction over rationals represented as fractions
-     Simplified: use floating point + rational reconstruction at the end */
-  var M=A.map(function(r){return r.slice();});
-  var rows=M.length;
-  var lead=0;
-  for(var c=0;c<cols&&lead<rows;c++){
-    /* Find pivot */
-    var piv=lead;
-    while(piv<rows&&Math.abs(M[piv][c])<1e-9)piv++;
-    if(piv>=rows)continue;
-    var t=M[lead];M[lead]=M[piv];M[piv]=t;
-    /* Normalize */
-    var p=M[lead][c];
-    for(var j=0;j<cols;j++)M[lead][j]/=p;
-    /* Eliminate */
-    for(var i=0;i<rows;i++){
-      if(i!==lead&&Math.abs(M[i][c])>1e-9){
-        var factor=M[i][c];
-        for(var j2=0;j2<cols;j2++)M[i][j2]-=factor*M[lead][j2];
-      }
-    }
-    lead++;
+  if(!Array.isArray(reactants)||!Array.isArray(products)||!reactants.length||!products.length||reactants.length+products.length>16)throw Error('Use 1–16 species total, with both sides present');
+  var all=reactants.concat(products), counts=all.map(parseFormula), elems=Array.from(new Set(counts.flatMap(function(c){return Object.keys(c)}))), n=all.length, nr=reactants.length;
+  function bgcd(a,b){a=a<0n?-a:a;b=b<0n?-b:b;while(b){var t=a%b;a=b;b=t}return a}
+  function q(a,b){if(b===0n)throw Error('Division by zero');if(b<0n){a=-a;b=-b}var g=bgcd(a,b);return [a/g,b/g]}
+  function sub(a,b){return q(a[0]*b[1]-b[0]*a[1],a[1]*b[1])}
+  function mul(a,b){return q(a[0]*b[0],a[1]*b[1])}
+  function div(a,b){return q(a[0]*b[1],a[1]*b[0])}
+  var M=elems.map(function(e){return counts.map(function(c,i){return [BigInt((c[e]||0)*(i<nr?1:-1)),1n]})});
+  var piv=[],row=0;
+  for(var col=0;col<n&&row<M.length;col++){
+    var k=row;while(k<M.length&&M[k][col][0]===0n)k++;if(k===M.length)continue;
+    var tmp=M[row];M[row]=M[k];M[k]=tmp;var pivot=M[row][col];
+    for(var j=0;j<n;j++)M[row][j]=div(M[row][j],pivot);
+    for(var i=0;i<M.length;i++)if(i!==row&&M[i][col][0]!==0n){var factor=M[i][col];for(var j2=0;j2<n;j2++)M[i][j2]=sub(M[i][j2],mul(factor,M[row][j2]))}
+    piv.push(col);row++;
   }
-  /* Null space vector — set free variable to 1 */
-  var free=-1;
-  for(var c2=0;c2<cols;c2++){
-    var isPivot=false;
-    for(var r=0;r<rows;r++){
-      if(Math.abs(M[r][c2]-1)<1e-9){
-        var onlyOne=true;
-        for(var r2=0;r2<rows;r2++){
-          if(r2!==r&&Math.abs(M[r2][c2])>1e-9){onlyOne=false;break;}
-        }
-        if(onlyOne){isPivot=true;break;}
-      }
-    }
-    if(!isPivot){free=c2;break;}
-  }
-  if(free===-1)return null;
-  var x=new Array(cols).fill(0);
-  x[free]=1;
-  for(var r3=0;r3<rows;r3++){
-    var pivotCol=-1;
-    for(var c3=0;c3<cols;c3++){
-      if(Math.abs(M[r3][c3])>1e-9){pivotCol=c3;break;}
-    }
-    if(pivotCol>=0){
-      var sum=0;
-      for(var c4=pivotCol+1;c4<cols;c4++)sum+=M[r3][c4]*x[c4];
-      x[pivotCol]=-sum;
-    }
-  }
-  /* Normalize to integers */
-  /* Multiply by common denominator */
-  var scale=1;
-  x.forEach(function(v){
-    if(Math.abs(v)<1e-9)return;
-    /* Rational approximation */
-    for(var den=1;den<=100;den++){
-      if(Math.abs(v*den-Math.round(v*den))<1e-6){
-        scale=Math.max(scale,den);
-        break;
-      }
-    }
-  });
-  x=x.map(function(v){return Math.round(v*scale);});
-  /* Reduce by GCD */
-  var g=x.reduce(function(a,b){return gcd(a,b);},0);
-  if(g>1)x=x.map(function(v){return v/g;});
-  /* Make all positive */
-  if(x.some(function(v){return v<0;}))x=x.map(function(v){return -v;});
-  return {
-    reactants:x.slice(0,nR),
-    products:x.slice(nR),
-    balanced:true
-  };
+  if(n-piv.length!==1)throw Error('No unique balance. Check species; underdetermined equations are not supported');
+  var free=Array.from({length:n},function(_,i){return i}).find(function(i){return piv.indexOf(i)<0});
+  var x=Array.from({length:n},function(){return [0n,1n]});x[free]=[1n,1n];
+  piv.forEach(function(c,r){x[c]=q(-M[r][free][0],M[r][free][1])});
+  var lcm=1n;x.forEach(function(v){lcm=lcm/bgcd(lcm,v[1])*v[1]});
+  var ints=x.map(function(v){return v[0]*(lcm/v[1])});
+  if(ints.every(function(v){return v<0n}))ints=ints.map(function(v){return -v});
+  if(ints.some(function(v){return v<=0n}))throw Error('No balance with strictly positive coefficients for all species');
+  var g=ints.reduce(function(a,b){return bgcd(a,b)},0n);ints=ints.map(function(v){return v/g});
+  if(ints.some(function(v){return v>1000000n}))throw Error('Coefficients exceed supported limit');
+  elems.forEach(function(e){var total=counts.reduce(function(a,c,i){return a+BigInt(c[e]||0)*ints[i]*(i<nr?1n:-1n)},0n);if(total!==0n)throw Error('Internal verification failed for '+e)});
+  var values=ints.map(Number);return {reactants:values.slice(0,nr),products:values.slice(nr),balanced:true};
+}
+// Amounts are in moles; ideal complete conversion, no side reactions.
+function calculateStoichiometry(reactants,products,coeff,amounts){
+  if(!coeff||amounts.length!==reactants.length||amounts.some(function(v){return !Number.isFinite(v)||v<0}))throw Error('Enter a finite non-negative amount for every reactant');
+  var extent=Math.min.apply(null,amounts.map(function(v,i){return v/coeff.reactants[i]}));
+  if(!Number.isFinite(extent))throw Error('Amounts are too large');
+  if(products.some(function(_,i){return !Number.isFinite(extent*coeff.products[i])}))throw Error('Calculated yield exceeds supported range');
+  return {extent:extent,limiting:reactants.filter(function(_,i){return Math.abs(amounts[i]/coeff.reactants[i]-extent)<=Number.EPSILON*8*Math.max(Math.abs(amounts[i]/coeff.reactants[i]),Math.abs(extent),Number.MIN_VALUE)}),remaining:amounts.map(function(v,i){return Math.max(0,v-extent*coeff.reactants[i])}),produced:products.map(function(_,i){return extent*coeff.products[i]})};
 }
 
 /* ================================================================
@@ -2194,7 +2117,9 @@ function renderBalance(c){
   html+='<div class="chart-label"><span>Chemical Equation Balancer</span></div>';
   html+='<div style="background:var(--panel3);padding:14px;border-radius:var(--rxs);margin-bottom:14px;font-family:var(--mono);font-size:.75rem" id="balanceEquation">Enter reactants and products →</div>';
   html+='<button class="btn primary" onclick="doBalance()">⚖️ Balance Equation</button>';
-  html+='<div id="balanceResult" style="margin-top:14px"></div>';
+  html+='<div id="balanceResult" style="margin-top:14px" aria-live="polite"></div>';
+  html+='<div id="stoichPanel" style="margin-top:14px"></div>';
+  html+='<div class="text-xs text-dim" style="margin-top:10px">Neutral formulas only; nested () and [] supported. No ions, charges or hydrates. Underdetermined equations are rejected.</div>';
   html+='<div class="chart-label" style="margin-top:20px"><span>Presets</span></div>';
   html+='<div class="stats-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">';
   BALANCE_PRESETS.forEach(function(p,i){
@@ -2209,7 +2134,10 @@ function doBalance(){
   var pText=$('products').value;
   var reactants=rText.split(/[\+\n,]+/).map(function(s){return s.trim();}).filter(Boolean);
   var products=pText.split(/[\+\n,]+/).map(function(s){return s.trim();}).filter(Boolean);
+  $('balanceResult').textContent=''; $('balanceEquation').textContent='Enter reactants and products →'; $('stoichPanel').textContent='';
+  if(/(^\s*\+|\+\s*$|\+\s*\+)/.test(rText)||/(^\s*\+|\+\s*$|\+\s*\+)/.test(pText)){ $('balanceResult').textContent='Invalid separator or unsupported ionic charge'; return; }
   if(!reactants.length||!products.length){
+    $('balanceResult').textContent='Enter reactants and products';
     toast('Enter reactants and products','warn');
     return;
   }
@@ -2270,10 +2198,32 @@ function doBalance(){
     });
     html+='</tbody></table>';
     $('balanceResult').innerHTML=html;
+    renderStoichiometry(reactants,products,result,rText,pText);
     toast('Equation balanced','success');
   }catch(e){
+    $('balanceResult').textContent='Cannot balance: '+e.message;
+    $('stoichPanel').textContent='';
     toast('Error: '+e.message,'error',3000);
   }
+}
+
+function renderStoichiometry(reactants,products,result,rText,pText){
+  var panel=$('stoichPanel');
+  var html='<div class="chart-label"><span>Ideal stoichiometry</span></div><div class="text-xs text-dim">Enter initial reactant amounts in mol. Assumes complete reaction, no side reactions or losses.</div>';
+  reactants.forEach(function(r,i){html+='<label style="display:block;margin-top:8px">'+esc(r)+' (mol) <input class="ctrl" type="number" min="0" step="any" id="stoichAmount'+i+'" placeholder="Required"></label>'});
+  html+='<button class="btn primary" style="margin-top:10px" id="stoichRun">Calculate theoretical yield</button><div id="stoichResult" aria-live="polite" style="margin-top:10px"></div>';panel.innerHTML=html;
+  $('stoichRun').onclick=function(){
+    var out=$('stoichResult');out.textContent='';
+    try{
+      if($('reactants').value!==rText||$('products').value!==pText)throw Error('Equation changed. Balance again first.');
+      var amounts=reactants.map(function(_,i){var v=$('stoichAmount'+i).value;if(v.trim()==='')throw Error('Enter every reactant amount');return Number(v)});
+      var calc=calculateStoichiometry(reactants,products,result,amounts), fmt=function(x){return Number(x.toPrecision(6)).toString()};
+      var text='Limiting reactant(s): '+calc.limiting.join(', ')+' | Reaction extent: '+fmt(calc.extent)+' mol\n';
+      products.forEach(function(p,i){text+=p+' theoretical: '+fmt(calc.produced[i])+' mol\n'});
+      reactants.forEach(function(r,i){text+=r+' remaining: '+fmt(calc.remaining[i])+' mol\n'});
+      out.style.whiteSpace='pre-line';out.textContent=text;
+    }catch(e){out.textContent='Cannot calculate: '+e.message}
+  };
 }
 
 /* ================================================================
